@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>もちすけ日本縦断クリッカー</title>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; overflow: hidden; user-select: none; -webkit-user-select: none;
+            background-color: #f5f5f5;
+        }
+
+        #game-screen {
+            width: 100%; max-width: 480px; height: 100vh;
+            position: relative; display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            background: linear-gradient(to bottom, #e0f7fa, #fff);
+            transition: background 0.5s ease;
+        }
+
+        #header-ui { width: 90%; text-align: center; margin-top: 20px; z-index: 10; }
+        #stage-title { font-size: 1.5rem; font-weight: bold; color: #37474f; margin: 0; text-shadow: 1px 1px 0 #fff; }
+        
+        /* スコア表示エリアをアイコンと横並びに */
+        #score-container { 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 3rem; font-weight: bold; color: #5d4037; margin: 5px 0; text-shadow: 2px 2px 0 #fff; 
+        }
+        .score-icon { width: 40px; height: 40px; margin-left: 8px; object-fit: contain; }
+
+        #stats-display { margin: 0 0 10px 0; font-size: 0.95rem; color: #78909c; font-weight: bold; text-shadow: 1px 1px 0 #fff; }
+        
+        #gauge-container { width: 100%; height: 16px; background-color: #e0e0e0; border-radius: 8px; overflow: hidden; margin-bottom: 5px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+        #gauge-bar { width: 0%; height: 100%; background: linear-gradient(to right, #4caf50, #81c784); transition: width 0.1s linear; }
+        #gauge-text { font-size: 0.85rem; font-weight: bold; color: #455a64; margin: 0; }
+
+        #mochisuke-container {
+            position: relative; width: 260px; height: 260px;
+            display: flex; align-items: center; justify-content: center; margin: 20px 0; z-index: 10;
+        }
+        #mochisuke-btn {
+            width: 240px; height: 240px; object-fit: contain;
+            border-radius: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            cursor: pointer; transition: transform 0.05s ease;
+            background-color: white;
+        }
+        #mochisuke-btn:active { transform: scale(0.9) scaleY(0.85); }
+
+        .pop-num {
+            position: absolute; font-size: 2.2rem; font-weight: bold; color: #d84315;
+            pointer-events: none; animation: pop-up-anim 0.5s ease-out forwards; text-shadow: 2px 2px 0 #fff; z-index: 100;
+        }
+        @keyframes pop-up-anim {
+            0% { transform: translate(-50%, -50%) scale(0.6); opacity: 1; }
+            100% { transform: translate(-50%, -130%) scale(1.2); opacity: 0; }
+        }
+
+        /* 下部UIエリア */
+        #tabs-container {
+            width: 100%; background-color: rgba(255,255,255,0.95); border-radius: 24px 24px 0 0;
+            flex-grow: 1; display: flex; flex-direction: column; box-shadow: 0 -4px 15px rgba(0,0,0,0.08); z-index: 10;
+            overflow-y: auto; padding: 20px 0; box-sizing: border-box;
+        }
+        .section-title { font-size: 1.1rem; font-weight: bold; color: #5d4037; margin: 0 20px 10px 20px; }
+        
+        .list-container { display: flex; flex-direction: column; gap: 10px; padding: 0 20px; }
+        .ui-card {
+            background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
+            padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .card-info { display: flex; flex-direction: column; }
+        .card-name { font-weight: bold; font-size: 1.05rem; color: #334155; }
+        .card-sub { font-size: 0.85rem; color: #64748b; margin-top: 2px; }
+        .action-btn { background-color: #ffb74d; border: none; color: white; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+        .action-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <div id="game-screen">
+        <div id="header-ui">
+            <p id="stage-title">📍 ステージ1: 東京都</p>
+            <div id="score-container">
+                <span id="score">0</span>
+                <img src="mochi_particle.png" class="score-icon" alt="もち">
+            </div>
+            <p id="stats-display">毎秒自動: +<span id="mps-display">0</span> | タップ: <span id="t-power-display">1</span></p>
+            
+            <div id="gauge-container">
+                <div id="gauge-bar"></div>
+            </div>
+            <p id="gauge-text">次の都道府県まで: 0 / 100</p>
+        </div>
+
+        <div id="mochisuke-container" ontouchstart="tapMochisuke(event)" onmousedown="tapMochisuke(event)">
+            <img id="mochisuke-btn" src="image_0.png" alt="もちすけ">
+        </div>
+
+        <div id="tabs-container">
+            <div class="section-title">ご当地キャラをスカウト</div>
+            <div class="list-container">
+                <div class="ui-card">
+                    <div class="card-info">
+                        <div class="card-name" id="scout-title">東京限定スカウト</div>
+                        <div class="card-sub">コスト: <span id="scout-cost">50</span></div>
+                    </div>
+                    <button class="action-btn" id="btn-scout" onclick="scoutCharacter()">スカウト</button>
+                </div>
+            </div>
+
+            <div class="section-title" style="margin-top: 20px;">仲間の管理（5体まで自動でチーム編成されます）</div>
+            <div class="list-container" id="character-pool-list">
+                <p style="font-size: 0.85rem; color:#94a3b8; margin:0 5px;">まだ誰も仲間になっていません。スカウトしてみよう！</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let baseTapPower = 1;
+        let currentStageIndex = 0;
+        
+        let team = []; 
+        let myCharacters = []; 
+
+        const stages = [
+            { name: "東京都", goal: 100, bg: "linear-gradient(to bottom, #ffecb3, #fff)", character: { id: "tokyo_dog", name: "ハチ公もち", skillText: "タップ力 +2", effect: () => { baseTapPower += 2; } } },
+            { name: "神奈川県", goal: 500, bg: "linear-gradient(to bottom, #bbdefb, #fff)", character: { id: "kanagawa_sea", name: "シュウマイかもめ", skillText: "自動生産 +3/秒", effect: () => { mpsFromSkills += 3; } } },
+            { name: "愛知県", goal: 2500, bg: "linear-gradient(to bottom, #e1bee7, #fff)", character: { id: "aichi_shachi", name: "金のシャチホコ大福", skillText: "タップ力 +10", effect: () => { baseTapPower += 10; } } }
+        ];
+
+        let mpsFromSkills = 0;
+
+        function getMps() { return mpsFromSkills; }
+        function getTapPower() { return baseTapPower; }
+
+        function tapMochisuke(e) {
+            if(e) e.preventDefault();
+            let clientX = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2;
+            let clientY = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/3;
+
+            let gain = getTapPower();
+            score += gain;
+
+            createPopupNum(clientX, clientY, gain);
+            checkStageProgress();
+            updateDisplay();
+        }
+
+        function checkStageProgress() {
+            let currentStage = stages[currentStageIndex];
+            if (score >= currentStage.goal) {
+                if (currentStageIndex < stages.length - 1) {
+                    currentStageIndex++;
+                    alert(`🎉 ステージクリア！ 🎉\n次の都道府県「${stages[currentStageIndex].name}」へ進みました！`);
+                    document.getElementById('game-screen').style.background = stages[currentStageIndex].bg;
+                }
+            }
+        }
+
+        function scoutCharacter() {
+            let currentStage = stages[currentStageIndex];
+            let cost = Math.floor(currentStage.goal * 0.4);
+
+            if (score >= cost) {
+                score -= cost;
+                let charData = currentStage.character;
+
+                if (!myCharacters.includes(charData.id)) {
+                    myCharacters.push(charData.id);
+                    // 自動でチームに入れる（最大5体）
+                    if (team.length < 5) {
+                        team.push(charData);
+                    }
+                    alert(`✨ 仲間を発見！ ✨\n「${charData.name}」が加入しました！\n能力: ${charData.skillText}`);
+                }
+                recalculateSkills();
+                updateDisplay();
+                renderCharacterPool();
+            }
+        }
+
+        function recalculateSkills() {
+            baseTapPower = 1;
+            mpsFromSkills = 0;
+            team.forEach(char => char.effect());
+        }
+
+        function updateDisplay() {
+            let currentStage = stages[currentStageIndex];
+            
+            document.getElementById('stage-title').innerText = `📍 ステージ${currentStageIndex + 1}: ${currentStage.name}`;
+            document.getElementById('score').innerText = Math.floor(score).toLocaleString();
+            document.getElementById('mps-display').innerText = getMps().toLocaleString();
+            document.getElementById('t-power-display').innerText = getTapPower().toLocaleString();
+
+            let scoutCost = Math.floor(currentStage.goal * 0.4);
+            document.getElementById('scout-title').innerText = `${currentStage.name}限定スカウト`;
+            document.getElementById('scout-cost').innerText = scoutCost.toLocaleString();
+            document.getElementById('btn-scout').disabled = score < scoutCost;
+
+            let percent = Math.min((score / currentStage.goal) * 100, 100);
+            document.getElementById('gauge-bar').style.width = percent + '%';
+            document.getElementById('gauge-text').innerText = `次の都道府県まで: ${Math.floor(score).toLocaleString()} / ${currentStage.goal.toLocaleString()}`;
+        }
+
+        function renderCharacterPool() {
+            let poolContainer = document.getElementById('character-pool-list');
+            poolContainer.innerHTML = "";
+
+            if (myCharacters.length === 0) {
+                poolContainer.innerHTML = `<p style="font-size: 0.85rem; color:#94a3b8; margin:0 5px;">まだ誰も仲間になっていません。スカウトしてみよう！</p>`;
+                return;
+            }
+
+            myCharacters.forEach(id => {
+                let foundStage = stages.find(s => s.character.id === id);
+                if (foundStage) {
+                    let char = foundStage.character;
+                    let card = document.createElement('div');
+                    card.className = 'ui-card';
+                    card.innerHTML = `
+                        <div class="card-info">
+                            <div class="card-name">${char.name} <span style="font-size:0.8rem; color:#ffb74d;">(${foundStage.name}特産)</span></div>
+                            <div class="card-sub">効果: ${char.skillText} (チームに自動適用中)</div>
+                        </div>
+                    `;
+                    poolContainer.appendChild(card);
+                }
+            });
+        }
+
+        function createPopupNum(x, y, gain) {
+            let num = document.createElement('div');
+            num.className = 'pop-num';
+            num.innerText = "+" + gain;
+            num.style.left = x + 'px'; num.style.top = y + 'px';
+            document.body.appendChild(num);
+            setTimeout(() => num.remove(), 500);
+        }
+
+        setInterval(() => {
+            let mps = getMps();
+            if (mps > 0) {
+                score += mps;
+                checkStageProgress();
+                updateDisplay();
+            }
+        }, 1000);
+
+        updateDisplay();
+    </script>
+</body>
+</html>
