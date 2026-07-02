@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <!-- Googleアナリティクス (GA4) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BTBF44E0WD"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -127,7 +128,8 @@
 
             <div id="score-container">
                 <span id="score">0</span>
-                <img src="mochi_particle.png" class="score-icon" alt="もち">
+                <!-- キャッシュ対策で ?v=2 を追加 -->
+                <img src="mochi_particle.png?v=2" class="score-icon" alt="もち">
             </div>
             <p id="stats-display">毎秒自動: +<span id="mps-display">0</span> | タップ: <span id="t-power-display">1</span></p>
             
@@ -138,7 +140,8 @@
         </div>
 
         <div id="mochisuke-container" ontouchstart="tapMochisuke(event)" onmousedown="tapMochisuke(event)">
-            <img id="mochisuke-btn" src="image_0.png" alt="もちすけ">
+            <!-- キャッシュ対策で ?v=2 を追加 -->
+            <img id="mochisuke-btn" src="image_0.png?v=2" alt="もちすけ">
         </div>
 
         <div id="tabs-container">
@@ -168,7 +171,8 @@
         </div>
     </div>
 
-    <audio id="audio-tap" src="tap.mp3" preload="auto"></audio>
+    <!-- キャッシュ対策で ?v=2 を追加 -->
+    <audio id="audio-tap" src="tap.mp3?v=2" preload="auto"></audio>
 
     <script>
         let score = 0;
@@ -209,7 +213,8 @@
 
         function createMochiParticle(x, y) {
             let p = document.createElement('img');
-            p.src = 'mochi_particle.png'; p.className = 'mochi-particle';
+            // キャッシュ対策で ?v=2 を追加
+            p.src = 'mochi_particle.png?v=2'; p.className = 'mochi-particle';
             p.style.left = (x - 22) + 'px'; p.style.top = (y - 22) + 'px';
             document.body.appendChild(p);
 
