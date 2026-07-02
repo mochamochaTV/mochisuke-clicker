@@ -162,8 +162,7 @@
         <div id="ranking-modal" onclick="closeRanking()">
             <div id="ranking-board" onclick="event.stopPropagation()">
                 <div class="rank-title">👑 全国おもちランキング</div>
-                <div class="rank-list" id="rank-list-content">
-                    </div>
+                <div class="rank-list" id="rank-list-content"></div>
                 <button class="action-btn" onclick="closeRanking()" style="width: 100%;">閉じる</button>
             </div>
         </div>
@@ -321,25 +320,19 @@
             setTimeout(() => num.remove(), 500);
         }
 
-        /* --- ランキング開閉の挙動（プロトタイプ用ダミーデータ） --- */
         function openRanking() {
-            // GA4に「ランキングを開いた」というイベントを送信
             gtag('event', 'open_ranking', { 'current_score': score });
 
             let listContainer = document.getElementById('rank-list-content');
-            
-            // ランキングに表示する仮の猛者たちのデータ
             let dummyRanks = [
                 { name: "もちマスター", score: 999999, isMe: false },
                 { name: "ポチポチ神", score: 50000, isMe: false },
-                { name: "あなた (もちすけ)", score: Math.floor(score), isMe: true }, // 自分のリアルタイムスコア
+                { name: "あなた (もちすけ)", score: Math.floor(score), isMe: true },
                 { name: "ビギナーもち", score: 10, isMe: false }
             ];
 
-            // スコア順に並び替え
             dummyRanks.sort((a, b) => b.score - a.score);
 
-            // HTMLの組み立て
             listContainer.innerHTML = "";
             dummyRanks.forEach((player, index) => {
                 let item = document.createElement('div');
