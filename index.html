@@ -30,11 +30,9 @@
             transition: background 0.5s ease;
         }
 
-        /* ヘッダーエリアの調整（ランキングボタンを右上に配置するため） */
         #header-ui { width: 90%; text-align: center; margin-top: 20px; z-index: 10; position: relative; }
         #stage-title { font-size: 1.5rem; font-weight: bold; color: #37474f; margin: 0 40px 0 0; text-align: left; text-shadow: 1px 1px 0 #fff; }
         
-        /* ランキングボタンのスタイル */
         #rank-btn {
             position: absolute; right: 0; top: -5px;
             background-color: #ffb74d; border: none; border-radius: 50%;
@@ -99,7 +97,6 @@
         .action-btn { background-color: #ffb74d; border: none; color: white; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
         .action-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
 
-        /* ランキングポップアップのスタイル */
         #ranking-modal {
             display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
@@ -128,7 +125,6 @@
 
             <div id="score-container">
                 <span id="score">0</span>
-                <!-- キャッシュ対策で ?v=2 を追加 -->
                 <img src="mochi_particle.png?v=2" class="score-icon" alt="もち">
             </div>
             <p id="stats-display">毎秒自動: +<span id="mps-display">0</span> | タップ: <span id="t-power-display">1</span></p>
@@ -139,8 +135,8 @@
             <p id="gauge-text">次の都道府県まで: 0 / 100</p>
         </div>
 
+        <!-- タップ音制限解除のイベントを仕込み、再生のズレをなくすため ontouchstart と onmousedown を両方使用 -->
         <div id="mochisuke-container" ontouchstart="tapMochisuke(event)" onmousedown="tapMochisuke(event)">
-            <!-- キャッシュ対策で ?v=2 を追加 -->
             <img id="mochisuke-btn" src="image_0.png?v=2" alt="もちすけ">
         </div>
 
@@ -171,8 +167,8 @@
         </div>
     </div>
 
-    <!-- キャッシュ対策で ?v=2 を追加 -->
-    <audio id="audio-tap" src="tap.mp3?v=2" preload="auto"></audio>
+    <!-- キャッシュ対策付きのオーディオタグ（playsinlineを付与してiOS対策） -->
+    <audio id="audio-tap" src="tap.mp3?v=2" preload="auto" playsinline></audio>
 
     <script>
         let score = 0;
@@ -181,6 +177,7 @@
         
         let team = []; 
         let myCharacters = []; 
+        let isAudioUnlocked = false; // 音声制限解除フラグ
 
         const stages = [
             { name: "東京都", goal: 100, bg: "linear-gradient(to bottom, #ffecb3, #fff)", character: { id: "tokyo_dog", name: "ハチ公もち", skillText: "タップ力 +2", effect: () => { baseTapPower += 2; } } },
@@ -193,11 +190,31 @@
         function getMps() { return mpsFromSkills; }
         function getTapPower() { return baseTapPower; }
 
+        // ブラウザの自動再生制限を一発目のアクションで強制解除する関数
+        function unlockAudio() {
+            if (isAudioUnlocked) return;
+            let sound = document.getElementById('audio-tap');
+            if (sound) {
+                sound.play().then(() => {
+                    sound.pause();
+                    sound.currentTime = 0;
+                    isAudioUnlocked = true;
+                }).catch(e => console.log("Audio unlock failed:", e));
+            }
+        }
+
         function tapMochisuke(e) {
             if(e) e.preventDefault();
             
+            // タップされたタイミングで制限解除を試みる
+            unlockAudio();
+            
             let sound = document.getElementById('audio-tap');
-            if(sound) { sound.currentTime = 0; sound.play().catch(()=>{}); }
+            if(sound) { 
+                sound.pause(); // 鳴っている途中の音を一度止める
+                sound.currentTime = 0; // 頭出し
+                sound.play().catch((err)=>{ console.log("Play blocked:", err) }); 
+            }
 
             let clientX = e.clientX || (e.touches && e.touches[0].clientX) || window.innerWidth/2;
             let clientY = e.clientY || (e.touches && e.touches[0].clientY) || window.innerHeight/3;
@@ -213,7 +230,6 @@
 
         function createMochiParticle(x, y) {
             let p = document.createElement('img');
-            // キャッシュ対策で ?v=2 を追加
             p.src = 'mochi_particle.png?v=2'; p.className = 'mochi-particle';
             p.style.left = (x - 22) + 'px'; p.style.top = (y - 22) + 'px';
             document.body.appendChild(p);
@@ -366,6 +382,10 @@
         }, 1000);
 
         updateDisplay();
+        
+        // 画面全体のどこかをタップした際にも音声制限を解除するバックアップ
+        document.body.addEventListener('touchstart', unlockAudio, { passive: true });
+        document.body.addEventListener('click', unlockAudio, { passive: true });
     </script>
 </body>
 </html>
