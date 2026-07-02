@@ -29,9 +29,21 @@
             transition: background 0.5s ease;
         }
 
-        #header-ui { width: 90%; text-align: center; margin-top: 20px; z-index: 10; }
-        #stage-title { font-size: 1.5rem; font-weight: bold; color: #37474f; margin: 0; text-shadow: 1px 1px 0 #fff; }
+        /* ヘッダーエリアの調整（ランキングボタンを右上に配置するため） */
+        #header-ui { width: 90%; text-align: center; margin-top: 20px; z-index: 10; position: relative; }
+        #stage-title { font-size: 1.5rem; font-weight: bold; color: #37474f; margin: 0 40px 0 0; text-align: left; text-shadow: 1px 1px 0 #fff; }
         
+        /* ランキングボタンのスタイル */
+        #rank-btn {
+            position: absolute; right: 0; top: -5px;
+            background-color: #ffb74d; border: none; border-radius: 50%;
+            width: 45px; height: 45px; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem; transition: transform 0.1s;
+        }
+        #rank-btn:active { transform: scale(0.9); }
+
         #score-container { 
             display: flex; align-items: center; justify-content: center; 
             font-size: 3rem; font-weight: bold; color: #5d4037; margin: 5px 0; text-shadow: 2px 2px 0 #fff; 
@@ -65,7 +77,6 @@
             100% { transform: translate(-50%, -130%) scale(1.2); opacity: 0; }
         }
 
-        /* パーティクル用CSS */
         .mochi-particle { position: absolute; width: 45px; height: 45px; pointer-events: none; z-index: 50; }
 
         #tabs-container {
@@ -86,6 +97,24 @@
         .card-sub { font-size: 0.85rem; color: #64748b; margin-top: 2px; }
         .action-btn { background-color: #ffb74d; border: none; color: white; padding: 8px 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
         .action-btn:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+
+        /* ランキングポップアップのスタイル */
+        #ranking-modal {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;
+        }
+        #ranking-board {
+            width: 85%; max-width: 380px; background-color: white; border-radius: 20px;
+            padding: 20px; box-sizing: border-box; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex; flex-direction: column; align-items: center;
+        }
+        .rank-title { font-size: 1.4rem; font-weight: bold; color: #5d4037; margin: 0 0 15px 0; }
+        .rank-list { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+        .rank-item {
+            display: flex; justify-content: space-between; padding: 8px 12px;
+            background-color: #f8fafc; border-radius: 10px; font-weight: bold; font-size: 0.95rem;
+        }
+        .rank-item.my-rank { background-color: #fef3c7; border: 2px solid #f59e0b; }
     </style>
 </head>
 <body>
@@ -93,6 +122,9 @@
     <div id="game-screen">
         <div id="header-ui">
             <p id="stage-title">📍 ステージ1: 東京都</p>
+            
+            <button id="rank-btn" onclick="openRanking()">🏆</button>
+
             <div id="score-container">
                 <span id="score">0</span>
                 <img src="mochi_particle.png" class="score-icon" alt="もち">
@@ -126,6 +158,15 @@
                 <p style="font-size: 0.85rem; color:#94a3b8; margin:0 5px;">まだ誰も仲間になっていません。スカウトしてみよう！</p>
             </div>
         </div>
+
+        <div id="ranking-modal" onclick="closeRanking()">
+            <div id="ranking-board" onclick="event.stopPropagation()">
+                <div class="rank-title">👑 全国おもちランキング</div>
+                <div class="rank-list" id="rank-list-content">
+                    </div>
+                <button class="action-btn" onclick="closeRanking()" style="width: 100%;">閉じる</button>
+            </div>
+        </div>
     </div>
 
     <audio id="audio-tap" src="tap.mp3" preload="auto"></audio>
@@ -152,7 +193,6 @@
         function tapMochisuke(e) {
             if(e) e.preventDefault();
             
-            // 音声再生の復活
             let sound = document.getElementById('audio-tap');
             if(sound) { sound.currentTime = 0; sound.play().catch(()=>{}); }
 
@@ -163,12 +203,11 @@
             score += gain;
 
             createPopupNum(clientX, clientY, gain);
-            createMochiParticle(clientX, clientY); // パーティクル生成の復活
+            createMochiParticle(clientX, clientY);
             checkStageProgress();
             updateDisplay();
         }
 
-        // 物理挙動つきパーティクル関数の復活
         function createMochiParticle(x, y) {
             let p = document.createElement('img');
             p.src = 'mochi_particle.png'; p.className = 'mochi-particle';
@@ -196,8 +235,6 @@
                     currentStageIndex++;
                     alert(`🎉 ステージクリア！ 🎉\n次の都道府県「${stages[currentStageIndex].name}」へ進みました！`);
                     document.getElementById('game-screen').style.background = stages[currentStageIndex].bg;
-                    
-                    // GA4イベント送信（ステージクリア）
                     gtag('event', 'level_up', { 'level': currentStageIndex + 1, 'character_name': stages[currentStageIndex].name });
                 }
             }
@@ -217,8 +254,6 @@
                         team.push(charData);
                     }
                     alert(`✨ 仲間を発見！ ✨\n「${charData.name}」が加入しました！\n能力: ${charData.skillText}`);
-                    
-                    // GA4イベント送信（スカウト成功）
                     gtag('event', 'unlock_character', { 'character_id': charData.id, 'character_name': charData.name });
                 }
                 recalculateSkills();
@@ -284,6 +319,43 @@
             num.style.left = x + 'px'; num.style.top = y + 'px';
             document.body.appendChild(num);
             setTimeout(() => num.remove(), 500);
+        }
+
+        /* --- ランキング開閉の挙動（プロトタイプ用ダミーデータ） --- */
+        function openRanking() {
+            // GA4に「ランキングを開いた」というイベントを送信
+            gtag('event', 'open_ranking', { 'current_score': score });
+
+            let listContainer = document.getElementById('rank-list-content');
+            
+            // ランキングに表示する仮の猛者たちのデータ
+            let dummyRanks = [
+                { name: "もちマスター", score: 999999, isMe: false },
+                { name: "ポチポチ神", score: 50000, isMe: false },
+                { name: "あなた (もちすけ)", score: Math.floor(score), isMe: true }, // 自分のリアルタイムスコア
+                { name: "ビギナーもち", score: 10, isMe: false }
+            ];
+
+            // スコア順に並び替え
+            dummyRanks.sort((a, b) => b.score - a.score);
+
+            // HTMLの組み立て
+            listContainer.innerHTML = "";
+            dummyRanks.forEach((player, index) => {
+                let item = document.createElement('div');
+                item.className = player.isMe ? "rank-item my-rank" : "rank-item";
+                item.innerHTML = `
+                    <span>${index + 1}位. ${player.name}</span>
+                    <span>${player.score.toLocaleString()} もち</span>
+                `;
+                listContainer.appendChild(item);
+            });
+
+            document.getElementById('ranking-modal').style.display = "flex";
+        }
+
+        function closeRanking() {
+            document.getElementById('ranking-modal').style.display = "none";
         }
 
         setInterval(() => {
