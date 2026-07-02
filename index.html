@@ -20,7 +20,7 @@
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh; overflow: hidden; user-select: none; -webkit-user-select: none;
             background-color: #f5f5f5;
-            touch-action: manipulation; /* タップズーム防止 */
+            touch-action: manipulation;
         }
 
         #game-screen {
@@ -38,27 +38,34 @@
             z-index: 10;
         }
         .text-large { font-size: 1.2rem; font-weight: bold; color: #333; margin: 2px 0; }
+        #mps-display { font-size: 0.9rem; color: #666; font-weight: bold; }
 
         /* キャラクターエリア */
         #mochisuke-area {
             flex: 1; display: flex; justify-content: center; align-items: center; position: relative; width: 100%;
         }
+        
+        /* もちすけの画像比率を維持する修正 */
         #mochisuke-btn {
-            width: 220px; height: 220px; cursor: pointer;
+            width: 220px;
+            height: auto;
+            max-height: 250px;
+            object-fit: contain; /* 画像の比率を絶対に崩さない */
+            cursor: pointer;
             transition: transform 0.05s ease;
             z-index: 5;
         }
         #mochisuke-btn:active { transform: scale(0.95); }
 
-        /* 🔥 パーティクル（エフェクト）のCSS */
+        /* ✨ パーティクル（エフェクト）ゲーム画面内で絶対配置 */
         .particle {
-            position: fixed; color: #ff9800; font-size: 24px; font-weight: bold;
-            pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 100;
+            position: absolute; color: #ff9800; font-size: 24px; font-weight: bold;
+            pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 999;
             text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff, 2px -2px 0 #fff, -2px 2px 0 #fff;
         }
         @keyframes floatUp {
             0% { transform: translate(-50%, -50%) translateY(0); opacity: 1; }
-            100% { transform: translate(-50%, -50%) translateY(-80px); opacity: 0; }
+            100% { transform: translate(-50%, -50%) translateY(-100px); opacity: 0; }
         }
 
         /* 操作パネル */
@@ -94,7 +101,7 @@
             justify-content: center; align-items: center; flex-direction: column;
         }
 
-        /* ランキングモーダルのスタイル */
+        /* ランキングモーダル */
         .modal-content {
             background: white; padding: 20px; border-radius: 12px; width: 80%; max-width: 360px;
             text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
@@ -103,7 +110,7 @@
         .rank-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #eee; }
         .my-rank { background: #fff9c4; font-weight: bold; }
 
-        /* 📖 両開き（見開き）絵日記本のスタイル */
+        /* 📖 両開き絵日記本 */
         .book-container {
             width: 95%; max-width: 680px; height: 460px;
             perspective: 1200px; display: flex; flex-direction: column; align-items: center;
@@ -113,7 +120,6 @@
             background: #e0d0b0; border-radius: 8px; padding: 10px;
             box-shadow: 0 12px 28px rgba(0,0,0,0.4); position: relative;
         }
-        /* 本の中央の折り目線 */
         .book::after {
             content: ''; position: absolute; left: 50%; top: 0; width: 4px; height: 100%;
             background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(0,0,0,0), rgba(0,0,0,0.3));
@@ -136,7 +142,7 @@
             max-width: 100%; max-height: 85%; object-fit: contain;
             border: 4px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.2); background: #eee;
         }
-        .img-caption { margin-top: 10px; font-size: 0.9rem; font-weight: bold; color: #5d4037; text-align: center; }
+        .img-caption { margin-top: 10px; font-size: 0.85rem; font-weight: bold; color: #5d4037; text-align: center; line-height: 1.4; }
         
         .diary-title { font-size: 1.3rem; font-weight: bold; color: #5d4037; border-bottom: 2px dashed #bcaaa4; padding-bottom: 5px; }
         .diary-text { font-size: 1rem; line-height: 1.6; color: #4e342e; flex: 1; margin-top: 15px; white-space: pre-wrap; overflow-y: auto; }
@@ -144,7 +150,6 @@
 
         .diary-controls { display: flex; gap: 15px; margin-top: 20px; }
         
-        /* ページめくり時の簡易演出用 */
         .page-animate { animation: pageFlipEffect 0.3s ease-in-out; }
         @keyframes pageFlipEffect {
             0% { opacity: 0.7; transform: scale(0.98); }
@@ -158,7 +163,8 @@
         <div id="status-bar">
             <div class="text-large">現在の場所: <span id="current-location-text">東京</span></div>
             <div id="score-text" class="text-large">0 もち</div>
-            <div id="distance-text" style="font-weight: bold; color: #00796b;">次のエリアまで: 100 もちkcal</div>
+            <div id="mps-display">自動増加: 0 もち/秒</div>
+            <div id="distance-text" style="font-weight: bold; color: #00796b; margin-top: 4px;">次のエリアまで: 100 もちkcal</div>
         </div>
 
         <div id="mochisuke-area">
@@ -196,7 +202,7 @@
                 </div>
                 <div class="page-right" id="diary-right-page">
                     <div class="diary-title" id="diary-title-element">東京編</div>
-                    <div class="diary-text" id="diary-text-element">日記の文章</div>
+                    <div class="diary-text" id="diary-text-element"></div>
                     <div class="diary-footer" id="diary-footer-element">ページ: 1</div>
                 </div>
             </div>
@@ -209,38 +215,43 @@
     </div>
 
     <script>
-        // --- ステージ・絵日記データ ---
+        // --- ステージ・絵日記・特殊効果データ ---
         const stages = [
-            { name: "東京", distance: 100, item: "東京バナナ", price: 50, diary: "今日から日本縦断の旅が始まったぞ！\nまずは大都会東京を出発。\nこれからどんな出会いがあるかワクワクするなぁ。\nたくさん歩くぞー！", img: "tokyo_bg.png" },
-            { name: "静岡", distance: 150, item: "うなぎパイ", price: 150, diary: "静岡に到着！\n右を見ても左を見てもお茶畑が広がっていて、空気がとっても美味しいや。\n富士山がすっごく綺麗に見えたんだ！", img: "image_0.png" },
-            { name: "名古屋", distance: 200, item: "天むす", price: 400, diary: "名古屋といえば金のシャチホコ！\nお城がとっても立派だったなぁ。\n夜はエビフライと手羽先を食べてお腹いっぱい。\n大満足の一日！", img: "image_0.png" },
-            { name: "京都", distance: 180, item: "生八ツ橋", price: 800, diary: "京都の古い街並みをのんびりお散歩したよ。\nお寺がたくさんあって静かで落ち着く場所だなぁ。\n抹茶のスイーツがとっても美味しかった！", img: "image_0.png" },
-            { name: "大阪", distance: 100, item: "たこ焼き", price: 1500, diary: "ついに大阪にやってきたで！\n街の看板がどれもド派手でびっくりしちゃった。\n本場のたこ焼きは外がカリカリ、中がトロトロで最高！", img: "image_0.png" }
+            { name: "東京", distance: 100, item: "東京バナナ", price: 50, diary: "今日から日本縦断の旅が始まったぞ！\nまずは大都会東京を出発。\nこれからどんな出会いがあるかワクワクするなぁ。\nたくさん歩くぞー！", img: "tokyo_bg.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "静岡", distance: 150, item: "うなぎパイ", price: 150, diary: "静岡に到着！\n右を見ても左を見てもお茶畑が広がっていて、空気がとっても美味しいや。\n富士山がすっごく綺麗に見えたんだ！", img: "image_0.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
+            { name: "名古屋", distance: 200, item: "天むす", price: 400, diary: "名古屋といえば金のシャチホコ！\nお城がとっても立派だったなぁ。\n夜はエビフライと手羽先を食べてお腹いっぱい。\n大満足の一日！", img: "image_0.png", effectDesc: "タップ力 +2", tapBonus: 2, mpsBonus: 0 },
+            { name: "京都", distance: 180, item: "生八ツ橋", price: 800, diary: "京都の古い街並みをのんびりお散歩したよ。\nお寺がたくさんあって静かで落ち着く場所だなぁ。\n抹茶のスイーツがとっても美味しかった！", img: "image_0.png", effectDesc: "自動増加 +5もち/秒", tapBonus: 0, mpsBonus: 5 },
+            { name: "大阪", distance: 100, item: "たこ焼き", price: 1500, diary: "ついに大阪にやってきたで！\n街の看板がどれもド派手でびっくりしちゃった。\n本場のたこ焼きは外がカリカリ、中がトロトロで最高！", img: "image_0.png", effectDesc: "タップ力 +5", tapBonus: 5, mpsBonus: 0 }
         ];
 
         // --- セーブデータ用変数 ---
-        let score = 0; // もちの数
-        let currentStageIndex = 0;     // ストーリー上の現在攻略ステージ
-        let selectedStageIndex = 0;    // プレイヤーが今滞在しているステージ
-        let currentStageProgress = 0;   // 現在ステージの進行状況
-        let purchasedItems = {};       // 購入済みアイテム { ステージID: true }
-
-        // --- オーディオ制限解除 (元コードの仕組み) ---
-        let audioUnlocked = false;
-        function unlockAudio() {
-            if (audioUnlocked) return;
-            const buffer = new AudioContext().createBuffer(1, 1, 22050);
-            audioUnlocked = true;
-            document.body.removeEventListener('touchstart', unlockAudio);
-            document.body.removeEventListener('click', unlockAudio);
-        }
-        document.body.addEventListener('touchstart', unlockAudio, { passive: true });
-        document.body.addEventListener('click', unlockAudio, { passive: true });
+        let score = 0; 
+        let currentStageIndex = 0;     
+        let selectedStageIndex = 0;    
+        let currentStageProgress = 0;   
+        let purchasedItems = {};       
 
         window.onload = function() {
             updateDisplay();
             buildLocationSelector();
         };
+
+        // 特殊効果を計算する関数
+        function getTapPower() {
+            let power = 1; // 基本タップ力
+            stages.forEach((stage, idx) => {
+                if (purchasedItems[idx]) power += stage.tapBonus;
+            });
+            return power;
+        }
+
+        function getMps() {
+            let mps = 0; // 基本自動増加
+            stages.forEach((stage, idx) => {
+                if (purchasedItems[idx]) mps += stage.mpsBonus;
+            });
+            return mps;
+        }
 
         // --- 1. 重複タップ音再生機能 ---
         function playTapSound() {
@@ -249,16 +260,24 @@
             audio.play().catch(e => console.log("オーディオ再生制限中"));
         }
 
-        // --- 2. パーティクル（エフェクト）生成機能 ---
+        // --- 2. パーティクル（エフェクト）ゲーム画面内生成 ---
         function createParticle(x, y, text) {
+            const gameScreen = document.getElementById('game-screen');
+            const rect = gameScreen.getBoundingClientRect();
+
+            // クライアント座標を、中央寄せされたgame-screen内の相対座標に変換
+            const relativeX = x - rect.left;
+            const relativeY = y - rect.top;
+
             const p = document.createElement('div');
             p.className = 'particle';
             p.innerText = text;
-            p.style.left = x + 'px';
-            p.style.top = y + 'px';
-            document.body.appendChild(p);
+            p.style.left = relativeX + 'px';
+            p.style.top = relativeY + 'px';
+            
+            // bodyではなく、確実に最前面にくるgame-screenに突っ込む
+            gameScreen.appendChild(p);
 
-            // アニメーションが終わったら自動消去
             p.addEventListener('animationend', () => { p.remove(); });
         }
 
@@ -266,15 +285,16 @@
         document.getElementById('mochisuke-btn').addEventListener('click', (e) => {
             playTapSound();
             
-            // タップした位置に「+1 もち」エフェクトを表示！
-            createParticle(e.clientX, e.clientY, "+1 もち");
+            const currentTapPower = getTapPower();
+            // 現在のタップ力に応じた数値をパーティクルに表示！
+            createParticle(e.clientX, e.clientY, `+${currentTapPower} もち`);
 
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
-                score += 1;
-                currentStageProgress += 1;
+                score += currentTapPower;
+                currentStageProgress += currentTapPower;
                 checkStageProgress();
             } else {
-                score += 1; // 過去エリア滞在時はもちだけ増える
+                score += currentTapPower; 
             }
 
             updateDisplay();
@@ -295,19 +315,20 @@
             }
         }
 
-        // 画面表示更新（★ご要望の単位「もち」「もちkcal」を適用）
+        // 画面表示更新
         function updateDisplay() {
-            document.getElementById('score-text').innerText = score.toLocaleString() + " もち";
+            document.getElementById('score-text').innerText = Math.floor(score).toLocaleString() + " もち";
             document.getElementById('current-location-text').innerText = stages[selectedStageIndex].name;
+            document.getElementById('mps-display').innerText = `自動増加: ${getMps()} もち/秒`;
 
             const buyBtn = document.getElementById('buy-item-btn');
             const activeStage = stages[selectedStageIndex];
 
             if (purchasedItems[selectedStageIndex]) {
-                buyBtn.innerText = `購入済: ${activeStage.item}`;
+                buyBtn.innerText = `購入済: ${activeStage.item} (${activeStage.effectDesc})`;
                 buyBtn.disabled = true;
             } else {
-                buyBtn.innerText = `${activeStage.item}を買う (${activeStage.price}もち)`;
+                buyBtn.innerText = `${activeStage.item}を買う (${activeStage.price}もち)\n【効果: ${activeStage.effectDesc}】`;
                 buyBtn.disabled = score < activeStage.price;
             }
 
@@ -347,16 +368,12 @@
             if (score >= activeStage.price && !purchasedItems[selectedStageIndex]) {
                 score -= activeStage.price;
                 purchasedItems[selectedStageIndex] = true;
-                alert(`「${activeStage.item}」を購入しました！絵日記に記録されます。`);
+                alert(`「${activeStage.item}」を購入しました！\n特殊効果【${activeStage.effectDesc}】が発動しました！`);
                 updateDisplay();
             }
         }
 
-        // --- 3. 自動増加＆ランキング機能 (元コードから完全復元) ---
-        function getMps() {
-            return 0; // 元コードのMPS算出ロジック。必要に応じてここに式を戻せます
-        }
-
+        // ランキング機能
         function openRanking() {
             let listContainer = document.getElementById('ranking-list');
             let dummyRanks = [
@@ -379,20 +396,25 @@
 
         function closeRanking() { document.getElementById('ranking-modal').style.display = "none"; }
 
+        // 自動増加（MPS）用タイマー（1秒に1回動く代わりに、0.1秒ごとに1/10ずつ足して滑らかにしています）
         setInterval(() => {
             let mps = getMps();
             if (mps > 0) {
-                score += mps;
-                checkStageProgress();
+                let gain = mps / 10;
+                score += gain;
+                if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
+                    currentStageProgress += gain;
+                    checkStageProgress();
+                }
                 updateDisplay();
             }
-        }, 1000);
+        }, 100);
 
-        // --- 4. 📖 新・両開き絵日記システム ---
+        // --- 📖 両開き絵日記システム ---
         let diaryPageIndex = 0;
 
         function openDiary() {
-            diaryPageIndex = selectedStageIndex; // いま滞在している場所の日記を自動で開く
+            diaryPageIndex = selectedStageIndex; 
             renderDiaryPage();
             document.getElementById('diary-modal').style.display = "flex";
         }
@@ -403,22 +425,18 @@
             const stage = stages[diaryPageIndex];
             const book = document.getElementById('diary-book');
             
-            // めくりアニメーションのリセットと実行
             book.classList.remove('page-animate');
             void book.offsetWidth; 
             book.classList.add('page-animate');
 
-            // 📸 左ページ：絵（写真）とご当地アイテム状態の表示
-            const hasItemText = purchasedItems[diaryPageIndex] ? `🛍️ ご当地アイテム: ${stage.item}` : "🛍️ ご当地アイテム: 未購入";
-            document.getElementById('diary-img-element').src = stage.img; // 各都道府県の画像をセット
+            const hasItemText = purchasedItems[diaryPageIndex] ? `🛍️ ご当地アイテム: ${stage.item}\n(効果: ${stage.effectDesc} 有効)` : "🛍️ ご当地アイテム: 未購入";
+            document.getElementById('diary-img-element').src = stage.img; 
             document.getElementById('diary-img-caption').innerText = `【${stage.name}の思い出】\n${hasItemText}`;
 
-            // ✍️ 右ページ：日記の文章
             document.getElementById('diary-title-element').innerText = `${stage.name}編`;
             document.getElementById('diary-text-element').innerText = stage.diary;
             document.getElementById('diary-footer-element').innerText = `ページ: ${diaryPageIndex + 1} / ${currentStageIndex + 1}`;
 
-            // ボタン制御（プレイヤーが到達したところまでしか進めない仕様）
             document.getElementById('prev-page-btn').disabled = (diaryPageIndex === 0);
             document.getElementById('next-page-btn').disabled = (diaryPageIndex === currentStageIndex || diaryPageIndex === stages.length - 1);
         }
