@@ -31,7 +31,7 @@
             background: url('tokyo_bg.png') center/cover no-repeat;
         }
 
-        /* 🎬 エリア移動用暗転オーバーレイ */
+        /* エリア移動用暗転オーバーレイ */
         #fade-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: #111; opacity: 0; pointer-events: none; z-index: 9999;
@@ -75,9 +75,9 @@
             transition: transform 0.05s ease;
             z-index: 5;
         }
-        #mochisuke-btn:active { transform: scale(0.93); } /* わずかに縮む弾力感 */
+        #mochisuke-btn:active { transform: scale(0.93); }
 
-        /* 🔥 コンボ数表示用のUI */
+        /* コンボ数表示用のUI */
         #combo-display {
             position: absolute; top: 20px; font-size: 1.5rem; font-weight: 900;
             color: #ff3d00; text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff;
@@ -86,21 +86,14 @@
         }
         .combo-bounce { opacity: 1 !important; transform: scale(1.2) !important; }
 
-        /* ✨ パーティクル修正：ランダムな方向（上向きに散らばる） */
+        /* ✨ パーティクル修正：重力落下物理演算用（アニメーション削除、画像そのまま、透明度変化なし） */
         .particle {
             position: absolute; 
             width: 55px; height: 55px;
             background: url('mochi_particle.png') center/contain no-repeat;
-            display: flex; justify-content: center; align-items: center;
-            color: #e65100; font-size: 16px; font-weight: bold;
             pointer-events: none; 
-            animation: floatUpRandom 0.6s cubic-bezier(0.25, 1, 0.5, 1) forwards; 
             z-index: 999;
-            text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff;
-        }
-        @keyframes floatUpRandom {
-            0% { transform: translate(-50%, -50%) translate(0, 0) scale(0.7); opacity: 1; }
-            100% { transform: translate(-50%, -50%) translate(var(--rand-x), var(--rand-y)) scale(1.1); opacity: 0; }
+            transform: translate(-50%, -50%);
         }
 
         /* フィーバー用：画面に出現する「金もち」ボタン */
@@ -296,7 +289,7 @@
         let feverTimeLeft = 0;
         let feverInterval = null;
 
-        // --- 🔥 コンボシステム用変数 ---
+        // --- コンボシステム用変数 ---
         let comboCount = 0;
         let comboTimer = null;
 
@@ -304,6 +297,7 @@
             updateDisplay();
             buildLocationSelector();
             startFeverSpawningLoop();
+            startCatSpawningLoop(); // 🔥新要素：ラッキーキャットのループ開始
         };
 
         // 特殊効果＆コンボボーナスを計算する関数
@@ -313,7 +307,6 @@
                 if (purchasedItems[idx]) power += stage.tapBonus;
             });
             
-            // 💡【ロジック】10コンボ毎にタップ力+1のボーナス加算
             if (comboCount >= 10) {
                 power += Math.floor(comboCount / 10);
             }
@@ -330,39 +323,33 @@
             return mps;
         }
 
-        // 1. 重複タップ音再生機能
+        // 重複タップ音再生機能
         function playTapSound() {
             const audio = new Audio('tap.mp3');
             audio.volume = 0.6;
             audio.play().catch(e => console.log("オーディオ再生制限中"));
         }
 
-        // 🎬 エリア移動演出（フェードアウト・イン＆移動音）
+        // エリア移動演出（フェードアウト・イン＆移動音）
         function triggerAreaTransition(newBgUrl, callback) {
             const overlay = document.getElementById('fade-overlay');
-            
-            // 移動音の再生
             const moveAudio = new Audio('move.mp3');
             moveAudio.volume = 0.6;
             moveAudio.play().catch(e => console.log("移動音再生制限中"));
 
-            // 画面を黒く暗転
             overlay.classList.add('fade-black');
 
             setTimeout(() => {
-                // 暗転裏で背景画像とステージデータを書き換え
                 callback();
                 document.getElementById('game-screen').style.background = `url('${newBgUrl}') center/cover no-repeat`;
-                
-                // 画面を再び明るくする
                 setTimeout(() => {
                     overlay.classList.remove('fade-black');
                 }, 150);
-            }, 300); // 0.3秒かけてフェードアウト
+            }, 300);
         }
 
-        // 2. パーティクル生成（上方向・ランダム散らばり）
-        function createParticle(x, y, text) {
+        // 🛠【物理演算パーティクル】画像そのまま、透明度維持、画面一番下まで落下
+        function createParticle(x, y) {
             const gameScreen = document.getElementById('game-screen');
             const rect = gameScreen.getBoundingClientRect();
 
@@ -371,32 +358,47 @@
 
             const p = document.createElement('div');
             p.className = 'particle';
-            p.innerText = text;
             p.style.left = relativeX + 'px';
             p.style.top = relativeY + 'px';
             
-            // 💡【物理演出】左右に-60px〜60px、上方向に-100px〜-170pxのランダムな軌道を注入
-            const randX = (Math.random() - 0.5) * 120 + 'px';
-            const randY = -(Math.random() * 70 + 100) + 'px';
-            p.style.setProperty('--rand-x', randX);
-            p.style.setProperty('--rand-y', randY);
-
             gameScreen.appendChild(p);
-            p.addEventListener('animationend', () => { p.remove(); });
+
+            // 物理挙動の初期パラメータ
+            let posX = relativeX;
+            let posY = relativeY;
+            let vx = (Math.random() - 0.5) * 12; // 左右への散らばり速度
+            let vy = -(Math.random() * 8 + 10);   // 上方向への飛び出し初速
+            const gravity = 0.6;                 // 重力の強さ
+
+            function updatePhysics() {
+                vx *= 0.99; // わずかな空気抵抗
+                vy += gravity; // 下方向への重力加算
+                posX += vx;
+                posY += vy;
+
+                p.style.left = posX + 'px';
+                p.style.top = posY + 'px';
+
+                // ゲーム画面の一番下（rect.height）を越えたら完全に消滅
+                if (posY > rect.height + 60) {
+                    p.remove();
+                } else {
+                    requestAnimationFrame(updatePhysics);
+                }
+            }
+            requestAnimationFrame(updatePhysics);
         }
 
-        // 🔥 コンボカウントを回す関数
+        // コンボカウントを回す関数
         function handleCombo() {
             comboCount++;
             const comboEl = document.getElementById('combo-display');
             comboEl.innerText = `🔥 ${comboCount} Combo!`;
             
-            // 文字をピコッと跳ねさせる演出
             comboEl.classList.remove('combo-bounce');
             void comboEl.offsetWidth;
             comboEl.classList.add('combo-bounce');
 
-            // 1.2秒タップが途切れたらコンボ終了
             clearTimeout(comboTimer);
             comboTimer = setTimeout(() => {
                 comboCount = 0;
@@ -404,14 +406,16 @@
             }, 1200);
         }
 
-        // もちすけクリック処理
-        document.getElementById('mochisuke-btn').addEventListener('click', (e) => {
+        // 🔥【マルチタッチ対応】もちすけのタップ検知をpointerdownに変更！
+        document.getElementById('mochisuke-btn').addEventListener('pointerdown', (e) => {
+            e.preventDefault(); // スマホのダブルタップズームなどを防止
             playTapSound();
-            handleCombo(); // コンボをカウントアップ
+            handleCombo();
             
-            const currentTapPower = getTapPower();
-            createParticle(e.clientX, e.clientY, `+${currentTapPower}`);
+            // タップされた正確な座標(clientX, clientY)を渡す
+            createParticle(e.clientX, e.clientY);
 
+            const currentTapPower = getTapPower();
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
                 score += currentTapPower;
                 currentStageProgress += currentTapPower;
@@ -422,6 +426,63 @@
 
             updateDisplay();
         });
+
+        // 🔥新要素：ラッキーキャット(🐱)のランダム襲来システム
+        function startCatSpawningLoop() {
+            setInterval(() => {
+                if (document.getElementById('lucky-cat')) return; // 既に画面にいるなら出さない
+                if (Math.random() < 0.4) { // 40%の確率で出現
+                    spawnLuckyCat();
+                }
+            }, 20000); // 20秒ごとに判定
+        }
+
+        function spawnLuckyCat() {
+            const gameScreen = document.getElementById('game-screen');
+            const cat = document.createElement('div');
+            cat.id = 'lucky-cat';
+            // 猫の絵文字と文字で表現（画像アセット不要）
+            cat.innerHTML = '🐱<br><span style="font-size:11px; background:rgba(255,255,255,0.85); color:#d32f2f; border-radius:4px; padding:1px 4px; font-weight:bold; border:1px solid #d32f2f;">福!!</span>';
+            
+            cat.style.position = 'absolute';
+            cat.style.fontSize = '42px';
+            cat.style.cursor = 'pointer';
+            cat.style.zIndex = '95';
+            cat.style.textAlign = 'center';
+            cat.style.transition = 'transform 3.5s linear'; // 3.5秒で画面を駆け抜ける
+            
+            const rect = gameScreen.getBoundingClientRect();
+            // 上下中央付近のランダムな高さに登場
+            const randomY = Math.random() * (rect.height - 320) + 160;
+            
+            cat.style.left = '-70px';
+            cat.style.top = randomY + 'px';
+            gameScreen.appendChild(cat);
+            
+            // 走り出すアニメーション
+            setTimeout(() => {
+                cat.style.transform = `translateX(${rect.width + 140}px) rotate(360deg)`;
+            }, 50);
+            
+            // 猫がタップされた時のボーナス処理
+            cat.addEventListener('pointerdown', (e) => {
+                e.stopPropagation(); // もちすけへのタップ貫通防止
+                
+                // ボーナス計算：最低100もち、または現在の自動増加(MPS)の60秒分！
+                const bonus = Math.max(100, Math.floor(getMps() * 60));
+                score += bonus;
+                
+                createParticle(e.clientX, e.clientY);
+                alert(`🐱 福を呼ぶラッキーキャットを捕まえた！\n【福もちボーナス +${bonus.toLocaleString()} もち】獲得！`);
+                cat.remove();
+                updateDisplay();
+            });
+            
+            // タップされずに走り抜けたら自動消滅
+            setTimeout(() => {
+                if (cat.parentNode) cat.remove();
+            }, 3500);
+        }
 
         // ゴールドもちのランダム出現システム
         function startFeverSpawningLoop() {
@@ -445,7 +506,7 @@
             goldMochi.style.left = x + 'px';
             goldMochi.style.top = y + 'px';
 
-            goldMochi.addEventListener('click', (e) => {
+            goldMochi.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
                 goldMochi.remove();
                 triggerFeverTime();
@@ -486,7 +547,6 @@
                     const nextIdx = currentStageIndex;
                     currentStageProgress = 0;
                     
-                    // 🎬 次のエリアへ自動進出するときに暗転演出を挟む
                     triggerAreaTransition(stages[nextIdx].img, () => {
                         selectedStageIndex = nextIdx;
                         alert(`新エリア「${stages[nextIdx].name}」に到達しました！`);
@@ -550,7 +610,6 @@
         // 手動エリア切り替え
         function changeLocation(index) {
             const idx = parseInt(index);
-            // 🎬 手動で過去のエリアに戻る/進むときも暗転フェードをかける
             triggerAreaTransition(stages[idx].img, () => {
                 selectedStageIndex = idx;
                 updateDisplay();
@@ -588,7 +647,6 @@
             document.getElementById('ranking-modal').style.display = "flex";
         }
 
-        // ランキング閉じる
         function closeRanking() { document.getElementById('ranking-modal').style.display = "none"; }
 
         // 自動増加（MPS）用タイマー
@@ -643,7 +701,6 @@
             }
         }
 
-        // 日記戻る
         function prevPage() {
             if (diaryPageIndex > 0) {
                 diaryPageIndex--;
