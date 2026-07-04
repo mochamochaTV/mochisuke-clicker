@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BTBF44E0WD"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -155,12 +154,12 @@
         }
         .combo-bounce { opacity: 1 !important; transform: scale(1.2) !important; }
 
-        /* 💥 劇的進化：物理演算で完全な放物線を描くクッキリパーティクル */
+        /* 💥 物理演算パーティクル用スタイル */
         .particle {
             position: absolute; width: 42px; height: 42px;
             background: url('mochi_particle.png') center/contain no-repeat;
             pointer-events: none; z-index: 998;
-            will-change: transform; /* スマホでの描画をヌルヌルにするお守り */
+            will-change: transform;
         }
 
         /* 金もちボタン */
@@ -270,21 +269,18 @@
     <div id="game-screen">
         <div id="fade-overlay"></div>
 
-        <!-- ステータス表示 -->
         <div id="status-bar">
             <div class="text-large">現在の場所: <span id="current-location-text">鹿児島</span></div>
             <div id="score-text" class="text-large">0 もち</div>
             <div id="mps-display">自動増加: 0 もち/秒</div>
             <div id="distance-text" style="font-weight: bold; color: #00796b; margin-top: 4px;">次のエリアまで: 500 もちkcal</div>
             
-            <!-- もちメーター -->
             <div id="progress-container">
                 <div id="progress-bar"></div>
                 <img id="progress-icon" src="mochi_particle.png" alt="もちすけ現在地">
             </div>
         </div>
 
-        <!-- もちすけエリア -->
         <div id="mochisuke-area">
             <div id="combo-display">🔥 0 Combo!</div>
             <div id="mochisuke-wrapper">
@@ -293,7 +289,6 @@
             </div>
         </div>
 
-        <!-- 操作パネル -->
         <div id="control-panel">
             <div class="btn-row">
                 <select id="location-selector" onchange="changeLocation(this.value)">
@@ -308,7 +303,6 @@
         </div>
     </div>
 
-    <!-- ランキングモーダル -->
     <div id="ranking-modal" class="modal">
         <div class="modal-content">
             <h2>🏆 もちもちランキング</h2>
@@ -317,7 +311,6 @@
         </div>
     </div>
 
-    <!-- 絵日記モーダル -->
     <div id="diary-modal" class="modal">
         <div class="diary-paper" id="diary-paper-element">
             <div class="diary-img-area">
@@ -457,7 +450,7 @@
             setTimeout(() => div.remove(), 600);
         }
 
-        // 🎯 物理演算方式（requestAnimationFrame）に完全刷新！
+        // 🎯 物理演算方式（超クリーン・リファクタリング版）
         function createParticle(x, y) {
             if (document.querySelectorAll('.particle').length > 60) return;
 
@@ -466,40 +459,34 @@
             const p = document.createElement('div');
             p.className = 'particle';
             
-            // タップされた瞬間の絶対座標をセット
             p.style.left = (x - rect.left) + 'px';
             p.style.top = (y - rect.top) + 'px';
 
-            // 🚀 初速の設定（斜め横への勢い、上への跳ね上がり）
-            let vx = (Math.random() - 0.5) * 14;  // 横方向のランダムな広がり
-            let vy = -(Math.random() * 6 + 11);   // 上方向への力強い飛び出し
-
-            // 🌍 重力加速度（この数値が絶妙な「ふわっと感」を作ります）
+            let vx = (Math.random() - 0.5) * 14;
+            let vy = -(Math.random() * 6 + 11);
             const gravity = 0.35; 
 
-            // 累積移動量
             let curX = 0;
             let curY = 0;
 
             gameScreen.appendChild(p);
 
-            // 毎フレーム呼び出される物理シミュレーションループ
-            function updatePhys() {
+            // 🛠️ 構文チェッカーや圧縮バグを完全回避するアロー関数型ループ
+            const updatePhys = () => {
                 curX += vx;
                 curY += vy;
-                vy += gravity; // 毎フレーム、重力によって下向きに加速
+                vy += gravity;
 
-                // 中心点を維持しつつ、物理計算した移動量をリアルタイム反映
-                p.style.transform = `translate(calc(-50% + ${curX}px), calc(-50% + ${curY}px))`;
+                // 🛠️ 圧縮ツールでバグりやすい calc() を完全撤廃
+                p.style.transform = `translate(-50%, -50%) translate(${curX}px, ${curY}px)`;
 
-                // 画面外（底辺）を突き抜けたら要素を削除してメモリ解放
                 if (curY > rect.height) {
                     p.remove();
                 } else {
                     requestAnimationFrame(updatePhys);
                 }
-            }
-            // ループ開始
+            };
+            
             requestAnimationFrame(updatePhys);
         }
 
