@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BTBF44E0WD"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -48,7 +49,7 @@
         .text-large { font-size: 1.2rem; font-weight: bold; color: #333; margin: 2px 0; }
         #mps-display { font-size: 0.9rem; color: #666; font-weight: bold; }
 
-        /* 🗺️ 新設：もちメーター（進行度プログレスバー）のスタイル */
+        /* 🗺️ もちメーター（進行度プログレスバー） */
         #progress-container {
             width: 90%; height: 10px; background: #e0d7cc; border-radius: 5px;
             position: relative; margin: 12px auto 4px auto; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
@@ -154,18 +155,12 @@
         }
         .combo-bounce { opacity: 1 !important; transform: scale(1.2) !important; }
 
-        /* 💥 復元：押し心地を最優先した重力落下型パーティクル */
+        /* 💥 劇的進化：物理演算で完全な放物線を描くクッキリパーティクル */
         .particle {
             position: absolute; width: 42px; height: 42px;
             background: url('mochi_particle.png') center/contain no-repeat;
             pointer-events: none; z-index: 998;
-            /* 小さくならず、透けずに、上にポンと弾けてから下へ真っ逆さまに自由落下する */
-            animation: gravityFall 1.0s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        }
-        @keyframes gravityFall {
-            0% { transform: translate(-50%, -50%) translate(0, 0); }
-            15% { transform: translate(-50%, -50%) translate(calc(var(--tx) * 0.2), var(--ty)); }
-            100% { transform: translate(-50%, -50%) translate(var(--tx), 600px); }
+            will-change: transform; /* スマホでの描画をヌルヌルにするお守り */
         }
 
         /* 金もちボタン */
@@ -275,18 +270,21 @@
     <div id="game-screen">
         <div id="fade-overlay"></div>
 
+        <!-- ステータス表示 -->
         <div id="status-bar">
             <div class="text-large">現在の場所: <span id="current-location-text">鹿児島</span></div>
             <div id="score-text" class="text-large">0 もち</div>
             <div id="mps-display">自動増加: 0 もち/秒</div>
             <div id="distance-text" style="font-weight: bold; color: #00796b; margin-top: 4px;">次のエリアまで: 500 もちkcal</div>
             
+            <!-- もちメーター -->
             <div id="progress-container">
                 <div id="progress-bar"></div>
                 <img id="progress-icon" src="mochi_particle.png" alt="もちすけ現在地">
             </div>
         </div>
 
+        <!-- もちすけエリア -->
         <div id="mochisuke-area">
             <div id="combo-display">🔥 0 Combo!</div>
             <div id="mochisuke-wrapper">
@@ -295,6 +293,7 @@
             </div>
         </div>
 
+        <!-- 操作パネル -->
         <div id="control-panel">
             <div class="btn-row">
                 <select id="location-selector" onchange="changeLocation(this.value)">
@@ -309,6 +308,7 @@
         </div>
     </div>
 
+    <!-- ランキングモーダル -->
     <div id="ranking-modal" class="modal">
         <div class="modal-content">
             <h2>🏆 もちもちランキング</h2>
@@ -317,6 +317,7 @@
         </div>
     </div>
 
+    <!-- 絵日記モーダル -->
     <div id="diary-modal" class="modal">
         <div class="diary-paper" id="diary-paper-element">
             <div class="diary-img-area">
@@ -456,27 +457,50 @@
             setTimeout(() => div.remove(), 600);
         }
 
-        // 💥 復元：くっきり残って下にしっかり落ちる軽量パーティクル生成
+        // 🎯 物理演算方式（requestAnimationFrame）に完全刷新！
         function createParticle(x, y) {
-            // 連打対策：画面上にパーティクルが40個以上溜まったら古いものを考慮して一瞬制限（スマホ保護用）
-            if (document.querySelectorAll('.particle').length > 40) return;
+            if (document.querySelectorAll('.particle').length > 60) return;
 
             const gameScreen = document.getElementById('game-screen');
             const rect = gameScreen.getBoundingClientRect();
             const p = document.createElement('div');
             p.className = 'particle';
+            
+            // タップされた瞬間の絶対座標をセット
             p.style.left = (x - rect.left) + 'px';
             p.style.top = (y - rect.top) + 'px';
 
-            // 弾け飛ぶ軌道の乱数を計算（--tyは上に跳ねるためのマイナス値）
-            const targetX = (Math.random() - 0.5) * 220 + 'px';
-            const targetY = -(Math.random() * 60 + 50) + 'px';
-            p.style.setProperty('--tx', targetX);
-            p.style.setProperty('--ty', targetY);
+            // 🚀 初速の設定（斜め横への勢い、上への跳ね上がり）
+            let vx = (Math.random() - 0.5) * 14;  // 横方向のランダムな広がり
+            let vy = -(Math.random() * 6 + 11);   // 上方向への力強い飛び出し
+
+            // 🌍 重力加速度（この数値が絶妙な「ふわっと感」を作ります）
+            const gravity = 0.35; 
+
+            // 累積移動量
+            let curX = 0;
+            let curY = 0;
 
             gameScreen.appendChild(p);
-            // 画面下に完全に落ちきる1.0秒後に消去
-            setTimeout(() => p.remove(), 1000);
+
+            // 毎フレーム呼び出される物理シミュレーションループ
+            function updatePhys() {
+                curX += vx;
+                curY += vy;
+                vy += gravity; // 毎フレーム、重力によって下向きに加速
+
+                // 中心点を維持しつつ、物理計算した移動量をリアルタイム反映
+                p.style.transform = `translate(calc(-50% + ${curX}px), calc(-50% + ${curY}px))`;
+
+                // 画面外（底辺）を突き抜けたら要素を削除してメモリ解放
+                if (curY > rect.height) {
+                    p.remove();
+                } else {
+                    requestAnimationFrame(updatePhys);
+                }
+            }
+            // ループ開始
+            requestAnimationFrame(updatePhys);
         }
 
         function handleCombo() {
@@ -673,7 +697,6 @@
                 const remaining = Math.ceil(stages[currentStageIndex].distance - currentStageProgress);
                 distText.innerText = `次のエリアまで: ${remaining} もちkcal`;
                 
-                // 🗺️ もちメーターのパーセンテージ計算と同期
                 let pct = (currentStageProgress / stages[currentStageIndex].distance) * 100;
                 if (pct > 100) pct = 100;
                 if (pct < 0) pct = 0;
