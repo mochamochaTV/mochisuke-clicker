@@ -189,15 +189,15 @@
         #mochisuke-btn {
             width: 220px; height: auto; max-height: 250px;
             object-fit: contain; cursor: pointer; z-index: 5;
-            transition: filter 0.3s ease, transform 0.08s ease-out;
-            transform-origin: center center;
+            transition: filter 0.3s ease, transform 0.05s ease-out;
+            transform-origin: center bottom; /* 下部を基準に潰れるように変更して、よりお餅らしさをアップ */
         }
 
         .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
         @keyframes breathe {
-            0% { transform: scale(1, 1) rotate(0deg); }
-            50% { transform: scale(1.03, 0.97) rotate(0deg); }
-            100% { transform: scale(1, 1) rotate(0deg); }
+            0% { transform: scale(1, 1); }
+            50% { transform: scale(1.03, 0.97); }
+            100% { transform: scale(1, 1); }
         }
 
         /* 吹き出しデザイン */
@@ -249,7 +249,7 @@
         }
         .combo-bounce { opacity: 1 !important; transform: scale(1.2) !important; }
 
-        /* 【修正】金もちボタン（大きさを元の65pxに戻し、出現時のポップ演出を追加） */
+        /* 金もちボタン（ランダム位置にポップアップ出現） */
         #fever-pop {
             position: absolute; width: 65px; height: 65px;
             background: url('mochi_particle.png') center/contain no-repeat;
@@ -749,6 +749,7 @@
 
         const mochiBtnElement = document.getElementById('mochisuke-btn');
 
+        /* 【復元・強化】タップした瞬間に「もちっ」と潰れる元通りの操作感へ変更 */
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
@@ -758,7 +759,9 @@
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
             
+            // 待機アニメを止め、横にぷにっと広がり、縦に潰れる変形を適用
             mochiBtnElement.classList.remove('breathe-idle');
+            mochiBtnElement.style.transform = 'scale(1.15, 0.85)';
             isDraggingMochi = true;
 
             createRippleEffect(e.clientX, e.clientY);
@@ -776,38 +779,21 @@
             saveGame();
         });
 
+        // 【廃止】引っ張って伸ばす・回転させる複雑なドラッグ処理はすべてカット
         window.addEventListener('pointermove', (e) => {
-            if (!isDraggingMochi) return;
-
-            const rect = mochiBtnElement.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-
-            const dx = e.clientX - centerX;
-            const dy = e.clientY - centerY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            const maxDist = 180;
-            const clampedDist = Math.min(dist, maxDist);
-
-            const scaleY = 1 + (clampedDist / 110); 
-            const scaleX = Math.max(0.55, 1 / Math.sqrt(scaleY));
-
-            const angle = Math.atan2(dy, dx) + Math.PI / 2;
-            const angleDeg = angle * (180 / Math.PI);
-
-            mochiBtnElement.style.transform = `rotate(${angleDeg}deg) scale(${scaleX}, ${scaleY})`;
+            // 何もしない
         });
 
+        /* 【復元】指が離れたらポンッと元の形に戻す */
         const endMochiDrag = () => {
             if (!isDraggingMochi) return;
             isDraggingMochi = false;
-            mochiBtnElement.style.transform = 'rotate(0deg) scale(1, 1)';
+            mochiBtnElement.style.transform = 'scale(1, 1)';
             setTimeout(() => {
                 if (!isDraggingMochi) {
-                    mochiBtnElement.classList.add('breathe-idle');
+                    mochiBtnElement.classList.add('breathe-idle'); // 呼吸アニメーション再開
                 }
-            }, 100);
+            }, 80);
         };
 
         window.addEventListener('pointerup', endMochiDrag);
@@ -1023,7 +1009,6 @@
             }, 20000);
         }
 
-        /* 【改善】プレゼント（飛んでくる風船）を大きく（95px）、ゆっくり移動（11秒）に修正 */
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             const present = document.createElement('div');
@@ -1059,7 +1044,6 @@
             }, 15000);
         }
 
-        /* 【修正】金もち（ボーナス時間用）の出現の仕方を元通り（ランダム位置ポップアップ）に修正 */
         function spawnGoldMochi() {
             const gameScreen = document.getElementById('game-screen');
             const goldMochi = document.createElement('div');
@@ -1067,7 +1051,6 @@
             goldMochi.innerHTML = '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:12px; font-weight:bold; color:#3e2723; white-space:nowrap; pointer-events:none;">✨金✨</div>';
 
             const rect = gameScreen.getBoundingClientRect();
-            // 画面内のランダムな位置に直接配置
             const x = Math.random() * (rect.width - 80);
             const y = Math.random() * (rect.height - 350) + 160;
             
@@ -1081,7 +1064,6 @@
                 triggerFeverTime();
             });
             
-            // 6秒間タップされなければ消滅
             setTimeout(() => { if (goldMochi.parentNode) goldMochi.remove(); }, 6000);
         }
 
