@@ -10,17 +10,17 @@
     </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>もちすけ日本縦断クリッカー -九州編-</title>
     <style>
-        /* 全体スタイル */
+        /* 全体スタイル - touch-action: none でズームやスクロールを完全禁止 */
         body {
             margin: 0; padding: 0;
             font-family: 'Helvetica Neue', Arial, sans-serif;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh; overflow: hidden; user-select: none; -webkit-user-select: none;
             background-color: #f5f5f5;
-            touch-action: manipulation;
+            touch-action: none;
         }
 
         #game-screen {
@@ -28,6 +28,17 @@
             position: relative; display: flex; flex-direction: column; align-items: center;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             background: url('bg_images/kagoshima.png') center/cover no-repeat;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        /* 💥 高速描画用キャンバス（画面全体を覆うがタッチは透過） */
+        #particle-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 998;
         }
 
         #fade-overlay {
@@ -48,7 +59,7 @@
         .text-large { font-size: 1.2rem; font-weight: bold; color: #333; margin: 2px 0; }
         #mps-display { font-size: 0.9rem; color: #666; font-weight: bold; }
 
-        /* 🗺️ もちメーター（進行度プログレスバー） */
+        /* 🗺️ もちメーター */
         #progress-container {
             width: 90%; height: 10px; background: #e0d7cc; border-radius: 5px;
             position: relative; margin: 12px auto 4px auto; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
@@ -88,7 +99,6 @@
             filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));
         }
 
-        /* もちすけの呼吸アニメーション */
         .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
         @keyframes breathe {
             0% { transform: scale(1, 1); }
@@ -96,7 +106,6 @@
             100% { transform: scale(1, 1); }
         }
 
-        /* タップ時のへこみ */
         .hekomi-anim { animation: hekomi 0.1s ease-out forwards; }
         @keyframes hekomi {
             0% { transform: scale(1); filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1); }
@@ -104,7 +113,6 @@
             100% { transform: scale(1); filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1); }
         }
 
-        /* 放置時の吹き出し */
         #mochi-balloon {
             position: absolute; top: -50px; background: white;
             padding: 8px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: bold;
@@ -122,7 +130,7 @@
         }
         .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
 
-        /* 波紋（リップル）エフェクト */
+        /* 波紋エフェクト */
         .ripple {
             position: absolute; border: 4px solid rgba(255, 152, 0, 0.6);
             border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
@@ -133,7 +141,7 @@
             100% { width: 130px; height: 130px; opacity: 0; }
         }
 
-        /* 🔢 浮き上がる文字エフェクト */
+        /* 🔢 浮き上がる文字 */
         .floating-text {
             position: absolute; color: #ff9800; font-weight: 900; font-size: 1.3rem; pointer-events: none;
             text-shadow: 2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white;
@@ -145,7 +153,6 @@
             100% { opacity: 0; transform: translateY(-60px) scale(1); }
         }
 
-        /* コンボ数表示 */
         #combo-display {
             position: absolute; top: 20px; font-size: 1.5rem; font-weight: 900;
             color: #ff3d00; text-shadow: 2px 2px 0 #fff, -2px -2px 0 #fff;
@@ -153,14 +160,6 @@
             pointer-events: none;
         }
         .combo-bounce { opacity: 1 !important; transform: scale(1.2) !important; }
-
-        /* 💥 物理演算パーティクル用スタイル */
-        .particle {
-            position: absolute; width: 42px; height: 42px;
-            background: url('mochi_particle.png') center/contain no-repeat;
-            pointer-events: none; z-index: 998;
-            will-change: transform;
-        }
 
         /* 金もちボタン */
         #fever-pop {
@@ -216,7 +215,7 @@
         .rank-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #eee; }
         .my-rank { background: #fff9c4; font-weight: bold; }
 
-        /* 絵日記用紙 */
+        /* 絵日記 */
         .diary-paper {
             width: 90%; max-width: 360px; background: #fffbf0;
             border-radius: 16px; padding: 16px; box-sizing: border-box;
@@ -268,6 +267,8 @@
 
     <div id="game-screen">
         <div id="fade-overlay"></div>
+        
+        <canvas id="particle-canvas"></canvas>
 
         <div id="status-bar">
             <div class="text-large">現在の場所: <span id="current-location-text">鹿児島</span></div>
@@ -331,6 +332,22 @@
     </div>
 
     <script>
+        // 📱 スマホの2本指ピンチズーム・ダブルタップズームを完全にJS側でブロック
+        document.addEventListener('touchstart', (e) => {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', (e) => {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, { passive: false });
+
         const stages = [
             { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！\n桜島がとっても雄大で、パワーをもらった気分だぞ。\nここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", distance: 1500, item: "完熟マンゴー", price: 300, diary: "宮崎にやってきたぞ！\nヤシの木がたくさん並んでいて、南国気分満点だぁ。\nお日様をいっぱい浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
@@ -357,6 +374,13 @@
         let bgmAudio = null;
         let isBgmInitialized = false;
 
+        // 💥 Canvasパーティクル制御用の変数
+        let canvas = null;
+        let ctx = null;
+        let particleList = [];
+        const particleImg = new Image();
+        particleImg.src = 'mochi_particle.png';
+
         // サウンドプール
         const MAX_TAP_SOUNDS = 5;
         const tapSoundPool = [];
@@ -380,12 +404,29 @@
             });
         }
 
+        // Canvasのサイズをゲーム画面に完全に同期
+        function resizeParticleCanvas() {
+            if (!canvas) return;
+            const rect = document.getElementById('game-screen').getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
         window.onload = function() {
+            // Canvas初期化
+            canvas = document.getElementById('particle-canvas');
+            ctx = canvas.getContext('2d');
+            resizeParticleCanvas();
+            window.addEventListener('resize', resizeParticleCanvas);
+
             updateDisplay();
             buildLocationSelector();
             startFeverSpawningLoop();
             startCatSpawningLoop();
             startMochiLifeLoop();
+            
+            // 💥 パーティクルの超軽量描画メインループ起動
+            requestAnimationFrame(updateAndRenderParticles);
         };
 
         function getTapPower() {
@@ -450,45 +491,50 @@
             setTimeout(() => div.remove(), 600);
         }
 
-        // 🎯 物理演算方式（超クリーン・リファクタリング版）
+        // 💥 新・Canvas超高速パーティクル生成（DOMを増やさない）
         function createParticle(x, y) {
-            if (document.querySelectorAll('.particle').length > 60) return;
+            if (particleList.length > 80) return; // Canvasなら80個出してもヌルヌルです
 
-            const gameScreen = document.getElementById('game-screen');
             const rect = gameScreen.getBoundingClientRect();
-            const p = document.createElement('div');
-            p.className = 'particle';
             
-            p.style.left = (x - rect.left) + 'px';
-            p.style.top = (y - rect.top) + 'px';
-
-            let vx = (Math.random() - 0.5) * 14;
-            let vy = -(Math.random() * 6 + 11);
-            const gravity = 0.35; 
-
-            let curX = 0;
-            let curY = 0;
-
-            gameScreen.appendChild(p);
-
-            // 🛠️ 構文チェッカーや圧縮バグを完全回避するアロー関数型ループ
-            const updatePhys = () => {
-                curX += vx;
-                curY += vy;
-                vy += gravity;
-
-                // 🛠️ 圧縮ツールでバグりやすい calc() を完全撤廃
-                p.style.transform = `translate(-50%, -50%) translate(${curX}px, ${curY}px)`;
-
-                if (curY > rect.height) {
-                    p.remove();
-                } else {
-                    requestAnimationFrame(updatePhys);
-                }
-            };
-            
-            requestAnimationFrame(updatePhys);
+            // 配列にデータを放り込むだけ（超軽量）
+            particleList.push({
+                x: x - rect.left,
+                y: y - rect.top,
+                vx: (Math.random() - 0.5) * 14,
+                vy: -(Math.random() * 6 + 11),
+                gravity: 0.35
+            });
         }
+
+        // 💥 Canvas側の全パーティクルを1回で一括計算・描画する処理（カクつきゼロ化）
+        const updateAndRenderParticles = () => {
+            if (!ctx || !canvas) {
+                requestAnimationFrame(updateAndRenderParticles);
+                return;
+            }
+
+            // 画用紙を綺麗にクリア
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 逆順ループで計算と描画（削除時のインデックスズレ防止）
+            for (let i = particleList.length - 1; i >= 0; i--) {
+                const p = particleList[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += p.gravity;
+
+                // Canvasに直接pngをスタンプ（サイズ42x42、中心点を合わせるため-21調整）
+                ctx.drawImage(particleImg, p.x - 21, p.y - 21, 42, 42);
+
+                // 画面の下に落ちたら配列から抹消
+                if (p.y > canvas.height + 50) {
+                    particleList.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(updateAndRenderParticles);
+        };
 
         function handleCombo() {
             comboCount++;
@@ -503,6 +549,8 @@
                 comboEl.classList.remove('combo-bounce');
             }, 1200);
         }
+
+        const gameScreen = document.getElementById('game-screen');
 
         // タップイベント
         document.getElementById('mochisuke-btn').addEventListener('pointerdown', (e) => {
@@ -565,7 +613,6 @@
         }
 
         function spawnLuckyCat() {
-            const gameScreen = document.getElementById('game-screen');
             const cat = document.createElement('div');
             cat.id = 'lucky-cat';
             cat.innerHTML = '🐱<br><span style="font-size:11px; background:rgba(255,255,255,0.85); color:#d32f2f; border-radius:4px; padding:1px 4px; font-weight:bold; border:1px solid #d32f2f;">福!!</span>';
