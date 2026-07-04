@@ -13,13 +13,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>もちすけ日本縦断クリッカー -九州編-</title>
     <style>
-        /* 全体スタイル - touch-action: none でズームやスクロールを完全禁止 */
+        /* 全体スタイル - ズームやスクロールを完全禁止 */
         body {
             margin: 0; padding: 0;
             font-family: 'Helvetica Neue', Arial, sans-serif;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh; overflow: hidden; user-select: none; -webkit-user-select: none;
-            background-color: #f5f5f5;
+            background-color: #fcf8f2;
             touch-action: none;
         }
 
@@ -27,18 +27,15 @@
             width: 100%; max-width: 480px; height: 100vh;
             position: relative; display: flex; flex-direction: column; align-items: center;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            background: url('bg_images/kagoshima.png') center/cover no-repeat;
+            background: url('bg_images/oita.png') center/cover no-repeat;
             touch-action: none;
             overflow: hidden;
         }
 
-        /* 💥 高速描画用キャンバス（画面全体を覆うがタッチは透過） */
+        /* 高速描画用キャンバス */
         #particle-canvas {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: 998;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 998;
         }
 
         #fade-overlay {
@@ -48,30 +45,99 @@
         }
         .fade-black { opacity: 1 !important; }
 
-        /* ステータスバー */
-        #status-bar {
-            width: 90%; background: rgba(255, 255, 255, 0.9);
-            padding: 10px; margin-top: 15px; border-radius: 12px;
-            text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* --- スクショ再現：上部ヘッダー（3カラム構成） --- */
+        #header-container {
+            width: 90%;
+            background: #fff5e6;
+            border: 2px solid #f0d5b5;
+            border-radius: 24px;
+            margin-top: 15px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             z-index: 10;
-            transition: all 0.3s ease;
+            box-sizing: border-box;
         }
-        .text-large { font-size: 1.2rem; font-weight: bold; color: #333; margin: 2px 0; }
-        #mps-display { font-size: 0.9rem; color: #666; font-weight: bold; }
+        .header-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .score-display {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: #4a3622;
+        }
+        .score-display img {
+            width: 28px;
+            height: 28px;
+            vertical-align: middle;
+        }
+        .location-display {
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .location-display span.pin {
+            color: #ff5252;
+            font-size: 1.5rem;
+        }
+        .status-display {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #6d543a;
+            gap: 2px;
+        }
 
-        /* 🗺️ もちメーター */
+        /* --- スクショ再現：もちメーター＆進行度 --- */
+        #progress-area {
+            width: 90%;
+            background: #fff5e6;
+            border: 2px solid #f0d5b5;
+            border-radius: 20px;
+            margin-top: 12px;
+            padding: 8px 16px;
+            box-sizing: border-box;
+            z-index: 10;
+            text-align: center;
+        }
+        #distance-text {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: #4a3622;
+            margin-bottom: 6px;
+        }
+        #progress-flex {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         #progress-container {
-            width: 90%; height: 10px; background: #e0d7cc; border-radius: 5px;
-            position: relative; margin: 12px auto 4px auto; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+            flex: 1;
+            height: 14px;
+            background: #f0e4d4;
+            border-radius: 10px;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            overflow: visible;
         }
         #progress-bar {
-            width: 0%; height: 100%; background: linear-gradient(90deg, #ffb74d, #ff9800);
-            border-radius: 5px; transition: width 0.1s linear;
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ffb74d, #ff9800);
+            border-radius: 10px;
+            transition: width 0.1s linear;
         }
-        #progress-icon {
-            width: 26px; height: 26px; position: absolute; top: -8px; left: 0%;
-            transform: translateX(-13px); transition: left 0.1s linear;
-            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+        #progress-flag {
+            font-size: 1.2rem;
+            cursor: default;
         }
 
         .fever-active {
@@ -96,7 +162,7 @@
         #mochisuke-btn {
             width: 220px; height: auto; max-height: 250px;
             object-fit: contain; cursor: pointer; z-index: 5;
-            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));
+            transition: filter 0.3s ease;
         }
 
         .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
@@ -108,15 +174,16 @@
 
         .hekomi-anim { animation: hekomi 0.1s ease-out forwards; }
         @keyframes hekomi {
-            0% { transform: scale(1); filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1); }
-            40% { transform: scale(0.91); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3)) brightness(0.95); }
-            100% { transform: scale(1); filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1); }
+            0% { transform: scale(1); }
+            40% { transform: scale(0.91); }
+            100% { transform: scale(1); }
         }
 
+        /* スクショ再現：吹き出しデザイン */
         #mochi-balloon {
-            position: absolute; top: -50px; background: white;
-            padding: 8px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: bold;
-            color: #5d4037; border: 3px solid #ff9800; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: absolute; top: -70px; background: white;
+            padding: 10px 16px; border-radius: 20px; font-size: 0.95rem; font-weight: bold;
+            color: #4a3622; border: 3px solid #ff9800; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             white-space: nowrap; z-index: 10; opacity: 0; transform: scale(0.8);
             transition: all 0.2s ease-out; pointer-events: none;
         }
@@ -141,7 +208,7 @@
             100% { width: 130px; height: 130px; opacity: 0; }
         }
 
-        /* 🔢 浮き上がる文字 */
+        /* 浮き上がる文字 */
         .floating-text {
             position: absolute; color: #ff9800; font-weight: 900; font-size: 1.3rem; pointer-events: none;
             text-shadow: 2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white;
@@ -175,92 +242,114 @@
             100% { transform: scale(1.15) rotate(5deg); }
         }
 
-        /* 操作パネル */
+        /* --- スクショ再現：5大フッターナビゲーションパネル --- */
         #control-panel {
-            width: 100%; background: rgba(255, 255, 255, 0.95);
-            padding: 15px 0; border-radius: 20px 20px 0 0;
-            display: flex; flex-direction: column; align-items: center; gap: 10px; z-index: 10;
+            width: 100%; background: #fffcf7;
+            padding: 10px 0 24px 0; border-radius: 32px 32px 0 0;
+            display: flex; justify-content: center; z-index: 10;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.06);
+            border-top: 2px solid #f3ebd9;
         }
-        .btn-row { display: flex; gap: 10px; width: 90%; justify-content: center; }
-        
-        button, select {
-            padding: 10px 16px; font-size: 1rem; font-weight: bold;
-            border: none; border-radius: 8px; cursor: pointer;
-            box-shadow: 0 3px 5px rgba(0,0,0,0.15); transition: background 0.2s;
+        .nav-menu {
+            display: flex; width: 92%; justify-content: space-between; gap: 8px;
         }
-        button { background: #ff9800; color: white; }
-        button:hover { background: #f57c00; }
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        select { background: #e0f2f1; color: #00796b; }
+        .nav-btn {
+            flex: 1; padding: 12px 2px; font-size: 0.82rem; font-weight: bold;
+            border: none; border-radius: 16px; cursor: pointer; text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            position: relative;
+            transition: transform 0.1s, filter 0.2s;
+        }
+        .nav-btn:active { transform: scale(0.95); }
+        .nav-btn span:first-child { font-size: 1.4rem; }
         
-        .btn-green { background: #4caf50; }
-        .btn-green:hover { background: #388e3c; }
-        .btn-blue { background: #2196f3; }
-        .btn-blue:hover { background: #1976d2; }
-        .btn-red { background: #e53935; }
-        .btn-red:hover { background: #c62828; }
+        /* メニューカラーのスクショ再現 */
+        .btn-warehouse { background: #ff769f; } /* 倉庫: ピンク */
+        .btn-shop { background: #ff9800; }      /* ショップ: オレンジ */
+        .btn-map { background: #4caf50; }       /* 地図: 緑 */
+        .btn-diary { background: #2196f3; }     /* 絵日記: 青 */
+        .btn-ranking { background: #9c27b0; }   /* 順位: 紫 */
 
-        /* モーダル */
+        /* 通知ドット */
+        .badge-dot {
+            position: absolute; top: 4px; right: 18px;
+            width: 10px; height: 10px; background: #ff3d00;
+            border-radius: 50%; border: 2px solid white;
+        }
+
+        /* モーダル共通設計 */
         .modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.75); z-index: 1000;
+            background: rgba(0,0,0,0.7); z-index: 1000;
             justify-content: center; align-items: center; flex-direction: column;
         }
-
         .modal-content {
-            background: white; padding: 20px; border-radius: 12px; width: 80%; max-width: 360px;
-            text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            max-height: 75vh; overflow-y: auto; box-sizing: border-box;
         }
-        .rank-list { margin: 15px 0; text-align: left; }
-        .rank-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #eee; }
-        .my-rank { background: #fff9c4; font-weight: bold; }
+        .modal-content h2 { margin-top: 0; color: #333; font-size: 1.4rem; }
+        .btn-red { background: #e53935; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        /* ショップ用タブスタイル */
+        .shop-tabs {
+            display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 8px;
+        }
+        .shop-tab-btn {
+            flex: 1; padding: 8px; font-size: 0.9rem; background: #f0f0f0; color: #555; border: none; border-radius: 6px;
+        }
+        .shop-tab-btn.tab-active {
+            background: #ff9800; color: white; font-weight: bold;
+        }
+
+        /* 各種リストアイテムデザイン */
+        .list-container {
+            display: flex; flex-direction: column; gap: 10px; margin: 15px 0; text-align: left;
+        }
+        .list-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee;
+        }
+        .item-info { display: flex; flex-direction: column; gap: 2px; }
+        .item-title { font-weight: bold; color: #333; font-size: 0.95rem; }
+        .item-desc { font-size: 0.75rem; color: #777; }
+        .item-action-btn {
+            padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: none; min-width: 80px; text-align: center; font-weight: bold; cursor: pointer;
+        }
+        .item-action-btn:disabled { background: #ddd; color: #999; cursor: default; }
+        .btn-blue { background: #2196f3; color: white; }
+        .btn-green { background: #4caf50; color: white; }
+
+        /* 倉庫のステータス表示 */
+        .status-box {
+            background: #f3e5f5; padding: 12px; border-radius: 10px; text-align: left;
+            margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6; color: #4a148c;
+        }
 
         /* 絵日記 */
         .diary-paper {
             width: 90%; max-width: 360px; background: #fffbf0;
             border-radius: 16px; padding: 16px; box-sizing: border-box;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
-            border: 2px solid #d7ccc8;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4); border: 2px solid #d7ccc8;
             display: flex; flex-direction: column; gap: 12px;
         }
         .diary-img-area {
-            width: 100%; background: #fafafa; border-radius: 10px;
-            padding: 8px; box-sizing: border-box; display: flex; justify-content: center; align-items: center;
-            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
+            width: 100%; background: #fafafa; border-radius: 10px; padding: 8px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; position: relative; flex-direction: column;
         }
-        .diary-img {
-            max-width: 100%; height: 180px; object-fit: contain;
-            border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-        }
+        .diary-img { max-width: 100%; height: 180px; object-fit: contain; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         .img-caption { font-size: 0.8rem; font-weight: bold; color: #795548; text-align: center; margin-top: 6px; }
-        
         .diary-text-area {
             width: 100%; height: 180px; display: flex; flex-direction: column; align-items: flex-start;
             background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><line x1="0" y1="0" x2="0" y2="30" stroke="%23e0d0c0" stroke-width="1" stroke-dasharray="2,2"/></svg>');
             padding: 8px; box-sizing: border-box; border-radius: 8px; border: 1px solid #efebe9;
         }
-        .diary-title {
-            font-size: 1.1rem; font-weight: bold; color: #5d4037;
-            border-bottom: 2px dashed #bcaaa4; width: 100%; padding-bottom: 4px; margin-bottom: 8px;
-        }
-        .diary-text {
-            writing-mode: vertical-rl;
-            -webkit-writing-mode: vertical-rl;
-            font-size: 1.05rem; line-height: 1.8; color: #3e2723;
-            height: 100%; width: 100%;
-            overflow-x: auto;
-            white-space: pre-wrap;
-            font-family: "Hiragino Mincho ProN", "MS Mincho", serif;
-            padding-bottom: 4px;
-        }
+        .diary-title { font-size: 1.1rem; font-weight: bold; color: #5d4037; border-bottom: 2px dashed #bcaaa4; width: 100%; padding-bottom: 4px; margin-bottom: 8px; }
+        .diary-text { writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl; font-size: 1.05rem; line-height: 1.8; color: #3e2723; height: 100%; width: 100%; overflow-x: auto; white-space: pre-wrap; font-family: "Hiragino Mincho ProN", "MS Mincho", serif; padding-bottom: 4px; }
         .diary-footer { width: 100%; text-align: right; font-size: 0.8rem; color: #8d6e63; font-weight: bold; }
         .diary-controls { display: flex; gap: 15px; margin-top: 15px; }
-
         .page-animate { animation: cardSwitch 0.25s ease-out; }
-        @keyframes cardSwitch {
-            0% { opacity: 0.5; transform: scale(0.95) translateY(10px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
+        @keyframes cardSwitch { 0% { opacity: 0.5; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
     </style>
 </head>
 <body>
@@ -270,45 +359,84 @@
         
         <canvas id="particle-canvas"></canvas>
 
-        <div id="status-bar">
-            <div class="text-large">現在の場所: <span id="current-location-text">鹿児島</span></div>
-            <div id="score-text" class="text-large">0 もち</div>
-            <div id="mps-display">自動増加: 0 もち/秒</div>
-            <div id="distance-text" style="font-weight: bold; color: #00796b; margin-top: 4px;">次のエリアまで: 500 もちkcal</div>
-            
-            <div id="progress-container">
-                <div id="progress-bar"></div>
-                <img id="progress-icon" src="mochi_particle.png" alt="もちすけ現在地">
+        <div id="header-container">
+            <div class="header-box score-display">
+                🍡 <span id="score-text">0 もち</span>
+            </div>
+            <div class="header-box location-display">
+                <span class="pin">📍</span><span id="current-location-text">鹿児島</span>
+            </div>
+            <div class="status-display">
+                <div id="mps-display">↗ 自動増加: 0 もち/秒</div>
+                <div id="tap-power-display">👆 タップ力: +1</div>
+            </div>
+        </div>
+
+        <div id="progress-area">
+            <div id="distance-text">次のエリアまで : 500 もちkcal</div>
+            <div id="progress-flex">
+                <div id="progress-container">
+                    <div id="progress-bar"></div>
+                </div>
+                <div id="progress-flag">🚩</div>
             </div>
         </div>
 
         <div id="mochisuke-area">
             <div id="combo-display">🔥 0 Combo!</div>
             <div id="mochisuke-wrapper">
-                <div id="mochi-balloon">おーい！</div>
-                <img id="mochisuke-btn" class="breathe-idle" src="image_0.png" alt="もちすけ" draggable="false">
+                <div id="mochi-balloon">画面をタップして もち集めるじゃ！</div>
+                <img id="mochisuke-btn" class="breathe-idle" src="image_0.png" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
             </div>
         </div>
 
         <div id="control-panel">
-            <div class="btn-row">
-                <select id="location-selector" onchange="changeLocation(this.value)">
-                    <option value="0">鹿児島</option>
-                </select>
-                <button id="buy-item-btn" onclick="buyLocalItem()">ご当地アイテム購入</button>
+            <div class="nav-menu">
+                <button class="nav-btn btn-warehouse" onclick="openWarehouse()"><span>📦</span><span>倉庫</span></button>
+                <button class="nav-btn btn-shop" onclick="openShop()"><span>🛒</span><span>ショップ</span><span class="badge-dot"></span></button>
+                <button class="nav-btn btn-map" onclick="openMap()"><span>🗺️</span><span>地図</span></button>
+                <button class="nav-btn btn-diary" onclick="openDiary()"><span>📖</span><span>絵日記</span></button>
+                <button class="nav-btn btn-ranking" onclick="openRanking()"><span>🏆</span><span>順位</span></button>
             </div>
-            <div class="btn-row">
-                <button class="btn-green" id="diary-open-btn" onclick="openDiary()">📖 絵日記をよむ</button>
-                <button class="btn-blue" onclick="openRanking()">🏆 ランキング</button>
+        </div>
+    </div>
+
+    <div id="warehouse-modal" class="modal">
+        <div class="modal-content">
+            <h2>📦 もちすけの倉庫</h2>
+            <div class="status-box" id="warehouse-status-box"></div>
+            <h3>👕 衣装をきがえる</h3>
+            <div class="list-container" id="warehouse-clothes-list"></div>
+            <button class="btn-red" onclick="closeModal('warehouse-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="shop-modal" class="modal">
+        <div class="modal-content">
+            <h2>🛒 よろずショップ</h2>
+            <div class="shop-tabs">
+                <button id="shop-tab-omiyage" class="shop-tab-btn tab-active" onclick="switchShopTab('omiyage')">🎁 おみやげ</button>
+                <button id="shop-tab-kisekae" class="shop-tab-btn" onclick="switchShopTab('kisekae')">👕 きせかえ</button>
             </div>
+            <div class="list-container" id="shop-items-list"></div>
+            <button class="btn-red" onclick="closeModal('shop-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="map-modal" class="modal">
+        <div class="modal-content">
+            <h2>🗺️ 日本地図（エリア移動）</h2>
+            <p style="font-size: 0.85rem; color:#666; margin-top:-5px;">行ったことがある場所に移動できるぞ！</p>
+            <div class="list-container" id="map-location-list"></div>
+            <button class="btn-red" onclick="closeModal('map-modal')">閉じる</button>
         </div>
     </div>
 
     <div id="ranking-modal" class="modal">
         <div class="modal-content">
             <h2>🏆 もちもちランキング</h2>
-            <div id="ranking-list" class="rank-list"></div>
-            <button class="btn-red" onclick="closeRanking()">閉じる</button>
+            <div id="ranking-list" class="list-container"></div>
+            <button class="btn-red" onclick="closeModal('ranking-modal')">閉じる</button>
         </div>
     </div>
 
@@ -327,27 +455,24 @@
         <div class="diary-controls">
             <button id="prev-page-btn" onclick="prevPage()">◀ もどる</button>
             <button id="next-page-btn" onclick="nextPage()">つぎへ ▶</button>
-            <button class="btn-red" onclick="closeDiary()">閉じる</button>
+            <button class="btn-red" onclick="closeModal('diary-modal')">閉じる</button>
         </div>
     </div>
 
     <script>
-        // 📱 スマホの2本指ピンチズーム・ダブルタップズームを完全にJS側でブロック
+        // スマホズームブロック
         document.addEventListener('touchstart', (e) => {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
+            if (e.touches.length > 1) e.preventDefault();
         }, { passive: false });
 
         let lastTouchEnd = 0;
         document.addEventListener('touchend', (e) => {
             const now = Date.now();
-            if (now - lastTouchEnd <= 300) {
-                e.preventDefault();
-            }
+            if (now - lastTouchEnd <= 300) e.preventDefault();
             lastTouchEnd = now;
         }, { passive: false });
 
+        // ステージデータ
         const stages = [
             { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！\n桜島がとっても雄大で、パワーをもらった気分だぞ。\nここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", distance: 1500, item: "完熟マンゴー", price: 300, diary: "宮崎にやってきたぞ！\nヤシの木がたくさん並んでいて、南国気分満点だぁ。\nお日様をいっぱい浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
@@ -358,11 +483,22 @@
             { name: "福岡", distance: 150000, item: "博多ラーメン", price: 60000, diary: "ついに九州のゴール、福岡へ！\n中洲の屋台街はとっても賑やかでワクワクしたぞ。\n美味しいとんこつラーメンをバッチリ替玉まで完食！\nさぁ、九州制覇だ！次は本州へ進撃だ！", bg: "bg_images/fukuoka.png", diaryImg: "diary_images/fukuoka_d.png", effectDesc: "タップ力 +50", tapBonus: 50, mpsBonus: 0 }
         ];
 
+        const clothesData = [
+            { id: "normal", name: "いつもの姿", price: 0, desc: "標準のもちすけスタイル", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15))", tapBonus: 0, mpsBonus: 0 },
+            { id: "happi", name: "お祭りはっぴ", price: 500, desc: "モチベーション全開！タップ力 +3", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) hue-rotate(130deg) saturate(1.8)", tapBonus: 3, mpsBonus: 0 },
+            { id: "crown", name: "王様の冠", price: 3000, desc: "気品溢れる姿。自動増加 +12もち/秒", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1.2) sepia(0.5) saturate(2.5)", tapBonus: 0, mpsBonus: 12 },
+            { id: "ninja", name: "忍びの服", price: 15000, desc: "影からもち増産。タップ力+10 / 自動+40", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(0.4) contrast(1.5)", tapBonus: 10, mpsBonus: 40 }
+        ];
+
         let score = 0; 
         let currentStageIndex = 0;     
         let selectedStageIndex = 0;    
         let currentStageProgress = 0;   
         let purchasedItems = {};       
+
+        let purchasedClothes = { normal: true };
+        let equippedClotheId = "normal";
+        let currentShopTab = "omiyage"; 
 
         let isFever = false;
         let feverTimeLeft = 0;
@@ -374,14 +510,12 @@
         let bgmAudio = null;
         let isBgmInitialized = false;
 
-        // 💥 Canvasパーティクル制御用の変数
         let canvas = null;
         let ctx = null;
         let particleList = [];
         const particleImg = new Image();
         particleImg.src = 'mochi_particle.png';
 
-        // サウンドプール
         const MAX_TAP_SOUNDS = 5;
         const tapSoundPool = [];
         let tapSoundIndex = 0;
@@ -390,7 +524,7 @@
         }
 
         let lastTappedTime = Date.now();
-        const callPhrases = ["もちもち？", "おーい！", "画面を叩くのじゃ", "旅を続けるぞ！", "寝てしまうぞ…"];
+        const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
 
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
@@ -399,12 +533,10 @@
             bgmAudio.loop = true;
             bgmAudio.volume = 0.3;
             bgmAudio.play().catch(e => {
-                console.log("BGM再生制限中", e);
                 isBgmInitialized = false;
             });
         }
 
-        // Canvasのサイズをゲーム画面に完全に同期
         function resizeParticleCanvas() {
             if (!canvas) return;
             const rect = document.getElementById('game-screen').getBoundingClientRect();
@@ -413,19 +545,24 @@
         }
 
         window.onload = function() {
-            // Canvas初期化
             canvas = document.getElementById('particle-canvas');
             ctx = canvas.getContext('2d');
             resizeParticleCanvas();
             window.addEventListener('resize', resizeParticleCanvas);
 
+            // デモ用にデータをスクショの状態（大分ステージ）に初期設定
+            currentStageIndex = 2;
+            selectedStageIndex = 2;
+            score = 2510;
+            currentStageProgress = 1806; // 4000 - 2194 = 1806もちkcal
+            purchasedItems[0] = true; // 鹿児島購入済
+            purchasedItems[1] = true; // 宮崎購入済
+
             updateDisplay();
-            buildLocationSelector();
             startFeverSpawningLoop();
             startCatSpawningLoop();
             startMochiLifeLoop();
             
-            // 💥 パーティクルの超軽量描画メインループ起動
             requestAnimationFrame(updateAndRenderParticles);
         };
 
@@ -434,6 +571,8 @@
             stages.forEach((stage, idx) => {
                 if (purchasedItems[idx]) power += stage.tapBonus;
             });
+            const activeClothe = clothesData.find(c => c.id === equippedClotheId);
+            if (activeClothe) power += activeClothe.tapBonus;
             if (comboCount >= 10) power += Math.floor(comboCount / 10);
             if (isFever) power *= 5;
             return power;
@@ -444,6 +583,8 @@
             stages.forEach((stage, idx) => {
                 if (purchasedItems[idx]) mps += stage.mpsBonus;
             });
+            const activeClothe = clothesData.find(c => c.id === equippedClotheId);
+            if (activeClothe) mps += activeClothe.mpsBonus;
             return mps;
         }
 
@@ -451,7 +592,7 @@
             const audio = tapSoundPool[tapSoundIndex];
             audio.volume = 0.6;
             audio.currentTime = 0;
-            audio.play().catch(e => console.log("SE制限中"));
+            audio.play().catch(e => {});
             tapSoundIndex = (tapSoundIndex + 1) % MAX_TAP_SOUNDS;
         }
 
@@ -459,7 +600,7 @@
             const overlay = document.getElementById('fade-overlay');
             const moveAudio = new Audio('move.mp3');
             moveAudio.volume = 0.6;
-            moveAudio.play().catch(e => console.log("移動音制限中"));
+            moveAudio.play().catch(e => {});
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 callback();
@@ -491,13 +632,10 @@
             setTimeout(() => div.remove(), 600);
         }
 
-        // 💥 新・Canvas超高速パーティクル生成（DOMを増やさない）
         function createParticle(x, y) {
-            if (particleList.length > 80) return; // Canvasなら80個出してもヌルヌルです
-
+            if (particleList.length > 80) return;
+            const gameScreen = document.getElementById('game-screen');
             const rect = gameScreen.getBoundingClientRect();
-            
-            // 配列にデータを放り込むだけ（超軽量）
             particleList.push({
                 x: x - rect.left,
                 y: y - rect.top,
@@ -507,32 +645,20 @@
             });
         }
 
-        // 💥 Canvas側の全パーティクルを1回で一括計算・描画する処理（カクつきゼロ化）
         const updateAndRenderParticles = () => {
             if (!ctx || !canvas) {
                 requestAnimationFrame(updateAndRenderParticles);
                 return;
             }
-
-            // 画用紙を綺麗にクリア
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // 逆順ループで計算と描画（削除時のインデックスズレ防止）
             for (let i = particleList.length - 1; i >= 0; i--) {
                 const p = particleList[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += p.gravity;
-
-                // Canvasに直接pngをスタンプ（サイズ42x42、中心点を合わせるため-21調整）
+                p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
                 ctx.drawImage(particleImg, p.x - 21, p.y - 21, 42, 42);
-
-                // 画面の下に落ちたら配列から抹消
                 if (p.y > canvas.height + 50) {
                     particleList.splice(i, 1);
                 }
             }
-
             requestAnimationFrame(updateAndRenderParticles);
         };
 
@@ -550,9 +676,6 @@
             }, 1200);
         }
 
-        const gameScreen = document.getElementById('game-screen');
-
-        // タップイベント
         document.getElementById('mochisuke-btn').addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
@@ -591,6 +714,188 @@
 
         document.body.addEventListener('pointerdown', () => initAndPlayBGM(), { once: true });
 
+        function openModal(id) { document.getElementById(id).style.display = "flex"; }
+        function closeModal(id) { document.getElementById(id).style.display = "none"; }
+
+        function openWarehouse() {
+            const boughtCount = Object.keys(purchasedItems).length;
+            const currentClothe = clothesData.find(c => c.id === equippedClotheId);
+            
+            document.getElementById('warehouse-status-box').innerHTML = `
+                <strong>🏆 プレイヤー能力値</strong><br>
+                ・現在の所持金: ${Math.floor(score).toLocaleString()} もち<br>
+                ・現在のタップ力: +${getTapPower()} もち/タップ<br>
+                ・自動生産力 (Mps): ${getMps()} もち/秒<br>
+                ・集めたおみやげ: ${boughtCount} / ${stages.length} 種類<br>
+                ・現在の着用衣装: <strong>${currentClothe.name}</strong>
+            `;
+
+            const listContainer = document.getElementById('warehouse-clothes-list');
+            listContainer.innerHTML = "";
+            clothesData.forEach(c => {
+                const isOwned = purchasedClothes[c.id];
+                const isEquipped = equippedClotheId === c.id;
+                
+                let btnHtml = "";
+                if (!isOwned) {
+                    btnHtml = `<button class="item-action-btn" disabled style="background:#bbb;">未所持</button>`;
+                } else if (isEquipped) {
+                    btnHtml = `<button class="item-action-btn btn-green" disabled>着用中</button>`;
+                } else {
+                    btnHtml = `<button class="item-action-btn btn-blue" onclick="equipClothe('${c.id}')">着替える</button>`;
+                }
+
+                const row = document.createElement('div');
+                row.className = "list-item";
+                row.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-title">${c.name}</span>
+                        <span class="item-desc">${c.desc}</span>
+                    </div>
+                    ${btnHtml}
+                `;
+                listContainer.appendChild(row);
+            });
+            openModal('warehouse-modal');
+        }
+
+        function equipClothe(id) {
+            equippedClotheId = id;
+            const target = clothesData.find(c => c.id === id);
+            document.getElementById('mochisuke-btn').style.filter = target.filter;
+            alert(`もちすけが「${target.name}」に着替えました！`);
+            openWarehouse(); 
+            updateDisplay();
+        }
+
+        function openShop() {
+            renderShopList();
+            openModal('shop-modal');
+        }
+
+        function switchShopTab(tab) {
+            currentShopTab = tab;
+            document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
+            document.getElementById('shop-tab-kisekae').classList.toggle('tab-active', tab === 'kisekae');
+            renderShopList();
+        }
+
+        function renderShopList() {
+            const listContainer = document.getElementById('shop-items-list');
+            listContainer.innerHTML = "";
+
+            if (currentShopTab === 'omiyage') {
+                for (let i = 0; i <= currentStageIndex; i++) {
+                    if (i >= stages.length) break;
+                    const stage = stages[i];
+                    const isBought = purchasedItems[i];
+                    
+                    let btnHtml = "";
+                    if (isBought) {
+                        btnHtml = `<button class="item-action-btn" disabled>購入済</button>`;
+                    } else {
+                        const canBuy = score >= stage.price;
+                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyOmiyage(${i})" style="background:#ff9800; color:white;">${stage.price}もち</button>`;
+                    }
+
+                    const row = document.createElement('div');
+                    row.className = "list-item";
+                    row.innerHTML = `
+                        <div class="item-info">
+                            <span class="item-title">🎁 ${stage.item} (${stage.name}名物)</span>
+                            <span class="item-desc">効果: ${stage.effectDesc}</span>
+                        </div>
+                        ${btnHtml}
+                    `;
+                    listContainer.appendChild(row);
+                }
+            } else {
+                clothesData.forEach(c => {
+                    if (c.id === 'normal') return; 
+                    const isBought = purchasedClothes[c.id];
+                    
+                    let btnHtml = "";
+                    if (isBought) {
+                        btnHtml = `<button class="item-action-btn" disabled>購入済</button>`;
+                    } else {
+                        const canBuy = score >= c.price;
+                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyKisekae('${c.id}')" style="background:#ff9800; color:white;">${c.price}もち</button>`;
+                    }
+
+                    const row = document.createElement('div');
+                    row.className = "list-item";
+                    row.innerHTML = `
+                        <div class="item-info">
+                            <span class="item-title">👕 ${c.name}</span>
+                            <span class="item-desc">${c.desc}</span>
+                        </div>
+                        ${btnHtml}
+                    `;
+                    listContainer.appendChild(row);
+                });
+            }
+        }
+
+        function buyOmiyage(idx) {
+            const stage = stages[idx];
+            if (score >= stage.price && !purchasedItems[idx]) {
+                score -= stage.price;
+                purchasedItems[idx] = true;
+                alert(`「${stage.item}」を購入しました！\n特殊効果【${stage.effectDesc}】が永続発動！`);
+                renderShopList();
+                updateDisplay();
+            }
+        }
+
+        function buyKisekae(id) {
+            const target = clothesData.find(c => c.id === id);
+            if (score >= target.price && !purchasedClothes[id]) {
+                score -= target.price;
+                purchasedClothes[id] = true;
+                alert(`衣装「${target.name}」を購入しました！\n「倉庫」メニューから着替えられるぞ！`);
+                renderShopList();
+                updateDisplay();
+            }
+        }
+
+        function openMap() {
+            const listContainer = document.getElementById('map-location-list');
+            listContainer.innerHTML = "";
+
+            for (let i = 0; i <= currentStageIndex; i++) {
+                if (i >= stages.length) break;
+                const stage = stages[i];
+                const isCurrent = selectedStageIndex === i;
+
+                let btnHtml = "";
+                if (isCurrent) {
+                    btnHtml = `<button class="item-action-btn btn-green" disabled>滞在中</button>`;
+                } else {
+                    btnHtml = `<button class="item-action-btn btn-map" onclick="mapMoveTo(${i})">移動する</button>`;
+                }
+
+                const row = document.createElement('div');
+                row.className = "list-item";
+                row.innerHTML = `
+                    <div class="item-info">
+                        <span class="item-title">🗺️ ${stage.name}</span>
+                        <span class="item-desc">${isCurrent ? '現在ここに滞在しています' : 'このエリアへ移動します'}</span>
+                    </div>
+                    ${btnHtml}
+                `;
+                listContainer.appendChild(row);
+            }
+            openModal('map-modal');
+        }
+
+        function mapMoveTo(idx) {
+            closeModal('map-modal');
+            triggerAreaTransition(stages[idx].bg, () => {
+                selectedStageIndex = idx;
+                updateDisplay();
+            });
+        }
+
         function startMochiLifeLoop() {
             setInterval(() => {
                 const idleDuration = Date.now() - lastTappedTime;
@@ -613,6 +918,7 @@
         }
 
         function spawnLuckyCat() {
+            const gameScreen = document.getElementById('game-screen');
             const cat = document.createElement('div');
             cat.id = 'lucky-cat';
             cat.innerHTML = '🐱<br><span style="font-size:11px; background:rgba(255,255,255,0.85); color:#d32f2f; border-radius:4px; padding:1px 4px; font-weight:bold; border:1px solid #d32f2f;">福!!</span>';
@@ -661,7 +967,7 @@
         function triggerFeverTime() {
             isFever = true; feverTimeLeft = 10;
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
-            document.getElementById('status-bar').classList.add('fever-active');
+            document.getElementById('header-container').classList.add('fever-active');
             updateDisplay();
 
             if (feverInterval) clearInterval(feverInterval);
@@ -669,7 +975,7 @@
                 feverTimeLeft--;
                 if (feverTimeLeft <= 0) {
                     clearInterval(feverInterval); isFever = false;
-                    document.getElementById('status-bar').classList.remove('fever-active');
+                    document.getElementById('header-container').classList.remove('fever-active');
                 }
                 updateDisplay();
             }, 1000);
@@ -685,7 +991,6 @@
                     triggerAreaTransition(stages[nextIdx].bg, () => {
                         selectedStageIndex = nextIdx;
                         alert(`新エリア「${stages[nextIdx].name}」に到達しました！`);
-                        buildLocationSelector();
                         updateDisplay();
                     });
                 } else {
@@ -694,74 +999,38 @@
             }
         }
 
+        /* 🆕 スクショに合わせて表示更新ロジックを修正 */
         function updateDisplay() {
+            // もちスコア表示
+            const scoreFormatted = Math.floor(score).toLocaleString() + " もち";
             if (isFever) {
-                document.getElementById('score-text').innerHTML = `🔥 5倍フィーバー中！ (${feverTimeLeft}秒) 🔥<br>${Math.floor(score).toLocaleString()} もち`;
+                document.getElementById('score-text').innerText = `🔥 5倍中 (${feverTimeLeft}s) ${scoreFormatted}`;
             } else {
-                document.getElementById('score-text').innerText = Math.floor(score).toLocaleString() + " もち";
+                document.getElementById('score-text').innerText = scoreFormatted;
             }
 
+            // ステータス表示
             document.getElementById('current-location-text').innerText = stages[selectedStageIndex].name;
-            document.getElementById('mps-display').innerText = `自動増加: ${getMps()} もち/秒 (現在タップ力: +${getTapPower()})`;
-
-            const buyBtn = document.getElementById('buy-item-btn');
-            const activeStage = stages[selectedStageIndex];
-
-            if (purchasedItems[selectedStageIndex]) {
-                buyBtn.innerText = `購入済: ${activeStage.item} (${activeStage.effectDesc})`;
-                buyBtn.disabled = true;
-            } else {
-                buyBtn.innerText = `${activeStage.item}を買う (${activeStage.price}もち)\n【効果: ${activeStage.effectDesc}】`;
-                buyBtn.disabled = score < activeStage.price;
-            }
+            document.getElementById('mps-display').innerText = `↗ 自動増加: ${getMps()} もち/秒`;
+            document.getElementById('tap-power-display').innerText = `👆 タップ力: +${getTapPower()}`;
 
             const distText = document.getElementById('distance-text');
             const progressBar = document.getElementById('progress-bar');
-            const progressIcon = document.getElementById('progress-icon');
 
             if (selectedStageIndex < currentStageIndex) {
                 distText.innerText = "このエリアは踏破済みです";
                 progressBar.style.width = "100%";
-                progressIcon.style.left = "100%";
             } else if (currentStageIndex === stages.length - 1 && currentStageProgress >= stages[currentStageIndex].distance) {
                 distText.innerText = "🎉 祝・九州制覇完了！！";
                 progressBar.style.width = "100%";
-                progressIcon.style.left = "100%";
             } else {
                 const remaining = Math.ceil(stages[currentStageIndex].distance - currentStageProgress);
-                distText.innerText = `次のエリアまで: ${remaining} もちkcal`;
+                distText.innerText = `次のエリアまで : ${remaining} もちkcal`;
                 
                 let pct = (currentStageProgress / stages[currentStageIndex].distance) * 100;
                 if (pct > 100) pct = 100;
                 if (pct < 0) pct = 0;
                 progressBar.style.width = pct + "%";
-                progressIcon.style.left = pct + "%";
-            }
-        }
-
-        function buildLocationSelector() {
-            const selector = document.getElementById('location-selector');
-            selector.innerHTML = "";
-            for (let i = 0; i <= currentStageIndex; i++) {
-                if (i < stages.length) {
-                    const opt = document.createElement('option'); opt.value = i; opt.text = stages[i].name;
-                    if (i === selectedStageIndex) opt.selected = true;
-                    selector.appendChild(opt);
-                }
-            }
-        }
-
-        function changeLocation(index) {
-            const idx = parseInt(index);
-            triggerAreaTransition(stages[idx].bg, () => { selectedStageIndex = idx; updateDisplay(); });
-        }
-
-        function buyLocalItem() {
-            const activeStage = stages[selectedStageIndex];
-            if (score >= activeStage.price && !purchasedItems[selectedStageIndex]) {
-                score -= activeStage.price; purchasedItems[selectedStageIndex] = true;
-                alert(`「${activeStage.item}」を購入しました！\n特殊効果【${activeStage.effectDesc}】が発動しました！`);
-                updateDisplay();
             }
         }
 
@@ -777,14 +1046,15 @@
             listContainer.innerHTML = "";
             dummyRanks.forEach((player, index) => {
                 let item = document.createElement('div');
-                item.className = player.isMe ? "rank-item my-rank" : "rank-item";
-                item.innerHTML = `<span>${index + 1}位. ${player.name}</span><span>${player.score.toLocaleString()} もち</span>`;
+                item.className = "list-item";
+                if (player.isMe) item.style.background = "#fff9c4";
+                item.innerHTML = `<span>${index + 1}位. ${player.name}</span><strong>${player.score.toLocaleString()} もち</strong>`;
                 listContainer.appendChild(item);
             });
-            document.getElementById('ranking-modal').style.display = "flex";
+            openModal('ranking-modal');
         }
-        function closeRanking() { document.getElementById('ranking-modal').style.display = "none"; }
 
+        // 自動増加タイマーループ
         setInterval(() => {
             let mps = getMps();
             if (mps > 0) {
@@ -797,8 +1067,7 @@
         }, 100);
 
         let diaryPageIndex = 0;
-        function openDiary() { diaryPageIndex = selectedStageIndex; renderDiaryPage(); document.getElementById('diary-modal').style.display = "flex"; }
-        function closeDiary() { document.getElementById('diary-modal').style.display = "none"; }
+        function openDiary() { diaryPageIndex = selectedStageIndex; renderDiaryPage(); openModal('diary-modal'); }
 
         function renderDiaryPage() {
             const stage = stages[diaryPageIndex];
