@@ -45,16 +45,16 @@
         }
         .fade-black { opacity: 1 !important; }
 
-        /* --- 【改善】上部UIを上につめ、半透明にして背景を見やすく調整 --- */
+        /* 上部UIを上につめ、半透明にして背景を見やすく調整 */
         #header-container {
             width: 94%;
-            background: rgba(255, 245, 230, 0.88); /* 半透明化 */
-            backdrop-filter: blur(4px); /* 背景の軽いボカシ */
+            background: rgba(255, 245, 230, 0.88);
+            backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             border: 2px solid rgba(240, 213, 181, 0.8);
             border-radius: 18px;
-            margin-top: 6px; /* 上に限界までつめる */
-            padding: 8px 14px; /* パディングをスマートに */
+            margin-top: 6px;
+            padding: 8px 14px;
             display: flex;
             flex-direction: column;
             gap: 4px;
@@ -66,7 +66,7 @@
         .score-row {
             width: 100%;
             text-align: center;
-            font-size: 1.35rem; /* 少しコンパクトに */
+            font-size: 1.35rem;
             font-weight: bold;
             color: #4a3622;
             border-bottom: 1px dashed rgba(233, 204, 167, 0.6);
@@ -106,15 +106,15 @@
             text-align: right;
         }
 
-        /* --- 【改善】もちメーターも半透明＆上づめ配置 --- */
+        /* もちメーターも半透明＆上づめ配置 */
         #progress-area {
             width: 94%;
-            background: rgba(255, 245, 230, 0.88); /* 半透明化 */
+            background: rgba(255, 245, 230, 0.88);
             backdrop-filter: blur(4px);
             -webkit-backdrop-filter: blur(4px);
             border: 2px solid rgba(240, 213, 181, 0.8);
             border-radius: 14px;
-            margin-top: 4px; /* ヘッダーのすぐ下に密着 */
+            margin-top: 4px;
             padding: 4px 12px;
             box-sizing: border-box;
             z-index: 10;
@@ -133,12 +133,12 @@
         }
         #progress-container {
             flex: 1;
-            height: 10px; /* 少し細くしてスッキリ */
+            height: 10px;
             background: rgba(240, 228, 212, 0.6);
             border-radius: 10px;
             position: relative;
             box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-            overflow: visible; /* 先端画像が飛び出すため必須 */
+            overflow: visible;
         }
         #progress-bar {
             width: 0%;
@@ -148,10 +148,10 @@
             position: relative;
         }
         
-        /* --- 【改善】ゲージの現在点に動くおもち画像を復活 --- */
+        /* ゲージの現在点のおもち画像 */
         #progress-mover {
             position: absolute;
-            right: -13px; /* バーの先端の右端にジャストフィット */
+            right: -13px;
             top: 50%;
             transform: translateY(-50%);
             width: 26px;
@@ -186,12 +186,11 @@
             position: relative; display: flex; justify-content: center; align-items: center;
         }
 
-        /* 【改善】自由な方向への引っ張りを滑らかにするため、transformのtransitionを設定 */
         #mochisuke-btn {
             width: 220px; height: auto; max-height: 250px;
             object-fit: contain; cursor: pointer; z-index: 5;
-            transition: filter 0.3s ease, transform 0.08s ease-out; /* 引っ張りへの追従を速く、離した時は滑らかに */
-            transform-origin: center center; /* 中心を軸に変形 */
+            transition: filter 0.3s ease, transform 0.08s ease-out;
+            transform-origin: center center;
         }
 
         .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
@@ -250,14 +249,18 @@
         }
         .combo-bounce { opacity: 1 !important; transform: scale(1.2) !important; }
 
-        /* 【改善】風船（金もちボタン）のベーススタイル */
+        /* 【修正】金もちボタン（大きさを元の65pxに戻し、出現時のポップ演出を追加） */
         #fever-pop {
-            position: absolute; width: 85px; height: 85px; /* 65pxから85pxにサイズアップ */
+            position: absolute; width: 65px; height: 65px;
             background: url('mochi_particle.png') center/contain no-repeat;
             filter: hue-rotate(45deg) brightness(1.3) drop-shadow(0 0 8px #ffeb3b);
             cursor: pointer; z-index: 90; display: flex; justify-content: center; align-items: center;
-            font-size: 13px; font-weight: bold; color: #3e2723;
             user-select: none; -webkit-user-select: none;
+            animation: goldMochiAppear 0.2s ease-out;
+        }
+        @keyframes goldMochiAppear {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         /* プレゼントの上下ふわふわ揺れるアニメーション */
@@ -408,7 +411,6 @@
             <div id="distance-text">次のエリアまで : 500 もちkcal</div>
             <div id="progress-flex">
                 <div id="progress-container">
-                    <!-- 【改善】先端に配置するおもち画像(progress-mover)をバーの内側に追加 -->
                     <div id="progress-bar">
                         <div id="progress-mover"></div>
                     </div>
@@ -562,7 +564,6 @@
         let lastTappedTime = Date.now();
         const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
 
-        // 【改善】自由な方向への引っ張り計算用フラグ・座標
         let isDraggingMochi = false;
 
         function saveGame() {
@@ -622,10 +623,8 @@
 
             loadGame();
 
-            // 着せ替えフィルターの復元
             const target = clothesData.find(c => c.id === equippedClotheId);
             if (target) document.getElementById('mochisuke-btn').style.filter = target.filter;
-            // 初期背景の適用
             document.getElementById('game-screen').style.background = `url('${stages[selectedStageIndex].bg}') center/cover no-repeat`;
 
             updateDisplay();
@@ -748,7 +747,6 @@
             }, 1200);
         }
 
-        // --- 【改善】もちすけタップ＆自由方向引っ張り（動的変形処理） ---
         const mochiBtnElement = document.getElementById('mochisuke-btn');
 
         mochiBtnElement.addEventListener('pointerdown', (e) => {
@@ -760,7 +758,6 @@
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
             
-            // 呼吸アニメーションを一時停止してドラッグ状態にする
             mochiBtnElement.classList.remove('breathe-idle');
             isDraggingMochi = true;
 
@@ -779,45 +776,33 @@
             saveGame();
         });
 
-        // 画面全体で指の動きを監視して、引っ張った方向にもちすけを変形させる
         window.addEventListener('pointermove', (e) => {
             if (!isDraggingMochi) return;
 
             const rect = mochiBtnElement.getBoundingClientRect();
-            // もちすけ画像の中心座標を計算
             const centerX = rect.left + rect.width / 2;
             const centerY = rect.top + rect.height / 2;
 
-            // 中心からタッチされた指の位置までの距離と方向を算出
             const dx = e.clientX - centerX;
             const dy = e.clientY - centerY;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // 最大引っ張り距離の制限（伸ばしすぎで画面外に出るのを防ぐ）
             const maxDist = 180;
             const clampedDist = Math.min(dist, maxDist);
 
-            // 距離に応じた引き伸ばし倍率（縦に伸びるほど横が細くなる）
             const scaleY = 1 + (clampedDist / 110); 
             const scaleX = Math.max(0.55, 1 / Math.sqrt(scaleY));
 
-            // 指が指している角度を計算（元の画像の上方向を基準にするため、90度分オフセットを足す）
             const angle = Math.atan2(dy, dx) + Math.PI / 2;
             const angleDeg = angle * (180 / Math.PI);
 
-            // 自由な方向へのリアルタイム変形を適用！
             mochiBtnElement.style.transform = `rotate(${angleDeg}deg) scale(${scaleX}, ${scaleY})`;
         });
 
-        // 指が離れた、または画面外に外れたらゴムのように滑らかに戻す
         const endMochiDrag = () => {
             if (!isDraggingMochi) return;
             isDraggingMochi = false;
-            
-            // スタイルを標準に戻す（CSSのtransitionにより「もちんっ」と戻る）
             mochiBtnElement.style.transform = 'rotate(0deg) scale(1, 1)';
-            
-            // 戻りアニメーションが完了する頃に呼吸を再開させる
             setTimeout(() => {
                 if (!isDraggingMochi) {
                     mochiBtnElement.classList.add('breathe-idle');
@@ -910,7 +895,6 @@
                     
                     const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
                     const canBuy = score >= nextPrice;
-                    const currentEffectTotal = currentLv * (stage.tapBonus || stage.mpsBonus);
                     
                     let btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyOmiyage(${i})" style="background:#ff9800; color:white;">${nextPrice.toLocaleString()}もち</button>`;
 
@@ -919,7 +903,7 @@
                     row.innerHTML = `
                         <div class="item-info">
                             <span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span>
-                            <span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${currentEffectTotal})</span>
+                            <span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${currentLv * (stage.tapBonus || stage.mpsBonus)})</span>
                         </div>
                         ${btnHtml}
                     `;
@@ -1039,20 +1023,21 @@
             }, 20000);
         }
 
+        /* 【改善】プレゼント（飛んでくる風船）を大きく（95px）、ゆっくり移動（11秒）に修正 */
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             const present = document.createElement('div');
             present.id = 'lucky-present';
             
-            present.innerHTML = '<img src="present.png" alt="プレゼント" class="present-floating-img" style="width:75px; height:75px; object-fit:contain; pointer-events:none;">';
+            present.innerHTML = '<img src="present.png" alt="プレゼント" class="present-floating-img" style="width:95px; height:95px; object-fit:contain; pointer-events:none;">';
             present.style.position = 'absolute'; present.style.cursor = 'pointer'; present.style.zIndex = '95';
-            present.style.transition = 'transform 7.5s linear'; 
+            present.style.transition = 'transform 11s linear'; 
             
             const rect = gameScreen.getBoundingClientRect();
-            present.style.left = '-90px'; present.style.top = (Math.random() * (rect.height - 350) + 160) + 'px';
+            present.style.left = '-110px'; present.style.top = (Math.random() * (rect.height - 350) + 160) + 'px';
             gameScreen.appendChild(present);
             
-            setTimeout(() => present.style.transform = `translateX(${rect.width + 180}px)`, 50);
+            setTimeout(() => present.style.transform = `translateX(${rect.width + 220}px)`, 50);
             
             present.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
@@ -1064,7 +1049,7 @@
                 present.remove();
                 updateDisplay();
             });
-            setTimeout(() => { if (present.parentNode) present.remove(); }, 7500);
+            setTimeout(() => { if (present.parentNode) present.remove(); }, 11000);
         }
 
         function startFeverSpawningLoop() {
@@ -1074,24 +1059,21 @@
             }, 15000);
         }
 
-        // --- 【改善】風船（金もちボタン）を大きくし、横へゆっくり飛ぶように変更 ---
+        /* 【修正】金もち（ボーナス時間用）の出現の仕方を元通り（ランダム位置ポップアップ）に修正 */
         function spawnGoldMochi() {
             const gameScreen = document.getElementById('game-screen');
             const goldMochi = document.createElement('div');
             goldMochi.id = 'fever-pop'; 
-            goldMochi.innerHTML = '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:14px; font-weight:bold; color:#3e2723; white-space:nowrap; pointer-events:none;">✨金✨</div>';
+            goldMochi.innerHTML = '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:12px; font-weight:bold; color:#3e2723; white-space:nowrap; pointer-events:none;">✨金✨</div>';
 
-            // プレゼントと同じように左から右へ「ゆっくり横断（9.5秒）」する設定
-            goldMochi.style.transition = 'transform 9.5s linear';
-            
             const rect = gameScreen.getBoundingClientRect();
-            goldMochi.style.left = '-100px'; 
-            // 画面の中央付近の高さにランダム配置
-            goldMochi.style.top = (Math.random() * (rect.height - 380) + 180) + 'px';
+            // 画面内のランダムな位置に直接配置
+            const x = Math.random() * (rect.width - 80);
+            const y = Math.random() * (rect.height - 350) + 160;
+            
+            goldMochi.style.left = x + 'px';
+            goldMochi.style.top = y + 'px';
             gameScreen.appendChild(goldMochi);
-
-            // 画面をゆっくり横断させるアニメーション発火
-            setTimeout(() => goldMochi.style.transform = `translateX(${rect.width + 200}px)`, 50);
 
             goldMochi.addEventListener('pointerdown', (e) => {
                 e.stopPropagation(); 
@@ -1099,8 +1081,8 @@
                 triggerFeverTime();
             });
             
-            // 画面外に出たら自動消去
-            setTimeout(() => { if (goldMochi.parentNode) goldMochi.remove(); }, 9500);
+            // 6秒間タップされなければ消滅
+            setTimeout(() => { if (goldMochi.parentNode) goldMochi.remove(); }, 6000);
         }
 
         function triggerFeverTime() {
