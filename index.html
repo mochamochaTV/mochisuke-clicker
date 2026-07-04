@@ -45,7 +45,7 @@
         }
         .fade-black { opacity: 1 !important; }
 
-        /* --- スクショ再現：上部ヘッダー（3カラム構成） --- */
+        /* --- 【改善】上部ヘッダー（桁崩れ対策の2段構成） --- */
         #header-container {
             width: 90%;
             background: #fff5e6;
@@ -54,29 +54,38 @@
             margin-top: 15px;
             padding: 12px 16px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             z-index: 10;
             box-sizing: border-box;
         }
-        .header-box {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .score-display {
-            font-size: 1.15rem;
+        
+        /* 1段目: もちスコアを最上部に独立表示 */
+        .score-row {
+            width: 100%;
+            text-align: center;
+            font-size: 1.5rem;
             font-weight: bold;
             color: #4a3622;
+            border-bottom: 1px dashed #e9cca7;
+            padding-bottom: 4px;
         }
-        .score-display img {
+        .score-row img {
             width: 28px;
             height: 28px;
             vertical-align: middle;
         }
+
+        /* 2段目: 県名とステータスを左右に配置 */
+        .info-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         .location-display {
-            font-size: 1.4rem;
+            font-size: 1.3rem;
             font-weight: 900;
             color: #333;
             display: flex;
@@ -85,18 +94,19 @@
         }
         .location-display span.pin {
             color: #ff5252;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
         }
         .status-display {
             display: flex;
             flex-direction: column;
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: bold;
             color: #6d543a;
             gap: 2px;
+            text-align: right;
         }
 
-        /* --- スクショ再現：もちメーター＆進行度 --- */
+        /* --- もちメーター＆進行度 --- */
         #progress-area {
             width: 90%;
             background: #fff5e6;
@@ -159,10 +169,11 @@
             position: relative; display: flex; justify-content: center; align-items: center;
         }
 
+        /* 【改善】transitionを追加し、長押しから離した時に滑らかに戻るように修正 */
         #mochisuke-btn {
             width: 220px; height: auto; max-height: 250px;
             object-fit: contain; cursor: pointer; z-index: 5;
-            transition: filter 0.3s ease;
+            transition: filter 0.3s ease, transform 0.15s ease-out;
         }
 
         .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
@@ -172,16 +183,12 @@
             100% { transform: scale(1, 1); }
         }
 
-        /* 【変更】ただ凹むだけでなく、もちっと縦に伸びるアニメーションへ強化 */
-        .nobashi-anim { animation: nobashi 0.15s ease-out forwards; }
-        @keyframes nobashi {
-            0% { transform: scale(1, 1); }
-            35% { transform: scale(0.85, 1.25); } /* 横に縮んで縦にびよんと伸びる */
-            65% { transform: scale(1.05, 0.95); } /* 反動でもちっと少し潰れる */
-            100% { transform: scale(1, 1); }
+        /* 【改善】アニメーションではなく「状態」クラスに変更（長押し対応） */
+        .nobashi-state {
+            transform: scale(0.82, 1.35) !important; /* しっかり縦に伸びる */
         }
 
-        /* スクショ再現：吹き出しデザイン */
+        /* 吹き出しデザイン */
         #mochi-balloon {
             position: absolute; top: -70px; background: white;
             padding: 10px 16px; border-radius: 20px; font-size: 0.95rem; font-weight: bold;
@@ -244,7 +251,17 @@
             100% { transform: scale(1.15) rotate(5deg); }
         }
 
-        /* --- スクショ再現：5大フッターナビゲーションパネル --- */
+        /* 【改善】プレゼントの上下ふわふわ揺れるアニメーション */
+        @keyframes presentBob {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+            100% { transform: translateY(0px); }
+        }
+        .present-floating-img {
+            animation: presentBob 2s infinite ease-in-out;
+        }
+
+        /* 5大フッターナビゲーションパネル */
         #control-panel {
             width: 100%; background: #fffcf7;
             padding: 10px 0 24px 0; border-radius: 32px 32px 0 0;
@@ -266,14 +283,12 @@
         .nav-btn:active { transform: scale(0.95); }
         .nav-btn span:first-child { font-size: 1.4rem; }
         
-        /* メニューカラーのスクショ再現 */
-        .btn-warehouse { background: #ff769f; } /* 倉庫: ピンク */
-        .btn-shop { background: #ff9800; }      /* ショップ: オレンジ */
-        .btn-map { background: #4caf50; }       /* 地図: 緑 */
-        .btn-diary { background: #2196f3; }     /* 絵日記: 青 */
-        .btn-ranking { background: #9c27b0; }   /* 順位: 紫 */
+        .btn-warehouse { background: #ff769f; }
+        .btn-shop { background: #ff9800; }
+        .btn-map { background: #4caf50; }
+        .btn-diary { background: #2196f3; }
+        .btn-ranking { background: #9c27b0; }
 
-        /* 通知ドット */
         .badge-dot {
             position: absolute; top: 4px; right: 18px;
             width: 10px; height: 10px; background: #ff3d00;
@@ -348,6 +363,10 @@
         }
         .diary-title { font-size: 1.1rem; font-weight: bold; color: #5d4037; border-bottom: 2px dashed #bcaaa4; width: 100%; padding-bottom: 4px; margin-bottom: 8px; }
         .diary-text { writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl; font-size: 1.05rem; line-height: 1.8; color: #3e2723; height: 100%; width: 100%; overflow-x: auto; white-space: pre-wrap; font-family: "Hiragino Mincho ProN", "MS Mincho", serif; padding-bottom: 4px; }
+        .diary-text-area {
+            background-image: linear-gradient(90deg, rgba(224,208,192,0.3) 1px, transparent 1px);
+            background-size: 24px 100%;
+        }
         .diary-footer { width: 100%; text-align: right; font-size: 0.8rem; color: #8d6e63; font-weight: bold; }
         .diary-controls { display: flex; gap: 15px; margin-top: 15px; }
         .page-animate { animation: cardSwitch 0.25s ease-out; }
@@ -362,15 +381,17 @@
         <canvas id="particle-canvas"></canvas>
 
         <div id="header-container">
-            <div class="header-box score-display">
+            <div class="score-row">
                 🍡 <span id="score-text">0 もち</span>
             </div>
-            <div class="header-box location-display">
-                <span class="pin">📍</span><span id="current-location-text">鹿児島</span>
-            </div>
-            <div class="status-display">
-                <div id="mps-display">↗ 自動増加: 0 もち/秒</div>
-                <div id="tap-power-display">👆 タップ力: +1</div>
+            <div class="info-row">
+                <div class="header-box location-display">
+                    <span class="pin">📍</span><span id="current-location-text">鹿児島</span>
+                </div>
+                <div class="status-display">
+                    <div id="mps-display">↗ 自動増加: 0 もち/秒</div>
+                    <div id="tap-power-display">👆 タップ力: +1</div>
+                </div>
             </div>
         </div>
 
@@ -492,11 +513,12 @@
             { id: "ninja", name: "忍びの服", price: 15000, desc: "影からもち増産。タップ力+10 / 自動+40", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(0.4) contrast(1.5)", tapBonus: 10, mpsBonus: 40 }
         ];
 
+        // 【セーブ機能用】デフォルトの初期値。ロード時に上書きされます
         let score = 0; 
         let currentStageIndex = 0;     
         let selectedStageIndex = 0;    
         let currentStageProgress = 0;   
-        let purchasedItems = {};       
+        let purchasedItems = {}; // 【改善】中身をレベル数(数値)で管理に変更します      
 
         let purchasedClothes = { normal: true };
         let equippedClotheId = "normal";
@@ -528,6 +550,43 @@
         let lastTappedTime = Date.now();
         const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
 
+        // 【セーブ機能】進行状況をブラウザに自動保存する関数
+        function saveGame() {
+            const state = {
+                score: score,
+                currentStageIndex: currentStageIndex,
+                selectedStageIndex: selectedStageIndex,
+                currentStageProgress: currentStageProgress,
+                purchasedItems: purchasedItems,
+                purchasedClothes: purchasedClothes,
+                equippedClotheId: equippedClotheId
+            };
+            localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
+        }
+
+        // 【セーブ機能】保存データを読み込む関数（無ければ最初から）
+        function loadGame() {
+            const data = localStorage.getItem('mochisuke_save_data');
+            if (data) {
+                try {
+                    const state = JSON.parse(data);
+                    score = state.score ?? 0;
+                    currentStageIndex = state.currentStageIndex ?? 0;
+                    selectedStageIndex = state.selectedStageIndex ?? 0;
+                    currentStageProgress = state.currentStageProgress ?? 0;
+                    purchasedItems = state.purchasedItems ?? {};
+                    purchasedClothes = state.purchasedClothes ?? { normal: true };
+                    equippedClotheId = state.equippedClotheId ?? "normal";
+                    
+                    // 着せ替えフィルターの復元
+                    const target = clothesData.find(c => c.id === equippedClotheId);
+                    if (target) document.getElementById('mochisuke-btn').style.filter = target.filter;
+                } catch(e) {
+                    console.error("セーブデータのロードに失敗したため初期化します", e);
+                }
+            }
+        }
+
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
@@ -552,26 +611,23 @@
             resizeParticleCanvas();
             window.addEventListener('resize', resizeParticleCanvas);
 
-            // デモ用にデータをスクショの状態（大分ステージ）に初期設定
-            currentStageIndex = 2;
-            selectedStageIndex = 2;
-            score = 2510;
-            currentStageProgress = 1806; // 4000 - 2194 = 1806もちkcal
-            purchasedItems[0] = true; // 鹿児島購入済
-            purchasedItems[1] = true; // 宮崎購入済
+            // 【改善】デモ用固定データを削除し、セーブデータから読み込むように変更
+            loadGame();
 
             updateDisplay();
             startFeverSpawningLoop();
-            startPresentSpawningLoop(); /* 名前の変更を反映 */
+            startPresentSpawningLoop();
             startMochiLifeLoop();
             
             requestAnimationFrame(updateAndRenderParticles);
         };
 
+        // 【改善】おみやげのレベル数に応じてタップ力が倍増するように修正
         function getTapPower() {
             let power = 1; 
             stages.forEach((stage, idx) => {
-                if (purchasedItems[idx]) power += stage.tapBonus;
+                const lv = purchasedItems[idx] || 0;
+                if (lv > 0) power += (stage.tapBonus * lv);
             });
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) power += activeClothe.tapBonus;
@@ -580,10 +636,12 @@
             return power;
         }
 
+        // 【改善】おみやげのレベル数に応じて自動秒産力が増えるように修正
         function getMps() {
             let mps = 0; 
             stages.forEach((stage, idx) => {
-                if (purchasedItems[idx]) mps += stage.mpsBonus;
+                const lv = purchasedItems[idx] || 0;
+                if (lv > 0) mps += (stage.mpsBonus * lv);
             });
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) mps += activeClothe.mpsBonus;
@@ -678,20 +736,21 @@
             }, 1200);
         }
 
-        document.getElementById('mochisuke-btn').addEventListener('pointerdown', (e) => {
+        // --- 【改善】もちすけの長押し(ホールド)対応タップ処理 ---
+        const mochiBtnElement = document.getElementById('mochisuke-btn');
+
+        mochiBtnElement.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
             playTapSound();
             handleCombo();
             
             lastTappedTime = Date.now();
-            // 【変更】タップした瞬間に吹き出しを非表示にし、プレイ中の邪魔にならないように調整
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
             
-            const mochiBtn = document.getElementById('mochisuke-btn');
-            mochiBtn.classList.remove('breathe-idle', 'nobashi-anim');
-            void mochiBtn.offsetWidth;
-            mochiBtn.classList.add('nobashi-anim'); /* アニメーション名を変更 */
+            // アニメーションではなく状態クラスに変更。離すまで伸びたままキープ！
+            mochiBtnElement.classList.remove('breathe-idle');
+            mochiBtnElement.classList.add('nobashi-state');
 
             createRippleEffect(e.clientX, e.clientY);
             createFloatingText(e.clientX, e.clientY, getTapPower());
@@ -705,15 +764,18 @@
                 score += getTapPower(); 
             }
             updateDisplay();
+            saveGame(); // タップの度に進行状況を保存
         });
 
-        document.getElementById('mochisuke-btn').addEventListener('animationend', (e) => {
-            if (e.animationName === 'nobashi') { /* 検知するアニメーション名を変更 */
-                const mochiBtn = document.getElementById('mochisuke-btn');
-                mochiBtn.classList.remove('nobashi-anim');
-                mochiBtn.classList.add('breathe-idle');
+        // 指やマウスが離れた時に滑らかに元の形に戻す処理
+        function endNobashiEffect() {
+            if (mochiBtnElement.classList.contains('nobashi-state')) {
+                mochiBtnElement.classList.remove('nobashi-state');
+                mochiBtnElement.classList.add('breathe-idle');
             }
-        });
+        }
+        mochiBtnElement.addEventListener('pointerup', endNobashiEffect);
+        mochiBtnElement.addEventListener('pointerleave', endNobashiEffect);
 
         document.body.addEventListener('pointerdown', () => initAndPlayBGM(), { once: true });
 
@@ -721,7 +783,8 @@
         function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
         function openWarehouse() {
-            const boughtCount = Object.keys(purchasedItems).length;
+            let boughtCount = 0;
+            stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
             const currentClothe = clothesData.find(c => c.id === equippedClotheId);
             
             document.getElementById('warehouse-status-box').innerHTML = `
@@ -729,7 +792,7 @@
                 ・現在の所持金: ${Math.floor(score).toLocaleString()} もち<br>
                 ・現在のタップ力: +${getTapPower()} もち/タップ<br>
                 ・自動生産力 (Mps): ${getMps()} もち/秒<br>
-                ・集めたおみやげ: ${boughtCount} / ${stages.length} 種類<br>
+                ・解放したおみやげ: ${boughtCount} / ${stages.length} 種類<br>
                 ・現在の着用衣装: <strong>${currentClothe.name}</strong>
             `;
 
@@ -767,6 +830,7 @@
             const target = clothesData.find(c => c.id === id);
             document.getElementById('mochisuke-btn').style.filter = target.filter;
             alert(`もちすけが「${target.name}」に着替えました！`);
+            saveGame();
             openWarehouse(); 
             updateDisplay();
         }
@@ -783,6 +847,7 @@
             renderShopList();
         }
 
+        // --- 【改善】おみやげを上限なくレベルアップできるようにショップ表示を改良 ---
         function renderShopList() {
             const listContainer = document.getElementById('shop-items-list');
             listContainer.innerHTML = "";
@@ -791,22 +856,21 @@
                 for (let i = 0; i <= currentStageIndex; i++) {
                     if (i >= stages.length) break;
                     const stage = stages[i];
-                    const isBought = purchasedItems[i];
+                    const currentLv = purchasedItems[i] || 0;
                     
-                    let btnHtml = "";
-                    if (isBought) {
-                        btnHtml = `<button class="item-action-btn" disabled>購入済</button>`;
-                    } else {
-                        const canBuy = score >= stage.price;
-                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyOmiyage(${i})" style="background:#ff9800; color:white;">${stage.price}もち</button>`;
-                    }
+                    // レベルが上がるごとに価格を1.5倍にするルール
+                    const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
+                    const canBuy = score >= nextPrice;
+                    const currentEffectTotal = currentLv * (stage.tapBonus || stage.mpsBonus);
+                    
+                    let btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyOmiyage(${i})" style="background:#ff9800; color:white;">${nextPrice.toLocaleString()}もち</button>`;
 
                     const row = document.createElement('div');
                     row.className = "list-item";
                     row.innerHTML = `
                         <div class="item-info">
-                            <span class="item-title">🎁 ${stage.item} (${stage.name}名物)</span>
-                            <span class="item-desc">効果: ${stage.effectDesc}</span>
+                            <span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span>
+                            <span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${currentEffectTotal})</span>
                         </div>
                         ${btnHtml}
                     `;
@@ -822,7 +886,7 @@
                         btnHtml = `<button class="item-action-btn" disabled>購入済</button>`;
                     } else {
                         const canBuy = score >= c.price;
-                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyKisekae('${c.id}')" style="background:#ff9800; color:white;">${c.price}もち</button>`;
+                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyKisekae('${c.id}')" style="background:#ff9800; color:white;">${c.price.toLocaleString()}もち</button>`;
                     }
 
                     const row = document.createElement('div');
@@ -839,12 +903,17 @@
             }
         }
 
+        // --- 【改善】おみやげのレベルアップ購入処理 ---
         function buyOmiyage(idx) {
             const stage = stages[idx];
-            if (score >= stage.price && !purchasedItems[idx]) {
-                score -= stage.price;
-                purchasedItems[idx] = true;
-                alert(`「${stage.item}」を購入しました！\n特殊効果【${stage.effectDesc}】が永続発動！`);
+            const currentLv = purchasedItems[idx] || 0;
+            const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
+
+            if (score >= nextPrice) {
+                score -= nextPrice;
+                purchasedItems[idx] = currentLv + 1;
+                alert(`「${stage.item}」のレベルがアップしました！\n(Lv.${currentLv} ➡️ Lv.${currentLv + 1})`);
+                saveGame(); // 購入後に即座にセーブ
                 renderShopList();
                 updateDisplay();
             }
@@ -856,6 +925,7 @@
                 score -= target.price;
                 purchasedClothes[id] = true;
                 alert(`衣装「${target.name}」を購入しました！\n「倉庫」メニューから着替えられるぞ！`);
+                saveGame();
                 renderShopList();
                 updateDisplay();
             }
@@ -896,6 +966,7 @@
             triggerAreaTransition(stages[idx].bg, () => {
                 selectedStageIndex = idx;
                 updateDisplay();
+                saveGame();
             });
         }
 
@@ -903,7 +974,6 @@
             setInterval(() => {
                 const idleDuration = Date.now() - lastTappedTime;
                 const balloon = document.getElementById('mochi-balloon');
-                // 5秒間タップがない放置状態のときのみ、吹き出しを出す
                 if (idleDuration > 5000 && !isFever) {
                     if (!balloon.classList.contains('balloon-show')) {
                         const randomText = callPhrases[Math.floor(Math.random() * callPhrases.length)];
@@ -914,7 +984,6 @@
             }, 2000);
         }
 
-        /* 【変更】ラッキーキャットから「プレゼント（画像）」出現ループへ変更 */
         function startPresentSpawningLoop() {
             setInterval(() => {
                 if (document.getElementById('lucky-present')) return;
@@ -922,21 +991,25 @@
             }, 20000);
         }
 
-        /* 【変更】絵文字を排除し、回転せずに画像「present.png」がすべるように移動する関数 */
+        // --- 【改善】プレゼントを大きくし、ゆっくりふわふわ飛ぶように仕様変更 ---
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             const present = document.createElement('div');
             present.id = 'lucky-present';
-            // HTMLの中に画像タグを生成（サイズは50px四方に調整）
-            present.innerHTML = '<img src="present.png" alt="プレゼント" style="width:50px; height:50px; object-fit:contain; pointer-events:none;">';
-            present.style.position = 'absolute'; present.style.cursor = 'pointer'; present.style.zIndex = '95'; present.style.transition = 'transform 3.5s linear';
+            
+            // 75px四方に拡大し、上下ふわふわアニメーション(present-floating-img)を追加
+            present.innerHTML = '<img src="present.png" alt="プレゼント" class="present-floating-img" style="width:75px; height:75px; object-fit:contain; pointer-events:none;">';
+            present.style.position = 'absolute'; present.style.cursor = 'pointer'; present.style.zIndex = '95';
+            
+            // 移動スピードを 3.5秒 ➡️ 7.5秒 に伸ばしてゆっくり進むように設定
+            present.style.transition = 'transform 7.5s linear'; 
             
             const rect = gameScreen.getBoundingClientRect();
-            present.style.left = '-70px'; present.style.top = (Math.random() * (rect.height - 320) + 160) + 'px';
+            present.style.left = '-90px'; present.style.top = (Math.random() * (rect.height - 350) + 160) + 'px';
             gameScreen.appendChild(present);
             
-            // rotate(360deg) を排除して、回転しないように修正
-            setTimeout(() => present.style.transform = `translateX(${rect.width + 140}px)`, 50);
+            // 画面外から画面外へと滑らかに移動
+            setTimeout(() => present.style.transform = `translateX(${rect.width + 180}px)`, 50);
             
             present.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
@@ -944,10 +1017,11 @@
                 score += bonus;
                 createParticle(e.clientX, e.clientY);
                 alert(`🎁 プレゼントを捕まえた！\n【福もちボーナス +${bonus.toLocaleString()} もち】獲得！`);
+                saveGame(); // ボーナス獲得を保存
                 present.remove();
                 updateDisplay();
             });
-            setTimeout(() => { if (present.parentNode) present.remove(); }, 3500);
+            setTimeout(() => { if (present.parentNode) present.remove(); }, 7500);
         }
 
         function startFeverSpawningLoop() {
@@ -1000,6 +1074,7 @@
                         selectedStageIndex = nextIdx;
                         alert(`新エリア「${stages[nextIdx].name}」に到達しました！`);
                         updateDisplay();
+                        saveGame(); // 新ステージ到達時に保存
                     });
                 } else {
                     currentStageProgress = stages[currentStageIndex].distance;
@@ -1008,7 +1083,6 @@
         }
 
         function updateDisplay() {
-            // もちスコア表示
             const scoreFormatted = Math.floor(score).toLocaleString() + " もち";
             if (isFever) {
                 document.getElementById('score-text').innerText = `🔥 5倍中 (${feverTimeLeft}s) ${scoreFormatted}`;
@@ -1016,10 +1090,9 @@
                 document.getElementById('score-text').innerText = scoreFormatted;
             }
 
-            // ステータス表示
             document.getElementById('current-location-text').innerText = stages[selectedStageIndex].name;
-            document.getElementById('mps-display').innerText = `↗ 自動増加: ${getMps()} もち/秒`;
-            document.getElementById('tap-power-display').innerText = `👆 タップ力: +${getTapPower()}`;
+            document.getElementById('mps-display').innerText = `↗ 自動増加: ${getMps().toLocaleString()} もち/秒`;
+            document.getElementById('tap-power-display').innerText = `👆 タップ力: +${getTapPower().toLocaleString()}`;
 
             const distText = document.getElementById('distance-text');
             const progressBar = document.getElementById('progress-bar');
@@ -1032,7 +1105,7 @@
                 progressBar.style.width = "100%";
             } else {
                 const remaining = Math.ceil(stages[currentStageIndex].distance - currentStageProgress);
-                distText.innerText = `次のエリアまで : ${remaining} もちkcal`;
+                distText.innerText = `次のエリアまで : ${remaining.toLocaleString()} もちkcal`;
                 
                 let pct = (currentStageProgress / stages[currentStageIndex].distance) * 100;
                 if (pct > 100) pct = 100;
@@ -1062,6 +1135,7 @@
         }
 
         // 自動増加タイマーループ
+        let autoSaveCounter = 0;
         setInterval(() => {
             let mps = getMps();
             if (mps > 0) {
@@ -1070,6 +1144,13 @@
                     currentStageProgress += gain; checkStageProgress();
                 }
                 updateDisplay();
+                
+                // 処理の重さを防ぐため、自動増加中は3秒に1回（30回ループごと）に定期セーブ
+                autoSaveCounter++;
+                if (autoSaveCounter >= 30) {
+                    autoSaveCounter = 0;
+                    saveGame();
+                }
             }
         }, 100);
 
@@ -1082,7 +1163,7 @@
             
             paper.classList.remove('page-animate'); void paper.offsetWidth; paper.classList.add('page-animate');
 
-            const hasItemText = purchasedItems[diaryPageIndex] ? `🛍️ アイテム: ${stage.item} (有効)` : "🛍️ アイテム: 未購入";
+            const hasItemText = (purchasedItems[diaryPageIndex] || 0) > 0 ? `🛍️ アイテム: ${stage.item} (Lv.${purchasedItems[diaryPageIndex]})` : "🛍️ アイテム: 未購入";
             document.getElementById('diary-img-element').src = stage.diaryImg; 
             document.getElementById('diary-img-caption').innerText = `【${stage.name}の思い出】 ・ ${hasItemText}`;
             document.getElementById('diary-title-element').innerText = `${stage.name}編`;
