@@ -11,7 +11,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>もちすけ日本縦断クリッカー -九州編-</title>
+    <title>もちすけ日本縦断クリッカー -中国・四国編-</title>
     <style>
         /* 全体スタイル - ズームやスクロールを完全禁止 */
         body {
@@ -190,7 +190,7 @@
             width: 220px; height: auto; max-height: 250px;
             object-fit: contain; cursor: pointer; z-index: 5;
             transition: filter 0.3s ease, transform 0.05s ease-out;
-            transform-origin: center bottom; /* 下部を基準に潰れるように変更して、よりお餅らしさをアップ */
+            transform-origin: center bottom; /* 下部を基準に潰れるように変更 */
         }
 
         .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
@@ -249,7 +249,7 @@
         }
         .combo-bounce { opacity: 1 !important; transform: scale(1.2) !important; }
 
-        /* 金もちボタン（ランダム位置にポップアップ出現） */
+        /* 金もちボタン */
         #fever-pop {
             position: absolute; width: 65px; height: 65px;
             background: url('mochi_particle.png') center/contain no-repeat;
@@ -263,7 +263,7 @@
             100% { transform: scale(1); opacity: 1; }
         }
 
-        /* プレゼントの上下ふわふわ揺れるアニメーション */
+        /* プレゼントの上下アニメーション */
         @keyframes presentBob {
             0% { transform: translateY(0px); }
             50% { transform: translateY(-12px); }
@@ -370,7 +370,6 @@
         .img-caption { font-size: 0.8rem; font-weight: bold; color: #795548; text-align: center; margin-top: 6px; }
         .diary-text-area {
             width: 100%; height: 180px; display: flex; flex-direction: column; align-items: flex-start;
-            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><line x1="0" y1="0" x2="0" y2="30" stroke="%23e0d0c0" stroke-width="1" stroke-dasharray="2,2"/></svg>');
             padding: 8px; box-sizing: border-box; border-radius: 8px; border: 1px solid #efebe9;
         }
         .diary-title { font-size: 1.1rem; font-weight: bold; color: #5d4037; border-bottom: 2px dashed #bcaaa4; width: 100%; padding-bottom: 4px; margin-bottom: 8px; }
@@ -388,6 +387,12 @@
 <body>
 
     <div id="game-screen">
+        <!-- 【デバッグ用】本番公開時にこの debug-zone の3行を丸ごと削除してください -->
+        <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 5px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d;">
+            <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;">🛠️ デバッグ：一瞬でもち+100万＆進める</button>
+        </div>
+        <!-- デバッグ用ここまで -->
+
         <div id="fade-overlay"></div>
         
         <canvas id="particle-canvas"></canvas>
@@ -484,10 +489,10 @@
                 <div class="img-caption" id="diary-img-caption">思い出の写真</div>
             </div>
             <div class="diary-text-area">
-                <div class="diary-title" id="diary-title-element">鹿児島編</div>
+                <div class="diary-title" id="diary-title-element"></div>
                 <div class="diary-text" id="diary-text-element"></div>
             </div>
-            <div class="diary-footer" id="diary-footer-element">ページ: 1</div>
+            <div class="diary-footer" id="diary-footer-element"></div>
         </div>
         <div class="diary-controls">
             <button id="prev-page-btn" onclick="prevPage()">◀ もどる</button>
@@ -509,7 +514,7 @@
             lastTouchEnd = now;
         }, { passive: false });
 
-        // ステージデータ
+        // ステージデータ（四国・中国地方を追加拡張）
         const stages = [
             { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！\n桜島がとっても雄大で、パワーをもらった気分だぞ。\nここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", distance: 1500, item: "完熟マンゴー", price: 300, diary: "宮崎にやってきたぞ！\nヤシの木がたくさん並んでいて、南国気分満点だぁ。\nお日様をいっぱい浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
@@ -517,7 +522,15 @@
             { name: "熊本", distance: 12000, item: "からし蓮根", price: 3500, diary: "熊本城を見に行ったぞ！\n石垣がすごく高くて圧倒されちゃった。\nからし蓮根を食べたら、ツーンときて涙が出ちゃったの。大人の味だね！", bg: "bg_images/kumamoto.png", diaryImg: "diary_images/kumamoto_d.png", effectDesc: "自動増加 +8もち/秒", tapBonus: 0, mpsBonus: 8 },
             { name: "長崎", distance: 30000, item: "長崎カステラ", price: 10000, diary: "長崎は坂の街！のぼり坂がいっぱいでいい運動になったよ。\n夜に見る異国情緒あふれる街並みがすごく綺麗だったなぁ。\nカステラもザラメがシャリシャリで美味しかった！", bg: "bg_images/nagasaki.png", diaryImg: "diary_images/nagasaki_d.png", effectDesc: "タップ力 +15", tapBonus: 15, mpsBonus: 0 },
             { name: "佐賀", distance: 75000, item: "呼子のイカ", price: 25000, diary: "佐賀の呼子で透明なイカを食べたぞ！\nコリコリしていて甘くて、今まで食べたイカと全然違うの。\n吉野ヶ里遺跡で昔の人の暮らしに思いを馳せた一日でした。", bg: "bg_images/saga.png", diaryImg: "diary_images/saga_d.png", effectDesc: "自動増加 +30もち/秒", tapBonus: 0, mpsBonus: 30 },
-            { name: "福岡", distance: 150000, item: "博多ラーメン", price: 60000, diary: "ついに九州のゴール、福岡へ！\n中洲の屋台街はとっても賑やかでワクワクしたぞ。\n美味しいとんこつラーメンをバッチリ替玉まで完食！\nさぁ、九州制覇だ！次は本州へ進撃だ！", bg: "bg_images/fukuoka.png", diaryImg: "diary_images/fukuoka_d.png", effectDesc: "タップ力 +50", tapBonus: 50, mpsBonus: 0 }
+            { name: "福岡", distance: 150000, item: "博多ラーメン", price: 60000, diary: "ついに九州のゴール、福岡へ！\n中洲の屋台街はとっても賑やかでワクワクしたぞ。\n美味しいとんこつラーメンをバッチリ替玉まで完食！\nさぁ、九州制覇だ！次は本州へ進撃だ！", bg: "bg_images/fukuoka.png", diaryImg: "diary_images/fukuoka_d.png", effectDesc: "タップ力 +50", tapBonus: 50, mpsBonus: 0 },
+            
+            // --- ここから新ステージ（四国・中国地方） ---
+            { name: "徳島", distance: 350000, item: "すだちもち", price: 150000, diary: "四国に突入、最初は徳島だぞ！\n阿波踊りのリズムが聞こえてきて、体が勝手に動き出っちゃうや。\n名物のすだちを絞ったおもちは、さっぱりして何個でも食べられるの！", bg: "bg_images/tokushima.png", diaryImg: "diary_images/tokushima_d.png", effectDesc: "タップ力 +120", tapBonus: 120, mpsBonus: 0 },
+            { name: "香川", distance: 800000, item: "讃岐うどん", price: 400000, diary: "うどん県こと香川県にきたぞ！\nおもちに負けないくらいコシがあるうどんは、ツルツルで最高！\nお出汁のいい香りに包まれて、もちすけも大満足だぁ。", bg: "bg_images/kagawa.png", diaryImg: "diary_images/kagawa_d.png", effectDesc: "自動増加 +100もち/秒", tapBonus: 0, mpsBonus: 100 },
+            { name: "愛媛", distance: 2000000, item: "みかん大福", price: 1000000, diary: "愛媛県にやってきたぞ！\nどこを見渡すみかん、みかん、みかん！\nジューシーなみかんが丸ごと入った大福は、甘酸っぱくてモチモチでほっぺが落ちそうや。", bg: "bg_images/ehime.png", diaryImg: "diary_images/ehime_d.png", effectDesc: "タップ力 +400", tapBonus: 400, mpsBonus: 0 },
+            { name: "高知", distance: 5000000, item: "カツオのたたき", price: 3000000, diary: "四国のラストは高知県！\n桂浜から見る太平洋はすっごく広くて感動したぞ。\n藁焼きのカツオは香ばしくて、お腹いっぱい食べちゃった！さぁ次は中国地方だ！", bg: "bg_images/kochi.png", diaryImg: "diary_images/kochi_d.png", effectDesc: "自動増加 +350もち/秒", tapBonus: 0, mpsBonus: 350 },
+            { name: "広島", distance: 12000000, item: "もみじ饅頭", price: 9000000, diary: "中国地方に上陸、広島県だぞ！\n厳島神社の大きな鳥居が海に浮かんでいてすっごく神秘的だったなぁ。\n焼き立てのもみじ饅頭は、あんこがホカホカで美味しかったの！", bg: "bg_images/hiroshima.png", diaryImg: "diary_images/hiroshima_d.png", effectDesc: "タップ力 +1200", tapBonus: 1200, mpsBonus: 0 },
+            { name: "岡山", distance: 30000000, item: "きびだんご", price: 25000000, diary: "桃太郎の故郷、岡山県にきたぞ！\n美味しいきびだんごを貰ったから、もちすけも今日から桃太郎の仲間入りかな？\nこれでさらに遠くまで旅を続けられるぞ！", bg: "bg_images/okayama.png", diaryImg: "diary_images/okayama_d.png", effectDesc: "自動増加 +1000もち/秒", tapBonus: 0, mpsBonus: 1000 }
         ];
 
         const clothesData = [
@@ -595,6 +608,18 @@
                     console.error("セーブデータのロードに失敗したため初期化します", e);
                 }
             }
+        }
+
+        // 【デバッグ用関数】進捗を一気に進める。あとでこの関数ごと丸ごと削除してください
+        function debugAddMochi() {
+            score += 1000000;
+            if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
+                currentStageProgress += 1000000;
+                checkStageProgress();
+            }
+            updateDisplay();
+            saveGame();
+            alert("🛠️ デバッグ：もちを1,000,000個追加し、ステージの進捗を進めました！");
         }
 
         function initAndPlayBGM() {
@@ -704,7 +729,7 @@
         }
 
         function createParticle(x, y) {
-            if (particleList.length > 30) return;
+            if (particleList.length > 30) return; // 👈 30個制限をキープ
             const gameScreen = document.getElementById('game-screen');
             const rect = gameScreen.getBoundingClientRect();
             particleList.push({
@@ -749,7 +774,6 @@
 
         const mochiBtnElement = document.getElementById('mochisuke-btn');
 
-        /* 【復元・強化】タップした瞬間に「もちっ」と潰れる元通りの操作感へ変更 */
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
@@ -759,7 +783,6 @@
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
             
-            // 待機アニメを止め、横にぷにっと広がり、縦に潰れる変形を適用
             mochiBtnElement.classList.remove('breathe-idle');
             mochiBtnElement.style.transform = 'scale(1.15, 0.85)';
             isDraggingMochi = true;
@@ -776,22 +799,15 @@
                 score += getTapPower(); 
             }
             updateDisplay();
-            saveGame();
         });
 
-        // 【廃止】引っ張って伸ばす・回転させる複雑なドラッグ処理はすべてカット
-        window.addEventListener('pointermove', (e) => {
-            // 何もしない
-        });
-
-        /* 【復元】指が離れたらポンッと元の形に戻す */
         const endMochiDrag = () => {
             if (!isDraggingMochi) return;
             isDraggingMochi = false;
             mochiBtnElement.style.transform = 'scale(1, 1)';
             setTimeout(() => {
                 if (!isDraggingMochi) {
-                    mochiBtnElement.classList.add('breathe-idle'); // 呼吸アニメーション再開
+                    mochiBtnElement.classList.add('breathe-idle');
                 }
             }, 80);
         };
@@ -1009,6 +1025,10 @@
             }, 20000);
         }
 
+        function deletePresent(present) {
+             if (present && present.parentNode) present.remove();
+        }
+
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             const present = document.createElement('div');
@@ -1034,7 +1054,7 @@
                 present.remove();
                 updateDisplay();
             });
-            setTimeout(() => { if (present.parentNode) present.remove(); }, 11000);
+            setTimeout(() => deletePresent(present), 11000);
         }
 
         function startFeverSpawningLoop() {
@@ -1099,6 +1119,7 @@
                     });
                 } else {
                     currentStageProgress = stages[currentStageIndex].distance;
+                    saveGame();
                 }
             }
         }
@@ -1122,7 +1143,7 @@
                 distText.innerText = "このエリアは踏破済みです";
                 progressBar.style.width = "100%";
             } else if (currentStageIndex === stages.length - 1 && currentStageProgress >= stages[currentStageIndex].distance) {
-                distText.innerText = "🎉 祝・九州制覇完了！！";
+                distText.innerText = "🎉 祝・中国・四国地方まで制覇完了！！";
                 progressBar.style.width = "100%";
             } else {
                 const remaining = Math.ceil(stages[currentStageIndex].distance - currentStageProgress);
@@ -1138,7 +1159,7 @@
         function openRanking() {
             let listContainer = document.getElementById('ranking-list');
             let dummyRanks = [
-                { name: "九州もち王", score: 250000, isMe: false },
+                { name: "日本もち王", score: 50000000, isMe: false },
                 { name: "タイパーすけ", score: 45000, isMe: false },
                 { name: "あなた (もちすけ)", score: Math.floor(score), isMe: true },
                 { name: "見習いもち", score: 10, isMe: false }
@@ -1156,7 +1177,6 @@
         }
 
         // 自動増加タイマーループ
-        let autoSaveCounter = 0;
         setInterval(() => {
             let mps = getMps();
             if (mps > 0) {
@@ -1165,14 +1185,13 @@
                     currentStageProgress += gain; checkStageProgress();
                 }
                 updateDisplay();
-                
-                autoSaveCounter++;
-                if (autoSaveCounter >= 30) {
-                    autoSaveCounter = 0;
-                    saveGame();
-                }
             }
         }, 100);
+
+        // 【今回の強化】10秒ごとにMpsの状態に関係なく、100%確実にバックアップをとる完全自動セーブ
+        setInterval(() => {
+            saveGame();
+        }, 10000);
 
         let diaryPageIndex = 0;
         function openDiary() { diaryPageIndex = selectedStageIndex; renderDiaryPage(); openModal('diary-modal'); }
