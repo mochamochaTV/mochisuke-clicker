@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <!-- Google Analytics -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BTBF44E0WD"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -64,10 +65,7 @@
         }
         
         #mochisuke-wrapper {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: relative; display: flex; justify-content: center; align-items: center;
         }
 
         #mochisuke-btn {
@@ -76,27 +74,23 @@
             filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));
         }
 
-        /* ✨ もちすけの生命感：アイドリング（呼吸）アニメーション */
-        .breathe-idle {
-            animation: breathe 2.5s infinite ease-in-out;
-        }
+        /* もちすけの呼吸アニメーション */
+        .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
         @keyframes breathe {
             0% { transform: scale(1, 1); }
-            50% { transform: scale(1.03, 0.97); } /* わずかに横に広がり、縦に縮む */
+            50% { transform: scale(1.03, 0.97); }
             100% { transform: scale(1, 1); }
         }
 
-        /* 🔘 タップ時のへこみ（アニメーション中は呼吸を上書き） */
-        .hekomi-anim {
-            animation: hekomi 0.1s ease-out forwards;
-        }
+        /* タップ時のへこみ */
+        .hekomi-anim { animation: hekomi 0.1s ease-out forwards; }
         @keyframes hekomi {
             0% { transform: scale(1); filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1); }
             40% { transform: scale(0.91); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3)) brightness(0.95); }
             100% { transform: scale(1); filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1); }
         }
 
-        /* 💬 生きてる感：放置時の吹き出し */
+        /* 放置時の吹き出し */
         #mochi-balloon {
             position: absolute; top: -50px; background: white;
             padding: 8px 12px; border-radius: 16px; font-size: 0.9rem; font-weight: bold;
@@ -114,7 +108,7 @@
         }
         .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
 
-        /* 🌊 タップした場所に広がる波紋（リップル）エフェクト */
+        /* 波紋（リップル）エフェクト */
         .ripple {
             position: absolute; border: 4px solid rgba(255, 152, 0, 0.6);
             border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
@@ -146,11 +140,17 @@
         }
         .combo-bounce { opacity: 1 !important; transform: scale(1.2) !important; }
 
-        /* パーティクル */
+        /* ⚡ 軽量化：JS物理演算を廃止し、GPU駆動のCSSアニメーションに移行したパーティクル */
         .particle {
-            position: absolute; width: 55px; height: 55px;
+            position: absolute; width: 42px; height: 42px;
             background: url('mochi_particle.png') center/contain no-repeat;
-            pointer-events: none; z-index: 998; transform: translate(-50%, -50%);
+            pointer-events: none; z-index: 998;
+            /* JSから渡されるランダムな目的地(--tx, --ty)に向かって弾け飛ぶ */
+            animation: scatter 0.45s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+        }
+        @keyframes scatter {
+            0% { transform: translate(-50%, -50%) translate(0, 0) scale(1); opacity: 1; }
+            100% { transform: translate(-50%, -50%) translate(var(--tx), var(--ty)) scale(0.4); opacity: 0; }
         }
 
         /* 金もちボタン */
@@ -207,40 +207,53 @@
         .rank-item { display: flex; justify-content: space-between; padding: 8px 4px; border-bottom: 1px solid #eee; }
         .my-rank { background: #fff9c4; font-weight: bold; }
 
-        /* 絵日記 */
-        .book-container {
-            width: 95%; max-width: 680px; height: 460px;
-            perspective: 1200px; display: flex; flex-direction: column; align-items: center;
+        /* 📖 変更点：スマホの縦画面に特化した「1枚の絵日記用紙」スタイル */
+        .diary-paper {
+            width: 90%; max-width: 360px; background: #fffbf0;
+            border-radius: 16px; padding: 16px; box-sizing: border-box;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+            border: 2px solid #d7ccc8;
+            display: flex; flex-direction: column; gap: 12px;
         }
-        .book {
-            width: 100%; height: 100%; display: flex;
-            background: #e0d0b0; border-radius: 8px; padding: 10px;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.4); position: relative;
+        .diary-img-area {
+            width: 100%; background: #fafafa; border-radius: 10px;
+            padding: 8px; box-sizing: border-box; display: flex; justify-content: center; align-items: center;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.05);
         }
-        .book::after {
-            content: ''; position: absolute; left: 50%; top: 0; width: 4px; height: 100%;
-            background: linear-gradient(to right, rgba(0,0,0,0.3), rgba(0,0,0,0), rgba(0,0,0,0.3));
-            transform: translateX(-50%); z-index: 20;
+        .diary-img {
+            max-width: 100%; height: 180px; object-fit: contain;
+            border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15);
         }
-        .page-left, .page-right {
-            width: 50%; height: 100%; background: #fffbf0;
-            padding: 20px; box-sizing: border-box; display: flex; flex-direction: column;
-            position: relative; z-index: 10; overflow: hidden;
-        }
-        .page-left { border-radius: 6px 0 0 6px; border-right: 1px solid rgba(0,0,0,0.1); justify-content: center; align-items: center; }
-        .page-right { border-radius: 0 6px 6px 0; border-left: 1px solid rgba(0,0,0,0.1); justify-content: flex-start; }
-        .diary-img { max-width: 100%; max-height: 85%; object-fit: contain; border: 4px solid #fff; box-shadow: 0 4px 8px rgba(0,0,0,0.2); background: #eee; }
-        .img-caption { margin-top: 10px; font-size: 0.85rem; font-weight: bold; color: #5d4037; text-align: center; line-height: 1.4; }
+        .img-caption { font-size: 0.8rem; font-weight: bold; color: #795548; text-align: center; margin-top: 6px; }
         
-        .diary-title { font-size: 1.3rem; font-weight: bold; color: #5d4037; border-bottom: 2px dashed #bcaaa4; padding-bottom: 5px; }
-        .diary-text { font-size: 1rem; line-height: 1.6; color: #4e342e; flex: 1; margin-top: 15px; white-space: pre-wrap; overflow-y: auto; }
-        .diary-footer { text-align: right; font-size: 0.85rem; color: #8d6e63; font-weight: bold; margin-top: 5px; }
-        .diary-controls { display: flex; gap: 15px; margin-top: 20px; }
-        
-        .page-animate { animation: pageFlipEffect 0.3s ease-in-out; }
-        @keyframes pageFlipEffect {
-            0% { opacity: 0.7; transform: scale(0.98); }
-            100% { opacity: 1; transform: scale(1); }
+        /* 📜 縦書き文章エリアの構築 */
+        .diary-text-area {
+            width: 100%; height: 180px; display: flex; flex-direction: column; align-items: flex-start;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30"><line x1="0" y1="0" x2="0" y2="30" stroke="%23e0d0c0" stroke-width="1" stroke-dasharray="2,2"/></svg>');
+            padding: 8px; box-sizing: border-box; border-radius: 8px; border: 1px solid #efebe9;
+        }
+        .diary-title {
+            font-size: 1.1rem; font-weight: bold; color: #5d4037;
+            border-bottom: 2px dashed #bcaaa4; width: 100%; padding-bottom: 4px; margin-bottom: 8px;
+        }
+        /* 🖋️ 右から左へ流れる「縦書き」の設定 */
+        .diary-text {
+            writing-mode: vertical-rl;
+            -webkit-writing-mode: vertical-rl;
+            font-size: 1.05rem; line-height: 1.8; color: #3e2723;
+            height: 100%; width: 100%;
+            overflow-x: auto; /* 長文の時は左に向かってスクロール */
+            white-space: pre-wrap;
+            font-family: "Hiragino Mincho ProN", "MS Mincho", serif; /* 縦書きが美しく映える明朝体 */
+            padding-bottom: 4px;
+        }
+        .diary-footer { width: 100%; text-align: right; font-size: 0.8rem; color: #8d6e63; font-weight: bold; }
+        .diary-controls { display: flex; gap: 15px; margin-top: 15px; }
+
+        .page-animate { animation: cardSwitch 0.25s ease-out; }
+        @keyframes cardSwitch {
+            0% { opacity: 0.5; transform: scale(0.95) translateY(10px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
         }
     </style>
 </head>
@@ -249,6 +262,7 @@
     <div id="game-screen">
         <div id="fade-overlay"></div>
 
+        <!-- ステータス表示 -->
         <div id="status-bar">
             <div class="text-large">現在の場所: <span id="current-location-text">鹿児島</span></div>
             <div id="score-text" class="text-large">0 もち</div>
@@ -256,6 +270,7 @@
             <div id="distance-text" style="font-weight: bold; color: #00796b; margin-top: 4px;">次のエリアまで: 500 もちkcal</div>
         </div>
 
+        <!-- もちすけエリア -->
         <div id="mochisuke-area">
             <div id="combo-display">🔥 0 Combo!</div>
             <div id="mochisuke-wrapper">
@@ -264,6 +279,7 @@
             </div>
         </div>
 
+        <!-- 操作パネル -->
         <div id="control-panel">
             <div class="btn-row">
                 <select id="location-selector" onchange="changeLocation(this.value)">
@@ -278,6 +294,7 @@
         </div>
     </div>
 
+    <!-- ランキングモーダル -->
     <div id="ranking-modal" class="modal">
         <div class="modal-content">
             <h2>🏆 もちもちランキング</h2>
@@ -286,19 +303,18 @@
         </div>
     </div>
 
+    <!-- 絵日記モーダル（仕様変更：縦型1枚紙スタイル） -->
     <div id="diary-modal" class="modal">
-        <div class="book-container">
-            <div class="book" id="diary-book">
-                <div class="page-left" id="diary-left-page">
-                    <img class="diary-img" id="diary-img-element" src="" alt="絵日記の画像">
-                    <div class="img-caption" id="diary-img-caption">思い出の写真</div>
-                </div>
-                <div class="page-right" id="diary-right-page">
-                    <div class="diary-title" id="diary-title-element">鹿児島編</div>
-                    <div class="diary-text" id="diary-text-element"></div>
-                    <div class="diary-footer" id="diary-footer-element">ページ: 1</div>
-                </div>
+        <div class="diary-paper" id="diary-paper-element">
+            <div class="diary-img-area">
+                <img class="diary-img" id="diary-img-element" src="" alt="絵日記の画像">
+                <div class="img-caption" id="diary-img-caption">思い出の写真</div>
             </div>
+            <div class="diary-text-area">
+                <div class="diary-title" id="diary-title-element">鹿児島編</div>
+                <div class="diary-text" id="diary-text-element"></div>
+            </div>
+            <div class="diary-footer" id="diary-footer-element">ページ: 1</div>
         </div>
         <div class="diary-controls">
             <button id="prev-page-btn" onclick="prevPage()">◀ もどる</button>
@@ -308,7 +324,6 @@
     </div>
 
     <script>
-        // --- 📊 変更点：難易度の引き上げとインフレバランスの再設計 ---
         const stages = [
             { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！\n桜島がとっても雄大で、パワーをもらった気分だぞ。\nここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", distance: 1500, item: "完熟マンゴー", price: 300, diary: "宮崎にやってきたぞ！\nヤシの木がたくさん並んでいて、南国気分満点だぁ。\nお日様をいっぱい浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
@@ -335,7 +350,14 @@
         let bgmAudio = null;
         let isBgmInitialized = false;
 
-        // --- 💬 生きてる感：放置タイマーの変数 ---
+        // --- ⚡ 軽量化①：タップ音のサウンドプール（5つのインスタンスを使い回し） ---
+        const MAX_TAP_SOUNDS = 5;
+        const tapSoundPool = [];
+        let tapSoundIndex = 0;
+        for (let i = 0; i < MAX_TAP_SOUNDS; i++) {
+            tapSoundPool.push(new Audio('tap.mp3'));
+        }
+
         let lastTappedTime = Date.now();
         const callPhrases = ["もちもち？", "おーい！", "画面を叩くのじゃ", "旅を続けるぞ！", "寝てしまうぞ…"];
 
@@ -356,7 +378,7 @@
             buildLocationSelector();
             startFeverSpawningLoop();
             startCatSpawningLoop();
-            startMochiLifeLoop(); // 放置監視ループ開始
+            startMochiLifeLoop();
         };
 
         function getTapPower() {
@@ -364,9 +386,7 @@
             stages.forEach((stage, idx) => {
                 if (purchasedItems[idx]) power += stage.tapBonus;
             });
-            if (comboCount >= 10) {
-                power += Math.floor(comboCount / 10);
-            }
+            if (comboCount >= 10) power += Math.floor(comboCount / 10);
             if (isFever) power *= 5;
             return power;
         }
@@ -379,10 +399,13 @@
             return mps;
         }
 
+        // ⚡ サウンドプールの再生処理（new Audioを毎回叩かないので超軽量）
         function playTapSound() {
-            const audio = new Audio('tap.mp3');
+            const audio = tapSoundPool[tapSoundIndex];
             audio.volume = 0.6;
+            audio.currentTime = 0; // 再生位置を瞬時に頭に戻す
             audio.play().catch(e => console.log("SE制限中"));
+            tapSoundIndex = (tapSoundIndex + 1) % MAX_TAP_SOUNDS;
         }
 
         function triggerAreaTransition(newBgUrl, callback) {
@@ -398,18 +421,15 @@
             }, 300);
         }
 
-        // 🌊 変更点：タップした場所に波紋（リップル）エフェクトを出す関数
         function createRippleEffect(x, y) {
             const gameScreen = document.getElementById('game-screen');
             const rect = gameScreen.getBoundingClientRect();
             const ripple = document.createElement('div');
-            
             ripple.className = 'ripple';
             ripple.style.left = (x - rect.left) + 'px';
             ripple.style.top = (y - rect.top) + 'px';
-            
             gameScreen.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 400); // アニメーション終了後に消去
+            setTimeout(() => ripple.remove(), 400);
         }
 
         function createFloatingText(x, y, amount) {
@@ -424,26 +444,27 @@
             setTimeout(() => div.remove(), 600);
         }
 
+        // ⚡ 軽量化②：CSS（GPU）駆動に変更した超軽快なパーティクル生成
         function createParticle(x, y) {
+            // 連打対策：画面上にパーティクルが15個以上ある時は生成をスキップしてブラウザを保護
+            if (document.querySelectorAll('.particle').length > 15) return;
+
             const gameScreen = document.getElementById('game-screen');
             const rect = gameScreen.getBoundingClientRect();
             const p = document.createElement('div');
             p.className = 'particle';
             p.style.left = (x - rect.left) + 'px';
             p.style.top = (y - rect.top) + 'px';
+
+            // 弾け飛ぶ方向と距離をランダムに算出し、CSS変数として渡す
+            const targetX = (Math.random() - 0.5) * 160 + 'px';
+            const targetY = -(Math.random() * 80 + 60) + 'px';
+            p.style.setProperty('--tx', targetX);
+            p.style.setProperty('--ty', targetY);
+
             gameScreen.appendChild(p);
-
-            let posX = x - rect.left;
-            let posY = y - rect.top;
-            let vx = (Math.random() - 0.5) * 12;
-            let vy = -(Math.random() * 8 + 10);
-
-            function updatePhysics() {
-                vx *= 0.99; vy += 0.6; posX += vx; posY += vy;
-                p.style.left = posX + 'px'; p.style.top = posY + 'px';
-                if (posY > rect.height + 60) p.remove(); else requestAnimationFrame(updatePhysics);
-            }
-            requestAnimationFrame(updatePhysics);
+            // アニメーションが終わる0.45秒後に完全消去
+            setTimeout(() => p.remove(), 450);
         }
 
         function handleCombo() {
@@ -460,24 +481,21 @@
             }, 1200);
         }
 
-        // --- 💥 タップインタラクションの統合 ---
+        // タップイベント
         document.getElementById('mochisuke-btn').addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
             playTapSound();
             handleCombo();
             
-            // 放置管理リセット＆吹き出し非表示
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
             
             const mochiBtn = document.getElementById('mochisuke-btn');
-            // 呼吸クラスを取り除いてへこみクラスを最優先で適用
             mochiBtn.classList.remove('breathe-idle', 'hekomi-anim');
             void mochiBtn.offsetWidth;
             mochiBtn.classList.add('hekomi-anim');
 
-            // 波紋エフェクト発動
             createRippleEffect(e.clientX, e.clientY);
             createFloatingText(e.clientX, e.clientY, getTapPower());
             createParticle(e.clientX, e.clientY);
@@ -492,7 +510,6 @@
             updateDisplay();
         });
 
-        // アニメーションが終わったらアイドリング（呼吸）状態へ戻す
         document.getElementById('mochisuke-btn').addEventListener('animationend', (e) => {
             if (e.animationName === 'hekomi') {
                 const mochiBtn = document.getElementById('mochisuke-btn');
@@ -503,13 +520,11 @@
 
         document.body.addEventListener('pointerdown', () => initAndPlayBGM(), { once: true });
 
-        // --- 💬 生きてる感：放置時間を監視してリアクションさせるタイマー ---
         function startMochiLifeLoop() {
             setInterval(() => {
                 const idleDuration = Date.now() - lastTappedTime;
                 const balloon = document.getElementById('mochi-balloon');
-                
-                if (idleDuration > 5000 && !isFever) { // 5秒放置されたら
+                if (idleDuration > 5000 && !isFever) {
                     if (!balloon.classList.contains('balloon-show')) {
                         const randomText = callPhrases[Math.floor(Math.random() * callPhrases.length)];
                         balloon.innerText = randomText;
@@ -704,15 +719,17 @@
 
         function renderDiaryPage() {
             const stage = stages[diaryPageIndex];
-            const book = document.getElementById('diary-book');
-            book.classList.remove('page-animate'); void book.offsetWidth; book.classList.add('page-animate');
+            const paper = document.getElementById('diary-paper-element');
+            
+            // 紙を切り替えるときのアニメーション
+            paper.classList.remove('page-animate'); void paper.offsetWidth; paper.classList.add('page-animate');
 
-            const hasItemText = purchasedItems[diaryPageIndex] ? `🛍️ ご当地アイテム: ${stage.item}\n(効果: ${stage.effectDesc} 有効)` : "🛍️ ご当地アイテム: 未購入";
+            const hasItemText = purchasedItems[diaryPageIndex] ? `🛍️ アイテム: ${stage.item} (有効)` : "🛍️ アイテム: 未購入";
             document.getElementById('diary-img-element').src = stage.diaryImg; 
-            document.getElementById('diary-img-caption').innerText = `【${stage.name}の思い出】\n${hasItemText}`;
+            document.getElementById('diary-img-caption').innerText = `【${stage.name}の思い出】 ・ ${hasItemText}`;
             document.getElementById('diary-title-element').innerText = `${stage.name}編`;
             document.getElementById('diary-text-element').innerText = stage.diary;
-            document.getElementById('diary-footer-element').innerText = `ページ: ${diaryPageIndex + 1} / ${currentStageIndex + 1}`;
+            document.getElementById('diary-footer-element').innerText = `枚数: ${diaryPageIndex + 1} / ${currentStageIndex + 1}`;
 
             document.getElementById('prev-page-btn').disabled = (diaryPageIndex === 0);
             document.getElementById('next-page-btn').disabled = (diaryPageIndex === currentStageIndex || diaryPageIndex === stages.length - 1);
