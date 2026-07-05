@@ -189,8 +189,11 @@
         #mochisuke-btn {
             width: 220px; height: auto; max-height: 250px;
             object-fit: contain; cursor: pointer; z-index: 5;
-            transition: filter 0.3s ease, transform 0.05s ease-out;
-            transform-origin: center bottom; /* 下部を基準に潰れるように変更 */
+            transition: filter 0.3s ease;
+            transform-origin: center bottom;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
@@ -317,9 +320,18 @@
             background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px;
             text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
             max-height: 75vh; overflow-y: auto; box-sizing: border-box;
+            position: relative;
         }
-        .modal-content h2 { margin-top: 0; color: #333; font-size: 1.4rem; }
+        .modal-content h2 { margin-top: 0; color: #333; font-size: 1.4rem; padding-right: 20px; }
         .btn-red { background: #e53935; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        /* 右上バッテン（×）ボタンの共通デザイン */
+        .modal-close-x {
+            position: absolute; top: 14px; right: 16px; font-size: 1.6rem; color: #aaa;
+            cursor: pointer; border: none; background: none; padding: 4px; line-height: 1; font-weight: bold; z-index: 99;
+            transition: color 0.1s, transform 0.1s;
+        }
+        .modal-close-x:active { color: #333; transform: scale(0.85); }
 
         /* ショップ用タブスタイル */
         .shop-tabs {
@@ -361,7 +373,7 @@
             width: 90%; max-width: 360px; background: #fffbf0;
             border-radius: 16px; padding: 16px; box-sizing: border-box;
             box-shadow: 0 15px 30px rgba(0,0,0,0.4); border: 2px solid #d7ccc8;
-            display: flex; flex-direction: column; gap: 12px;
+            display: flex; flex-direction: column; gap: 12px; position: relative;
         }
         .diary-img-area {
             width: 100%; background: #fafafa; border-radius: 10px; padding: 8px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; position: relative; flex-direction: column;
@@ -387,12 +399,9 @@
 <body>
 
     <div id="game-screen">
-        <!-- 【デバッグ用】本番公開時にこの debug-zone の3行を丸ごと削除してください -->
         <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 5px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d;">
             <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;">🛠️ デバッグ：一瞬でもち+100万＆進める</button>
         </div>
-        <!-- デバッグ用ここまで -->
-
         <div id="fade-overlay"></div>
         
         <canvas id="particle-canvas"></canvas>
@@ -445,6 +454,7 @@
 
     <div id="warehouse-modal" class="modal">
         <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('warehouse-modal')">×</button>
             <h2>📦 もちすけの倉庫</h2>
             <div class="status-box" id="warehouse-status-box"></div>
             <h3>👕 衣装をきがえる</h3>
@@ -455,6 +465,7 @@
 
     <div id="shop-modal" class="modal">
         <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('shop-modal')">×</button>
             <h2>🛒 よろずショップ</h2>
             <div class="shop-tabs">
                 <button id="shop-tab-omiyage" class="shop-tab-btn tab-active" onclick="switchShopTab('omiyage')">🎁 おみやげ</button>
@@ -467,6 +478,7 @@
 
     <div id="map-modal" class="modal">
         <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('map-modal')">×</button>
             <h2>🗺️ 日本地図（エリア移動）</h2>
             <p style="font-size: 0.85rem; color:#666; margin-top:-5px;">行ったことがある場所に移動できるぞ！</p>
             <div class="list-container" id="map-location-list"></div>
@@ -476,6 +488,7 @@
 
     <div id="ranking-modal" class="modal">
         <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('ranking-modal')">×</button>
             <h2>🏆 もちもちランキング</h2>
             <div id="ranking-list" class="list-container"></div>
             <button class="btn-red" onclick="closeModal('ranking-modal')">閉じる</button>
@@ -484,6 +497,7 @@
 
     <div id="diary-modal" class="modal">
         <div class="diary-paper" id="diary-paper-element">
+            <button class="modal-close-x" onclick="closeModal('diary-modal')" style="color:#795548;">×</button>
             <div class="diary-img-area">
                 <img class="diary-img" id="diary-img-element" src="" alt="絵日記の画像">
                 <div class="img-caption" id="diary-img-caption">思い出の写真</div>
@@ -514,7 +528,7 @@
             lastTouchEnd = now;
         }, { passive: false });
 
-        // ステージデータ（四国・中国地方を追加拡張）
+        // ステージデータ（九州＋四国・中国地方）
         const stages = [
             { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！\n桜島がとっても雄大で、パワーをもらった気分だぞ。\nここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", distance: 1500, item: "完熟マンゴー", price: 300, diary: "宮崎にやってきたぞ！\nヤシの木がたくさん並んでいて、南国気分満点だぁ。\nお日様をいっぱい浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
@@ -523,9 +537,7 @@
             { name: "長崎", distance: 30000, item: "長崎カステラ", price: 10000, diary: "長崎は坂の街！のぼり坂がいっぱいでいい運動になったよ。\n夜に見る異国情緒あふれる街並みがすごく綺麗だったなぁ。\nカステラもザラメがシャリシャリで美味しかった！", bg: "bg_images/nagasaki.png", diaryImg: "diary_images/nagasaki_d.png", effectDesc: "タップ力 +15", tapBonus: 15, mpsBonus: 0 },
             { name: "佐賀", distance: 75000, item: "呼子のイカ", price: 25000, diary: "佐賀の呼子で透明なイカを食べたぞ！\nコリコリしていて甘くて、今まで食べたイカと全然違うの。\n吉野ヶ里遺跡で昔の人の暮らしに思いを馳せた一日でした。", bg: "bg_images/saga.png", diaryImg: "diary_images/saga_d.png", effectDesc: "自動増加 +30もち/秒", tapBonus: 0, mpsBonus: 30 },
             { name: "福岡", distance: 150000, item: "博多ラーメン", price: 60000, diary: "ついに九州のゴール、福岡へ！\n中洲の屋台街はとっても賑やかでワクワクしたぞ。\n美味しいとんこつラーメンをバッチリ替玉まで完食！\nさぁ、九州制覇だ！次は本州へ進撃だ！", bg: "bg_images/fukuoka.png", diaryImg: "diary_images/fukuoka_d.png", effectDesc: "タップ力 +50", tapBonus: 50, mpsBonus: 0 },
-            
-            // --- ここから新ステージ（四国・中国地方） ---
-            { name: "徳島", distance: 350000, item: "すだちもち", price: 150000, diary: "四国に突入、最初は徳島だぞ！\n阿波踊りのリズムが聞こえてきて、体が勝手に動き出っちゃうや。\n名物のすだちを絞ったおもちは、さっぱりして何個でも食べられるの！", bg: "bg_images/tokushima.png", diaryImg: "diary_images/tokushima_d.png", effectDesc: "タップ力 +120", tapBonus: 120, mpsBonus: 0 },
+            { name: "徳島", distance: 350000, item: "すだちもち", price: 150000, diary: "四国に突入、最初は徳島だぞ！\n阿波踊りのリズムが聞こえてきて、体が勝後に動き出っちゃうや。\n名物のすだちを絞ったおもちは、さっぱりして何個でも食べられるの！", bg: "bg_images/tokushima.png", diaryImg: "diary_images/tokushima_d.png", effectDesc: "タップ力 +120", tapBonus: 120, mpsBonus: 0 },
             { name: "香川", distance: 800000, item: "讃岐うどん", price: 400000, diary: "うどん県こと香川県にきたぞ！\nおもちに負けないくらいコシがあるうどんは、ツルツルで最高！\nお出汁のいい香りに包まれて、もちすけも大満足だぁ。", bg: "bg_images/kagawa.png", diaryImg: "diary_images/kagawa_d.png", effectDesc: "自動増加 +100もち/秒", tapBonus: 0, mpsBonus: 100 },
             { name: "愛媛", distance: 2000000, item: "みかん大福", price: 1000000, diary: "愛媛県にやってきたぞ！\nどこを見渡すみかん、みかん、みかん！\nジューシーなみかんが丸ごと入った大福は、甘酸っぱくてモチモチでほっぺが落ちそうや。", bg: "bg_images/ehime.png", diaryImg: "diary_images/ehime_d.png", effectDesc: "タップ力 +400", tapBonus: 400, mpsBonus: 0 },
             { name: "高知", distance: 5000000, item: "カツオのたたき", price: 3000000, diary: "四国のラストは高知県！\n桂浜から見る太平洋はすっごく広くて感動したぞ。\n藁焼きのカツオは香ばしくて、お腹いっぱい食べちゃった！さぁ次は中国地方だ！", bg: "bg_images/kochi.png", diaryImg: "diary_images/kochi_d.png", effectDesc: "自動増加 +350もち/秒", tapBonus: 0, mpsBonus: 350 },
@@ -576,8 +588,8 @@
 
         let lastTappedTime = Date.now();
         const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
-
-        let isDraggingMochi = false;
+        let breatheTimer = null; 
+        let isMochiPressed = false; // 👈 長押し管理用のフラグを追加
 
         function saveGame() {
             const state = {
@@ -610,7 +622,7 @@
             }
         }
 
-        // 【デバッグ用関数】進捗を一気に進める。あとでこの関数ごと丸ごと削除してください
+        // 【デバッグ用関数】進捗を一気に進める。
         function debugAddMochi() {
             score += 1000000;
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
@@ -729,7 +741,7 @@
         }
 
         function createParticle(x, y) {
-            if (particleList.length > 30) return; // 👈 30個制限をキープ
+            if (particleList.length > 30) return; 
             const gameScreen = document.getElementById('game-screen');
             const rect = gameScreen.getBoundingClientRect();
             particleList.push({
@@ -774,6 +786,12 @@
 
         const mochiBtnElement = document.getElementById('mochisuke-btn');
 
+        // 長押し保存メニューの完全禁止
+        mochiBtnElement.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // 👈 【仕様変更】押した瞬間：つぶれた見た目で固定
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
@@ -783,9 +801,13 @@
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
             
+            // 待機アニメーションを止める
             mochiBtnElement.classList.remove('breathe-idle');
-            mochiBtnElement.style.transform = 'scale(1.15, 0.85)';
-            isDraggingMochi = true;
+            clearTimeout(breatheTimer);
+
+            // フラグを立て、長押し中の潰れスタイル(横広・縦縮)に変形
+            isMochiPressed = true;
+            mochiBtnElement.style.transform = 'scale(1.25, 0.72)';
 
             createRippleEffect(e.clientX, e.clientY);
             createFloatingText(e.clientX, e.clientY, getTapPower());
@@ -801,19 +823,36 @@
             updateDisplay();
         });
 
-        const endMochiDrag = () => {
-            if (!isDraggingMochi) return;
-            isDraggingMochi = false;
+        // 👈 【新設】指を離した瞬間のリバウンドアニメーション関数
+        function releaseMochiSucre() {
+            if (!isMochiPressed) return;
+            isMochiPressed = false;
+
+            // 潰れた状態から、ビヨーンと弾んで戻る極上滑らかアニメーションを発火
+            mochiBtnElement.animate([
+                { transform: 'scale(1.25, 0.72)' },
+                { transform: 'scale(0.86, 1.14)', offset: 0.4 }, // 反動で縦にシャキッと伸びる
+                { transform: 'scale(1.04, 0.96)', offset: 0.75 }, // 小さな余韻の揺れ
+                { transform: 'scale(1, 1)' }
+            ], {
+                duration: 240,
+                easing: 'ease-out'
+            });
+
+            // インラインスタイルをリセット
             mochiBtnElement.style.transform = 'scale(1, 1)';
-            setTimeout(() => {
-                if (!isDraggingMochi) {
+
+            // 1.2秒間次の入力がなければ待機呼吸アニメに戻る
+            breatheTimer = setTimeout(() => {
+                if (!isMochiPressed) {
                     mochiBtnElement.classList.add('breathe-idle');
                 }
-            }, 80);
-        };
+            }, 1200);
+        }
 
-        window.addEventListener('pointerup', endMochiDrag);
-        window.addEventListener('pointercancel', endMochiDrag);
+        // 画面外に指が抜けたときや、指が離れたときにリバウンドを走らせる
+        mochiBtnElement.addEventListener('pointerup', releaseMochiSucre);
+        mochiBtnElement.addEventListener('pointerleave', releaseMochiSucre);
 
         document.body.addEventListener('pointerdown', () => initAndPlayBGM(), { once: true });
 
@@ -1029,6 +1068,7 @@
              if (present && present.parentNode) present.remove();
         }
 
+        // 👈 【仕様変更】プレゼントの中身を現在の最高到達ステージの距離（目標値）に比例させる
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             const present = document.createElement('div');
@@ -1046,10 +1086,17 @@
             
             present.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
-                const bonus = Math.max(200, Math.floor(getMps() * 60));
+                
+                // 現在の最高到達ステージの目標距離の5%を基礎ボーナス値にする
+                const currentStage = stages[currentStageIndex] || stages[0];
+                const stageBaseBonus = Math.floor(currentStage.distance * 0.05);
+                
+                // 基礎値＋自動生産（Mps）の60秒分を合計して獲得
+                const bonus = Math.max(200, stageBaseBonus + Math.floor(getMps() * 60));
+                
                 score += bonus;
                 createParticle(e.clientX, e.clientY);
-                alert(`🎁 プレゼントを捕まえた！\n【福もちボーナス +${bonus.toLocaleString()} もち】獲得！`);
+                alert(`🎁 プレゼントを捕まえた！\n【${currentStage.name}の福もちボーナス +${bonus.toLocaleString()} もち】獲得！`);
                 saveGame();
                 present.remove();
                 updateDisplay();
@@ -1188,7 +1235,7 @@
             }
         }, 100);
 
-        // 【今回の強化】10秒ごとにMpsの状態に関係なく、100%確実にバックアップをとる完全自動セーブ
+        // 完全自動セーブ
         setInterval(() => {
             saveGame();
         }, 10000);
