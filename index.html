@@ -400,7 +400,7 @@
 
     <div id="game-screen">
         <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 5px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d;">
-            <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;">🛠️ デバッグ：一瞬でもち+100万＆進める</button>
+            <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer;">🛠️ デバッグ：現在のステージ目標値分のもちを即注入</button>
         </div>
         <div id="fade-overlay"></div>
         
@@ -528,27 +528,72 @@
             lastTouchEnd = now;
         }, { passive: false });
 
-        // ステージデータ（九州〜沖縄までの全日本縦断ルート）
+        // ステージデータ（47都道府県 完全網羅ルート）
         const stages = [
-            { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！\n桜島がとっても雄大で、パワーをもらった気分だぞ。\nここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
-            { name: "宮崎", distance: 1500, item: "完熟マンゴー", price: 300, diary: "宮崎にやってきたぞ！\nヤシの木がたくさん並んでいて、南国気分満点だぁ。\nお日様をいっぱい浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
-            { name: "大分", distance: 4000, item: "かぼすソフト", price: 1000, diary: "大分といえばやっぱり温泉！\n至る所から湯気がもくもく立ち上っていてびっくり。\n足湯に入ったら、旅の疲れが一気に吹き飛んだや。\nかぼすソフトはすっぱくて元気になるぞ！", bg: "bg_images/oita.png", diaryImg: "diary_images/oita_d.png", effectDesc: "タップ力 +4", tapBonus: 4, mpsBonus: 0 },
-            { name: "熊本", distance: 12000, item: "からし蓮根", price: 3500, diary: "熊本城を見に行ったぞ！\n石垣がすごく高くて圧倒されちゃった。\nからし蓮根を食べたら、ツーンときて涙が出ちゃったの。大人の味だね！", bg: "bg_images/kumamoto.png", diaryImg: "diary_images/kumamoto_d.png", effectDesc: "自動増加 +8もち/秒", tapBonus: 0, mpsBonus: 8 },
-            { name: "長崎", distance: 30000, item: "長崎カステラ", price: 10000, diary: "長崎は坂の街！のぼり坂がいっぱいでいい運動になったよ。\n夜に見る異国情緒あふれる街並みがすごく綺麗だったなぁ。\nカステラもザラメがシャリシャリで美味しかった！", bg: "bg_images/nagasaki.png", diaryImg: "diary_images/nagasaki_d.png", effectDesc: "タップ力 +15", tapBonus: 15, mpsBonus: 0 },
-            { name: "佐賀", distance: 75000, item: "呼子のイカ", price: 25000, diary: "佐賀の呼子で透明なイカを食べたぞ！\nコリコリしていて甘くて、今まで食べたイカと全然違うの。\n吉野ヶ里遺跡で昔の人の暮らしに思いを馳せた一日でした。", bg: "bg_images/saga.png", diaryImg: "diary_images/saga_d.png", effectDesc: "自動増加 +30もち/秒", tapBonus: 0, mpsBonus: 30 },
-            { name: "福岡", distance: 150000, item: "博多ラーメン", price: 60000, diary: "ついに九州のゴール、福岡へ！\n中洲の屋台街はとっても賑やかでワクワクしたぞ。\n美味しいとんこつラーメンをバッチリ替玉まで完食！\nさぁ、九州制覇だ！次は本州へ進撃だ！", bg: "bg_images/fukuoka.png", diaryImg: "diary_images/fukuoka_d.png", effectDesc: "タップ力 +50", tapBonus: 50, mpsBonus: 0 },
-            { name: "徳島", distance: 350000, item: "すだちもち", price: 150000, diary: "四国に突入、最初は徳島だぞ！\n阿波踊りのリズムが聞こえてきて、体が勝後に動き出っちゃうや。\n名物のすだちを絞ったおもちは、さっぱりして何個でも食べられるの！", bg: "bg_images/tokushima.png", diaryImg: "diary_images/tokushima_d.png", effectDesc: "タップ力 +120", tapBonus: 120, mpsBonus: 0 },
-            { name: "香川", distance: 800000, item: "讃岐うどん", price: 400000, diary: "うどん県こと香川県にきたぞ！\nおもちに負けないくらいコシがあるうどんは、ツルツルで最高！\nお出汁のいい香りに包まれて、もちすけも大満足だぁ。", bg: "bg_images/kagawa.png", diaryImg: "diary_images/kagawa_d.png", effectDesc: "自動増加 +100もち/秒", tapBonus: 0, mpsBonus: 100 },
-            { name: "愛媛", distance: 2000000, item: "みかん大福", price: 1000000, diary: "愛媛県にやってきたぞ！\nどこを見渡すみかん、みかん、みかん！\nジューシーなみかんが丸ごと入った大福は、甘酸っぱくてモチモチでほっぺが落ちそうや。", bg: "bg_images/ehime.png", diaryImg: "diary_images/ehime_d.png", effectDesc: "タップ力 +400", tapBonus: 400, mpsBonus: 0 },
-            { name: "高知", distance: 5000000, item: "カツオのたたき", price: 3000000, diary: "四国のラストは高知県！\n桂浜から見る太平洋はすっごく広くて感動したぞ。\n藁焼きのカツオは香ばしくて、お腹いっぱい食べちゃった！さぁ次は中国地方だ！", bg: "bg_images/kochi.png", diaryImg: "diary_images/kochi_d.png", effectDesc: "自動増加 +350もち/秒", tapBonus: 0, mpsBonus: 350 },
-            { name: "広島", distance: 12000000, item: "もみじ饅頭", price: 9000000, diary: "中国地方に上陸、広島県だぞ！\n厳島神社の大きな鳥居が海に浮かんでいてすっごく神秘的だったなぁ。\n焼き立てのもみじ饅頭は、あんこがホカホカで美味しかったの！", bg: "bg_images/hiroshima.png", diaryImg: "diary_images/hiroshima_d.png", effectDesc: "タップ力 +1200", tapBonus: 1200, mpsBonus: 0 },
-            { name: "岡山", distance: 30000000, item: "きびだんご", price: 25000000, diary: "桃太郎の故郷、岡山県にきたぞ！\n美味しいきびだんごを貰ったから、もちすけも今日から桃太郎の仲間入りかな？\nこれでさらに遠くまで旅を続けられるぞ！", bg: "bg_images/okayama.png", diaryImg: "diary_images/okayama_d.png", effectDesc: "自動増加 +1000もち/秒", tapBonus: 0, mpsBonus: 1000 },
-            { name: "関西", distance: 120000000, item: "たこ焼き", price: 100000000, diary: "歴史ある街並みと美味しいグルメの宝庫、関西にきたぞ！\n大阪でアツアツのたこ焼きを食べて、京都で綺麗な景色を眺めたんだ。\nお腹いっぱいで、もちもち度も限界突破！", bg: "bg_images/kansai.png", diaryImg: "diary_images/kansai_d.png", effectDesc: "タップ力 +4000", tapBonus: 4000, mpsBonus: 0 },
-            { name: "中部", distance: 500000000, item: "ひつまぶし", price: 400000000, diary: "中部エリアに突入！雄大な富士山と豪華な名古屋飯が待っていたぞ！\nひつまぶしは香ばしくて最高！\n富士山もとっても高くて圧倒されちゃったな。エネルギー満タン！", bg: "bg_images/chubu.png", diaryImg: "diary_images/chubu_d.png", effectDesc: "自動増加 +15000もち/秒", tapBonus: 0, mpsBonus: 15000 },
-            { name: "関東", distance: 2000000000, item: "江戸前寿司", price: 1500000000, diary: "日本の中心、関東エリアだぞ！大都会と豊かな自然のハイブリッド！\n東京タワーの大きさにびっくりしちゃった。\nビルがたくさん並ぶ街と、自然豊かな場所をもちもち駆け抜けたよ！", bg: "bg_images/kanto.png", diaryImg: "diary_images/kanto_d.png", effectDesc: "タップ力 +50000", tapBonus: 50000, mpsBonus: 0 },
-            { name: "東北", distance: 8000000000, item: "極上牛タン", price: 6000000000, diary: "みちのくのんびり旅、東北エリアだぞ！豊かな自然と温かいお祭りの数々！\n仙台で肉厚の牛タンを食べて大満足！\nずんだ餅の優しい甘さが、旅の疲れをぷにっと癒やしてくれるね。", bg: "bg_images/tohoku.png", diaryImg: "diary_images/tohoku_d.png", effectDesc: "自動増加 +200000もち/秒", tapBonus: 0, mpsBonus: 200000 },
-            { name: "北海道", distance: 30000000000, item: "特大タラバガニ", price: 25000000000, diary: "広大な北の大地、北海道エリアに上陸！試される大地をぷにぷに進め！\nどこまでも続く真っ直ぐな道。カニもいくらも美味しすぎて、ほっぺたが落ちそうだよ！\nついに北の果てまで到達だ！", bg: "bg_images/hokkaido.png", diaryImg: "diary_images/hokkaido_d.png", effectDesc: "タップ力 +800000", tapBonus: 800000, mpsBonus: 0 },
-            { name: "沖縄", distance: 120000000000, item: "守り神シーサー", price: 100000000000, diary: "青い海、白い砂浜！日本縦断の感動のゴール、沖縄エリアだぞ！\n北の大地から一気に南の楽園へワープ！\n綺麗すぎる海を見ながら、最高のぷにぷに旅を大団円で締めくくったよ！次は世界か宇宙か…！？", bg: "bg_images/okinawa.png", diaryImg: "diary_images/okinawa_d.png", effectDesc: "自動増加 +3000000もち/秒", tapBonus: 0, mpsBonus: 3000000 }
+            // 1～7: 九州エリア
+            { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！桜島がとっても雄大で、パワーをもらった気分だぞ。ここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/1_kagoshima.png", diaryImg: "diary_images/1_kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "宮崎", distance: 900, item: "完熟マンゴー", price: 100, diary: "宮崎にやってきたぞ！ヤシの木が並んで南国気分満点だぁ。お日様を浴びたマンゴーは甘くて最高！", bg: "bg_images/2_miyazaki.png", diaryImg: "diary_images/2_miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
+            { name: "大分", distance: 1600, item: "かぼすソフト", price: 200, diary: "大分といえば温泉！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだや。", bg: "bg_images/3_oita.png", diaryImg: "diary_images/3_oita_d.png", effectDesc: "タップ力 +2", tapBonus: 2, mpsBonus: 0 },
+            { name: "熊本", distance: 3000, item: "からし蓮根", price: 400, diary: "熊本城を見に行ったぞ！石垣がすごく高くて圧倒されちゃった。からし蓮根はツーンと大人の味！", bg: "bg_images/4_kumamoto.png", diaryImg: "diary_images/4_kumamoto_d.png", effectDesc: "自動増加 +3もち/秒", tapBonus: 0, mpsBonus: 3 },
+            { name: "長崎", distance: 5500, item: "長崎カステラ", price: 800, diary: "長崎は坂の街！のぼり坂がいっぱいでいい運動になったよ。カステラもザラメがシャリシャリで美味しい！", bg: "bg_images/5_nagasaki.png", diaryImg: "diary_images/5_nagasaki_d.png", effectDesc: "タップ力 +6", tapBonus: 6, mpsBonus: 0 },
+            { name: "佐賀", distance: 10000, item: "呼子のイカ", price: 1500, diary: "佐賀の呼子で透明なイカを食べたぞ！コリコリしていて甘くて、今まで食べたイカと全然違うの！", bg: "bg_images/6_saga.png", diaryImg: "diary_images/6_saga_d.png", effectDesc: "自動増加 +12もち/秒", tapBonus: 0, mpsBonus: 12 },
+            { name: "福岡", distance: 18000, item: "博多ラーメン", price: 3000, diary: "中洲の屋台街はとっても賑やかでワクワクしたぞ。美味しいとんこつラーメンをバッチリ替玉まで完食！", bg: "bg_images/7_fukuoka.png", diaryImg: "diary_images/7_fukuoka_d.png", effectDesc: "タップ力 +25", tapBonus: 25, mpsBonus: 0 },
+            
+            // 8～12: 中国エリア
+            { name: "山口", distance: 32000, item: "下関のフグ", price: 6000, diary: "本州に突入、最初は山口県！下関のフグはお皿が透けるくらい綺麗で、ぷにぷに歯ごたえが最高だったや。", bg: "bg_images/8_yamaguchi.png", diaryImg: "diary_images/8_yamaguchi_d.png", effectDesc: "自動増加 +50もち/秒", tapBonus: 0, mpsBonus: 50 },
+            { name: "広島", distance: 58000, item: "焼き牡蠣", price: 12000, diary: "広島県にきたぞ！厳島神社の大きな鳥居が海に浮かんでいて神秘的。アツアツの焼き牡蠣は海の旨味がたっぷり！", bg: "bg_images/9_hiroshima.png", diaryImg: "diary_images/9_hiroshima_d.png", effectDesc: "タップ力 +110", tapBonus: 110, mpsBonus: 0 },
+            { name: "島根", distance: 100000, item: "出雲そば", price: 25000, diary: "出雲大社にお参りしてきたぞ！良いご縁がありますように。割子で食べる出雲そばは香りがすごく良かったの。", bg: "bg_images/10_shimane.png", diaryImg: "diary_images/10_shimane_d.png", effectDesc: "自動増加 +220もち/秒", tapBonus: 0, mpsBonus: 220 },
+            { name: "鳥取", distance: 180000, item: "大山ミルク", price: 50000, diary: "鳥取砂丘はまるで砂の砂漠みたいで広かったぁ！たくさん歩いた後の大山ミルクソフトは濃厚で染みたの。", bg: "bg_images/11_tottori.png", diaryImg: "diary_images/11_tottori_d.png", effectDesc: "タップ力 +450", tapBonus: 450, mpsBonus: 0 },
+            { name: "岡山", distance: 320000, item: "きびだんご", price: 100000, diary: "桃太郎の故郷、岡山県！美味しいきびだんごを貰ったから、もちすけも今日から桃太郎の仲間入りかな？", bg: "bg_images/12_okayama.png", diaryImg: "diary_images/12_okayama_d.png", effectDesc: "自動増加 +900もち/秒", tapBonus: 0, mpsBonus: 900 },
+            
+            // 13～16: 四国エリア（瀬戸大橋経由で上陸）
+            { name: "香川", distance: 580000, item: "讃岐うどん", price: 200000, diary: "瀬戸大橋を渡って四国へ！本場の讃岐うどんはコシが強くてツルツル。お出汁も美味しくて一気に完食！", bg: "bg_images/13_kagawa.png", diaryImg: "diary_images/13_kagawa_d.png", effectDesc: "タップ力 +1800", tapBonus: 1800, mpsBonus: 0 },
+            { name: "徳島", distance: 1000000, item: "すだちもち", price: 400000, diary: "徳島県にやってきたぞ！阿波踊りのリズムにワクワク。名物のすだちを絞ったおもちはさっぱり美味しい！", bg: "bg_images/14_tokushima.png", diaryImg: "diary_images/14_tokushima_d.png", effectDesc: "自動増加 +3800もち/秒", tapBonus: 0, mpsBonus: 3800 },
+            { name: "高知", distance: 1800000, item: "カツオのたたき", price: 800000, diary: "桂浜から見る太平洋はすっごく広くて感動！藁焼きの香ばしいカツオのたたきを食べてスタミナ満点だぞ。", bg: "bg_images/15_kochi.png", diaryImg: "diary_images/15_kochi_d.png", effectDesc: "タップ力 +8000", tapBonus: 8000, mpsBonus: 0 },
+            { name: "愛媛", distance: 3200000, item: "みかん大福", price: 1500000, diary: "愛媛県はみかんの王国！ジューシーなみかんが丸ごと入った大福は、甘酸っぱくてモチモチで最高や。", bg: "bg_images/16_ehime.png", diaryImg: "diary_images/16_ehime_d.png", effectDesc: "自動増加 +16000もち/秒", tapBonus: 0, mpsBonus: 16000 },
+            
+            // 17～23: 近畿エリア
+            { name: "兵庫", distance: 5800000, item: "神戸牛ステーキ", price: 3000000, diary: "再び本州へ戻って兵庫県！神戸のオシャレな港町を散策したの。贅沢な神戸牛ステーキはお口でとろけたぞ。", bg: "bg_images/17_hyogo.png", diaryImg: "diary_images/17_hyogo_d.png", effectDesc: "タップ力 +35000", tapBonus: 35000, mpsBonus: 0 },
+            { name: "大阪", distance: 10000000, item: "たこ焼き", price: 6000000, diary: "笑いの街、大阪！通天閣を見上げて、道頓堀でアツアツのたこ焼きを食べたんだ。ハフハフして美味しかった！", bg: "bg_images/18_osaka.png", diaryImg: "diary_images/18_osaka_d.png", effectDesc: "自動増加 +75000もち/秒", tapBonus: 0, mpsBonus: 75000 },
+            { name: "和歌山", distance: 18000000, item: "紀州うめぼし", price: 12000000, diary: "和歌山でパンダを見てきたぞ！すっごく可愛かったなぁ。すっぱい紀州梅干しを食べてシャキッと元気復活！", bg: "bg_images/19_wakayama.png", diaryImg: "diary_images/19_wakayama_d.png", effectDesc: "タップ力 +160000", tapBonus: 160000, mpsBonus: 0 },
+            { name: "奈良", distance: 32000000, item: "鹿クッキー", price: 25000000, diary: "奈良公園でたくさんの鹿さんに囲まれたぞ！東大寺の大仏様はものすごく大きくて圧倒されちゃったや。", bg: "bg_images/20_nara.png", diaryImg: "diary_images/20_nara_d.png", effectDesc: "自動増加 +350000もち/秒", tapBonus: 0, mpsBonus: 350000 },
+            { name: "三重", distance: 58000000, item: "伊勢エビ", price: 50000000, diary: "伊勢神宮にお参りして心がスッキリ。お昼に食べた豪華な伊勢エビは、身がぷりっぷりで甘くて感動したぞ！", bg: "bg_images/21_mie.png", diaryImg: "diary_images/21_mie_d.png", effectDesc: "タップ力 +750000", tapBonus: 750000, mpsBonus: 0 },
+            { name: "滋賀", distance: 100000000, item: "近江牛メンチ", price: 100000000, diary: "日本最大の湖、琵琶湖にきたぞ！まるで海みたいに広くてびっくり。サクサクの近江牛メンチカツは肉汁たっぷり！", bg: "bg_images/22_shiga.png", diaryImg: "diary_images/22_shiga_d.png", effectDesc: "自動増加 +1600000もち/秒", tapBonus: 0, mpsBonus: 1600000 },
+            { name: "京都", distance: 180000000, item: "宇治抹茶パフェ", price: 200000000, diary: "金閣寺がピカピカ輝いていて綺麗だったなぁ。上品な宇治抹茶パフェを食べて、はんなり京都を満喫したの。", bg: "bg_images/23_kyoto.png", diaryImg: "diary_images/23_kyoto_d.png", effectDesc: "タップ力 +3500000", tapBonus: 3500000, mpsBonus: 0 },
+            
+            // 24～32: 中部エリア
+            { name: "福井", distance: 320000000, item: "越前ガニ", price: 400000000, diary: "中部地方の福井県！恐竜博物館で大きな骨を見てワクワク。冬の味覚、越前ガニは身がぎっしりで最高！", bg: "bg_images/24_fukui.png", diaryImg: "diary_images/24_fukui_d.png", effectDesc: "自動増加 +7500000もち/秒", tapBonus: 0, mpsBonus: 7500000 },
+            { name: "石川", distance: 580000000, item: "金沢カレー", price: 800000000, diary: "金沢の兼六園をお散歩。綺麗に整えられたお庭だったや。濃厚なルーの金沢カレーはカツがのってて大満足！", bg: "bg_images/25_ishikawa.png", diaryImg: "diary_images/25_ishikawa_d.png", effectDesc: "タップ力 +16000000", tapBonus: 16000000, mpsBonus: 0 },
+            { name: "富山", distance: 1000000000, item: "ブラックラーメン", price: 1500000000, diary: "立山連峰の雪景色がとっても美しかったぞ。富山ブラックラーメンは見た目が真っ白だけど、コクがあってウマい！", bg: "bg_images/26_toyama.png", diaryImg: "diary_images/26_toyama_d.png", effectDesc: "自動増加 +35000000もち/秒", tapBonus: 0, mpsBonus: 35000000 },
+            { name: "新潟", distance: 1800000000, item: "笹だんご", price: 3000000000, diary: "お米どころ新潟県！一面の田んぼが綺麗だったなぁ。笹の香りがふんわり香る笹だんごは、もちもちで餡子たっぷり。", bg: "bg_images/27_niigata.png", diaryImg: "diary_images/27_niigata_d.png", effectDesc: "タップ力 +80000000", tapBonus: 80000000, mpsBonus: 0 },
+            { name: "長野", distance: 3200000000, item: "信州そば", price: 6000000000, diary: "信州の山々がすごく高くて空気がおいしい！戸隠で食べた打ち立ての信州そばは、喉ごしが抜群だったや。", bg: "bg_images/28_nagano.png", diaryImg: "diary_images/28_nagano_d.png", effectDesc: "自動増加 +160000000もち/秒", tapBonus: 0, mpsBonus: 160000000 },
+            { name: "岐阜", distance: 5800000000, item: "飛騨牛串", price: 12000000000, diary: "白川郷の合掌造り集落へ。昔話の世界みたいで感動したの。ジューシーな飛騨牛串焼きを食べてエネルギー満タン！", bg: "bg_images/29_gifu.png", diaryImg: "diary_images/29_gifu_d.png", effectDesc: "タップ力 +350000000", tapBonus: 350000000, mpsBonus: 0 },
+            { name: "愛知", distance: 10000000000, item: "手羽先唐揚げ", price: 25000000000, diary: "名古屋城の金のシャチホコが輝いていたぞ！スパイシーで甘辛い手羽先の唐揚げは、何本でも食べられちゃう味！", bg: "bg_images/30_aichi.png", diaryImg: "diary_images/30_aichi_d.png", effectDesc: "自動増加 +750000000もち/秒", tapBonus: 0, mpsBonus: 750000000 },
+            { name: "静岡", distance: 18000000000, item: "富士宮やきそば", price: 50000000000, diary: "静岡からは富士山がとっても大きく見えたぞ！コシのある麺に削り粉がかかった富士宮やきそばは最高にウマい！", bg: "bg_images/31_shizuoka.png", diaryImg: "diary_images/31_shizuoka_d.png", effectDesc: "タップ力 +1600000000", tapBonus: 1600000000, mpsBonus: 0 },
+            { name: "山梨", distance: 32000000000, item: "ほうとう", price: 100000000000, diary: "富士五湖の周りをのんびりお散歩。お夕飯に食べた具だくさんの熱々ほうとうは、お味噌の味が体に染みたの。", bg: "bg_images/32_yamanashi.png", diaryImg: "diary_images/32_yamanashi_d.png", effectDesc: "自動増加 +3500000000もち/秒", tapBonus: 0, mpsBonus: 3500000000 },
+            
+            // 33～39: 関東エリア
+            { name: "神奈川", distance: 58000000000, item: "横浜シュウマイ", price: 200000000000, diary: "関東地方に突入、神奈川県！横浜中華街の活気ある雰囲気にワクワク。肉汁たっぷりの特製シュウマイを食べたぞ。", bg: "bg_images/33_kanagawa.png", diaryImg: "diary_images/33_kanagawa_d.png", effectDesc: "タップ力 +8000000000", tapBonus: 8000000000, mpsBonus: 0 },
+            { name: "東京", distance: 100000000000, item: "江戸前寿司", price: 400000000000, diary: "日本の中心、大都会東京！東京タワーの展望台からの景色にびっくり。新鮮なネタの江戸前寿司を贅沢に味わったや。", bg: "bg_images/34_tokyo.png", diaryImg: "diary_images/34_tokyo_d.png", effectDesc: "自動増加 +16000000000もち/秒", tapBonus: 0, mpsBonus: 16000000000 },
+            { name: "千葉", distance: 180000000000, item: "落花生最中", price: 800000000000, diary: "千葉の九十九里浜で波の音を聞いたぞ。名産の落花生を使った可愛い最中は、香ばしくて優しい甘さだったの。", bg: "bg_images/35_chiba.png", diaryImg: "diary_images/35_chiba_d.png", effectDesc: "タップ力 +35000000000", tapBonus: 35000000000, mpsBonus: 0 },
+            { name: "埼玉", distance: 320000000000, item: "草加せんべい", price: 1500000000000, diary: "川越の小江戸の街並みをお散歩タイム。お土産に買ったパリパリの草加せんべいは、お醤油の香りが香ばしい！", bg: "bg_images/36_saitama.png", diaryImg: "diary_images/36_saitama_d.png", effectDesc: "自動増加 +75000000000もち/秒", tapBonus: 0, mpsBonus: 75000000000 },
+            { name: "群馬", distance: 580000000000, item: "焼きまんじゅう", price: 3000000000000, diary: "草津温泉の湯畑はすごい迫力！濃厚な甘辛タレをつけて炭火で焼いた大きな焼きまんじゅう、フカフカで美味しい！", bg: "bg_images/37_gunma.png", diaryImg: "diary_images/37_gunma_d.png", effectDesc: "タップ力 +160000000000", tapBonus: 160000000000, mpsBonus: 0 },
+            { name: "栃木", distance: 1000000000000, item: "宇都宮餃子", price: 6000000000000, diary: "日光東照宮の「見ざる聞かざる言わざる」を見てきたぞ。宇都宮で食べた餃子は、皮がパリッと中はジューシー！", bg: "bg_images/38_tochigi.png", diaryImg: "diary_images/38_tochigi_d.png", effectDesc: "自動増加 +350000000000もち/秒", tapBonus: 0, mpsBonus: 350000000000 },
+            { name: "茨城", distance: 1800000000000, item: "納豆わらび餅", price: 12000000000000, diary: "ひたち海浜公園の一面のネモフィラ畑が綺麗だったなぁ。ちょっと珍しい納豆わらび餅はネバもち不思議な食感！", bg: "bg_images/39_ibaraki.png", diaryImg: "diary_images/39_ibaraki_d.png", effectDesc: "タップ力 +800000000000", tapBonus: 800000000000, mpsBonus: 0 },
+            
+            // 40～45: 東北エリア
+            { name: "福島", distance: 3200000000000, item: "喜多方ラーメン", price: 25000000000000, diary: "東北地方に突入、福島県！鶴ヶ城がどっしり格好よかったの。ちぢれ麺の喜多方ラーメンはスープがすっきりウマい！", bg: "bg_images/40_fukushima.png", diaryImg: "diary_images/40_fukushima_d.png", effectDesc: "自動増加 +1600000000000もち/秒", tapBonus: 0, mpsBonus: 1600000000000 },
+            { name: "宮城", distance: 5800000000000, item: "ずんだ餅", price: 50000000000000, diary: "仙台の伊達政宗公の像に挨拶してきたぞ。綺麗な緑色のずんだ餅は、枝豆の粒々と優しい甘さが最高や！", bg: "bg_images/41_miyagi.png", diaryImg: "diary_images/41_miyagi_d.png", effectDesc: "タップ力 +3500000000000", tapBonus: 3500000000000, mpsBonus: 0 },
+            { name: "山形", distance: 10000000000000, item: "さくらんぼ", price: 100000000000000, diary: "蔵王のお釜のエメラルドグリーンの水面に感動。真っ赤に実った瑞々しいさくらんぼ、甘くてとっても贅沢！", bg: "bg_images/42_yamagata.png", diaryImg: "diary_images/42_yamagata_d.png", effectDesc: "自動増加 +7500000000000もち/秒", tapBonus: 0, mpsBonus: 7500000000000 },
+            { name: "秋田", distance: 18000000000000, item: "きりたんぽ", price: 200000000000000, diary: "なまはげさんに遭遇してちょっとびっくりしちゃったや！熱々のきりたんぽ鍋は、お出汁を吸ったお米が最高！", bg: "bg_images/43_akita.png", diaryImg: "diary_images/43_akita_d.png", effectDesc: "タップ力 +16000000000000", tapBonus: 16000000000000, mpsBonus: 0 },
+            { name: "岩手", distance: 32000000000000, item: "盛岡冷麺", price: 400000000000000, diary: "中尊寺金色堂がキラキラでとっても厳かだったの。コシがものすごく強い盛岡冷麺は、ピリ辛スープでツルッと完食！", bg: "bg_images/44_iwate.png", diaryImg: "diary_images/44_iwate_d.png", effectDesc: "自動増加 +35000000000000もち/秒", tapBonus: 0, mpsBonus: 35000000000000 },
+            { name: "青森", distance: 58000000000000, item: "リンゴパイ", price: 800000000000000, diary: "ねぶた祭りの迫力ある灯籠に大興奮！青森名物のリンゴがたっぷり入った焼き立てパイは、サクサク甘酸っぱい！", bg: "bg_images/45_aomori.png", diaryImg: "diary_images/45_aomori_d.png", effectDesc: "タップ力 +160000000000000", tapBonus: 160000000000000, mpsBonus: 0 },
+            
+            // 46: 北海道（北の終着点）
+            { name: "北海道", distance: 100000000000000, item: "タラバガニ", price: 1500000000000000, diary: "広大な北の大地、北海道！どこまでも真っ直ぐな道。特大のタラバガニは身がぷりぷりで美味しすぎてほっぺが落ちた！", bg: "bg_images/46_hokkaido.png", diaryImg: "diary_images/46_hokkaido_d.png", effectDesc: "自動増加 +150000000000000もち/秒", tapBonus: 0, mpsBonus: 150000000000000 },
+            
+            // 47: 沖縄（感動の大団円ゴールワープ）
+            { name: "沖縄", distance: 250000000000000, item: "シーサー", price: 4000000000000000, diary: "感動のゴール沖縄！北の大地から南の楽園へワープ！青い海を見ながら最高の日本縦断旅を大団円で締めくくったぞ！", bg: "bg_images/47_okinawa.png", diaryImg: "diary_images/47_okinawa_d.png", effectDesc: "タップ力 +1000000000000000", tapBonus: 1000000000000000, mpsBonus: 0 }
         ];
 
         const clothesData = [
@@ -595,7 +640,7 @@
         let lastTappedTime = Date.now();
         const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
         let breatheTimer = null; 
-        let isMochiPressed = false; // 長押し管理用のフラグ
+        let isMochiPressed = false; 
 
         function saveGame() {
             const state = {
@@ -628,16 +673,17 @@
             }
         }
 
-        // 【デバッグ用関数】進捗を一気に進める。
+        // 【デバッグ用関数】現在のステージ目標値分のもちを一発で注入するスマート仕様
         function debugAddMochi() {
-            score += 1000000;
+            const currentReq = stages[currentStageIndex] ? stages[currentStageIndex].distance : 1000000;
+            score += currentReq;
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
-                currentStageProgress += 1000000;
+                currentStageProgress += currentReq;
                 checkStageProgress();
             }
             updateDisplay();
             saveGame();
-            alert("🛠️ デバッグ：もちを1,000,000個追加し、ステージの進捗を進めました！");
+            alert("🛠️ デバッグ：現在のステージ踏破に必要なエネルギーを即時注入しました！");
         }
 
         function initAndPlayBGM() {
@@ -739,7 +785,7 @@
             const rect = gameScreen.getBoundingClientRect();
             const div = document.createElement('div');
             div.className = 'floating-text';
-            div.innerText = `+${amount} もち`;
+            div.innerText = `+${amount.toLocaleString()} もち`;
             div.style.left = (x - rect.left) + 'px';
             div.style.top = (y - rect.top) + 'px';
             gameScreen.appendChild(div);
@@ -792,12 +838,10 @@
 
         const mochiBtnElement = document.getElementById('mochisuke-btn');
 
-        // 長押し保存メニューの完全禁止
         mochiBtnElement.addEventListener('contextmenu', (e) => {
             e.preventDefault();
         });
 
-        // 押した瞬間：つぶれた見た目で固定
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
@@ -807,11 +851,9 @@
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
             
-            // 待機アニメーションを止める
             mochiBtnElement.classList.remove('breathe-idle');
             clearTimeout(breatheTimer);
 
-            // フラグを立て、長押し中の潰れスタイル(横広・縦縮)に変形
             isMochiPressed = true;
             mochiBtnElement.style.transform = 'scale(1.25, 0.72)';
 
@@ -829,26 +871,22 @@
             updateDisplay();
         });
 
-        // 指を離した瞬間のリバウンドアニメーション関数
         function releaseMochiSucre() {
             if (!isMochiPressed) return;
             isMochiPressed = false;
 
-            // 潰れた状態から、ビヨーンと弾んで戻る極上滑らかアニメーションを発火
             mochiBtnElement.animate([
                 { transform: 'scale(1.25, 0.72)' },
-                { transform: 'scale(0.86, 1.14)', offset: 0.4 }, // 反動で縦にシャキッと伸びる
-                { transform: 'scale(1.04, 0.96)', offset: 0.75 }, // 小さな余韻の揺れ
+                { transform: 'scale(0.86, 1.14)', offset: 0.4 }, 
+                { transform: 'scale(1.04, 0.96)', offset: 0.75 }, 
                 { transform: 'scale(1, 1)' }
             ], {
                 duration: 240,
                 easing: 'ease-out'
             });
 
-            // インラインスタイルをリセット
             mochiBtnElement.style.transform = 'scale(1, 1)';
 
-            // 1.2秒間次の入力がなければ待機呼吸アニメに戻る
             breatheTimer = setTimeout(() => {
                 if (!isMochiPressed) {
                     mochiBtnElement.classList.add('breathe-idle');
@@ -856,7 +894,6 @@
             }, 1200);
         }
 
-        // 画面外に指が抜けたときや、指が離れたときにリバウンドを走らせる
         mochiBtnElement.addEventListener('pointerup', releaseMochiSucre);
         mochiBtnElement.addEventListener('pointerleave', releaseMochiSucre);
 
@@ -873,8 +910,8 @@
             document.getElementById('warehouse-status-box').innerHTML = `
                 <strong>🏆 プレイヤー能力値</strong><br>
                 ・現在の所持金: ${Math.floor(score).toLocaleString()} もち<br>
-                ・現在のタップ力: +${getTapPower()} もち/タップ<br>
-                ・自動生産力 (Mps): ${getMps()} もち/秒<br>
+                ・現在のタップ力: +${getTapPower().toLocaleString()} もち/タップ<br>
+                ・自動生産力 (Mps): ${getMps().toLocaleString()} もち/秒<br>
                 ・解放したおみやげ: ${boughtCount} / ${stages.length} 種類<br>
                 ・現在の着用衣装: <strong>${currentClothe.name}</strong>
             `;
@@ -950,7 +987,7 @@
                     row.innerHTML = `
                         <div class="item-info">
                             <span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span>
-                            <span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${currentLv * (stage.tapBonus || stage.mpsBonus)})</span>
+                            <span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${(currentLv * (stage.tapBonus || stage.mpsBonus)).toLocaleString()})</span>
                         </div>
                         ${btnHtml}
                     `;
@@ -1074,7 +1111,6 @@
              if (present && present.parentNode) present.remove();
         }
 
-        // プレゼントの中身を現在の最高到達ステージの距離（目標値）に比例させる
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             const present = document.createElement('div');
@@ -1093,11 +1129,8 @@
             present.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
                 
-                // 現在の最高到達ステージの目標距離の5%を基礎ボーナス値にする
                 const currentStage = stages[currentStageIndex] || stages[0];
                 const stageBaseBonus = Math.floor(currentStage.distance * 0.05);
-                
-                // 基礎値＋自動生産（Mps）の60秒分を合計して獲得
                 const bonus = Math.max(200, stageBaseBonus + Math.floor(getMps() * 60));
                 
                 score += bonus;
@@ -1212,8 +1245,8 @@
         function openRanking() {
             let listContainer = document.getElementById('ranking-list');
             let dummyRanks = [
-                { name: "日本もち王", score: 50000000000, isMe: false },
-                { name: "タイパーすけ", score: 4500000, isMe: false },
+                { name: "日本もち王", score: 900000000000000, isMe: false },
+                { name: "タイパーすけ", score: 500000000000, isMe: false },
                 { name: "あなた (もちすけ)", score: Math.floor(score), isMe: true },
                 { name: "見習いもち", score: 10, isMe: false }
             ];
