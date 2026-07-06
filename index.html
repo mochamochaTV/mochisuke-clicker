@@ -186,6 +186,35 @@
             text-align: right;
         }
 
+        #install-banner {
+            display: none;
+            width: 90%;
+            max-width: 400px;
+            margin-top: 4px;
+            background: rgba(74, 54, 34, 0.92);
+            color: #fff;
+            border-radius: 14px;
+            padding: 8px 10px 8px 14px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            z-index: 30;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            animation: cardSwitch 0.25s ease-out;
+        }
+        #install-banner-text { flex: 1; text-align: left; line-height: 1.3; }
+        #install-banner-action {
+            background: #ff9800; color: #fff; border: none; border-radius: 10px;
+            padding: 6px 12px; font-size: 0.78rem; font-weight: bold; cursor: pointer; flex-shrink: 0;
+        }
+        #install-banner-close {
+            background: none; border: none; color: #ddd; font-size: 1.1rem; cursor: pointer;
+            padding: 2px 4px; line-height: 1; flex-shrink: 0;
+        }
+
         /* もちメーター */
         #progress-area {
             width: 94%;
@@ -450,6 +479,12 @@
             </div>
         </div>
 
+        <div id="install-banner">
+            <span id="install-banner-text">📲 ホーム画面に追加できます</span>
+            <button id="install-banner-action" type="button">追加</button>
+            <button id="install-banner-close" type="button" aria-label="閉じる">×</button>
+        </div>
+
         <div id="progress-area">
             <div id="distance-text">次のエリアまで : 500 もちkcal</div>
             <div id="progress-flex">
@@ -581,6 +616,64 @@
         }
         setViewportHeightVar();
 
+        // 📲 ホーム画面に追加まわり
+        // PWA化(manifest+ServiceWorker)しただけでは自動でホーム画面に追加はされない。
+        // ・Android/Chrome系 → beforeinstallpromptイベントを捕まえて自前ボタンから誘導すれば即インストール可
+        // ・iOS Safari → ブラウザ側に自動インストールAPIが無いため「共有→ホーム画面に追加」を手動案内するしかない
+        let deferredInstallPrompt = null;
+        const installBanner = document.getElementById('install-banner');
+        const installBannerText = document.getElementById('install-banner-text');
+        const installBannerAction = document.getElementById('install-banner-action');
+        const installBannerClose = document.getElementById('install-banner-close');
+        const INSTALL_DISMISS_KEY = 'punicker_install_dismissed_v1';
+
+        function isRunningStandalone() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function showInstallBanner(mode) {
+            if (isRunningStandalone() || localStorage.getItem(INSTALL_DISMISS_KEY)) return;
+            if (mode === 'android') {
+                installBannerText.innerText = '📲 ホーム画面に追加すると次回から一瞬で起動できます';
+                installBannerAction.style.display = 'inline-block';
+            } else {
+                installBannerText.innerText = '📲 共有ボタン → 「ホーム画面に追加」でアプリのように使えます';
+                installBannerAction.style.display = 'none';
+            }
+            installBanner.style.display = 'flex';
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            showInstallBanner('android');
+        });
+
+        installBannerAction.addEventListener('click', async () => {
+            if (!deferredInstallPrompt) return;
+            deferredInstallPrompt.prompt();
+            await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+            installBanner.style.display = 'none';
+        });
+
+        installBannerClose.addEventListener('click', () => {
+            installBanner.style.display = 'none';
+            localStorage.setItem(INSTALL_DISMISS_KEY, '1');
+        });
+
+        window.addEventListener('appinstalled', () => {
+            installBanner.style.display = 'none';
+            deferredInstallPrompt = null;
+        });
+
+        // iOSはbeforeinstallpromptが発火しないため、UAで判定して案内バナーを出す
+        const ua = navigator.userAgent.toLowerCase();
+        const isIOSDevice = /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (isIOSDevice) {
+            setTimeout(() => showInstallBanner('ios'), 4000);
+        }
+
         // PWA: Service Workerを登録（対応ブラウザのみ、失敗しても通常プレイに影響なし）
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -709,19 +802,33 @@
         let breatheTimer = null; let isMochiPressed = false; 
 
         // 音声再生システム（多重再生対応・プール化でnew Audio()の連発による高速タップ時のカクつきを解消）
+        // 【重要】会心/黄金など発生頻度が低い効果音は「初回再生時に初めてダウンロード・デコード」されるせいで
+        // 一発目だけ再生が遅れることがあった → 使う可能性のある音は最初にまとめて読み込んでおく（プリロード）ことで解消
         const audioPoolCache = {}; // { fileName: { pool: [Audio,...], nextIndex: 0 } }
         const AUDIO_POOL_SIZE = 6;
-        function playAudioFile(fileName, vol = 0.6) {
+        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3'];
+
+        function ensureAudioPool(fileName) {
             let entry = audioPoolCache[fileName];
             if (!entry) {
                 const pool = [];
                 for (let i = 0; i < AUDIO_POOL_SIZE; i++) {
                     const a = new Audio(fileName);
                     a.preload = 'auto';
+                    a.load(); // すぐにダウンロード・デコードを開始させる
                     pool.push(a);
                 }
                 entry = audioPoolCache[fileName] = { pool, nextIndex: 0 };
             }
+            return entry;
+        }
+
+        function preloadAllSfx() {
+            SFX_FILES.forEach(ensureAudioPool);
+        }
+
+        function playAudioFile(fileName, vol = 0.6) {
+            const entry = ensureAudioPool(fileName);
             const audio = entry.pool[entry.nextIndex];
             entry.nextIndex = (entry.nextIndex + 1) % entry.pool.length;
             audio.volume = vol;
@@ -824,6 +931,8 @@
             window.addEventListener('resize', resizeParticleCanvas);
             window.addEventListener('orientationchange', resizeParticleCanvas);
             if (window.visualViewport) window.visualViewport.addEventListener('resize', resizeParticleCanvas);
+
+            preloadAllSfx(); // 会心・黄金など出現頻度の低い効果音も先に読み込んでおき、初回再生の遅延を防ぐ
 
             loadGame();
 
@@ -1007,15 +1116,15 @@
                 score += power;
             }
 
-            // テキストポップアップ・新SE視覚演出
+            // 新SE視覚演出（音を先に鳴らしてから見た目の処理をする＝DOM生成が音の発火を遅らせないようにする）
             if (isCrit) {
-                createFloatingText(clientX, clientY, `🔥会心! +${power.toLocaleString()}`, "#ff3d00", "1.65rem");
                 playAudioFile('critical.mp3');
+                createFloatingText(clientX, clientY, `🔥会心! +${power.toLocaleString()}`, "#ff3d00", "1.65rem");
                 mochiBtnElement.style.filter = "contrast(2.5) brightness(1.1) grayscale(0.2)";
                 setTimeout(() => { resetMochiFilter(); }, 180);
             } else if (isGold) {
-                createFloatingText(clientX, clientY, `✨黄金! +${power.toLocaleString()}`, "#ffd700", "1.65rem");
                 playAudioFile('gold_mochi.mp3');
+                createFloatingText(clientX, clientY, `✨黄金! +${power.toLocaleString()}`, "#ffd700", "1.65rem");
             } else {
                 createFloatingText(clientX, clientY, `+${power.toLocaleString()} もち`);
             }
