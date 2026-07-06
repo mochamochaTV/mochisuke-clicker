@@ -11,7 +11,7 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>もちすけ日本縦断クリッカー -中国・四国編-</title>
+    <title>ぷにっかー -日本縦断編-</title>
     <style>
         /* 全体スタイル - ズームやスクロールを完全禁止 */
         body {
@@ -528,7 +528,7 @@
             lastTouchEnd = now;
         }, { passive: false });
 
-        // ステージデータ（九州＋四国・中国地方）
+        // ステージデータ（九州〜沖縄までの全日本縦断ルート）
         const stages = [
             { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！\n桜島がとっても雄大で、パワーをもらった気分だぞ。\nここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", distance: 1500, item: "完熟マンゴー", price: 300, diary: "宮崎にやってきたぞ！\nヤシの木がたくさん並んでいて、南国気分満点だぁ。\nお日様をいっぱい浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
@@ -542,7 +542,13 @@
             { name: "愛媛", distance: 2000000, item: "みかん大福", price: 1000000, diary: "愛媛県にやってきたぞ！\nどこを見渡すみかん、みかん、みかん！\nジューシーなみかんが丸ごと入った大福は、甘酸っぱくてモチモチでほっぺが落ちそうや。", bg: "bg_images/ehime.png", diaryImg: "diary_images/ehime_d.png", effectDesc: "タップ力 +400", tapBonus: 400, mpsBonus: 0 },
             { name: "高知", distance: 5000000, item: "カツオのたたき", price: 3000000, diary: "四国のラストは高知県！\n桂浜から見る太平洋はすっごく広くて感動したぞ。\n藁焼きのカツオは香ばしくて、お腹いっぱい食べちゃった！さぁ次は中国地方だ！", bg: "bg_images/kochi.png", diaryImg: "diary_images/kochi_d.png", effectDesc: "自動増加 +350もち/秒", tapBonus: 0, mpsBonus: 350 },
             { name: "広島", distance: 12000000, item: "もみじ饅頭", price: 9000000, diary: "中国地方に上陸、広島県だぞ！\n厳島神社の大きな鳥居が海に浮かんでいてすっごく神秘的だったなぁ。\n焼き立てのもみじ饅頭は、あんこがホカホカで美味しかったの！", bg: "bg_images/hiroshima.png", diaryImg: "diary_images/hiroshima_d.png", effectDesc: "タップ力 +1200", tapBonus: 1200, mpsBonus: 0 },
-            { name: "岡山", distance: 30000000, item: "きびだんご", price: 25000000, diary: "桃太郎の故郷、岡山県にきたぞ！\n美味しいきびだんごを貰ったから、もちすけも今日から桃太郎の仲間入りかな？\nこれでさらに遠くまで旅を続けられるぞ！", bg: "bg_images/okayama.png", diaryImg: "diary_images/okayama_d.png", effectDesc: "自動増加 +1000もち/秒", tapBonus: 0, mpsBonus: 1000 }
+            { name: "岡山", distance: 30000000, item: "きびだんご", price: 25000000, diary: "桃太郎の故郷、岡山県にきたぞ！\n美味しいきびだんごを貰ったから、もちすけも今日から桃太郎の仲間入りかな？\nこれでさらに遠くまで旅を続けられるぞ！", bg: "bg_images/okayama.png", diaryImg: "diary_images/okayama_d.png", effectDesc: "自動増加 +1000もち/秒", tapBonus: 0, mpsBonus: 1000 },
+            { name: "関西", distance: 120000000, item: "たこ焼き", price: 100000000, diary: "歴史ある街並みと美味しいグルメの宝庫、関西にきたぞ！\n大阪でアツアツのたこ焼きを食べて、京都で綺麗な景色を眺めたんだ。\nお腹いっぱいで、もちもち度も限界突破！", bg: "bg_images/kansai.png", diaryImg: "diary_images/kansai_d.png", effectDesc: "タップ力 +4000", tapBonus: 4000, mpsBonus: 0 },
+            { name: "中部", distance: 500000000, item: "ひつまぶし", price: 400000000, diary: "中部エリアに突入！雄大な富士山と豪華な名古屋飯が待っていたぞ！\nひつまぶしは香ばしくて最高！\n富士山もとっても高くて圧倒されちゃったな。エネルギー満タン！", bg: "bg_images/chubu.png", diaryImg: "diary_images/chubu_d.png", effectDesc: "自動増加 +15000もち/秒", tapBonus: 0, mpsBonus: 15000 },
+            { name: "関東", distance: 2000000000, item: "江戸前寿司", price: 1500000000, diary: "日本の中心、関東エリアだぞ！大都会と豊かな自然のハイブリッド！\n東京タワーの大きさにびっくりしちゃった。\nビルがたくさん並ぶ街と、自然豊かな場所をもちもち駆け抜けたよ！", bg: "bg_images/kanto.png", diaryImg: "diary_images/kanto_d.png", effectDesc: "タップ力 +50000", tapBonus: 50000, mpsBonus: 0 },
+            { name: "東北", distance: 8000000000, item: "極上牛タン", price: 6000000000, diary: "みちのくのんびり旅、東北エリアだぞ！豊かな自然と温かいお祭りの数々！\n仙台で肉厚の牛タンを食べて大満足！\nずんだ餅の優しい甘さが、旅の疲れをぷにっと癒やしてくれるね。", bg: "bg_images/tohoku.png", diaryImg: "diary_images/tohoku_d.png", effectDesc: "自動増加 +200000もち/秒", tapBonus: 0, mpsBonus: 200000 },
+            { name: "北海道", distance: 30000000000, item: "特大タラバガニ", price: 25000000000, diary: "広大な北の大地、北海道エリアに上陸！試される大地をぷにぷに進め！\nどこまでも続く真っ直ぐな道。カニもいくらも美味しすぎて、ほっぺたが落ちそうだよ！\nついに北の果てまで到達だ！", bg: "bg_images/hokkaido.png", diaryImg: "diary_images/hokkaido_d.png", effectDesc: "タップ力 +800000", tapBonus: 800000, mpsBonus: 0 },
+            { name: "沖縄", distance: 120000000000, item: "守り神シーサー", price: 100000000000, diary: "青い海、白い砂浜！日本縦断の感動のゴール、沖縄エリアだぞ！\n北の大地から一気に南の楽園へワープ！\n綺麗すぎる海を見ながら、最高のぷにぷに旅を大団円で締めくくったよ！次は世界か宇宙か…！？", bg: "bg_images/okinawa.png", diaryImg: "diary_images/okinawa_d.png", effectDesc: "自動増加 +3000000もち/秒", tapBonus: 0, mpsBonus: 3000000 }
         ];
 
         const clothesData = [
@@ -589,7 +595,7 @@
         let lastTappedTime = Date.now();
         const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
         let breatheTimer = null; 
-        let isMochiPressed = false; // 👈 長押し管理用のフラグを追加
+        let isMochiPressed = false; // 長押し管理用のフラグ
 
         function saveGame() {
             const state = {
@@ -791,7 +797,7 @@
             e.preventDefault();
         });
 
-        // 👈 【仕様変更】押した瞬間：つぶれた見た目で固定
+        // 押した瞬間：つぶれた見た目で固定
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
@@ -823,7 +829,7 @@
             updateDisplay();
         });
 
-        // 👈 【新設】指を離した瞬間のリバウンドアニメーション関数
+        // 指を離した瞬間のリバウンドアニメーション関数
         function releaseMochiSucre() {
             if (!isMochiPressed) return;
             isMochiPressed = false;
@@ -1068,7 +1074,7 @@
              if (present && present.parentNode) present.remove();
         }
 
-        // 👈 【仕様変更】プレゼントの中身を現在の最高到達ステージの距離（目標値）に比例させる
+        // プレゼントの中身を現在の最高到達ステージの距離（目標値）に比例させる
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             const present = document.createElement('div');
@@ -1190,7 +1196,7 @@
                 distText.innerText = "このエリアは踏破済みです";
                 progressBar.style.width = "100%";
             } else if (currentStageIndex === stages.length - 1 && currentStageProgress >= stages[currentStageIndex].distance) {
-                distText.innerText = "🎉 祝・中国・四国地方まで制覇完了！！";
+                distText.innerText = "🎉 祝・日本縦断すべてのエリアを制覇完了！！";
                 progressBar.style.width = "100%";
             } else {
                 const remaining = Math.ceil(stages[currentStageIndex].distance - currentStageProgress);
@@ -1206,8 +1212,8 @@
         function openRanking() {
             let listContainer = document.getElementById('ranking-list');
             let dummyRanks = [
-                { name: "日本もち王", score: 50000000, isMe: false },
-                { name: "タイパーすけ", score: 45000, isMe: false },
+                { name: "日本もち王", score: 50000000000, isMe: false },
+                { name: "タイパーすけ", score: 4500000, isMe: false },
                 { name: "あなた (もちすけ)", score: Math.floor(score), isMe: true },
                 { name: "見習いもち", score: 10, isMe: false }
             ];
