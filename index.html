@@ -392,7 +392,6 @@
 </head>
 <body>
 
-    <!-- 制作限定デバッグゾーン -->
     <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 6px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d; display: flex; flex-direction: column; gap: 4px; align-items: center;">
         <div>
             <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">🛠️ もち即注入</button>
@@ -413,7 +412,6 @@
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
 
-        <!-- 上部総合情報UI -->
         <div id="header-container">
             <div class="score-row">
                 🍡 <span id="score-text">0 もち</span>
@@ -429,7 +427,6 @@
             </div>
         </div>
 
-        <!-- 進捗メーター -->
         <div id="progress-area">
             <div id="distance-text">次のエリアまで : 500 もちkcal</div>
             <div id="progress-flex">
@@ -442,9 +439,7 @@
             </div>
         </div>
 
-        <!-- プレイスペース（スキルボタン＆もちすけ） -->
         <div id="mochisuke-area">
-            <!-- 左サイドスキル -->
             <div class="skill-side-container">
                 <div id="btn-skill1" class="skill-btn locked" onclick="useSkill('skill1')">
                     <div class="cd-overlay"></div>
@@ -456,23 +451,19 @@
                 </div>
             </div>
 
-            <!-- 中央メイン領域 -->
             <div id="mochisuke-wrapper">
                 <div id="combo-display">🔥 0 Combo!</div>
                 <div id="mochi-balloon">画面をタップして もち集めるじゃ！</div>
                 <img id="mochisuke-btn" class="breathe-idle" src="image_0.png" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
                 
-                <!-- 分身表示用コンテナ -->
                 <div id="bunshin-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
 
-                <!-- 中央下部・必殺技ボタン -->
                 <div id="btn-hissatsu" class="hissatsu-btn" onclick="useSkill('hissatsu')">
                     <div class="cd-overlay-rect"></div>
                     <span class="hissatsu-text">💥 もちもちビッグバン <span id="lv-hissatsu">Lv.1</span></span>
                 </div>
             </div>
 
-            <!-- 右サイドスキル -->
             <div class="skill-side-container">
                 <div id="btn-skill3" class="skill-btn locked" onclick="useSkill('skill3')">
                     <div class="cd-overlay"></div>
@@ -485,7 +476,6 @@
             </div>
         </div>
 
-        <!-- フッターメニュー -->
         <div id="control-panel">
             <div class="nav-menu">
                 <button class="nav-btn btn-warehouse" onclick="openWarehouse()"><span>📦</span><span>倉庫</span></button>
@@ -497,7 +487,6 @@
         </div>
     </div>
 
-    <!-- 各種システムモーダル -->
     <div id="warehouse-modal" class="modal">
         <div class="modal-content">
             <button class="modal-close-x" onclick="closeModal('warehouse-modal')">×</button>
@@ -654,12 +643,23 @@
         let canvas = null; let ctx = null; let particleList = [];
         const particleImg = new Image(); particleImg.src = 'mochi_particle.png';
 
-        const MAX_TAP_SOUNDS = 5; const tapSoundPool = []; let tapSoundIndex = 0;
-        for (let i = 0; i < MAX_TAP_SOUNDS; i++) { tapSoundPool.push(new Audio('tap.mp3')); }
-
         let lastTappedTime = Date.now();
         const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
         let breatheTimer = null; let isMochiPressed = false; 
+
+        // 音声再生システム（多重再生対応）
+        function playAudioFile(fileName, vol = 0.6) {
+            const audio = new Audio(fileName);
+            audio.volume = vol;
+            audio.play().catch(e => console.log("音声再生制限:", fileName));
+        }
+
+        // 画面全体のタップ（効果音の確実な再生）
+        window.addEventListener('pointerdown', (e) => {
+            if (!e.target.closest('button') && !e.target.closest('.skill-btn') && e.target.id !== 'mochisuke-btn') {
+                playAudioFile('tap.mp3');
+            }
+        });
 
         function saveGame() {
             const state = {
@@ -791,17 +791,9 @@
             return mps;
         }
 
-        function playTapSound() {
-            const audio = tapSoundPool[tapSoundIndex];
-            audio.volume = 0.6; audio.currentTime = 0;
-            audio.play().catch(() => {});
-            tapSoundIndex = (tapSoundIndex + 1) % MAX_TAP_SOUNDS;
-        }
-
         function triggerAreaTransition(newBgUrl, callback) {
             const overlay = document.getElementById('fade-overlay');
-            const moveAudio = new Audio('move.mp3'); moveAudio.volume = 0.6;
-            moveAudio.play().catch(() => {});
+            playAudioFile('move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 callback();
@@ -855,9 +847,8 @@
                 
                 ctx.save();
                 if (p.isGold) {
-                    // 黄色みと輝きを強化
+                    // 黄色みと輝きを強化（金色エフェクト）
                     ctx.filter = "hue-rotate(50deg) brightness(1.6) saturate(3) drop-shadow(0 0 8px #ffd700)";
-                    // 通常(42x42)より一回り大きく(70x70)描画
                     ctx.drawImage(particleImg, p.x - 35, p.y - 35, 70, 70);
                 } else {
                     ctx.drawImage(particleImg, p.x - 21, p.y - 21, 42, 42);
@@ -904,10 +895,13 @@
                 }
             }
 
+            // パーティクルの色設定（スキル4発動中はすべてのパーティクルを金色に）
+            let isGoldParticle = isGold || (skills.skill4.activeTimer > 0);
+
             // スキル1：もちもちクリック発動時は弾ける量をさらに追加
             let pCount = skills.skill1.activeTimer > 0 ? 3 : 1;
             for (let i = 0; i < pCount; i++) {
-                createParticle(clientX, clientY, isGold);
+                createParticle(clientX, clientY, isGoldParticle);
             }
 
             // スキル3：分身発動時は左右の分身からも個別にパーティクルを発射
@@ -917,7 +911,7 @@
                     const cRect = clone.getBoundingClientRect();
                     const cx = cRect.left + cRect.width / 2;
                     const cy = cRect.top + cRect.height / 2;
-                    createParticle(cx, cy, isGold);
+                    createParticle(cx, cy, isGoldParticle);
                 });
             }
 
@@ -931,12 +925,12 @@
             // テキストポップアップ・新SE視覚演出
             if (isCrit) {
                 createFloatingText(clientX, clientY, `🔥会心! +${power.toLocaleString()}`, "#ff3d00", "1.65rem");
-                const critAudio = new Audio('critical.mp3'); critAudio.volume = 0.5; critAudio.play().catch(()=>{});
+                playAudioFile('critical.mp3');
                 mochiBtnElement.style.filter = "contrast(2.5) brightness(1.1) grayscale(0.2)";
                 setTimeout(() => { resetMochiFilter(); }, 180);
             } else if (isGold) {
                 createFloatingText(clientX, clientY, `✨黄金! +${power.toLocaleString()}`, "#ffd700", "1.65rem");
-                const goldMochiAudio = new Audio('gold_mochi.mp3'); goldMochiAudio.volume = 0.5; goldMochiAudio.play().catch(()=>{});
+                playAudioFile('gold_mochi.mp3');
             } else {
                 createFloatingText(clientX, clientY, `+${power.toLocaleString()} もち`);
             }
@@ -949,7 +943,7 @@
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             e.preventDefault();
             initAndPlayBGM();
-            playTapSound(); // タップSEを確実に再生するよう修正
+            playAudioFile('tap.mp3'); 
             
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
@@ -957,10 +951,14 @@
             clearTimeout(breatheTimer);
 
             isMochiPressed = true;
+            const clones = document.querySelectorAll('.bunshin-clone-img');
+
             if (skills.hissatsu.activeTimer > 0) {
                 mochiBtnElement.style.transform = 'scale(1.55, 1.2)';
+                clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.55, 1.2)');
             } else {
                 mochiBtnElement.style.transform = 'scale(1.25, 0.72)';
+                clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)');
             }
 
             createRippleEffect(e.clientX, e.clientY);
@@ -982,7 +980,7 @@
                 }
                 // もちすけ本体以外をタップした時に10連打を発動
                 if (e.target.id !== 'mochisuke-btn') {
-                    playTapSound(); // 画面全体連打時もタップSEを再生
+                    playAudioFile('tap.mp3');
                     createRippleEffect(e.clientX, e.clientY);
                     for (let i = 0; i < 10; i++) {
                         executeSingleTap(e.clientX, e.clientY);
@@ -996,8 +994,11 @@
             if (!isMochiPressed) return;
             isMochiPressed = false;
 
+            const clones = document.querySelectorAll('.bunshin-clone-img');
+
             if (skills.hissatsu.activeTimer > 0) {
                 mochiBtnElement.style.transform = 'scale(1.5)';
+                clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.5)');
             } else {
                 mochiBtnElement.animate([
                     { transform: 'scale(1.25, 0.72)' },
@@ -1006,6 +1007,16 @@
                     { transform: 'scale(1, 1)' }
                 ], { duration: 240, easing: 'ease-out' });
                 mochiBtnElement.style.transform = 'scale(1, 1)';
+                
+                clones.forEach(c => {
+                    c.animate([
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.86, 1.14)', offset: 0.4 }, 
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.04, 0.96)', offset: 0.75 }, 
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)' }
+                    ], { duration: 240, easing: 'ease-out' });
+                    c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
+                });
             }
 
             breatheTimer = setTimeout(() => {
@@ -1027,8 +1038,7 @@
             }
             if (s.currentCd > 0 || s.activeTimer > 0) return; 
 
-            // スキルボタンタップ共通SEを再生
-            const skillTapAudio = new Audio('skill_tap.mp3'); skillTapAudio.volume = 0.6; skillTapAudio.play().catch(()=>{});
+            playAudioFile('skill_tap.mp3');
 
             // 効果持続時間セット
             s.activeTimer = s.duration;
@@ -1069,7 +1079,8 @@
                     img.style.opacity = '0.55'; 
                     img.style.left = '50%';
                     img.style.top = '50%';
-                    img.style.transform = `translate(-50%, -50%) translateX(${xOffsets[i]}px)`;
+                    img.style.setProperty('--tx', `${xOffsets[i]}px`);
+                    img.style.transform = `translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)`;
                     img.style.filter = mochiBtnElement.style.filter + " saturate(0.7)";
                     img.style.pointerEvents = 'none';
                     container.appendChild(img);
@@ -1087,6 +1098,8 @@
                 // 親方化して巨大に固定
                 mochiBtnElement.classList.remove('breathe-idle');
                 mochiBtnElement.style.transform = 'scale(1.5)';
+                const clones = document.querySelectorAll('.bunshin-clone-img');
+                clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.5)');
                 mochiBtnElement.style.filter = mochiBtnElement.style.filter + " contrast(1.4) brightness(1.05)";
             }
         }
@@ -1104,6 +1117,8 @@
                 }
 
                 mochiBtnElement.style.transform = 'scale(1)';
+                const clones = document.querySelectorAll('.bunshin-clone-img');
+                clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1)');
                 resetMochiFilter();
                 if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
             }
@@ -1128,7 +1143,7 @@
                     if (s.currentCd <= 0) {
                         s.currentCd = 0;
                         if (s.lv > 0) {
-                            const readyAudio = new Audio('ready.mp3'); readyAudio.volume = 0.4; readyAudio.play().catch(()=>{});
+                            playAudioFile('ready.mp3', 0.4);
                         }
                     }
                 }
@@ -1403,7 +1418,9 @@
             document.getElementById('score-text').innerText = isFever ? `🔥 5倍中 (${feverTimeLeft}s) ${scoreFormatted}` : scoreFormatted;
             document.getElementById('current-location-text').innerText = stages[selectedStageIndex].name;
             document.getElementById('mps-display').innerText = `↗ 自動増加: ${getMps().toLocaleString()} もち/秒`;
-            document.getElementById('tap-power-display').innerText = `👆 タップ力: +${getTapPower().toLocaleString}`;
+            
+            // 【修正】関数を正しく実行し、カンマ区切りで表示
+            document.getElementById('tap-power-display').innerText = `👆 タップ力: +${getTapPower().toLocaleString()}`;
 
             const distText = document.getElementById('distance-text');
             const progressBar = document.getElementById('progress-bar');
