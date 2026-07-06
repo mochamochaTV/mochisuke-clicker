@@ -12,6 +12,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ぷにっかー -日本縦断編-</title>
+
+    <!-- PWA対応 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#ff9800">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ぷにっかー">
+    <link rel="apple-touch-icon" href="image_0.png">
     <style>
         /* 全体スタイル - ズームやスクロールを完全禁止 */
         html {
@@ -37,8 +46,7 @@
 
         #game-screen {
             width: 100%; max-width: 480px;
-            height: calc(var(--vh, 1vh) * 100);
-            height: 100dvh;
+            flex: 1 1 auto; min-height: 0;
             position: relative; display: flex; flex-direction: column; align-items: center;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             background-image: url('bg_images/oita.png');
@@ -407,7 +415,7 @@
 </head>
 <body>
 
-    <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 6px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d; display: none; flex-direction: column; gap: 4px; align-items: center;">
+    <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 6px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d; display: flex; flex-direction: column; gap: 4px; align-items: center; flex-shrink: 0; box-sizing: border-box;">
         <div>
             <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">🛠️ もち即注入</button>
             <button onclick="debugLevelUpAllSkills()" style="background: #009688; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">⚡ 全スキル解放&Lv+1</button>
@@ -572,10 +580,12 @@
             document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
         }
         setViewportHeightVar();
-        // デバッグツールバーは ?debug=1 を付けた時だけ表示（通常プレイでは非表示）
-        if (new URLSearchParams(window.location.search).get('debug') === '1') {
-            const dz = document.getElementById('debug-zone');
-            if (dz) dz.style.display = 'flex';
+
+        // PWA: Service Workerを登録（対応ブラウザのみ、失敗しても通常プレイに影響なし）
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
         }
         window.addEventListener('resize', setViewportHeightVar);
         window.addEventListener('orientationchange', setViewportHeightVar);
@@ -674,6 +684,25 @@
         let bgmAudio = null; let hissatsuBgmAudio = null; let isBgmInitialized = false;
         let canvas = null; let ctx = null; let particleList = [];
         const particleImg = new Image(); particleImg.src = 'mochi_particle.png';
+        // ctx.filter (hue-rotate/drop-shadow) はスマホブラウザ(特にiOS Safari)で
+        // 正しく適用されないことがあるため、金色版画像を事前に1回だけ焼き込んで使い回す
+        let goldParticleImg = null;
+        particleImg.onload = () => {
+            try {
+                const w = particleImg.naturalWidth || particleImg.width || 64;
+                const h = particleImg.naturalHeight || particleImg.height || 64;
+                const off = document.createElement('canvas');
+                off.width = w; off.height = h;
+                const octx = off.getContext('2d');
+                octx.drawImage(particleImg, 0, 0, w, h);
+                octx.globalCompositeOperation = 'source-atop';
+                octx.fillStyle = 'rgba(255, 196, 0, 0.55)';
+                octx.fillRect(0, 0, w, h);
+                octx.fillStyle = 'rgba(255, 235, 140, 0.25)';
+                octx.fillRect(0, 0, w, h);
+                goldParticleImg = off;
+            } catch (e) { goldParticleImg = null; }
+        };
 
         let lastTappedTime = Date.now();
         const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
@@ -901,9 +930,11 @@
                 
                 ctx.save();
                 if (p.isGold) {
-                    // 黄色みと輝きを強化（金色エフェクト）
-                    ctx.filter = "hue-rotate(50deg) brightness(1.6) saturate(3) drop-shadow(0 0 8px #ffd700)";
-                    ctx.drawImage(particleImg, p.x - 35, p.y - 35, 70, 70);
+                    // 金色みと輝きを強化（事前に焼き込んだ金色画像＋canvasネイティブのshadowで表現。
+                    // ctx.filterはモバイルブラウザで無視されることがあるため使わない）
+                    ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
+                    ctx.shadowBlur = 14;
+                    ctx.drawImage(goldParticleImg || particleImg, p.x - 35, p.y - 35, 70, 70);
                 } else {
                     ctx.drawImage(particleImg, p.x - 21, p.y - 21, 42, 42);
                 }
@@ -949,8 +980,8 @@
                 }
             }
 
-            // パーティクルの色設定（スキル4発動中はすべてのパーティクルを金色に）
-            let isGoldParticle = isGold || (skills.skill4.activeTimer > 0);
+            // パーティクルの色設定（スキル4の確率判定(isGold)に当たった時だけ金色にする）
+            let isGoldParticle = isGold;
 
             // スキル1：もちもちクリック発動時は弾ける量をさらに追加
             let pCount = skills.skill1.activeTimer > 0 ? 3 : 1;

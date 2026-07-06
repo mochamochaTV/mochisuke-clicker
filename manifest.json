@@ -1,0 +1,15 @@
+{
+  "name": "ぷにっかー -日本縦断編-",
+  "short_name": "ぷにっかー",
+  "description": "もちすけと一緒に日本を縦断するタップゲーム",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fcf8f2",
+  "theme_color": "#ff9800",
+  "icons": [
+    { "src": "image_0.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "image_0.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
