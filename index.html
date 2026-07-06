@@ -43,10 +43,8 @@
             width: 100%;
             top: 0; left: 0;
             box-sizing: border-box;
-            /* PWAとしてホーム画面から起動した時、iPhoneのノッチ/ステータスバーや
-               ホームインジケーターの下にUIが潜り込まないようにする(black-translucent対策) */
-            padding-top: env(safe-area-inset-top, 0px);
-            padding-bottom: env(safe-area-inset-bottom, 0px);
+            /* 左右のノッチ避けだけ body側で確保（上下は各バー自身の背景色で埋めるので、
+               ここではpadding-top/bottomを持たせない＝隙間に本体の背景色が見えてしまうのを防ぐ） */
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
         }
@@ -442,16 +440,19 @@
         /* フッターナビゲーション */
         #control-panel {
             width: 100%; background: #fffcf7;
-            padding: 10px 0 24px 0; border-radius: 32px 32px 0 0;
+            padding: 10px 0 calc(24px + env(safe-area-inset-bottom, 0px)) 0;
+            border-radius: 32px 32px 0 0;
             display: flex; justify-content: center; z-index: 10;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.06);
             border-top: 2px solid #f3ebd9;
+            box-sizing: border-box;
+            flex-shrink: 0;
         }
     </style>
 </head>
 <body>
 
-    <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 6px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d; display: flex; flex-direction: column; gap: 4px; align-items: center; flex-shrink: 0; box-sizing: border-box;">
+    <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: calc(6px + env(safe-area-inset-top, 0px)) 0 6px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d; display: flex; flex-direction: column; gap: 4px; align-items: center; flex-shrink: 0; box-sizing: border-box;">
         <div>
             <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">🛠️ もち即注入</button>
             <button onclick="debugLevelUpAllSkills()" style="background: #009688; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">⚡ 全スキル解放&Lv+1</button>
