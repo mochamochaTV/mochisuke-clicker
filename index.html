@@ -10,21 +10,35 @@
     </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ぷにっかー -日本縦断編-</title>
     <style>
         /* 全体スタイル - ズームやスクロールを完全禁止 */
+        html {
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
         body {
             margin: 0; padding: 0;
             font-family: 'Helvetica Neue', Arial, sans-serif;
             display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; overflow: hidden; user-select: none; -webkit-user-select: none;
+            height: calc(var(--vh, 1vh) * 100);
+            height: 100dvh;
+            min-height: calc(var(--vh, 1vh) * 100);
+            overflow: hidden; user-select: none; -webkit-user-select: none;
             background-color: #fcf8f2;
             touch-action: none;
+            overscroll-behavior: none;
+            position: fixed;
+            width: 100%;
+            top: 0; left: 0;
         }
 
         #game-screen {
-            width: 100%; max-width: 480px; height: 100vh;
+            width: 100%; max-width: 480px;
+            height: calc(var(--vh, 1vh) * 100);
+            height: 100dvh;
             position: relative; display: flex; flex-direction: column; align-items: center;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             background-image: url('bg_images/oita.png');
@@ -33,6 +47,7 @@
             background-repeat: no-repeat;
             touch-action: none;
             overflow: hidden;
+            overscroll-behavior: none;
         }
 
         /* 高速描画用キャンバス */
@@ -392,7 +407,7 @@
 </head>
 <body>
 
-    <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 6px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d; display: flex; flex-direction: column; gap: 4px; align-items: center;">
+    <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: 6px 0; z-index: 10000; position: relative; border-bottom: 2px solid #ffb74d; display: none; flex-direction: column; gap: 4px; align-items: center;">
         <div>
             <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">🛠️ もち即注入</button>
             <button onclick="debugLevelUpAllSkills()" style="background: #009688; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">⚡ 全スキル解放&Lv+1</button>
@@ -551,6 +566,23 @@
     </div>
 
     <script>
+        // モバイルブラウザのアドレスバー/ツールバーの出没による高さジャンプ対策
+        // (100dvh非対応の古いブラウザ用フォールバックとして --vh を実測して都度反映)
+        function setViewportHeightVar() {
+            document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+        }
+        setViewportHeightVar();
+        // デバッグツールバーは ?debug=1 を付けた時だけ表示（通常プレイでは非表示）
+        if (new URLSearchParams(window.location.search).get('debug') === '1') {
+            const dz = document.getElementById('debug-zone');
+            if (dz) dz.style.display = 'flex';
+        }
+        window.addEventListener('resize', setViewportHeightVar);
+        window.addEventListener('orientationchange', setViewportHeightVar);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', setViewportHeightVar);
+        }
+
         // スマホ環境の2本指ズーム・ダブルタップズームを制限
         document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
         let lastTouchEnd = 0;
@@ -647,11 +679,27 @@
         const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
         let breatheTimer = null; let isMochiPressed = false; 
 
-        // 音声再生システム（多重再生対応）
+        // 音声再生システム（多重再生対応・プール化でnew Audio()の連発による高速タップ時のカクつきを解消）
+        const audioPoolCache = {}; // { fileName: { pool: [Audio,...], nextIndex: 0 } }
+        const AUDIO_POOL_SIZE = 6;
         function playAudioFile(fileName, vol = 0.6) {
-            const audio = new Audio(fileName);
+            let entry = audioPoolCache[fileName];
+            if (!entry) {
+                const pool = [];
+                for (let i = 0; i < AUDIO_POOL_SIZE; i++) {
+                    const a = new Audio(fileName);
+                    a.preload = 'auto';
+                    pool.push(a);
+                }
+                entry = audioPoolCache[fileName] = { pool, nextIndex: 0 };
+            }
+            const audio = entry.pool[entry.nextIndex];
+            entry.nextIndex = (entry.nextIndex + 1) % entry.pool.length;
             audio.volume = vol;
-            audio.play().catch(e => console.log("音声再生制限:", fileName));
+            try {
+                audio.currentTime = 0;
+                audio.play().catch(e => {});
+            } catch (e) {}
         }
 
         // 画面全体のタップ（効果音の確実な再生）
@@ -729,10 +777,15 @@
             bgmAudio.play().catch(() => { isBgmInitialized = false; });
         }
 
+        let gameScreenRect = null;
         function resizeParticleCanvas() {
-            if (!canvas) return;
             const rect = document.getElementById('game-screen').getBoundingClientRect();
+            gameScreenRect = rect; // タップ演出（リップル/文字/パーティクル）で使い回すキャッシュ
+            if (!canvas) return;
             canvas.width = rect.width; canvas.height = rect.height;
+        }
+        function getGameScreenRect() {
+            return gameScreenRect || document.getElementById('game-screen').getBoundingClientRect();
         }
 
         window.onload = function() {
@@ -740,6 +793,8 @@
             ctx = canvas.getContext('2d');
             resizeParticleCanvas();
             window.addEventListener('resize', resizeParticleCanvas);
+            window.addEventListener('orientationchange', resizeParticleCanvas);
+            if (window.visualViewport) window.visualViewport.addEventListener('resize', resizeParticleCanvas);
 
             loadGame();
 
@@ -804,7 +859,7 @@
 
         function createRippleEffect(x, y) {
             const gameScreen = document.getElementById('game-screen');
-            const rect = gameScreen.getBoundingClientRect();
+            const rect = getGameScreenRect();
             const ripple = document.createElement('div');
             ripple.className = 'ripple';
             ripple.style.left = (x - rect.left) + 'px'; ripple.style.top = (y - rect.top) + 'px';
@@ -814,7 +869,7 @@
 
         function createFloatingText(x, y, text, color = "#ff9800", size = "1.3rem") {
             const gameScreen = document.getElementById('game-screen');
-            const rect = gameScreen.getBoundingClientRect();
+            const rect = getGameScreenRect();
             const div = document.createElement('div');
             div.className = 'floating-text';
             div.innerText = text;
@@ -827,8 +882,7 @@
 
         function createParticle(x, y, isGold = false) {
             if (particleList.length > 70) return; 
-            const gameScreen = document.getElementById('game-screen');
-            const rect = gameScreen.getBoundingClientRect();
+            const rect = getGameScreenRect();
             particleList.push({
                 x: x - rect.left, y: y - rect.top,
                 vx: (Math.random() - 0.5) * 15,
