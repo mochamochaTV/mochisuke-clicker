@@ -12,6 +12,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ぷにっかー -日本縦断編-</title>
+    <script>
+        // iOS standalone(ホーム画面追加アプリ)では100dvh/100vhが実際の表示領域とズレることがあるため、
+        // window.innerHeightの実測値を直接pxで反映する。bodyの描画より前に効かせるためhead内で同期実行。
+        (function () {
+            function setAppHeight() {
+                var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+                document.documentElement.style.setProperty('--app-height', h + 'px');
+            }
+            setAppHeight();
+            window.addEventListener('resize', setAppHeight);
+            window.addEventListener('orientationchange', setAppHeight);
+            if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+        })();
+    </script>
 
     <!-- PWA対応 -->
     <link rel="manifest" href="manifest.json">
@@ -32,9 +46,8 @@
             margin: 0; padding: 0;
             font-family: 'Helvetica Neue', Arial, sans-serif;
             display: flex; flex-direction: column; align-items: center;
-            height: calc(var(--vh, 1vh) * 100);
-            height: 100dvh;
-            min-height: calc(var(--vh, 1vh) * 100);
+            height: var(--app-height, 100vh);
+            min-height: var(--app-height, 100vh);
             overflow: hidden; user-select: none; -webkit-user-select: none;
             background-color: #fcf8f2;
             touch-action: none;
@@ -78,8 +91,8 @@
 
         /* 画面写真モード切替ボタン（もちすけ/スキル/もち数だけ → もちすけ+背景だけ → 背景だけ → 元通り、の4段階） */
         #ui-toggle-btn {
-            position: absolute;
-            top: calc(8px + env(safe-area-inset-top, 0px));
+            position: fixed;
+            top: calc(8px + env(safe-area-inset-top, 0px) + var(--user-top-adj, 0px) + 78px);
             right: 10px;
             width: 38px; height: 38px;
             border-radius: 50%;
@@ -102,6 +115,7 @@
         body.ui-mode-1 #control-panel,
         body.ui-mode-1 #debug-zone,
         body.ui-mode-1 #install-banner { display: none !important; }
+        body.ui-mode-1 #header-container { margin-top: calc(6px + env(safe-area-inset-top, 0px) + var(--user-top-adj, 0px)) !important; }
 
         /* 段階2: もちすけと背景だけ残す */
         body.ui-mode-2 #progress-area,
@@ -137,7 +151,7 @@
             -webkit-backdrop-filter: blur(4px);
             border: 2px solid rgba(240, 213, 181, 0.8);
             border-radius: 18px;
-            margin-top: 6px;
+            margin-top: calc(6px + var(--user-top-adj, 0px));
             padding: 8px 14px;
             display: flex;
             flex-direction: column;
@@ -145,6 +159,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.05);
             z-index: 10;
             box-sizing: border-box;
+            flex-shrink: 0;
         }
         
         .score-row {
@@ -471,7 +486,7 @@
         /* フッターナビゲーション */
         #control-panel {
             width: 100%; background: #fffcf7;
-            padding: 10px 0 calc(24px + env(safe-area-inset-bottom, 0px)) 0;
+            padding: 10px 0 calc(24px + env(safe-area-inset-bottom, 0px) + var(--user-bottom-adj, 0px)) 0;
             border-radius: 32px 32px 0 0;
             display: flex; justify-content: center; z-index: 10;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.06);
@@ -496,6 +511,14 @@
             <button onclick="debugLevelUpSkill('skill3')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">S3(分身)</button>
             <button onclick="debugLevelUpSkill('skill4')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">S4(黄金)</button>
             <button onclick="debugLevelUpSkill('hissatsu')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">必殺技</button>
+        </div>
+        <div style="font-size: 0.72rem; color: #5d4037; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+            UI上下調整:
+            上<input type="range" id="ui-top-adj-slider" min="-20" max="100" value="0" style="width: 70px; vertical-align: middle;">
+            <span id="ui-top-adj-value">0px</span>
+            下<input type="range" id="ui-bottom-adj-slider" min="-20" max="100" value="0" style="width: 70px; vertical-align: middle;">
+            <span id="ui-bottom-adj-value">0px</span>
+            <button onclick="resetUiOffsets()" style="padding:2px 6px; font-size:0.68rem; cursor:pointer;">リセット</button>
         </div>
     </div>
 
@@ -649,12 +672,7 @@
     </div>
 
     <script>
-        // モバイルブラウザのアドレスバー/ツールバーの出没による高さジャンプ対策
-        // (100dvh非対応の古いブラウザ用フォールバックとして --vh を実測して都度反映)
-        function setViewportHeightVar() {
-            document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
-        }
-        setViewportHeightVar();
+        // 画面の実測高さ(--app-height)は<head>内で先に設定済み。ここでは重複させない。
 
         // 📲 ホーム画面に追加まわり
         // PWA化(manifest+ServiceWorker)しただけでは自動でホーム画面に追加はされない。
@@ -724,16 +742,59 @@
             }
         }
 
+        // UI上下の位置を手動で微調整できるスライダー（端末ごとのノッチ/セーフエリアの誤差を吸収するための保険）
+        const UI_TOP_ADJ_KEY = 'punicker_ui_top_adj';
+        const UI_BOTTOM_ADJ_KEY = 'punicker_ui_bottom_adj';
+        const uiTopSlider = document.getElementById('ui-top-adj-slider');
+        const uiBottomSlider = document.getElementById('ui-bottom-adj-slider');
+        const uiTopValueLabel = document.getElementById('ui-top-adj-value');
+        const uiBottomValueLabel = document.getElementById('ui-bottom-adj-value');
+
+        function applyUiOffsets(topPx, bottomPx) {
+            document.documentElement.style.setProperty('--user-top-adj', topPx + 'px');
+            document.documentElement.style.setProperty('--user-bottom-adj', bottomPx + 'px');
+            if (uiTopValueLabel) uiTopValueLabel.innerText = topPx + 'px';
+            if (uiBottomValueLabel) uiBottomValueLabel.innerText = bottomPx + 'px';
+        }
+
+        function resetUiOffsets() {
+            localStorage.removeItem(UI_TOP_ADJ_KEY);
+            localStorage.removeItem(UI_BOTTOM_ADJ_KEY);
+            if (uiTopSlider) uiTopSlider.value = 0;
+            if (uiBottomSlider) uiBottomSlider.value = 0;
+            applyUiOffsets(0, 0);
+        }
+
+        (function initUiOffsets() {
+            const savedTop = parseInt(localStorage.getItem(UI_TOP_ADJ_KEY), 10) || 0;
+            const savedBottom = parseInt(localStorage.getItem(UI_BOTTOM_ADJ_KEY), 10) || 0;
+            if (uiTopSlider) uiTopSlider.value = savedTop;
+            if (uiBottomSlider) uiBottomSlider.value = savedBottom;
+            applyUiOffsets(savedTop, savedBottom);
+        })();
+
+        if (uiTopSlider) {
+            uiTopSlider.addEventListener('input', () => {
+                applyUiOffsets(parseInt(uiTopSlider.value, 10), parseInt(uiBottomSlider.value, 10));
+            });
+            uiTopSlider.addEventListener('change', () => {
+                localStorage.setItem(UI_TOP_ADJ_KEY, uiTopSlider.value);
+            });
+        }
+        if (uiBottomSlider) {
+            uiBottomSlider.addEventListener('input', () => {
+                applyUiOffsets(parseInt(uiTopSlider.value, 10), parseInt(uiBottomSlider.value, 10));
+            });
+            uiBottomSlider.addEventListener('change', () => {
+                localStorage.setItem(UI_BOTTOM_ADJ_KEY, uiBottomSlider.value);
+            });
+        }
+
         // PWA: Service Workerを登録（対応ブラウザのみ、失敗しても通常プレイに影響なし）
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(() => {});
             });
-        }
-        window.addEventListener('resize', setViewportHeightVar);
-        window.addEventListener('orientationchange', setViewportHeightVar);
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', setViewportHeightVar);
         }
 
         // スマホ環境の2本指ズーム・ダブルタップズームを制限
