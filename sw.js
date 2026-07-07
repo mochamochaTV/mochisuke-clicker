@@ -4,7 +4,7 @@
 // 画像や音声などの静的アセットは今まで通り「stale-while-revalidate」：
 // キャッシュを即返しつつ裏で更新するので、通信が遅くても表示は速いまま。
 
-const CACHE_NAME = 'punicker-cache-v2';
+const CACHE_NAME = 'punicker-cache-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
