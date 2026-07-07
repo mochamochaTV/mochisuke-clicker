@@ -52,12 +52,6 @@
             margin: 0; padding: 0;
             font-family: 'Helvetica Neue', Arial, sans-serif;
             display: flex; flex-direction: column; align-items: center;
-            height: 100vh;
-            height: 100dvh;
-            height: var(--app-height, 100dvh);
-            min-height: 100vh;
-            min-height: 100dvh;
-            min-height: var(--app-height, 100dvh);
             overflow: hidden; user-select: none; -webkit-user-select: none;
             background-color: #fcf8f2;
             background-size: cover;
@@ -66,8 +60,8 @@
             touch-action: none;
             overscroll-behavior: none;
             position: fixed;
-            width: 100%;
-            top: 0; left: 0;
+            inset: 0; /* top/right/bottom/leftを全部0にして、真の画面端に直接アンカーする。
+                         vh/dvh/innerHeightの実測値に頼らないので、その手のズレの影響を受けない */
             box-sizing: border-box;
             /* 左右のノッチ避けだけ body側で確保（上下は各バー自身の背景色で埋めるので、
                ここではpadding-top/bottomを持たせない＝隙間に本体の背景色が見えてしまうのを防ぐ） */
