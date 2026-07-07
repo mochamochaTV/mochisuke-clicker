@@ -15,6 +15,7 @@
     <script>
         // iOS standalone(ホーム画面追加アプリ)では100dvh/100vhが実際の表示領域とズレることがあるため、
         // window.innerHeightの実測値を直接pxで反映する。bodyの描画より前に効かせるためhead内で同期実行。
+        // さらにiOSは起動直後の一瞬だけ値が不正確なことがあるため、起動後にも何度か再計測して補正する。
         (function () {
             function setAppHeight() {
                 var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
@@ -23,6 +24,11 @@
             setAppHeight();
             window.addEventListener('resize', setAppHeight);
             window.addEventListener('orientationchange', setAppHeight);
+            window.addEventListener('pageshow', setAppHeight);
+            document.addEventListener('visibilitychange', setAppHeight);
+            window.addEventListener('load', setAppHeight);
+            // 起動直後の値が確定しきっていないケースへの保険（数回だけ再計測）
+            [50, 150, 300, 600, 1200].forEach((ms) => setTimeout(setAppHeight, ms));
             if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
         })();
     </script>
@@ -50,6 +56,9 @@
             min-height: var(--app-height, 100vh);
             overflow: hidden; user-select: none; -webkit-user-select: none;
             background-color: #fcf8f2;
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
             touch-action: none;
             overscroll-behavior: none;
             position: fixed;
@@ -1042,6 +1051,15 @@
             return gameScreenRect || document.getElementById('game-screen').getBoundingClientRect();
         }
 
+        // #game-screenの背景と同じ画像をbodyにも敷いておく。
+        // これで万一OS側のビューポート計算のクセで数十px程度のズレが残っても、
+        // 見えるのは同じ背景の続きになるので「白い余白」としては目立たなくなる。
+        function setGameBackground(url) {
+            const bgCss = `url('${url}')`;
+            document.getElementById('game-screen').style.backgroundImage = bgCss;
+            document.body.style.backgroundImage = bgCss;
+        }
+
         window.onload = function() {
             canvas = document.getElementById('particle-canvas');
             ctx = canvas.getContext('2d');
@@ -1056,8 +1074,8 @@
 
             const target = clothesData.find(c => c.id === equippedClotheId);
             if (target) document.getElementById('mochisuke-btn').style.filter = target.filter;
-            
-            document.getElementById('game-screen').style.backgroundImage = `url('${stages[selectedStageIndex].bg}')`;
+
+            setGameBackground(stages[selectedStageIndex].bg);
 
             updateDisplay();
             updateSkillUI();
@@ -1108,7 +1126,7 @@
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 callback();
-                document.getElementById('game-screen').style.backgroundImage = `url('${newBgUrl}')`;
+                setGameBackground(newBgUrl);
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
