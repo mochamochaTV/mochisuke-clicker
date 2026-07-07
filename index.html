@@ -76,6 +76,59 @@
         }
         .fade-black { opacity: 1 !important; }
 
+        /* 画面写真モード切替ボタン（もちすけ/スキル/もち数だけ → もちすけ+背景だけ → 背景だけ → 元通り、の4段階） */
+        #ui-toggle-btn {
+            position: absolute;
+            top: calc(8px + env(safe-area-inset-top, 0px));
+            right: 10px;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            border: none;
+            font-size: 1.05rem;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10050;
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+            padding: 0;
+        }
+        #ui-toggle-btn:active { transform: scale(0.9); }
+
+        /* 段階1: もちすけ・スキル・必殺技・もち数だけ残す */
+        body.ui-mode-1 #progress-area,
+        body.ui-mode-1 .info-row,
+        body.ui-mode-1 #control-panel,
+        body.ui-mode-1 #debug-zone,
+        body.ui-mode-1 #install-banner { display: none !important; }
+
+        /* 段階2: もちすけと背景だけ残す */
+        body.ui-mode-2 #progress-area,
+        body.ui-mode-2 .info-row,
+        body.ui-mode-2 #control-panel,
+        body.ui-mode-2 #debug-zone,
+        body.ui-mode-2 #install-banner,
+        body.ui-mode-2 #header-container,
+        body.ui-mode-2 .skill-side-container,
+        body.ui-mode-2 #btn-hissatsu,
+        body.ui-mode-2 #combo-display,
+        body.ui-mode-2 #mochi-balloon { display: none !important; }
+
+        /* 段階3: 背景だけ */
+        body.ui-mode-3 #progress-area,
+        body.ui-mode-3 .info-row,
+        body.ui-mode-3 #control-panel,
+        body.ui-mode-3 #debug-zone,
+        body.ui-mode-3 #install-banner,
+        body.ui-mode-3 #header-container,
+        body.ui-mode-3 .skill-side-container,
+        body.ui-mode-3 #btn-hissatsu,
+        body.ui-mode-3 #combo-display,
+        body.ui-mode-3 #mochi-balloon,
+        body.ui-mode-3 #mochisuke-btn,
+        body.ui-mode-3 #bunshin-container { display: none !important; }
+
         /* 上部UI */
         #header-container {
             width: 94%;
@@ -386,30 +439,8 @@
             content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
             border-width: 13px 9px 0; border-style: solid; border-color: #ff9800 transparent; display: block; width: 0; z-index: 9;
         }
+        /* 波紋・浮き文字はcanvas描画に統合したためCSSアニメーションは不要になった */
         .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
-
-        /* 波紋エフェクト */
-        .ripple {
-            position: absolute; border: 4px solid rgba(255, 152, 0, 0.6);
-            border-radius: 50%; pointer-events: none; transform: translate(-50%, -50%);
-            z-index: 999; animation: ripple-out 0.4s ease-out forwards;
-        }
-        @keyframes ripple-out {
-            0% { width: 0; height: 0; opacity: 1; }
-            100% { width: 130px; height: 130px; opacity: 0; }
-        }
-
-        /* 浮き上がる文字 */
-        .floating-text {
-            position: absolute; color: #ff9800; font-weight: 900; font-size: 1.3rem; pointer-events: none;
-            text-shadow: 2px 2px 0 white, -2px -2px 0 white, 2px -2px 0 white, -2px 2px 0 white;
-            z-index: 1000; animation: floatUp 0.6s ease-out forwards;
-        }
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0) scale(0.8); }
-            20% { opacity: 1; transform: translateY(-10px) scale(1.2); }
-            100% { opacity: 0; transform: translateY(-60px) scale(1); }
-        }
 
         #combo-display {
             position: absolute; top: 55px; font-size: 1.4rem; font-weight: 900;
@@ -471,6 +502,7 @@
     <div id="game-screen">
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
+        <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
 
         <div id="header-container">
             <div class="score-row">
@@ -680,6 +712,16 @@
         const isIOSDevice = /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         if (isIOSDevice) {
             setTimeout(() => showInstallBanner('ios'), 4000);
+        }
+
+        // 🖼️ 画面写真モード切替（もちすけ/スキル/もち数だけ → もちすけ+背景だけ → 背景だけ → 元通り）
+        let uiDeclutterState = 0;
+        function toggleUiDeclutter() {
+            uiDeclutterState = (uiDeclutterState + 1) % 4;
+            document.body.classList.remove('ui-mode-1', 'ui-mode-2', 'ui-mode-3');
+            if (uiDeclutterState > 0) {
+                document.body.classList.add('ui-mode-' + uiDeclutterState);
+            }
         }
 
         // PWA: Service Workerを登録（対応ブラウザのみ、失敗しても通常プレイに影響なし）
@@ -922,9 +964,16 @@
         }
 
         let gameScreenRect = null;
+        let bunshinCloneRects = [];
+        let bunshinCloneEls = [];
+        function refreshBunshinCloneRects() {
+            bunshinCloneEls = Array.from(document.querySelectorAll('.bunshin-clone-img'));
+            bunshinCloneRects = bunshinCloneEls.map(c => c.getBoundingClientRect());
+        }
         function resizeParticleCanvas() {
             const rect = document.getElementById('game-screen').getBoundingClientRect();
             gameScreenRect = rect; // タップ演出（リップル/文字/パーティクル）で使い回すキャッシュ
+            if (bunshinCloneRects.length > 0) refreshBunshinCloneRects();
             if (!canvas) return;
             canvas.width = rect.width; canvas.height = rect.height;
         }
@@ -1003,31 +1052,35 @@
             }, 300);
         }
 
+        // 波紋・浮き文字はDOM要素を作らずcanvasにまとめて描画する（連打時のcreateElement/appendChild/remove連発による
+        // レイアウト負荷とGCの揺れが高速タップ時のカクつきの主因だったため、パーティクルと同じ描画ループに統合）
+        let rippleList = [];
+        let floatingTextList = [];
+
+        function remToPx(sizeStr) {
+            if (typeof sizeStr === 'number') return sizeStr;
+            const s = String(sizeStr).trim();
+            if (s.endsWith('rem')) return parseFloat(s) * 16;
+            if (s.endsWith('px')) return parseFloat(s);
+            return parseFloat(s) || 16;
+        }
+
         function createRippleEffect(x, y) {
-            const gameScreen = document.getElementById('game-screen');
             const rect = getGameScreenRect();
-            const ripple = document.createElement('div');
-            ripple.className = 'ripple';
-            ripple.style.left = (x - rect.left) + 'px'; ripple.style.top = (y - rect.top) + 'px';
-            gameScreen.appendChild(ripple);
-            setTimeout(() => ripple.remove(), 400);
+            rippleList.push({ x: x - rect.left, y: y - rect.top, start: performance.now() });
         }
 
         function createFloatingText(x, y, text, color = "#ff9800", size = "1.3rem") {
-            const gameScreen = document.getElementById('game-screen');
             const rect = getGameScreenRect();
-            const div = document.createElement('div');
-            div.className = 'floating-text';
-            div.innerText = text;
-            if (color) div.style.color = color;
-            if (size) div.style.fontSize = size;
-            div.style.left = (x - rect.left) + 'px'; div.style.top = (y - rect.top) + 'px';
-            gameScreen.appendChild(div);
-            setTimeout(() => div.remove(), 600);
+            floatingTextList.push({
+                x: x - rect.left, y: y - rect.top,
+                text, color: color || '#ff9800', fontSize: remToPx(size),
+                start: performance.now()
+            });
         }
 
         function createParticle(x, y, isGold = false) {
-            if (particleList.length > 70) return; 
+            if (particleList.length > 30) return; 
             const rect = getGameScreenRect();
             particleList.push({
                 x: x - rect.left, y: y - rect.top,
@@ -1059,6 +1112,56 @@
                 
                 if (p.y > canvas.height + 50) { particleList.splice(i, 1); }
             }
+
+            const now = performance.now();
+
+            // 波紋エフェクト
+            for (let i = rippleList.length - 1; i >= 0; i--) {
+                const r = rippleList[i];
+                const t = (now - r.start) / 400; // 0.4秒
+                if (t >= 1) { rippleList.splice(i, 1); continue; }
+                const eased = 1 - Math.pow(1 - t, 2);
+                ctx.save();
+                ctx.strokeStyle = `rgba(255, 152, 0, ${(0.6 * (1 - t)).toFixed(3)})`;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, eased * 65, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 浮き上がる文字
+            for (let i = floatingTextList.length - 1; i >= 0; i--) {
+                const f = floatingTextList[i];
+                const t = (now - f.start) / 600; // 0.6秒
+                if (t >= 1) { floatingTextList.splice(i, 1); continue; }
+                let scale, translateY, opacity;
+                if (t < 0.2) {
+                    const local = t / 0.2;
+                    scale = 0.8 + 0.4 * local;
+                    translateY = -10 * local;
+                    opacity = 1;
+                } else {
+                    const local = (t - 0.2) / 0.8;
+                    scale = 1.2 - 0.2 * local;
+                    translateY = -10 - 50 * local;
+                    opacity = 1 - local;
+                }
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, opacity);
+                ctx.translate(f.x, f.y + translateY);
+                ctx.scale(scale, scale);
+                ctx.font = `900 ${f.fontSize}px 'Helvetica Neue', Arial, sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#ffffff';
+                ctx.strokeText(f.text, 0, 0);
+                ctx.fillStyle = f.color;
+                ctx.fillText(f.text, 0, 0);
+                ctx.restore();
+            }
+
             requestAnimationFrame(updateAndRenderParticles);
         };
 
@@ -1107,10 +1210,10 @@
             }
 
             // スキル3：分身発動時は左右の分身からも個別にパーティクルを発射
-            if (skills.skill3.activeTimer > 0) {
-                const clones = document.querySelectorAll('.bunshin-clone-img');
-                clones.forEach(clone => {
-                    const cRect = clone.getBoundingClientRect();
+            // （毎タップでquerySelectorAll+getBoundingClientRectを呼ぶと強制レイアウトが走るため、
+            //   分身作成/変形のタイミングで一度だけ計測してキャッシュしたものを使い回す）
+            if (skills.skill3.activeTimer > 0 && bunshinCloneRects.length > 0) {
+                bunshinCloneRects.forEach(cRect => {
                     const cx = cRect.left + cRect.width / 2;
                     const cy = cRect.top + cRect.height / 2;
                     createParticle(cx, cy, isGoldParticle);
@@ -1153,7 +1256,7 @@
             clearTimeout(breatheTimer);
 
             isMochiPressed = true;
-            const clones = document.querySelectorAll('.bunshin-clone-img');
+            const clones = bunshinCloneEls;
 
             if (skills.hissatsu.activeTimer > 0) {
                 mochiBtnElement.style.transform = 'scale(1.55, 1.2)';
@@ -1177,7 +1280,7 @@
         document.getElementById('game-screen').addEventListener('pointerdown', (e) => {
             if (skills.hissatsu.activeTimer > 0) {
                 // UIボタンやメニュー、モーダル内部の誤反応を防止
-                if (e.target.closest('#control-panel') || e.target.closest('#header-container') || e.target.closest('#progress-area') || e.target.closest('#debug-zone') || e.target.closest('.modal')) {
+                if (e.target.closest('#control-panel') || e.target.closest('#header-container') || e.target.closest('#progress-area') || e.target.closest('#debug-zone') || e.target.closest('#ui-toggle-btn') || e.target.closest('.modal')) {
                     return; 
                 }
                 // もちすけ本体以外をタップした時に10連打を発動
@@ -1196,7 +1299,7 @@
             if (!isMochiPressed) return;
             isMochiPressed = false;
 
-            const clones = document.querySelectorAll('.bunshin-clone-img');
+            const clones = bunshinCloneEls;
 
             if (skills.hissatsu.activeTimer > 0) {
                 mochiBtnElement.style.transform = 'scale(1.5)';
@@ -1287,6 +1390,7 @@
                     img.style.pointerEvents = 'none';
                     container.appendChild(img);
                 }
+                refreshBunshinCloneRects();
             }
             
             if (key === 'hissatsu') {
@@ -1303,11 +1407,12 @@
                 const clones = document.querySelectorAll('.bunshin-clone-img');
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.5)');
                 mochiBtnElement.style.filter = mochiBtnElement.style.filter + " contrast(1.4) brightness(1.05)";
+                refreshBunshinCloneRects();
             }
         }
 
         function endSkillVisualEffect(key) {
-            if (key === 'skill3') { document.getElementById('bunshin-container').innerHTML = ''; }
+            if (key === 'skill3') { document.getElementById('bunshin-container').innerHTML = ''; bunshinCloneRects = []; bunshinCloneEls = []; }
             if (key === 'hissatsu') {
                 // 必殺技BGMを終了し通常BGMを再開
                 if (hissatsuBgmAudio) {
