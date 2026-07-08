@@ -508,7 +508,7 @@
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-05</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-06</div>
 
         <div id="header-container">
             <div class="score-row">
@@ -654,7 +654,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-08-05</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-08-06</div>
                 </div>
             </div>
         </div>
@@ -741,6 +741,31 @@
             setTimeout(() => showInstallBanner('ios'), 4000);
         }
 
+        // 📏 下の余白を「測って強制的に埋める」最終手段
+        // 100vh/100dvh/JS実測のvh変数/position:fixed+inset:0、と何を試してもiPhoneのPWAで
+        // 下に隙間が残るケースがあったため、今回はCSSの単位を信じるのをやめ、
+        // 実際に画面の下端と#game-screenの下端の差(px)を毎回測って、その分だけ
+        // 高さを強制的に足す方式に変更した。原因の理屈が何であれ、実測して埋めるので確実に効く。
+        function fixBottomGap() {
+            const gs = document.getElementById('game-screen');
+            if (!gs) return;
+            gs.style.height = ''; // 一旦flexの自然な高さに戻す
+            requestAnimationFrame(() => {
+                const rect = gs.getBoundingClientRect();
+                const trueHeight = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+                const gap = trueHeight - rect.bottom;
+                if (gap > 0.5) {
+                    gs.style.height = (rect.height + gap) + 'px';
+                }
+            });
+        }
+        window.addEventListener('load', fixBottomGap);
+        window.addEventListener('resize', fixBottomGap);
+        window.addEventListener('orientationchange', fixBottomGap);
+        if (window.visualViewport) window.visualViewport.addEventListener('resize', fixBottomGap);
+        // iOS standaloneは起動直後、数値が数百ms遅れて確定することがあるため複数回リトライする
+        [50, 200, 500, 1000, 2000].forEach((ms) => setTimeout(fixBottomGap, ms));
+
         // 🖼️ 画面写真モード切替（もちすけ/スキル/もち数だけ → もちすけ+背景だけ → 背景だけ → 元通り）
         let uiDeclutterState = 0;
         function toggleUiDeclutter() {
@@ -749,6 +774,7 @@
             if (uiDeclutterState > 0) {
                 document.body.classList.add('ui-mode-' + uiDeclutterState);
             }
+            fixBottomGap(); // 表示するバーが変わって#game-screenの自然な高さが変わるので測り直す
         }
 
         // PWA: Service Workerを登録（対応ブラウザのみ、失敗しても通常プレイに影響なし）
@@ -1112,6 +1138,11 @@
         }
 
         function playAudioFile(fileName, vol = 0.6) {
+            // alert()などのブロッキングダイアログの後、AudioContextがsuspendedのまま
+            // 二度と再生されなくなるバグ対策：鳴らす直前に毎回、寝ていたら起こす
+            const ctx = getAudioContext();
+            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+
             const buffer = audioBuffers[fileName];
             if (buffer) {
                 playBufferNow(buffer, vol);
@@ -1121,16 +1152,19 @@
             }
         }
 
-        // 🔓 iOSの音声再生ロック解除：画面に最初に触れた瞬間にAudioContextを1回resume()するだけでOK。
-        // 以前のように大量のAudio要素を個別に解錠する必要が無いので、起動直後の重さも解消される。
-        let audioUnlocked = false;
+        // 🔓 iOSの音声再生ロック解除
+        // 画面に触れるたびにAudioContextの状態を確認し、寝ていたら起こす。
+        // 以前は「最初の1回だけ」解錠していたが、alert()などのブロッキングダイアログを挟むと
+        // AudioContextが勝手にsuspendedへ戻ってしまい、それ以降ずっと無音になるバグがあったため、
+        // 一度きりではなく毎回のタップとアプリ復帰時にチェックするようにした。
         function unlockAllPooledAudio() {
-            if (audioUnlocked) return;
-            audioUnlocked = true;
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
         }
-        document.addEventListener('pointerdown', unlockAllPooledAudio, { once: true, capture: true });
+        document.addEventListener('pointerdown', unlockAllPooledAudio, { capture: true });
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') unlockAllPooledAudio();
+        });
 
         // ※以前はここで画面のどこをタップしてもtap.mp3が鳴るグローバル監視をしていたが、
         // もちすけ以外（背景など）をタップしても音が鳴ってしまう原因になっていたため削除。
@@ -1236,7 +1270,7 @@
                 `#game-screen 下端〜画面下端の差(隙間): ${gap}px`,
                 `standalone表示か: ${window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true}`,
                 `AudioContext状態: ${audioCtx ? audioCtx.state : '(未作成)'}`,
-                `音声解錠済み(audioUnlocked): ${typeof audioUnlocked !== 'undefined' ? audioUnlocked : '?'}`,
+                `音声解錠済み(running状態か): ${audioCtx ? (audioCtx.state === 'running') : '?'}`,
                 `デコード済み効果音: ${bufferCount} / ${SFX_FILES.length}`,
                 `UA: ${navigator.userAgent}`,
                 `--- 検知したエラー(直近8件) ---`,
