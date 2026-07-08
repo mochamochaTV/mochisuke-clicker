@@ -508,7 +508,7 @@
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-04</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-05</div>
 
         <div id="header-container">
             <div class="score-row">
@@ -654,7 +654,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-08-04</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-08-05</div>
                 </div>
             </div>
         </div>
@@ -1062,67 +1062,73 @@
 
         let breatheTimer = null; let isMochiPressed = false; 
 
-        // 音声再生システム（多重再生対応・プール化でnew Audio()の連発による高速タップ時のカクつきを解消）
-        // 【重要】会心/黄金など発生頻度が低い効果音は「初回再生時に初めてダウンロード・デコード」されるせいで
-        // 一発目だけ再生が遅れることがあった → 使う可能性のある音は最初にまとめて読み込んでおく（プリロード）ことで解消
-        const audioPoolCache = {}; // { fileName: { pool: [Audio,...], nextIndex: 0 } }
-        const AUDIO_POOL_SIZE = 6;
+        // 🔊 効果音再生システム（Web Audio API方式）
+        // これまでは<audio>要素を1音につき6個ずつ使い回すプール方式でしたが、iOSは
+        // 「実際にユーザー操作の中で.play()を呼んだ"その要素"」しか解錠しない仕様があり、
+        // ローテーションで残りの要素が回ってきた時に無音になったり、解錠のために48個ものAudio要素を
+        // 一斉にplay/pauseすることで起動直後に処理が重くなったりしていました。
+        // Web Audio APIなら、AudioContextを1個resume()するだけで以後すべての音が解錠されるため、
+        // 個別のAudio要素を大量に操作する必要が無くなり、軽量かつ確実になります。
+        // また音声データは事前にデコードしてメモリ上に持つので、Service Workerのキャッシュ
+        // （Rangeリクエストの不整合が起きやすい）を一切経由しません。
         const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3'];
+        let audioCtx = null;
+        const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
+        const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
 
-        function ensureAudioPool(fileName) {
-            let entry = audioPoolCache[fileName];
-            if (!entry) {
-                const pool = [];
-                for (let i = 0; i < AUDIO_POOL_SIZE; i++) {
-                    const a = new Audio(fileName);
-                    a.preload = 'auto';
-                    a.load(); // すぐにダウンロード・デコードを開始させる
-                    pool.push(a);
-                }
-                entry = audioPoolCache[fileName] = { pool, nextIndex: 0 };
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AC = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AC();
             }
-            return entry;
+            return audioCtx;
+        }
+
+        function loadAudioBuffer(fileName) {
+            if (audioBuffers[fileName]) return Promise.resolve(audioBuffers[fileName]);
+            if (audioBufferPromises[fileName]) return audioBufferPromises[fileName];
+            const ctx = getAudioContext();
+            const promise = fetch(fileName)
+                .then((res) => res.arrayBuffer())
+                .then((data) => ctx.decodeAudioData(data))
+                .then((buffer) => { audioBuffers[fileName] = buffer; return buffer; })
+                .catch(() => null);
+            audioBufferPromises[fileName] = promise;
+            return promise;
         }
 
         function preloadAllSfx() {
-            SFX_FILES.forEach(ensureAudioPool);
+            SFX_FILES.forEach(loadAudioBuffer);
+        }
+
+        function playBufferNow(buffer, vol) {
+            const ctx = getAudioContext();
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            const gain = ctx.createGain();
+            gain.gain.value = vol;
+            source.connect(gain).connect(ctx.destination);
+            source.start(0);
         }
 
         function playAudioFile(fileName, vol = 0.6) {
-            const entry = ensureAudioPool(fileName);
-            const audio = entry.pool[entry.nextIndex];
-            entry.nextIndex = (entry.nextIndex + 1) % entry.pool.length;
-            audio.volume = vol;
-            try {
-                audio.currentTime = 0;
-                audio.play().catch(e => {});
-            } catch (e) {}
+            const buffer = audioBuffers[fileName];
+            if (buffer) {
+                playBufferNow(buffer, vol);
+            } else {
+                // まだデコードが終わっていない場合（通常は起動直後の一瞬だけ）は、終わり次第再生する
+                loadAudioBuffer(fileName).then((buf) => { if (buf) playBufferNow(buf, vol); });
+            }
         }
 
-        // 🔓 iOSの音声再生ロック解除
-        // iOSは「ユーザー操作(タップ)の中で.play()を呼んだAudio要素」しか後から自動再生を許可しない仕様がある。
-        // 効果音は1音につきAudio要素を6個ずつ使い回すプール構成にしているため、普通にゲームを触るだけだと
-        // 「たまたま実際のタップで使われた1個」しか解錠されず、ローテーションで残り5個が回ってきた時に
-        // 無音になる（＝「音が鳴ったり鳴らなかったりする」）現象が起きていた。
-        // 対策として、画面に最初に触れた瞬間に全プールの全Audio要素へ一斉に再生→即一時停止をかけて、
-        // まとめて解錠してしまう。
+        // 🔓 iOSの音声再生ロック解除：画面に最初に触れた瞬間にAudioContextを1回resume()するだけでOK。
+        // 以前のように大量のAudio要素を個別に解錠する必要が無いので、起動直後の重さも解消される。
         let audioUnlocked = false;
         function unlockAllPooledAudio() {
             if (audioUnlocked) return;
             audioUnlocked = true;
-            Object.values(audioPoolCache).forEach((entry) => {
-                entry.pool.forEach((a) => {
-                    const wasMuted = a.muted;
-                    a.muted = true; // 解錠用の再生を無音にする（これが無いと開いた瞬間に全効果音が鳴ってしまう）
-                    const p = a.play();
-                    if (p && typeof p.then === 'function') {
-                        p.then(() => { a.pause(); a.currentTime = 0; a.muted = wasMuted; })
-                         .catch(() => { a.muted = wasMuted; });
-                    } else {
-                        a.muted = wasMuted;
-                    }
-                });
-            });
+            const ctx = getAudioContext();
+            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
         }
         document.addEventListener('pointerdown', unlockAllPooledAudio, { once: true, capture: true });
 
@@ -1222,14 +1228,16 @@
             const vvH = window.visualViewport ? window.visualViewport.height : null;
             const gsH = gsRect ? gsRect.height : null;
             const gap = gsH != null ? (innerH - gsRect.bottom).toFixed(1) : '?';
+            const bufferCount = Object.keys(audioBuffers).length;
             const lines = [
                 `window.innerHeight: ${innerH}`,
                 `visualViewport.height: ${vvH}`,
                 `#game-screen 高さ: ${gsH != null ? gsH.toFixed(1) : '?'}`,
                 `#game-screen 下端〜画面下端の差(隙間): ${gap}px`,
                 `standalone表示か: ${window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true}`,
-                `safe-area-inset-bottom: ${getComputedStyle(document.documentElement).getPropertyValue('--app-height') ? '(--app-height使用中)' : ''}`,
+                `AudioContext状態: ${audioCtx ? audioCtx.state : '(未作成)'}`,
                 `音声解錠済み(audioUnlocked): ${typeof audioUnlocked !== 'undefined' ? audioUnlocked : '?'}`,
+                `デコード済み効果音: ${bufferCount} / ${SFX_FILES.length}`,
                 `UA: ${navigator.userAgent}`,
                 `--- 検知したエラー(直近8件) ---`,
                 ...(capturedErrors.length ? capturedErrors : ['(なし)'])
