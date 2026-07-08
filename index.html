@@ -234,7 +234,9 @@
 
         /* リストアイテム */
         .list-container { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; text-align: left; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; gap: 8px; }
+        .item-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: #fff; border: 1px solid #eee; flex-shrink: 0; }
+        .item-info-row { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
         .item-info { display: flex; flex-direction: column; gap: 2px; }
         .item-title { font-weight: bold; color: #333; font-size: 0.95rem; }
         .item-desc { font-size: 0.75rem; color: #777; }
@@ -526,6 +528,7 @@
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-01</div>
 
         <div id="header-container">
             <div class="score-row">
@@ -809,11 +812,27 @@
             { name: "沖縄", distance: 250000000000000, item: "シーサー", price: 4000000000000000, diary: "感動のゴール沖縄！北の大地から南の楽園へワープ！青い海を見ながら最高の日本縦断旅を大団円で締めくくったぞ！", bg: "bg_images/okinawa.png", diaryImg: "diary_images/okinawa_d.png", effectDesc: "タップ力 +1000000000000000", tapBonus: 1000000000000000, mpsBonus: 0 }
         ];
 
+        // ===================================================================
+        // 👕 きせかえ（衣装）データ ― ここに1行足すだけで新しい衣装を追加できます
+        // ===================================================================
+        // id       : 半角英数字で他と被らないユニークな名前（保存データの管理に使われます）
+        // name     : 倉庫・ショップに表示される衣装名
+        // price    : ショップでの購入価格（もち）。0にすると最初から所持済み扱いになります
+        // desc     : 倉庫・ショップに表示される説明文（能力の説明もここに書いてください）
+        // img      : 【新規追加時はここに画像ファイル名を書くだけでOK】
+        //            例: "img: 'costume_ninja.png'" のように書くと、その画像に着せ替わります。
+        //            画像を用意しない場合はこの行を省略すれば、filterで色味だけ変える従来方式になります。
+        // filter   : imgを指定しない場合の色味加工（CSSのfilter）。imgがある場合は無視されます。
+        // tapBonus : 装備中、タップ力に加算される値
+        // mpsBonus : 装備中、自動増加(もち/秒)に加算される値
+        // ===================================================================
         const clothesData = [
             { id: "normal", name: "いつもの姿", price: 0, desc: "標準のもちすけスタイル", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15))", tapBonus: 0, mpsBonus: 0 },
             { id: "happi", name: "お祭りはっぴ", price: 500, desc: "モチベーション全開！タップ力 +3", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) hue-rotate(130deg) saturate(1.8)", tapBonus: 3, mpsBonus: 0 },
             { id: "crown", name: "王様の冠", price: 3000, desc: "気品溢れる姿。自動増加 +12もち/秒", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1.2) sepia(0.5) saturate(2.5)", tapBonus: 0, mpsBonus: 12 },
             { id: "ninja", name: "忍びの服", price: 15000, desc: "影からもち増産。タップ力+10 / 自動+40", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(0.4) contrast(1.5)", tapBonus: 10, mpsBonus: 40 }
+            // 👇 追加する時はこんな感じでコピペして書き換えてください（画像ありパターンの例）
+            // , { id: "yukata", name: "浴衣すがた", price: 30000, img: "costume_yukata.png", desc: "夏祭り気分。タップ力+20 / 自動+80", tapBonus: 20, mpsBonus: 80 }
         ];
 
         // スキル総合コアシステムデータ
@@ -861,7 +880,137 @@
         };
 
         let lastTappedTime = Date.now();
-        const callPhrases = ["もちもち？", "おーい！", "画面をタップして もち集めるじゃ！", "旅を続けるぞ！", "寝てしまうぞ…"];
+
+        // ===================================================================
+        // 🗨️ もちすけのセリフデータ（ここに追記するだけで自由にセリフを増やせます）
+        // ===================================================================
+        // ・timeGreetings : 時間帯ごとの挨拶。1日に何度か、時間帯が変わったタイミングでランダムに1つ喋ります。
+        // ・idleComments  : 特に何もない時、たまにランダムで喋る汎用のつぶやき集。
+        // ・eventComments : プレゼント出現やレベルアップなど「できごと」が起きた時に喋るセリフ。
+        //                   配列の中からランダムに1つ選ばれます。
+        // ・prefectureComments : 今いる都道府県だけで喋る、ご当地限定セリフ。配列に複数書けばランダムに選ばれます。
+        //                        キーは stages 配列の name（例:"東京"）と完全に一致させてください。
+        // すべて配列に1行追加するだけで増やせます。改行はできないので、長い文は短く区切ってください。
+        // ===================================================================
+        const dialogueData = {
+            timeGreetings: {
+                morning: [ // 5:00〜10:59
+                    "おはよう！今日も一日頑張ろうな！",
+                    "おはよう！朝ごはんもう食べたか？",
+                    "んー、よく寝たのじゃ！おはよう！",
+                    "おなかすいたのじゃ…朝ごはん食べようかの！"
+                ],
+                noon: [ // 11:00〜16:59
+                    "こんちゃ！お昼ごはん何食べた？",
+                    "今日もいい天気じゃのう！",
+                    "お昼はもちを食べてひと休みするのじゃ！",
+                    "眠くなってきたのじゃ…お昼寝したいのう"
+                ],
+                evening: [ // 17:00〜21:59
+                    "こんばんは！今日も一日お疲れ様！",
+                    "そろそろ夕ごはんの時間かのう？",
+                    "今日もいっぱいもち集めたのじゃ！"
+                ],
+                lateNight: [ // 22:00〜4:59
+                    "こんな時間まで一緒にいてくれるのか…嬉しいのじゃ！",
+                    "夜更かしはほどほどにな！",
+                    "もちすけは眠くないぞ…ふわぁ…"
+                ]
+            },
+
+            idleComments: [
+                "画面をタップして もち集めるじゃ！",
+                "もちすけと一緒に日本を旅しような！",
+                "次はどこに行こうかのう？",
+                "スキルも育てると効率アップするぞ！",
+                "もちもち？",
+                "おーい！",
+                "旅を続けるぞ！",
+                "寝てしまうぞ…"
+            ],
+
+            eventComments: {
+                presentSpawn: ["プレゼント飛んでるで！はやくキャッチじゃ！", "何か飛んできたぞ！取ってみるのじゃ！"],
+                goldMochiSpawn: ["黄金のもちが出たのじゃ！見逃すな！", "キラキラしたもちじゃ！急げー！"],
+                levelUp: ["レベルアップしたのじゃ！やったー！", "力がみなぎってきたぞ！"],
+                feverStart: ["フィーバータイムじゃー！！", "今がチャンスじゃ、連打するのじゃ！"]
+            },
+
+            // 都道府県ごとのご当地限定セリフ（エリア到着時と、滞在中のつぶやきの両方で使われます）
+            prefectureComments: {
+                "鹿児島": ["桜島は今も噴煙を上げる活火山なんじゃぞ！", "白熊アイスは山盛りのかき氷なのじゃ！"],
+                "宮崎": ["宮崎はマンゴーの生産量が有名なんじゃ！", "南国ムード満点で気分がいいのう！"],
+                "大分": ["大分は温泉の源泉数が日本一なんじゃぞ！", "地獄めぐりの温泉、迫力あったのう！"],
+                "熊本": ["熊本城の石垣は『武者返し』って呼ばれとるんじゃ！", "くまモンの故郷じゃのう！"],
+                "長崎": ["長崎は坂の街で、階段だらけなんじゃ！", "夜景がとっても綺麗な街なのじゃ！"],
+                "佐賀": ["佐賀の呼子は透明な活イカが名物なんじゃ！", "有田焼という綺麗な焼き物も有名じゃぞ！"],
+                "福岡": ["博多の屋台文化は日本でも珍しいんじゃぞ！", "とんこつラーメン発祥の地なのじゃ！"],
+                "山口": ["山口は本州の一番西側にあるんじゃ！", "下関のフグ料理は絶品じゃったのう！"],
+                "広島": ["厳島神社の鳥居は満潮時に海に浮かぶんじゃぞ！", "お好み焼きは広島風が本場なのじゃ！"],
+                "島根": ["出雲大社は縁結びの神様として有名じゃぞ！", "神在月には全国の神様が集まるんじゃ！"],
+                "鳥取": ["鳥取砂丘は日本最大級の砂丘なんじゃぞ！", "スイカの名産地でもあるのじゃ！"],
+                "岡山": ["岡山は『桃太郎伝説』発祥の地なんじゃ！", "晴れの日が多い『晴れの国』じゃぞ！"],
+                "香川": ["香川はうどん屋さんの数が日本一なんじゃぞ！", "面積は日本で一番小さい県なのじゃ！"],
+                "徳島": ["阿波踊りは400年以上の歴史があるんじゃぞ！", "すだちの生産量、日本一なのじゃ！"],
+                "高知": ["高知の桂浜は坂本龍馬の銅像があるんじゃ！", "カツオのたたきは藁焼きが本場なのじゃ！"],
+                "愛媛": ["愛媛はみかんの生産量トップクラスなんじゃぞ！", "道後温泉は日本最古の温泉の一つじゃ！"],
+                "兵庫": ["神戸港はおしゃれな港町なんじゃぞ！", "姫路城は白鷺城とも呼ばれとるのじゃ！"],
+                "大阪": ["通天閣のビリケンさんは幸運の神様なんじゃぞ！", "『儲かりまっか』が挨拶らしいのじゃ！"],
+                "和歌山": ["和歌山にはパンダがいる動物園があるんじゃ！", "紀州梅の生産量、日本一なのじゃ！"],
+                "奈良": ["奈良公園の鹿は約1000頭もいるんじゃぞ！", "東大寺の大仏は約15mもあるのじゃ！"],
+                "三重": ["伊勢神宮は日本人の心のふるさとなんじゃぞ！", "伊勢エビの水揚げ量トップクラスじゃ！"],
+                "滋賀": ["琵琶湖は日本一大きい湖なんじゃぞ！", "面積の約6分の1が琵琶湖なのじゃ！"],
+                "京都": ["金閣寺は金箔でピカピカなんじゃぞ！", "千年以上、都だった歴史ある街じゃ！"],
+                "福井": ["福井は恐竜の化石がたくさん見つかるんじゃぞ！", "越前ガニは冬の味覚の王様なのじゃ！"],
+                "石川": ["兼六園は日本三名園のひとつなんじゃぞ！", "金沢は金箔の生産量ほぼ100%じゃ！"],
+                "富山": ["立山連峰の雪景色は絶景なんじゃぞ！", "ホタルイカが名物なのじゃ！"],
+                "新潟": ["新潟はお米の生産量トップクラスなんじゃぞ！", "日本酒の蔵元がとっても多い県じゃ！"],
+                "長野": ["長野は標高の高い山がたくさんあるんじゃぞ！", "信州そばはのど越し抜群なのじゃ！"],
+                "岐阜": ["白川郷の合掌造りは世界遺産なんじゃぞ！", "飛騨牛はとろけるほど美味いのじゃ！"],
+                "愛知": ["名古屋城の金のシャチホコは有名なんじゃぞ！", "手羽先発祥の地とも言われとるのじゃ！"],
+                "静岡": ["富士山の景色は静岡側からも綺麗なんじゃぞ！", "お茶の生産量、日本一なのじゃ！"],
+                "山梨": ["富士五湖でのんびり過ごせるんじゃぞ！", "ぶどうと桃の生産量が有名なのじゃ！"],
+                "神奈川": ["横浜中華街は日本最大の中華街なんじゃぞ！", "みなとみらいの夜景は綺麗なのじゃ！"],
+                "東京": ["東京スカイツリーの高さは634mもあるんじゃぞ！", "東京タワーは333mもあるのじゃ！"],
+                "千葉": ["九十九里浜は総延長66kmもあるんじゃぞ！", "落花生の生産量、日本一なのじゃ！"],
+                "埼玉": ["川越は『小江戸』と呼ばれとるんじゃぞ！", "草加せんべいは香ばしくて美味いのじゃ！"],
+                "群馬": ["草津温泉の湯畑は迫力満点なんじゃぞ！", "だるまの生産量、日本一なのじゃ！"],
+                "栃木": ["日光東照宮には『三猿』の彫刻があるんじゃぞ！", "餃子の消費量が有名な街じゃ！"],
+                "茨城": ["納豆の生産で有名な県なんじゃぞ！", "偕楽園は日本三名園のひとつじゃ！"],
+                "福島": ["福島は果物の宝庫なんじゃぞ！", "会津の街並みは歴史を感じるのじゃ！"],
+                "宮城": ["仙台は『杜の都』と呼ばれとるんじゃぞ！", "牛タンが名物料理なのじゃ！"],
+                "山形": ["さくらんぼの生産量、日本一なんじゃぞ！", "蔵王の樹氷は幻想的なのじゃ！"],
+                "秋田": ["秋田美人という言葉があるくらいなんじゃぞ！", "なまはげは有名な伝統行事じゃ！"],
+                "岩手": ["岩手は面積が北海道の次に広いんじゃぞ！", "わんこそばに挑戦してみたいのう！"],
+                "青森": ["青森はりんごの生産量、日本一なんじゃぞ！", "ねぶた祭りは迫力満点らしいのじゃ！"],
+                "北海道": ["北海道は日本で一番広い都道府県なんじゃぞ！", "冬はとっても雪が積もるらしいのじゃ！"],
+                "沖縄": ["沖縄の海は透明度がとっても高いんじゃぞ！", "旅もいよいよ最終地点なのじゃ！"]
+            }
+        };
+
+        // ランダムに配列から1つ取り出すヘルパー
+        function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        // もちすけの吹き出しにテキストを表示するヘルパー（イベント時にどこからでも呼べます）
+        function showMochiComment(text) {
+            const balloon = document.getElementById('mochi-balloon');
+            if (!balloon) return;
+            balloon.innerText = text;
+            balloon.classList.add('balloon-show');
+            lastTappedTime = Date.now(); // 表示直後にすぐ別のセリフへ切り替わらないようにリセット
+        }
+
+        // 今の時間帯に合った挨拶をランダムで1つ返す
+        function getTimeGreeting() {
+            const h = new Date().getHours();
+            let pool;
+            if (h >= 5 && h < 11) pool = dialogueData.timeGreetings.morning;
+            else if (h >= 11 && h < 17) pool = dialogueData.timeGreetings.noon;
+            else if (h >= 17 && h < 22) pool = dialogueData.timeGreetings.evening;
+            else pool = dialogueData.timeGreetings.lateNight;
+            return pickRandom(pool);
+        }
+
         let breatheTimer = null; let isMochiPressed = false; 
 
         // 音声再生システム（多重再生対応・プール化でnew Audio()の連発による高速タップ時のカクつきを解消）
@@ -1014,8 +1163,7 @@
 
             loadGame();
 
-            const target = clothesData.find(c => c.id === equippedClotheId);
-            if (target) document.getElementById('mochisuke-btn').style.filter = target.filter;
+            resetMochiFilter();
 
             setGameBackground(stages[selectedStageIndex].bg);
 
@@ -1454,7 +1602,8 @@
 
         function resetMochiFilter() {
             const target = clothesData.find(c => c.id === equippedClotheId);
-            mochiBtnElement.style.filter = target ? target.filter : "drop-shadow(0 10px 10px rgba(0,0,0,0.15))";
+            mochiBtnElement.src = (target && target.img) ? target.img : 'image_0.png';
+            mochiBtnElement.style.filter = target ? (target.filter || "drop-shadow(0 10px 10px rgba(0,0,0,0.15))") : "drop-shadow(0 10px 10px rgba(0,0,0,0.15))";
         }
 
         function updateSkillTimers(dt) {
@@ -1576,7 +1725,9 @@
 
                 const row = document.createElement('div');
                 row.className = "list-item";
-                row.innerHTML = `<div class="item-info"><span class="item-title">${c.name}</span><span class="item-desc">${c.desc}</span></div>${btnHtml}`;
+                const thumbSrc = c.img || 'image_0.png';
+                const thumbFilter = c.img ? 'none' : (c.filter || 'none');
+                row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
                 listContainer.appendChild(row);
             });
             openModal('warehouse-modal');
@@ -1625,7 +1776,9 @@
                     }
                     const row = document.createElement('div');
                     row.className = "list-item";
-                    row.innerHTML = `<div class="item-info"><span class="item-title">👕 ${c.name}</span><span class="item-desc">${c.desc}</span></div>${btnHtml}`;
+                    const thumbSrc = c.img || 'image_0.png';
+                    const thumbFilter = c.img ? 'none' : (c.filter || 'none');
+                    row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">👕 ${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
                     listContainer.appendChild(row);
                 });
             }
@@ -1637,6 +1790,7 @@
             if (score >= nextPrice) {
                 score -= nextPrice; purchasedItems[idx] = currentLv + 1;
                 playAudioFile('levelup.mp3');
+                showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
                 saveGame(); renderShopList(); updateDisplay();
             }
         }
@@ -1664,16 +1818,39 @@
 
         function mapMoveTo(idx) {
             closeModal('map-modal');
-            triggerAreaTransition(stages[idx].bg, () => { selectedStageIndex = idx; updateDisplay(); saveGame(); });
+            triggerAreaTransition(stages[idx].bg, () => {
+                selectedStageIndex = idx; updateDisplay(); saveGame();
+                const name = stages[idx].name;
+                const prefPool = dialogueData.prefectureComments[name];
+                showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所じゃろな？`);
+            });
         }
 
+        let lastGreetingHourBucket = -1; // 時間帯が変わった時だけ挨拶するための記録
         function startMochiLifeLoop() {
             setInterval(() => {
                 const idleDuration = Date.now() - lastTappedTime;
                 const balloon = document.getElementById('mochi-balloon');
                 if (idleDuration > 5000 && !isFever) {
                     if (!balloon.classList.contains('balloon-show')) {
-                        balloon.innerText = callPhrases[Math.floor(Math.random() * callPhrases.length)];
+                        // 時間帯が切り替わった直後は優先的に挨拶する
+                        const h = new Date().getHours();
+                        const bucket = h < 5 ? 3 : h < 11 ? 0 : h < 17 ? 1 : h < 22 ? 2 : 3;
+                        let text;
+                        if (bucket !== lastGreetingHourBucket) {
+                            lastGreetingHourBucket = bucket;
+                            text = getTimeGreeting();
+                        } else {
+                            // 現在地のご当地セリフがあれば時々混ぜる、それ以外は通常のつぶやき
+                            const stageName = stages[selectedStageIndex] ? stages[selectedStageIndex].name : null;
+                            const prefPool = stageName ? dialogueData.prefectureComments[stageName] : null;
+                            if (prefPool && Math.random() < 0.4) {
+                                text = pickRandom(prefPool);
+                            } else {
+                                text = pickRandom(dialogueData.idleComments);
+                            }
+                        }
+                        balloon.innerText = text;
                         balloon.classList.add('balloon-show');
                     }
                 }
@@ -1686,6 +1863,7 @@
 
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
+            showMochiComment(pickRandom(dialogueData.eventComments.presentSpawn));
             const present = document.createElement('div'); present.id = 'lucky-present';
             present.innerHTML = '<img src="present.png" alt="プレゼント" class="present-floating-img" style="width:95px; height:95px; object-fit:contain; pointer-events:none;">';
             present.style.position = 'absolute'; present.style.cursor = 'pointer'; present.style.zIndex = '95'; present.style.transition = 'transform 11s linear';
@@ -1711,6 +1889,7 @@
 
         function spawnGoldMochi() {
             const gameScreen = document.getElementById('game-screen');
+            showMochiComment(pickRandom(dialogueData.eventComments.goldMochiSpawn));
             const goldMochi = document.createElement('div'); goldMochi.id = 'fever-pop';
             goldMochi.innerHTML = '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:11px; font-weight:bold; color:#3e2723; white-space:nowrap; pointer-events:none;">✨金✨</div>';
             const rect = gameScreen.getBoundingClientRect();
@@ -1737,7 +1916,12 @@
             if (currentStageProgress >= stages[currentStageIndex].distance) {
                 if (currentStageIndex < stages.length - 1) {
                     currentStageIndex++; const nextIdx = currentStageIndex; currentStageProgress = 0;
-                    triggerAreaTransition(stages[nextIdx].bg, () => { selectedStageIndex = nextIdx; alert(`新エリア「${stages[nextIdx].name}」に到達しました！`); updateDisplay(); saveGame(); });
+                    triggerAreaTransition(stages[nextIdx].bg, () => {
+                        selectedStageIndex = nextIdx; updateDisplay(); saveGame();
+                        const name = stages[nextIdx].name;
+                        const prefPool = dialogueData.prefectureComments[name];
+                        showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所じゃろな？`);
+                    });
                 } else { currentStageProgress = stages[currentStageIndex].distance; saveGame(); }
             }
         }
