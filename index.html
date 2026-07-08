@@ -119,19 +119,14 @@
         /* 段階1: もちすけ・スキル・必殺技・もち数だけ残す */
         body.ui-mode-1 #progress-area,
         body.ui-mode-1 .info-row,
-        body.ui-mode-1 #control-panel,
-        body.ui-mode-1 #debug-zone,
-        /* 倉庫・ショップ・地図・絵日記・順位などのモーダルを開いている間はデバッグバーを隠す（邪魔にならないように） */
-        body.modal-open #debug-zone { display: none !important; }
+        body.ui-mode-1 #control-panel { display: none !important; }
 
         body.ui-mode-1 #install-banner { display: none !important; }
-        body.ui-mode-1 #header-container { margin-top: calc(6px + env(safe-area-inset-top, 0px)) !important; }
 
         /* 段階2: もちすけと背景だけ残す */
         body.ui-mode-2 #progress-area,
         body.ui-mode-2 .info-row,
         body.ui-mode-2 #control-panel,
-        body.ui-mode-2 #debug-zone,
         body.ui-mode-2 #install-banner,
         body.ui-mode-2 #header-container,
         body.ui-mode-2 .skill-side-container,
@@ -143,7 +138,6 @@
         body.ui-mode-3 #progress-area,
         body.ui-mode-3 .info-row,
         body.ui-mode-3 #control-panel,
-        body.ui-mode-3 #debug-zone,
         body.ui-mode-3 #install-banner,
         body.ui-mode-3 #header-container,
         body.ui-mode-3 .skill-side-container,
@@ -153,7 +147,7 @@
         body.ui-mode-3 #mochisuke-btn,
         body.ui-mode-3 #bunshin-container { display: none !important; }
 
-        /* 上部UI */
+        /* 上部UI（デバッグバーを廃止したので、常にheader-containerが一番上＝常にセーフエリア分を確保する） */
         #header-container {
             width: 94%;
             background: rgba(255, 245, 230, 0.88);
@@ -161,7 +155,7 @@
             -webkit-backdrop-filter: blur(4px);
             border: 2px solid rgba(240, 213, 181, 0.8);
             border-radius: 18px;
-            margin-top: 6px;
+            margin-top: calc(6px + env(safe-area-inset-top, 0px));
             padding: 8px 14px;
             display: flex;
             flex-direction: column;
@@ -510,28 +504,11 @@
 </head>
 <body>
 
-    <div id="debug-zone" style="background: #ffe0b2; width: 100%; text-align: center; padding: calc(6px + env(safe-area-inset-top, 0px)) 0 6px 0; z-index: 15; position: relative; border-bottom: 2px solid #ffb74d; display: flex; flex-direction: column; gap: 4px; align-items: center; flex-shrink: 0; box-sizing: border-box;">
-        <div>
-            <button onclick="debugAddMochi()" style="background: #ff5722; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">🛠️ もち即注入</button>
-            <button onclick="debugLevelUpAllSkills()" style="background: #009688; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">⚡ 全スキル解放&Lv+1</button>
-            <button onclick="debugResetCooldowns()" style="background: #2196f3; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.75rem;">⏳ CDリセット</button>
-        </div>
-        <div style="font-size: 0.72rem; color: #5d4037; font-weight: bold;">
-            個別にLvUP: 
-            <button onclick="debugLevelUpSkill('skill1')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">S1(クリック)</button>
-            <button onclick="debugLevelUpSkill('skill2')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">S2(会心)</button>
-            <button onclick="debugLevelUpSkill('skill3')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">S3(分身)</button>
-            <button onclick="debugLevelUpSkill('skill4')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">S4(黄金)</button>
-            <button onclick="debugLevelUpSkill('hissatsu')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">必殺技</button>
-        </div>
-        <div style="font-size: 0.6rem; color: #a1887f;">build: 2026-07-08-03 (この表示が古いままなら更新が反映されていません)</div>
-    </div>
-
     <div id="game-screen">
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-03</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-04</div>
 
         <div id="header-container">
             <div class="score-row">
@@ -654,6 +631,32 @@
             <h2>🏆 もちもちランキング</h2>
             <div id="ranking-list" class="list-container"></div>
             <button class="btn-red" onclick="closeModal('ranking-modal')">閉じる</button>
+
+            <!-- 🛠️ 開発者用メニュー（普段は畳んでおき、目立たない場所にちょこんと置いています。
+                 リリース前にはこの<div id="dev-tools-section">〜</div>のブロックごと削除してください） -->
+            <div id="dev-tools-section" style="margin-top:18px; padding-top:10px; border-top:1px dashed #ddd; text-align:center;">
+                <span onclick="toggleDevTools()" style="font-size:0.68rem; color:#bbb; cursor:pointer; user-select:none;">🛠️ 開発者メニュー</span>
+                <div id="dev-tools-body" style="display:none; margin-top:8px; background:#fff8ec; border-radius:8px; padding:8px; text-align:left;">
+                    <div style="display:flex; flex-wrap:wrap; gap:4px; justify-content:center; margin-bottom:6px;">
+                        <button onclick="debugAddMochi()" style="background:#ff5722; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">🛠️ もち即注入</button>
+                        <button onclick="debugLevelUpAllSkills()" style="background:#009688; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">⚡ 全解放&Lv+1</button>
+                        <button onclick="debugResetCooldowns()" style="background:#2196f3; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">⏳ CDリセット</button>
+                    </div>
+                    <div style="text-align:center; font-size:0.65rem; color:#5d4037; margin-bottom:6px;">
+                        個別LvUP:
+                        <button onclick="debugLevelUpSkill('skill1')" style="padding:2px 5px; font-size:0.62rem;">S1</button>
+                        <button onclick="debugLevelUpSkill('skill2')" style="padding:2px 5px; font-size:0.62rem;">S2</button>
+                        <button onclick="debugLevelUpSkill('skill3')" style="padding:2px 5px; font-size:0.62rem;">S3</button>
+                        <button onclick="debugLevelUpSkill('skill4')" style="padding:2px 5px; font-size:0.62rem;">S4</button>
+                        <button onclick="debugLevelUpSkill('hissatsu')" style="padding:2px 5px; font-size:0.62rem;">必殺技</button>
+                    </div>
+                    <div style="text-align:center;">
+                        <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
+                    </div>
+                    <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-08-04</div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1190,6 +1193,50 @@
             alert("⏳ 全スキルのクールタイムをリセットしました！");
         }
 
+        function toggleDevTools() {
+            const body = document.getElementById('dev-tools-body');
+            if (!body) return;
+            const show = body.style.display === 'none';
+            body.style.display = show ? 'block' : 'none';
+            if (show) updateDiagnostics();
+        }
+
+        // 実機で今どうなっているかを数値で見るための簡易パネル。
+        // 推測でCSSを直すのではなく、ここに出た実際の数字をスクショで送ってもらえれば原因を一発で特定できます。
+        const capturedErrors = [];
+        window.addEventListener('error', (e) => {
+            capturedErrors.push(`[JSエラー] ${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno})`);
+            if (capturedErrors.length > 8) capturedErrors.shift();
+        });
+        window.addEventListener('unhandledrejection', (e) => {
+            capturedErrors.push(`[Promiseエラー] ${e.reason}`);
+            if (capturedErrors.length > 8) capturedErrors.shift();
+        });
+
+        function updateDiagnostics() {
+            const el = document.getElementById('dev-diagnostics');
+            if (!el) return;
+            const gs = document.getElementById('game-screen');
+            const gsRect = gs ? gs.getBoundingClientRect() : null;
+            const innerH = window.innerHeight;
+            const vvH = window.visualViewport ? window.visualViewport.height : null;
+            const gsH = gsRect ? gsRect.height : null;
+            const gap = gsH != null ? (innerH - gsRect.bottom).toFixed(1) : '?';
+            const lines = [
+                `window.innerHeight: ${innerH}`,
+                `visualViewport.height: ${vvH}`,
+                `#game-screen 高さ: ${gsH != null ? gsH.toFixed(1) : '?'}`,
+                `#game-screen 下端〜画面下端の差(隙間): ${gap}px`,
+                `standalone表示か: ${window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true}`,
+                `safe-area-inset-bottom: ${getComputedStyle(document.documentElement).getPropertyValue('--app-height') ? '(--app-height使用中)' : ''}`,
+                `音声解錠済み(audioUnlocked): ${typeof audioUnlocked !== 'undefined' ? audioUnlocked : '?'}`,
+                `UA: ${navigator.userAgent}`,
+                `--- 検知したエラー(直近8件) ---`,
+                ...(capturedErrors.length ? capturedErrors : ['(なし)'])
+            ];
+            el.textContent = lines.join('\n');
+        }
+
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
@@ -1520,7 +1567,7 @@
         document.getElementById('game-screen').addEventListener('pointerdown', (e) => {
             if (skills.hissatsu.activeTimer > 0) {
                 // UIボタンやメニュー、モーダル内部の誤反応を防止
-                if (e.target.closest('#control-panel') || e.target.closest('#header-container') || e.target.closest('#progress-area') || e.target.closest('#debug-zone') || e.target.closest('#ui-toggle-btn') || e.target.closest('.modal')) {
+                if (e.target.closest('#control-panel') || e.target.closest('#header-container') || e.target.closest('#progress-area') || e.target.closest('#ui-toggle-btn') || e.target.closest('.modal')) {
                     return; 
                 }
                 // もちすけ本体以外をタップした時に10連打を発動
