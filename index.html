@@ -121,6 +121,9 @@
         body.ui-mode-1 .info-row,
         body.ui-mode-1 #control-panel,
         body.ui-mode-1 #debug-zone,
+        /* 倉庫・ショップ・地図・絵日記・順位などのモーダルを開いている間はデバッグバーを隠す（邪魔にならないように） */
+        body.modal-open #debug-zone { display: none !important; }
+
         body.ui-mode-1 #install-banner { display: none !important; }
         body.ui-mode-1 #header-container { margin-top: calc(6px + env(safe-area-inset-top, 0px)) !important; }
 
@@ -528,7 +531,7 @@
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-01</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-02</div>
 
         <div id="header-container">
             <div class="score-row">
@@ -918,6 +921,14 @@
                 ]
             },
 
+            // 同じ時間帯にすでに挨拶済みで、また戻ってきた時に喋る「おかえり」セリフ
+            welcomeBack: {
+                morning: ["おかえり！まだ朝じゃな！", "おかえりなのじゃ！引き続き頑張ろうな！"],
+                noon: ["おかえり！お昼からも頑張るのじゃ！", "おかえりなのじゃ！"],
+                evening: ["おかえり！夜も一緒に頑張ろうな！", "おかえりなのじゃ！"],
+                lateNight: ["おかえり…こんな時間まで一緒にいてくれるのか…", "おかえりなのじゃ！夜更かしはほどほどにな！"]
+            },
+
             idleComments: [
                 "画面をタップして もち集めるじゃ！",
                 "もちすけと一緒に日本を旅しような！",
@@ -1000,15 +1011,50 @@
             lastTappedTime = Date.now(); // 表示直後にすぐ別のセリフへ切り替わらないようにリセット
         }
 
+        // プレゼントや黄金もちが消えた時など、表示中のセリフを引っ込めるためのヘルパー
+        function hideMochiComment() {
+            const balloon = document.getElementById('mochi-balloon');
+            if (balloon) balloon.classList.remove('balloon-show');
+        }
+
+        // 時間帯の並び順（インデックスは他の場所でも共通して使う）
+        const TIME_BUCKETS = ['morning', 'noon', 'evening', 'lateNight'];
+        function getTimeBucketIndex(h) {
+            if (h >= 5 && h < 11) return 0;  // morning
+            if (h >= 11 && h < 17) return 1; // noon
+            if (h >= 17 && h < 22) return 2; // evening
+            return 3;                        // lateNight
+        }
+
         // 今の時間帯に合った挨拶をランダムで1つ返す
         function getTimeGreeting() {
-            const h = new Date().getHours();
-            let pool;
-            if (h >= 5 && h < 11) pool = dialogueData.timeGreetings.morning;
-            else if (h >= 11 && h < 17) pool = dialogueData.timeGreetings.noon;
-            else if (h >= 17 && h < 22) pool = dialogueData.timeGreetings.evening;
-            else pool = dialogueData.timeGreetings.lateNight;
-            return pickRandom(pool);
+            const bucket = TIME_BUCKETS[getTimeBucketIndex(new Date().getHours())];
+            return pickRandom(dialogueData.timeGreetings[bucket]);
+        }
+
+        function getLocalDateString(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        // 画面を開いた直後の挨拶。その日その時間帯にまだ挨拶していなければ「おはよう」等、
+        // 既に挨拶済みなら「おかえり」を出す。両方ともlocalStorageに記録して次回に引き継ぐ。
+        const GREETING_STATE_KEY = 'punicker_last_greeting_bucket';
+        let lastGreetingHourBucket = -1;
+        function showOpeningGreeting() {
+            const now = new Date();
+            const bucketIdx = getTimeBucketIndex(now.getHours());
+            const bucketName = TIME_BUCKETS[bucketIdx];
+            const todayKey = getLocalDateString(now) + '_' + bucketName;
+            const lastKey = localStorage.getItem(GREETING_STATE_KEY);
+            let text;
+            if (lastKey === todayKey) {
+                text = pickRandom(dialogueData.welcomeBack[bucketName]);
+            } else {
+                text = pickRandom(dialogueData.timeGreetings[bucketName]);
+                localStorage.setItem(GREETING_STATE_KEY, todayKey);
+            }
+            lastGreetingHourBucket = bucketIdx; // アイドルループがすぐ二重に挨拶し直さないように
+            showMochiComment(text);
         }
 
         let breatheTimer = null; let isMochiPressed = false; 
@@ -1049,6 +1095,28 @@
                 audio.play().catch(e => {});
             } catch (e) {}
         }
+
+        // 🔓 iOSの音声再生ロック解除
+        // iOSは「ユーザー操作(タップ)の中で.play()を呼んだAudio要素」しか後から自動再生を許可しない仕様がある。
+        // 効果音は1音につきAudio要素を6個ずつ使い回すプール構成にしているため、普通にゲームを触るだけだと
+        // 「たまたま実際のタップで使われた1個」しか解錠されず、ローテーションで残り5個が回ってきた時に
+        // 無音になる（＝「音が鳴ったり鳴らなかったりする」）現象が起きていた。
+        // 対策として、画面に最初に触れた瞬間に全プールの全Audio要素へ一斉に再生→即一時停止をかけて、
+        // まとめて解錠してしまう。
+        let audioUnlocked = false;
+        function unlockAllPooledAudio() {
+            if (audioUnlocked) return;
+            audioUnlocked = true;
+            Object.values(audioPoolCache).forEach((entry) => {
+                entry.pool.forEach((a) => {
+                    const p = a.play();
+                    if (p && typeof p.then === 'function') {
+                        p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
+                    }
+                });
+            });
+        }
+        document.addEventListener('pointerdown', unlockAllPooledAudio, { once: true, capture: true });
 
         // ※以前はここで画面のどこをタップしてもtap.mp3が鳴るグローバル監視をしていたが、
         // もちすけ以外（背景など）をタップしても音が鳴ってしまう原因になっていたため削除。
@@ -1172,6 +1240,7 @@
             startFeverSpawningLoop();
             startPresentSpawningLoop();
             startMochiLifeLoop();
+            showOpeningGreeting();
             
             requestAnimationFrame(updateAndRenderParticles);
         };
@@ -1266,37 +1335,34 @@
             for (let i = particleList.length - 1; i >= 0; i--) {
                 const p = particleList[i];
                 p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
-                
-                ctx.save();
+
                 if (p.isGold) {
                     // 金色みと輝きを強化（事前に焼き込んだ金色画像＋canvasネイティブのshadowで表現。
                     // ctx.filterはモバイルブラウザで無視されることがあるため使わない）
                     ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
                     ctx.shadowBlur = 14;
                     ctx.drawImage(goldParticleImg || particleImg, p.x - 35, p.y - 35, 70, 70);
+                    ctx.shadowBlur = 0; // 次の描画に影響しないよう明示的に戻す（save/restoreより軽い）
                 } else {
                     ctx.drawImage(particleImg, p.x - 21, p.y - 21, 42, 42);
                 }
-                ctx.restore();
-                
+
                 if (p.y > canvas.height + 50) { particleList.splice(i, 1); }
             }
 
             const now = performance.now();
 
-            // 波紋エフェクト
+            // 波紋エフェクト（strokeStyle/lineWidthは毎回上書きするのでsave/restore不要）
             for (let i = rippleList.length - 1; i >= 0; i--) {
                 const r = rippleList[i];
                 const t = (now - r.start) / 400; // 0.4秒
                 if (t >= 1) { rippleList.splice(i, 1); continue; }
                 const eased = 1 - Math.pow(1 - t, 2);
-                ctx.save();
                 ctx.strokeStyle = `rgba(255, 152, 0, ${(0.6 * (1 - t)).toFixed(3)})`;
                 ctx.lineWidth = 4;
                 ctx.beginPath();
                 ctx.arc(r.x, r.y, eased * 65, 0, Math.PI * 2);
                 ctx.stroke();
-                ctx.restore();
             }
 
             // 浮き上がる文字
@@ -1696,8 +1762,8 @@
         }
 
         /* モーダル関連 */
-        function openModal(id) { playAudioFile('skill_tap.mp3'); document.getElementById(id).style.display = "flex"; }
-        function closeModal(id) { document.getElementById(id).style.display = "none"; }
+        function openModal(id) { playAudioFile('skill_tap.mp3'); document.body.classList.add('modal-open'); document.getElementById(id).style.display = "flex"; }
+        function closeModal(id) { document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none"; }
 
         function openWarehouse() {
             let boughtCount = 0;
@@ -1826,7 +1892,6 @@
             });
         }
 
-        let lastGreetingHourBucket = -1; // 時間帯が変わった時だけ挨拶するための記録
         function startMochiLifeLoop() {
             setInterval(() => {
                 const idleDuration = Date.now() - lastTappedTime;
@@ -1834,8 +1899,7 @@
                 if (idleDuration > 5000 && !isFever) {
                     if (!balloon.classList.contains('balloon-show')) {
                         // 時間帯が切り替わった直後は優先的に挨拶する
-                        const h = new Date().getHours();
-                        const bucket = h < 5 ? 3 : h < 11 ? 0 : h < 17 ? 1 : h < 22 ? 2 : 3;
+                        const bucket = getTimeBucketIndex(new Date().getHours());
                         let text;
                         if (bucket !== lastGreetingHourBucket) {
                             lastGreetingHourBucket = bucket;
@@ -1879,8 +1943,9 @@
                 score += bonus; createParticle(e.clientX, e.clientY);
                 alert(`🎁 【福もちボーナス +${bonus.toLocaleString()} もち】獲得！`);
                 saveGame(); present.remove(); updateDisplay();
+                hideMochiComment();
             });
-            setTimeout(() => { if (present.parentNode) present.remove(); }, 11000);
+            setTimeout(() => { if (present.parentNode) { present.remove(); hideMochiComment(); } }, 11000);
         }
 
         function startFeverSpawningLoop() {
@@ -1895,8 +1960,8 @@
             const rect = gameScreen.getBoundingClientRect();
             goldMochi.style.left = (Math.random() * (rect.width - 80)) + 'px'; goldMochi.style.top = (Math.random() * (rect.height - 350) + 160) + 'px';
             gameScreen.appendChild(goldMochi);
-            goldMochi.addEventListener('pointerdown', (e) => { e.stopPropagation(); goldMochi.remove(); triggerFeverTime(); });
-            setTimeout(() => { if (goldMochi.parentNode) goldMochi.remove(); }, 6000);
+            goldMochi.addEventListener('pointerdown', (e) => { e.stopPropagation(); goldMochi.remove(); hideMochiComment(); triggerFeverTime(); });
+            setTimeout(() => { if (goldMochi.parentNode) { goldMochi.remove(); hideMochiComment(); } }, 6000);
         }
 
         function triggerFeverTime() {
