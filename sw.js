@@ -4,7 +4,7 @@
 // 画像や音声などの静的アセットは今まで通り「stale-while-revalidate」：
 // キャッシュを即返しつつ裏で更新するので、通信が遅くても表示は速いまま。
 
-const CACHE_NAME = 'punicker-cache-v5';
+const CACHE_NAME = 'punicker-cache-v6';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -27,6 +27,14 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
+  // 音声ファイルはService Workerで一切キャッシュしない。
+  // <audio>要素はRangeリクエスト（バイト範囲指定）を発行することがあり、
+  // それをそのままCache Storageに保存してしまうと、後で別の範囲リクエストに対して
+  // 誤ったキャッシュ（206 Partial Content等）を返してしまい、再生が失敗する原因になっていた。
+  // 音声はブラウザ標準のHTTPキャッシュに任せ、SWは素通りさせる。
+  const isAudio = req.destination === 'audio' || /\.(mp3|wav|ogg|m4a|aac)(\?|$)/i.test(url.pathname);
+  if (isAudio) return;
+
   // HTMLドキュメント本体（画面遷移・アプリ起動時のリクエスト）はネットワーク優先
   const isDocument = req.mode === 'navigate' || req.destination === 'document';
   if (isDocument) {
@@ -43,7 +51,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // それ以外の静的アセット(画像・音声など)は従来通りstale-while-revalidate
+  // それ以外の静的アセット(画像など)は従来通りstale-while-revalidate
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
       const cached = await cache.match(req);

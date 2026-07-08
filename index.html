@@ -524,14 +524,14 @@
             <button onclick="debugLevelUpSkill('skill4')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">S4(黄金)</button>
             <button onclick="debugLevelUpSkill('hissatsu')" style="padding:2px 5px; font-size:0.68rem; cursor:pointer;">必殺技</button>
         </div>
-        <div style="font-size: 0.6rem; color: #a1887f;">build: 2026-07-07-16 (この表示が古いままなら更新が反映されていません)</div>
+        <div style="font-size: 0.6rem; color: #a1887f;">build: 2026-07-08-03 (この表示が古いままなら更新が反映されていません)</div>
     </div>
 
     <div id="game-screen">
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-02</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-03</div>
 
         <div id="header-container">
             <div class="score-row">
@@ -1109,9 +1109,14 @@
             audioUnlocked = true;
             Object.values(audioPoolCache).forEach((entry) => {
                 entry.pool.forEach((a) => {
+                    const wasMuted = a.muted;
+                    a.muted = true; // 解錠用の再生を無音にする（これが無いと開いた瞬間に全効果音が鳴ってしまう）
                     const p = a.play();
                     if (p && typeof p.then === 'function') {
-                        p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
+                        p.then(() => { a.pause(); a.currentTime = 0; a.muted = wasMuted; })
+                         .catch(() => { a.muted = wasMuted; });
+                    } else {
+                        a.muted = wasMuted;
                     }
                 });
             });
