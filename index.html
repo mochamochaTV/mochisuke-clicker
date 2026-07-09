@@ -116,8 +116,10 @@
         }
         #op-screen-img {
             width: 100%;
+            max-width: 480px;
             height: 100%;
             object-fit: cover;
+            margin: 0 auto;
         }
         #op-screen-hint {
             position: absolute;
@@ -137,6 +139,25 @@
             0%, 100% { opacity: 0.6; }
             50% { opacity: 1; }
         }
+
+        #menu-toggle-btn {
+            position: fixed;
+            top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
+            left: 10px;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            border: none;
+            font-size: 1.05rem;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50;
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+            padding: 0;
+        }
+        #menu-toggle-btn:active { transform: scale(0.9); }
 
         #ui-toggle-btn {
             position: fixed;
@@ -549,10 +570,11 @@
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-01</div>
+        <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-02</div>
 
         <div id="header-container">
-            <div class="score-row">
+            <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
                 🍡 <span id="score-text">0 もち</span>
             </div>
             <div class="info-row">
@@ -650,6 +672,7 @@
             <div class="shop-tabs">
                 <button id="shop-tab-omiyage" class="shop-tab-btn tab-active" onclick="switchShopTab('omiyage')">🎁 おみやげ</button>
                 <button id="shop-tab-kisekae" class="shop-tab-btn" onclick="switchShopTab('kisekae')">👕 きせかえ</button>
+                <button id="shop-tab-skills" class="shop-tab-btn" onclick="switchShopTab('skills')">✨ スキル</button>
             </div>
             <div class="list-container" id="shop-items-list"></div>
             <button class="btn-red" onclick="closeModal('shop-modal')">閉じる</button>
@@ -669,6 +692,50 @@
     <div id="op-screen" onclick="startGameFromOpScreen()">
         <img id="op-screen-img" src="op_screen.png" alt="タップしてスタート">
         <div id="op-screen-hint">タップしてスタート</div>
+    </div>
+
+    <div id="unit-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <button class="modal-close-x" onclick="closeModal('unit-modal')">×</button>
+            <h2>🔢 もちの数え方</h2>
+            <p style="font-size:0.85rem; color:#5d4037; margin-bottom:12px;">数が大きくなると、こんな単位で表示されます</p>
+            <div style="text-align:left; font-size:0.85rem; color:#5d4037; background:#fff8ec; border-radius:10px; padding:14px; line-height:2;">
+                <div><b>千</b>＝1,000（10<sup>3</sup>）</div>
+                <div><b>万</b>＝10,000（10<sup>4</sup>）</div>
+                <div><b>億</b>＝100,000,000（10<sup>8</sup>）</div>
+                <div><b>兆</b>＝1,000,000,000,000（10<sup>12</sup>）</div>
+                <div><b>京</b>＝10,000,000,000,000,000（10<sup>16</sup>）</div>
+            </div>
+            <p style="font-size:0.78rem; color:#a1887f; margin-top:12px;">例：「12.34億」＝1,234,000,000（約12億3400万）</p>
+            <button class="btn-red" onclick="closeModal('unit-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="menu-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('menu-modal')">×</button>
+            <h2>☰ メニュー</h2>
+
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <button class="item-action-btn btn-green" style="flex:1;" onclick="menuSaveGame()">💾 セーブ</button>
+                <button class="item-action-btn btn-red" style="flex:1;" onclick="menuSaveAndQuit()">🚪 セーブして終了</button>
+            </div>
+
+            <div style="background:#f9f9f9; border-radius:10px; padding:12px; margin-bottom:16px;">
+                <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">🔊 音量調整</div>
+                <label style="display:block; font-size:0.8rem; color:#5d4037; margin-bottom:4px;">BGM: <span id="bgm-vol-label"></span></label>
+                <input type="range" id="bgm-vol-slider" min="0" max="100" style="width:100%;" oninput="onBgmVolumeChange(this.value)">
+                <label style="display:block; font-size:0.8rem; color:#5d4037; margin:10px 0 4px;">効果音: <span id="sfx-vol-label"></span></label>
+                <input type="range" id="sfx-vol-slider" min="0" max="100" style="width:100%;" oninput="onSfxVolumeChange(this.value)">
+                <button class="item-action-btn" style="margin-top:10px; width:100%;" onclick="resetVolumeSettings()">音量をリセット</button>
+            </div>
+
+            <div style="background:#f9f9f9; border-radius:10px; padding:12px;">
+                <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">✏️ ゲームへのご意見</div>
+                <textarea id="feedback-text" rows="4" style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:8px; font-size:0.85rem;" placeholder="感想・不具合報告・要望など、なんでもどうぞ"></textarea>
+                <button class="item-action-btn btn-shop" style="margin-top:8px; width:100%; background:#ff9800; color:#fff;" onclick="sendFeedback()">送信する</button>
+            </div>
+        </div>
     </div>
 
     <div id="japan-clear-modal" class="modal">
@@ -711,7 +778,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-01</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-02</div>
                 </div>
             </div>
         </div>
@@ -823,6 +890,63 @@
         // iOS standaloneは起動直後、数値が数百ms遅れて確定することがあるため複数回リトライする
         [50, 200, 500, 1000, 2000].forEach((ms) => setTimeout(fixBottomGap, ms));
 
+        // ☰ メニュー機能
+        function menuSaveGame() {
+            saveGame();
+            alert("💾 セーブしました！");
+        }
+
+        function menuSaveAndQuit() {
+            saveGame();
+            // 【重要】ブラウザ/PWAの仕様上、Webページ側から「アプリを完全に終了させる」ことはできません
+            // （window.close()は script が開いたウィンドウ以外では基本的に無視されます）。
+            // なのでここでは「セーブ完了→もちすけとお別れ画面」を出す、という代替演出にしています。
+            document.body.innerHTML = `<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; width:100%; background:#fcf8f2; text-align:center; padding:20px; box-sizing:border-box;">
+                <div style="font-size:3rem; margin-bottom:12px;">🍡</div>
+                <div style="font-size:1.2rem; font-weight:bold; color:#5d4037; margin-bottom:8px;">セーブしました！</div>
+                <div style="font-size:0.9rem; color:#8d6e63;">またあそびにきてね</div>
+            </div>`;
+            try { window.close(); } catch (e) {}
+        }
+
+        function onBgmVolumeChange(val) {
+            bgmVolumeMult = val / 100;
+            document.getElementById('bgm-vol-label').innerText = val + '%';
+            localStorage.setItem('punicker_bgm_volume', bgmVolumeMult);
+            applyBgmVolume();
+        }
+
+        function onSfxVolumeChange(val) {
+            sfxVolumeMult = val / 100;
+            document.getElementById('sfx-vol-label').innerText = val + '%';
+            localStorage.setItem('punicker_sfx_volume', sfxVolumeMult);
+        }
+
+        function resetVolumeSettings() {
+            onBgmVolumeChange(100);
+            onSfxVolumeChange(100);
+            document.getElementById('bgm-vol-slider').value = 100;
+            document.getElementById('sfx-vol-slider').value = 100;
+        }
+
+        function initVolumeSliders() {
+            const bgmSlider = document.getElementById('bgm-vol-slider');
+            const sfxSlider = document.getElementById('sfx-vol-slider');
+            if (bgmSlider) { bgmSlider.value = Math.round(bgmVolumeMult * 100); document.getElementById('bgm-vol-label').innerText = bgmSlider.value + '%'; }
+            if (sfxSlider) { sfxSlider.value = Math.round(sfxVolumeMult * 100); document.getElementById('sfx-vol-label').innerText = sfxSlider.value + '%'; }
+        }
+
+        // ✏️ 意見・要望の送信（サーバーが無いので、メールアプリに下書きを渡す形にしています。
+        // 実際に使う時は下のFEEDBACK_EMAILを自分の受け取りたいメールアドレスに書き換えてください）
+        const FEEDBACK_EMAIL = 'your-email@example.com';
+        function sendFeedback() {
+            const text = document.getElementById('feedback-text').value.trim();
+            if (!text) { alert("意見を入力してから送信してください！"); return; }
+            const subject = encodeURIComponent('【ぷにっかー】ご意見');
+            const body = encodeURIComponent(text);
+            window.location.href = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
+        }
+
         // 🖼️ 画面写真モード切替（もちすけ/スキル/もち数だけ → もちすけ+背景だけ → 背景だけ → 元通り）
         let uiDeclutterState = 0;
         function toggleUiDeclutter() {
@@ -925,12 +1049,14 @@
         ];
 
         // スキル総合コアシステムデータ
+        // unlockStage: このステージ(0=鹿児島)に到達するとショップで購入できるようになる
+        // unlockPrice: 初回獲得(Lv0→1)の価格 / lvPriceMult: Lvアップごとの価格倍率
         let skills = {
-            skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0 },
-            skill2: { id: "skill2", name: "会心のもち肌", lv: 0, cd: 40, currentCd: 0, duration: 10, activeTimer: 0 },
-            skill3: { id: "skill3", name: "もちすけ分身の術", lv: 0, cd: 50, currentCd: 0, duration: 12, activeTimer: 0 },
-            skill4: { id: "skill4", name: "黄金のもち福", lv: 0, cd: 60, currentCd: 0, duration: 10, activeTimer: 0 },
-            hissatsu: { id: "hissatsu", name: "もちもちビッグバン", lv: 1, cd: 90, currentCd: 0, duration: 15, activeTimer: 0 }
+            skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 0, unlockPrice: 300, lvPriceMult: 1.6, desc: "発動中はタップでパーティクルが3倍出る" },
+            skill2: { id: "skill2", name: "会心のもち肌", lv: 0, cd: 40, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 3, unlockPrice: 1500, lvPriceMult: 1.6, desc: "発動中は一定確率でタップが会心(×2)になる" },
+            skill3: { id: "skill3", name: "もちすけ分身の術", lv: 0, cd: 50, currentCd: 0, duration: 12, activeTimer: 0, unlockStage: 8, unlockPrice: 8000, lvPriceMult: 1.65, desc: "発動中は分身が出現し打撃力が3倍になる" },
+            skill4: { id: "skill4", name: "黄金のもち福", lv: 0, cd: 60, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 15, unlockPrice: 30000, lvPriceMult: 1.65, desc: "発動中は一定確率でタップが黄金(×2)になる" },
+            hissatsu: { id: "hissatsu", name: "もちもちビッグバン", lv: 0, cd: 90, currentCd: 0, duration: 15, activeTimer: 0, unlockStage: 25, unlockPrice: 150000, lvPriceMult: 1.7, desc: "発動中はタップが10連打扱いになる大技（クールタイムはタップ数で回復）" }
         };
 
         // 基本セーブ用変数
@@ -1187,12 +1313,23 @@
             SFX_FILES.forEach(loadAudioBuffer);
         }
 
+        // 🔊 音量設定（BGM/効果音を別々に調整できる。0〜1の倍率としてlocalStorageに保存）
+        let bgmVolumeMult = parseFloat(localStorage.getItem('punicker_bgm_volume') ?? '1');
+        let sfxVolumeMult = parseFloat(localStorage.getItem('punicker_sfx_volume') ?? '1');
+        if (isNaN(bgmVolumeMult)) bgmVolumeMult = 1;
+        if (isNaN(sfxVolumeMult)) sfxVolumeMult = 1;
+
+        function applyBgmVolume() {
+            if (bgmAudio) bgmAudio.volume = 0.3 * bgmVolumeMult;
+            if (hissatsuBgmAudio) hissatsuBgmAudio.volume = 0.4 * bgmVolumeMult;
+        }
+
         function playBufferNow(buffer, vol) {
             const ctx = getAudioContext();
             const source = ctx.createBufferSource();
             source.buffer = buffer;
             const gain = ctx.createGain();
-            gain.gain.value = vol;
+            gain.gain.value = vol * sfxVolumeMult;
             source.connect(gain).connect(ctx.destination);
             source.start(0);
         }
@@ -1347,7 +1484,7 @@
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
-            bgmAudio = new Audio('bgm.mp3'); bgmAudio.loop = true; bgmAudio.volume = 0.3;
+            bgmAudio = new Audio('bgm.mp3'); bgmAudio.loop = true; bgmAudio.volume = 0.3 * bgmVolumeMult;
             bgmAudio.play().catch(() => { isBgmInitialized = false; });
         }
 
@@ -1412,6 +1549,7 @@
             startPresentSpawningLoop();
             startMochiLifeLoop();
             showOpeningGreeting();
+            initVolumeSliders();
             
             requestAnimationFrame(updateAndRenderParticles);
         };
@@ -1608,24 +1746,32 @@
             let isCrit = false;
             let isGold = false;
 
-            // スキル4：黄金のもち福の判定（黄金と会心は同時に乗らないようにする。
-            // 以前は両方乗って最大×55倍になってしまい、スキルを揃えると一瞬でクリアできてしまっていたため、
-            // どちらか一方だけが選ばれるようにバランス調整した）
+            // スキル4：黄金のもち福の判定（会心と重ねて乗ってOK。ただし前回×10だと強すぎたので×2に調整）
             if (skills.skill4.activeTimer > 0) {
                 const goldChance = 0.10 + (skills.skill4.lv - 1) * 0.02;
                 if (Math.random() < goldChance) {
                     isGold = true;
-                    power = Math.floor(power * 10);
+                    power = Math.floor(power * 2);
                 }
             }
 
-            // スキル2：会心のもち肌の判定（黄金が発動した時は会心の判定自体を行わない）
-            if (!isGold && skills.skill2.activeTimer > 0) {
+            // スキル2：会心のもち肌の判定（黄金と重複してOK。前回×3〜5.5だと強すぎたので×2に調整）
+            if (skills.skill2.activeTimer > 0) {
                 const critChance = 0.20 + (skills.skill2.lv - 1) * 0.05;
                 if (Math.random() < critChance) {
                     isCrit = true;
-                    power = Math.floor(power * (3 + (skills.skill2.lv - 1) * 0.5));
+                    power = Math.floor(power * 2);
                 }
+            }
+
+            // スキル3：分身発動中は打撃力そのものにも倍率がかかる。
+            // Lv8未満は固定3倍、Lv8以降はそこからさらに緩やかに伸びる（急激に強くなりすぎないよう調整）
+            const SKILL3_SCALING_LV = 8;
+            if (skills.skill3.activeTimer > 0) {
+                const skill3Mult = skills.skill3.lv < SKILL3_SCALING_LV
+                    ? 3
+                    : 3 + (skills.skill3.lv - SKILL3_SCALING_LV) * 0.25;
+                power = Math.floor(power * skill3Mult);
             }
 
             // パーティクルの色設定（スキル4の確率判定(isGold)に当たった時だけ金色にする）
@@ -1680,6 +1826,7 @@
             initAndPlayBGM();
             playAudioFile('tap.mp3'); 
             totalTapsCount++;
+            chargeHissatsuByTap();
             
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
@@ -1700,7 +1847,7 @@
             createRippleEffect(e.clientX, e.clientY);
 
             // 必殺技発動中なら1タップが10連打になる
-            let clickLoops = skills.hissatsu.activeTimer > 0 ? 6 : 1;
+            let clickLoops = skills.hissatsu.activeTimer > 0 ? 10 : 1;
             for (let i = 0; i < clickLoops; i++) {
                 executeSingleTap(e.clientX, e.clientY);
             }
@@ -1766,10 +1913,15 @@
         mochiBtnElement.addEventListener('pointerleave', releaseMochiSucre);
 
         /* 🔮 スキル発動＆タイマー管理システムロジック */
+        // 必殺技だけはクールタイムが「時間経過」ではなく「一定回数タップ」で回復する特別仕様
+        function getHissatsuTapsRequired(lv) {
+            return Math.max(60, 200 - (lv - 1) * 15);
+        }
+
         function useSkill(key) {
             const s = skills[key];
             if (s.lv === 0) {
-                alert("このスキルはまだ獲得していません！\n上部の限定デバッグ機能からLvを上げてお試しください。");
+                alert("このスキルはまだ獲得していません！\nショップの「✨スキル」タブから獲得できます。");
                 return;
             }
             if (s.currentCd > 0 || s.activeTimer > 0) return; 
@@ -1785,7 +1937,7 @@
             if (key === 'skill2') calculatedCd = Math.max(15, s.cd - (s.lv - 1));
             if (key === 'skill3') calculatedCd = Math.max(20, s.cd - (s.lv - 1));
             if (key === 'skill4') calculatedCd = Math.max(25, s.cd - (s.lv - 1) * 2);
-            if (key === 'hissatsu') calculatedCd = Math.max(45, s.cd - (s.lv - 1) * 2);
+            if (key === 'hissatsu') calculatedCd = getHissatsuTapsRequired(s.lv); // ← 秒数ではなく「必要タップ数」
             s.currentCd = calculatedCd;
 
             // スキル個別発動ビジュアル演出の開始
@@ -1829,7 +1981,7 @@
                 if (bgmAudio) bgmAudio.pause();
                 hissatsuBgmAudio = new Audio('hissatsu_bgm.mp3');
                 hissatsuBgmAudio.loop = true;
-                hissatsuBgmAudio.volume = 0.4;
+                hissatsuBgmAudio.volume = 0.4 * bgmVolumeMult;
                 hissatsuBgmAudio.play().catch(()=>{});
 
                 // 親方化して巨大に固定
@@ -1876,8 +2028,8 @@
                     s.activeTimer -= dt;
                     if (s.activeTimer <= 0) { s.activeTimer = 0; endSkillVisualEffect(key); }
                 }
-                // クールタイム完了の判定
-                else if (s.currentCd > 0) {
+                // クールタイム完了の判定（必殺技はタップ数で回復するのでここでは時間経過させない）
+                else if (s.currentCd > 0 && key !== 'hissatsu') {
                     s.currentCd -= dt;
                     if (s.currentCd <= 0) {
                         s.currentCd = 0;
@@ -1888,6 +2040,19 @@
                 }
             });
             updateSkillUI();
+        }
+
+        // 必殺技のクールタイムをタップ数で回復させる（実際のタップの度に呼ぶ）
+        function chargeHissatsuByTap() {
+            const s = skills.hissatsu;
+            if (s.lv > 0 && s.activeTimer <= 0 && s.currentCd > 0) {
+                s.currentCd -= 1;
+                if (s.currentCd <= 0) {
+                    s.currentCd = 0;
+                    playAudioFile('ready.mp3', 0.4);
+                }
+                updateSkillUI();
+            }
         }
 
         function updateSkillUI() {
@@ -1914,7 +2079,7 @@
                 if (key === 'skill2') calculatedCd = Math.max(15, s.cd - (s.lv - 1));
                 if (key === 'skill3') calculatedCd = Math.max(20, s.cd - (s.lv - 1));
                 if (key === 'skill4') calculatedCd = Math.max(25, s.cd - (s.lv - 1) * 2);
-                if (key === 'hissatsu') calculatedCd = Math.max(45, s.cd - (s.lv - 1) * 2);
+                if (key === 'hissatsu') calculatedCd = getHissatsuTapsRequired(s.lv); // ← 秒数ではなく「必要タップ数」
 
                 const overlay = btn.querySelector('.cd-overlay');
                 const overlayRect = btn.querySelector('.cd-overlay-rect');
@@ -2006,6 +2171,7 @@
             currentShopTab = tab;
             document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
             document.getElementById('shop-tab-kisekae').classList.toggle('tab-active', tab === 'kisekae');
+            document.getElementById('shop-tab-skills').classList.toggle('tab-active', tab === 'skills');
             renderShopList();
         }
 
@@ -2026,7 +2192,7 @@
                     row.innerHTML = `<div class="item-info"><span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span><span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${(currentLv * (stage.tapBonus || stage.mpsBonus)).toLocaleString()})</span></div>${btnHtml}`;
                     listContainer.appendChild(row);
                 }
-            } else {
+            } else if (currentShopTab === 'kisekae') {
                 clothesData.forEach(c => {
                     if (c.id === 'normal') return; 
                     const isBought = purchasedClothes[c.id];
@@ -2043,7 +2209,43 @@
                     row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">👕 ${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
                     listContainer.appendChild(row);
                 });
+            } else {
+                // ✨ スキルタブ：ステージ進行に応じて段階的に解放される
+                Object.keys(skills).forEach(key => {
+                    const s = skills[key];
+                    const row = document.createElement('div');
+                    row.className = "list-item";
+
+                    if (currentStageIndex < s.unlockStage) {
+                        // まだ解放条件を満たしていない
+                        const reqStageName = stages[s.unlockStage] ? stages[s.unlockStage].name : "???";
+                        row.style.opacity = "0.55";
+                        row.innerHTML = `<div class="item-info"><span class="item-title">🔒 ${s.name}</span><span class="item-desc">「${reqStageName}」到達で解放</span></div><button class="item-action-btn" disabled>ロック中</button>`;
+                    } else if (s.lv === 0) {
+                        // 未獲得：獲得ボタン
+                        const canBuy = score >= s.unlockPrice;
+                        row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name}</span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${s.unlockPrice.toLocaleString()}もちで獲得</button>`;
+                    } else {
+                        // 獲得済み：レベルアップボタン
+                        const nextPrice = Math.floor(s.unlockPrice * Math.pow(s.lvPriceMult, s.lv));
+                        const canBuy = score >= nextPrice;
+                        row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name} <span style="color:#ff9800; font-weight:900;">Lv.${s.lv}</span></span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${nextPrice.toLocaleString()}もちでLvUP</button>`;
+                    }
+                    listContainer.appendChild(row);
+                });
             }
+        }
+
+        function buySkillLevel(key) {
+            const s = skills[key];
+            if (!s || currentStageIndex < s.unlockStage) return;
+            const price = s.lv === 0 ? s.unlockPrice : Math.floor(s.unlockPrice * Math.pow(s.lvPriceMult, s.lv));
+            if (score < price) return;
+            score -= price;
+            s.lv += 1;
+            playAudioFile('levelup.mp3');
+            showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
+            saveGame(); renderShopList(); updateSkillUI(); updateDisplay();
         }
 
         function buyOmiyage(idx) {
