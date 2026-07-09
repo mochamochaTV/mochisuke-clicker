@@ -97,6 +97,47 @@
         .fade-black { opacity: 1 !important; }
 
         /* 画面写真モード切替ボタン（もちすけ/スキル/もち数だけ → もちすけ+背景だけ → 背景だけ → 元通り、の4段階） */
+        /* 🎬 OP（タイトル）画面：ゲームの一番上に全画面で重ねておき、タップで消える */
+        #op-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        #op-screen.op-hide {
+            opacity: 0;
+            transform: scale(1.08);
+            pointer-events: none;
+        }
+        #op-screen-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #op-screen-hint {
+            position: absolute;
+            bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-weight: bold;
+            font-size: 1rem;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.35);
+            padding: 8px 20px;
+            border-radius: 30px;
+            animation: opHintPulse 1.4s ease-in-out infinite;
+        }
+        @keyframes opHintPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
         #ui-toggle-btn {
             position: fixed;
             top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
@@ -508,7 +549,7 @@
         <div id="fade-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-08-06</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-01</div>
 
         <div id="header-container">
             <div class="score-row">
@@ -625,6 +666,22 @@
         </div>
     </div>
 
+    <div id="op-screen" onclick="startGameFromOpScreen()">
+        <img id="op-screen-img" src="op_screen.png" alt="タップしてスタート">
+        <div id="op-screen-hint">タップしてスタート</div>
+    </div>
+
+    <div id="japan-clear-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <button class="modal-close-x" onclick="closeModal('japan-clear-modal')">×</button>
+            <h2>🎉 日本全国制覇！ 🎉</h2>
+            <p style="font-size:0.9rem; color:#5d4037; margin:10px 0;">もちすけと一緒に、鹿児島から沖縄まで<br>47都道府県をぜんぶ旅したのじゃ！</p>
+            <div id="japan-clear-stats" style="margin:14px 0; font-size:0.85rem; color:#5d4037; background:#fff8ec; border-radius:10px; padding:10px; line-height:1.8;"></div>
+            <p style="font-weight:bold; color:#ff9800; font-size:1.05rem;">🏅「日本もち王」の称号を獲得！</p>
+            <button class="btn-red" onclick="closeModal('japan-clear-modal')">もちすけとの旅を続ける</button>
+        </div>
+    </div>
+
     <div id="ranking-modal" class="modal">
         <div class="modal-content">
             <button class="modal-close-x" onclick="closeModal('ranking-modal')">×</button>
@@ -654,7 +711,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-08-06</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-01</div>
                 </div>
             </div>
         </div>
@@ -878,6 +935,9 @@
 
         // 基本セーブ用変数
         let score = 0; 
+        let totalTapsCount = 0;       // 日本制覇演出の統計表示用
+        let firstPlayTimestamp = null; // 初回プレイ日時（統計表示用）
+        let hasSeenJapanClear = false; // 日本制覇演出を出したかどうか（何度も出ないようにする）
         let currentStageIndex = 0;     
         let selectedStageIndex = 0;    
         let currentStageProgress = 0;   
@@ -1175,7 +1235,8 @@
                 score: score, currentStageIndex: currentStageIndex, selectedStageIndex: selectedStageIndex,
                 currentStageProgress: currentStageProgress, purchasedItems: purchasedItems,
                 purchasedClothes: purchasedClothes, equippedClotheId: equippedClotheId,
-                skills: skills
+                skills: skills,
+                totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -1192,6 +1253,9 @@
                     purchasedItems = state.purchasedItems ?? {};
                     purchasedClothes = state.purchasedClothes ?? { normal: true };
                     equippedClotheId = state.equippedClotheId ?? "normal";
+                    totalTapsCount = state.totalTapsCount ?? 0;
+                    firstPlayTimestamp = state.firstPlayTimestamp ?? null;
+                    hasSeenJapanClear = state.hasSeenJapanClear ?? false;
                     if (state.skills) {
                         Object.keys(state.skills).forEach(k => {
                             if (skills[k]) skills[k].lv = state.skills[k].lv ?? skills[k].lv;
@@ -1199,6 +1263,7 @@
                     }
                 } catch(e) { console.error("データ読み込み失敗", e); }
             }
+            if (!firstPlayTimestamp) firstPlayTimestamp = Date.now();
         }
 
         /* 🛠️ 開発・制作段階限定の各種デバッグ関数 */
@@ -1286,6 +1351,18 @@
             bgmAudio.play().catch(() => { isBgmInitialized = false; });
         }
 
+        // 🎬 OP画面をタップしてゲームへ。ブラウザの仕様上「一切操作なしで音を鳴らす」ことはiOSではできないが、
+        // どのみちOP画面をタップしないとゲームに入れない作りなので、そのタップの瞬間にBGMを鳴らせば
+        // 体感的には「ゲームを開いたら音楽が鳴る」とほぼ同じ感覚になる。
+        function startGameFromOpScreen() {
+            initAndPlayBGM();
+            const op = document.getElementById('op-screen');
+            if (op) {
+                op.classList.add('op-hide');
+                setTimeout(() => { op.style.display = 'none'; }, 650);
+            }
+        }
+
         let gameScreenRect = null;
         let bunshinCloneRects = [];
         let bunshinCloneEls = [];
@@ -1340,6 +1417,26 @@
         };
 
         // スキル効果を含んだタップ力計算コア
+        // もちの数が大きくなりすぎてもUIからはみ出さないよう、日本語の単位（万/億/兆/京）で短く表示する
+        function formatMochi(n) {
+            n = Math.floor(n);
+            if (n < 100000) return n.toLocaleString();
+            if (n >= 1e16) return (n / 1e16).toFixed(2) + '京';
+            if (n >= 1e12) return (n / 1e12).toFixed(2) + '兆';
+            if (n >= 1e8) return (n / 1e8).toFixed(2) + '億';
+            return (n / 1e4).toFixed(1) + '万';
+        }
+
+        // 📳 振動（ハプティクス）
+        // 【重要】iOSのSafari/PWAはVibration API自体を実装していないため、iPhoneでは何も起きません
+        // （AndroidのChromeなどでは有効です）。iPhone側でも「叩いた感」を出したい場合は、
+        // 振動の代わりに画面のフラッシュ/シェイク演出などの視覚効果で代替するのがおすすめです。
+        function vibrate(pattern) {
+            if (navigator.vibrate) {
+                try { navigator.vibrate(pattern); } catch (e) {}
+            }
+        }
+
         function getTapPower() {
             let power = 1; 
             stages.forEach((stage, idx) => {
@@ -1511,21 +1608,23 @@
             let isCrit = false;
             let isGold = false;
 
-            // スキル2：会心のもち肌の判定
-            if (skills.skill2.activeTimer > 0) {
-                const critChance = 0.20 + (skills.skill2.lv - 1) * 0.05;
-                if (Math.random() < critChance) {
-                    isCrit = true;
-                    power = Math.floor(power * (3 + (skills.skill2.lv - 1) * 0.5));
-                }
-            }
-
-            // スキル4：黄金のもち福の判定
+            // スキル4：黄金のもち福の判定（黄金と会心は同時に乗らないようにする。
+            // 以前は両方乗って最大×55倍になってしまい、スキルを揃えると一瞬でクリアできてしまっていたため、
+            // どちらか一方だけが選ばれるようにバランス調整した）
             if (skills.skill4.activeTimer > 0) {
                 const goldChance = 0.10 + (skills.skill4.lv - 1) * 0.02;
                 if (Math.random() < goldChance) {
                     isGold = true;
                     power = Math.floor(power * 10);
+                }
+            }
+
+            // スキル2：会心のもち肌の判定（黄金が発動した時は会心の判定自体を行わない）
+            if (!isGold && skills.skill2.activeTimer > 0) {
+                const critChance = 0.20 + (skills.skill2.lv - 1) * 0.05;
+                if (Math.random() < critChance) {
+                    isCrit = true;
+                    power = Math.floor(power * (3 + (skills.skill2.lv - 1) * 0.5));
                 }
             }
 
@@ -1559,14 +1658,16 @@
             // 新SE視覚演出（音を先に鳴らしてから見た目の処理をする＝DOM生成が音の発火を遅らせないようにする）
             if (isCrit) {
                 playAudioFile('critical.mp3');
-                createFloatingText(clientX, clientY, `🔥会心! +${power.toLocaleString()}`, "#ff3d00", "1.65rem");
+                vibrate(30);
+                createFloatingText(clientX, clientY, `🔥会心! +${formatMochi(power)}`, "#ff3d00", "1.65rem");
                 mochiBtnElement.style.filter = "contrast(2.5) brightness(1.1) grayscale(0.2)";
                 setTimeout(() => { resetMochiFilter(); }, 180);
             } else if (isGold) {
                 playAudioFile('gold_mochi.mp3');
-                createFloatingText(clientX, clientY, `✨黄金! +${power.toLocaleString()}`, "#ffd700", "1.65rem");
+                vibrate([20, 30, 20]);
+                createFloatingText(clientX, clientY, `✨黄金! +${formatMochi(power)}`, "#ffd700", "1.65rem");
             } else {
-                createFloatingText(clientX, clientY, `+${power.toLocaleString()} もち`);
+                createFloatingText(clientX, clientY, `+${formatMochi(power)} もち`);
             }
         }
 
@@ -1578,6 +1679,7 @@
             e.preventDefault();
             initAndPlayBGM();
             playAudioFile('tap.mp3'); 
+            totalTapsCount++;
             
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
@@ -1598,7 +1700,7 @@
             createRippleEffect(e.clientX, e.clientY);
 
             // 必殺技発動中なら1タップが10連打になる
-            let clickLoops = skills.hissatsu.activeTimer > 0 ? 10 : 1;
+            let clickLoops = skills.hissatsu.activeTimer > 0 ? 6 : 1;
             for (let i = 0; i < clickLoops; i++) {
                 executeSingleTap(e.clientX, e.clientY);
             }
@@ -2035,7 +2137,7 @@
                 const currentStage = stages[currentStageIndex] || stages[0];
                 const bonus = Math.max(200, Math.floor(currentStage.distance * 0.05) + Math.floor(getMps() * 60));
                 score += bonus; createParticle(e.clientX, e.clientY);
-                alert(`🎁 【福もちボーナス +${bonus.toLocaleString()} もち】獲得！`);
+                alert(`🎁 【福もちボーナス +${formatMochi(bonus)} もち】獲得！`);
                 saveGame(); present.remove(); updateDisplay();
                 hideMochiComment();
             });
@@ -2043,7 +2145,7 @@
         }
 
         function startFeverSpawningLoop() {
-            setInterval(() => { if (!isFever && !document.getElementById('fever-pop') && Math.random() < 0.5) spawnGoldMochi(); }, 15000);
+            setInterval(() => { if (!isFever && !document.getElementById('fever-pop') && Math.random() < 0.3) spawnGoldMochi(); }, 25000);
         }
 
         function spawnGoldMochi() {
@@ -2071,6 +2173,37 @@
             }, 1000);
         }
 
+        // 🎉 日本全国制覇の演出
+        function triggerJapanClearCelebration() {
+            if (hasSeenJapanClear) return;
+            hasSeenJapanClear = true;
+            saveGame();
+
+            playAudioFile('levelup.mp3'); // 専用の祝賀SEを用意できたら差し替え推奨（例: 'japan_clear.mp3'）
+            vibrate([40, 60, 40, 60, 120]);
+
+            // 紙吹雪演出：金色パーティクルを画面上部からバラバラと降らせる（既存のパーティクルエンジンを流用）
+            const rect = getGameScreenRect();
+            for (let i = 0; i < 45; i++) {
+                setTimeout(() => {
+                    const x = rect.left + Math.random() * rect.width;
+                    const y = rect.top + rect.height * 0.15;
+                    createParticle(x, y, true);
+                }, i * 40);
+            }
+
+            const days = firstPlayTimestamp ? Math.max(1, Math.ceil((Date.now() - firstPlayTimestamp) / 86400000)) : 1;
+            const statsEl = document.getElementById('japan-clear-stats');
+            if (statsEl) {
+                statsEl.innerHTML = `
+                    📍 総タップ数: ${totalTapsCount.toLocaleString()} 回<br>
+                    🍡 現在の所持もち: ${formatMochi(score)}<br>
+                    📅 プレイ日数: ${days}日目
+                `;
+            }
+            openModal('japan-clear-modal');
+        }
+
         function checkStageProgress() {
             if (currentStageProgress >= stages[currentStageIndex].distance) {
                 if (currentStageIndex < stages.length - 1) {
@@ -2081,18 +2214,21 @@
                         const prefPool = dialogueData.prefectureComments[name];
                         showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所じゃろな？`);
                     });
-                } else { currentStageProgress = stages[currentStageIndex].distance; saveGame(); }
+                } else {
+                    currentStageProgress = stages[currentStageIndex].distance; saveGame();
+                    if (!hasSeenJapanClear) triggerJapanClearCelebration();
+                }
             }
         }
 
         function updateDisplay() {
-            const scoreFormatted = Math.floor(score).toLocaleString() + " もち";
+            const scoreFormatted = formatMochi(score) + " もち";
             document.getElementById('score-text').innerText = isFever ? `🔥 5倍中 (${feverTimeLeft}s) ${scoreFormatted}` : scoreFormatted;
             document.getElementById('current-location-text').innerText = stages[selectedStageIndex].name;
-            document.getElementById('mps-display').innerText = `↗ 自動増加: ${getMps().toLocaleString()} もち/秒`;
+            document.getElementById('mps-display').innerText = `↗ 自動増加: ${formatMochi(getMps())} もち/秒`;
             
             // 【修正】関数を正しく実行し、カンマ区切りで表示
-            document.getElementById('tap-power-display').innerText = `👆 タップ力: +${getTapPower().toLocaleString()}`;
+            document.getElementById('tap-power-display').innerText = `👆 タップ力: +${formatMochi(getTapPower())}`;
 
             const distText = document.getElementById('distance-text');
             const progressBar = document.getElementById('progress-bar');
@@ -2100,7 +2236,7 @@
             else if (currentStageIndex === stages.length - 1 && currentStageProgress >= stages[currentStageIndex].distance) { distText.innerText = "🎉 祝・日本縦断すべてのエリアを制覇完了！！"; progressBar.style.width = "100%"; }
             else {
                 const remaining = Math.ceil(stages[currentStageIndex].distance - currentStageProgress);
-                distText.innerText = `次のエリアまで : ${remaining.toLocaleString()} もちkcal`;
+                distText.innerText = `次のエリアまで : ${formatMochi(remaining)} もちkcal`;
                 let pct = Math.max(0, Math.min(100, (currentStageProgress / stages[currentStageIndex].distance) * 100));
                 progressBar.style.width = pct + "%";
             }
@@ -2116,7 +2252,7 @@
             dummyRanks.forEach((player, index) => {
                 let item = document.createElement('div'); item.className = "list-item";
                 if (player.isMe) item.style.background = "#fff9c4";
-                item.innerHTML = `<span>${index + 1}位. ${player.name}</span><strong>${player.score.toLocaleString()} もち</strong>`;
+                item.innerHTML = `<span>${index + 1}位. ${player.name}</span><strong>${formatMochi(player.score)} もち</strong>`;
                 listContainer.appendChild(item);
             });
             openModal('ranking-modal');
