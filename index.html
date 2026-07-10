@@ -571,7 +571,7 @@
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-04</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-05</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -744,6 +744,15 @@
                 <button class="item-action-btn" style="margin-top:10px; width:100%;" onclick="resetVolumeSettings()">音量をリセット</button>
             </div>
 
+            <div style="background:#f9f9f9; border-radius:10px; padding:12px; margin-bottom:16px;">
+                <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">🔄 セーブデータの引き継ぎ</div>
+                <div style="font-size:0.75rem; color:#8d6e63; margin-bottom:8px;">別のURL/アプリ間でデータを直接移せます（下の文字列をコピーして、移動先の「読み込む」欄に貼り付けてください）</div>
+                <button class="item-action-btn" style="width:100%; margin-bottom:6px;" onclick="exportSaveData()">📤 このデータを書き出す</button>
+                <textarea id="save-export-text" rows="3" readonly style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:6px; font-size:0.7rem; margin-bottom:8px;" placeholder="ここに書き出したデータが表示されます"></textarea>
+                <textarea id="save-import-text" rows="3" style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:6px; font-size:0.7rem; margin-bottom:6px;" placeholder="他の端末/URLで書き出したデータをここに貼り付け"></textarea>
+                <button class="item-action-btn btn-red" style="width:100%;" onclick="importSaveData()">📥 このデータを読み込む（上書き注意）</button>
+            </div>
+
             <div style="background:#f9f9f9; border-radius:10px; padding:12px;">
                 <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">✏️ ゲームへのご意見</div>
                 <textarea id="feedback-text" rows="4" style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:8px; font-size:0.85rem;" placeholder="感想・不具合報告・要望など、なんでもどうぞ"></textarea>
@@ -792,7 +801,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-04</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-05</div>
                 </div>
             </div>
         </div>
@@ -921,6 +930,33 @@
                 <div style="font-size:0.9rem; color:#8d6e63;">またあそびにきてね</div>
             </div>`;
             try { window.close(); } catch (e) {}
+        }
+
+        // 🔄 セーブデータの書き出し/読み込み（別URL・別インスタンス間でもデータを確実に移せる）
+        function exportSaveData() {
+            saveGame();
+            const raw = localStorage.getItem('mochisuke_save_data');
+            const el = document.getElementById('save-export-text');
+            if (!raw) { el.value = ''; alert('セーブデータが見つかりませんでした'); return; }
+            el.value = btoa(unescape(encodeURIComponent(raw))); // 文字化け防止のためbase64化
+            el.select();
+            try { document.execCommand('copy'); alert('コピーしました！移動先の「読み込む」欄に貼り付けてください'); }
+            catch (e) { alert('下のテキストを手動でコピーしてください'); }
+        }
+
+        function importSaveData() {
+            const text = document.getElementById('save-import-text').value.trim();
+            if (!text) { alert('貼り付け欄が空です'); return; }
+            if (!confirm('今のセーブデータに上書きします。よろしいですか？（今のデータは失われます）')) return;
+            try {
+                const raw = decodeURIComponent(escape(atob(text)));
+                JSON.parse(raw); // 壊れたデータでないか検証
+                localStorage.setItem('mochisuke_save_data', raw);
+                alert('読み込みました！ページを再読み込みします');
+                location.reload();
+            } catch (e) {
+                alert('データの形式が正しくありません。コピーが途中で切れていないか確認してください');
+            }
         }
 
         function onBgmVolumeChange(val) {
