@@ -40,7 +40,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
-    <link rel="apple-touch-icon" href="image_0.png">
+    <link rel="apple-touch-icon" href="app_icon.png">
     <style>
         /* 全体スタイル - ズームやスクロールを完全禁止 */
         html {
@@ -571,7 +571,7 @@
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-02</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-03</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -699,13 +699,27 @@
             <button class="modal-close-x" onclick="closeModal('unit-modal')">×</button>
             <h2>🔢 もちの数え方</h2>
             <p style="font-size:0.85rem; color:#5d4037; margin-bottom:12px;">数が大きくなると、こんな単位で表示されます</p>
-            <div style="text-align:left; font-size:0.85rem; color:#5d4037; background:#fff8ec; border-radius:10px; padding:14px; line-height:2;">
+            <div style="text-align:left; font-size:0.85rem; color:#5d4037; background:#fff8ec; border-radius:10px; padding:14px; line-height:2; max-height:260px; overflow-y:auto;">
                 <div><b>千</b>＝1,000（10<sup>3</sup>）</div>
                 <div><b>万</b>＝10,000（10<sup>4</sup>）</div>
                 <div><b>億</b>＝100,000,000（10<sup>8</sup>）</div>
                 <div><b>兆</b>＝1,000,000,000,000（10<sup>12</sup>）</div>
-                <div><b>京</b>＝10,000,000,000,000,000（10<sup>16</sup>）</div>
+                <div><b>京</b>（けい）＝10<sup>16</sup></div>
+                <div><b>垓</b>（がい）＝10<sup>20</sup></div>
+                <div><b>秭</b>（じょ）＝10<sup>24</sup></div>
+                <div><b>穣</b>（じょう）＝10<sup>28</sup></div>
+                <div><b>溝</b>（こう）＝10<sup>32</sup></div>
+                <div><b>澗</b>（かん）＝10<sup>36</sup></div>
+                <div><b>正</b>（せい）＝10<sup>40</sup></div>
+                <div><b>載</b>（さい）＝10<sup>44</sup></div>
+                <div><b>極</b>（ごく）＝10<sup>48</sup></div>
+                <div><b>恒河沙</b>（ごうがしゃ）＝10<sup>52</sup></div>
+                <div><b>阿僧祇</b>（あそうぎ）＝10<sup>56</sup></div>
+                <div><b>那由他</b>（なゆた）＝10<sup>60</sup></div>
+                <div><b>不可思議</b>（ふかしぎ）＝10<sup>64</sup></div>
+                <div><b>無量大数</b>（むりょうたいすう）＝10<sup>68</sup></div>
             </div>
+            <p style="font-size:0.72rem; color:#a1887f; margin-top:8px;">※ 垓より先は、このゲームではまだ表示されることはほぼありません（豆知識として載せています）</p>
             <p style="font-size:0.78rem; color:#a1887f; margin-top:12px;">例：「12.34億」＝1,234,000,000（約12億3400万）</p>
             <button class="btn-red" onclick="closeModal('unit-modal')">閉じる</button>
         </div>
@@ -778,7 +792,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-02</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-03</div>
                 </div>
             </div>
         </div>
@@ -923,9 +937,9 @@
         }
 
         function resetVolumeSettings() {
-            onBgmVolumeChange(100);
+            onBgmVolumeChange(30);
             onSfxVolumeChange(100);
-            document.getElementById('bgm-vol-slider').value = 100;
+            document.getElementById('bgm-vol-slider').value = 30;
             document.getElementById('sfx-vol-slider').value = 100;
         }
 
@@ -1052,11 +1066,11 @@
         // unlockStage: このステージ(0=鹿児島)に到達するとショップで購入できるようになる
         // unlockPrice: 初回獲得(Lv0→1)の価格 / lvPriceMult: Lvアップごとの価格倍率
         let skills = {
-            skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 0, unlockPrice: 300, lvPriceMult: 1.6, desc: "発動中はタップでパーティクルが3倍出る" },
-            skill2: { id: "skill2", name: "会心のもち肌", lv: 0, cd: 40, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 3, unlockPrice: 1500, lvPriceMult: 1.6, desc: "発動中は一定確率でタップが会心(×2)になる" },
-            skill3: { id: "skill3", name: "もちすけ分身の術", lv: 0, cd: 50, currentCd: 0, duration: 12, activeTimer: 0, unlockStage: 8, unlockPrice: 8000, lvPriceMult: 1.65, desc: "発動中は分身が出現し打撃力が3倍になる" },
-            skill4: { id: "skill4", name: "黄金のもち福", lv: 0, cd: 60, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 15, unlockPrice: 30000, lvPriceMult: 1.65, desc: "発動中は一定確率でタップが黄金(×2)になる" },
-            hissatsu: { id: "hissatsu", name: "もちもちビッグバン", lv: 0, cd: 90, currentCd: 0, duration: 15, activeTimer: 0, unlockStage: 25, unlockPrice: 150000, lvPriceMult: 1.7, desc: "発動中はタップが10連打扱いになる大技（クールタイムはタップ数で回復）" }
+            skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 0, unlockPrice: 300, lvPriceMult: 1.9, desc: "発動中はタップでパーティクルが3倍出る" },
+            skill2: { id: "skill2", name: "会心のもち肌", lv: 0, cd: 40, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 1, unlockPrice: 1200, lvPriceMult: 1.9, desc: "発動中は一定確率でタップが会心(×2)になる" },
+            skill3: { id: "skill3", name: "もちすけ分身の術", lv: 0, cd: 50, currentCd: 0, duration: 12, activeTimer: 0, unlockStage: 4, unlockPrice: 6000, lvPriceMult: 2.0, desc: "発動中は分身が出現し打撃力が3倍になる" },
+            skill4: { id: "skill4", name: "黄金のもち福", lv: 0, cd: 60, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 8, unlockPrice: 20000, lvPriceMult: 2.0, desc: "発動中は一定確率でタップが黄金(×2)になる" },
+            hissatsu: { id: "hissatsu", name: "もちもちビッグバン", lv: 0, cd: 90, currentCd: 0, duration: 15, activeTimer: 0, unlockStage: 15, unlockPrice: 100000, lvPriceMult: 2.1, desc: "発動中はタップが10連打扱いになる大技（クールタイムはタップ数で回復）" }
         };
 
         // 基本セーブ用変数
@@ -1314,14 +1328,14 @@
         }
 
         // 🔊 音量設定（BGM/効果音を別々に調整できる。0〜1の倍率としてlocalStorageに保存）
-        let bgmVolumeMult = parseFloat(localStorage.getItem('punicker_bgm_volume') ?? '1');
+        let bgmVolumeMult = parseFloat(localStorage.getItem('punicker_bgm_volume') ?? '0.3');
         let sfxVolumeMult = parseFloat(localStorage.getItem('punicker_sfx_volume') ?? '1');
         if (isNaN(bgmVolumeMult)) bgmVolumeMult = 1;
         if (isNaN(sfxVolumeMult)) sfxVolumeMult = 1;
 
         function applyBgmVolume() {
-            if (bgmAudio) bgmAudio.volume = 0.3 * bgmVolumeMult;
-            if (hissatsuBgmAudio) hissatsuBgmAudio.volume = 0.4 * bgmVolumeMult;
+            if (bgmAudio) bgmAudio.volume = bgmVolumeMult;
+            if (hissatsuBgmAudio) hissatsuBgmAudio.volume = Math.min(1, bgmVolumeMult * 1.3);
         }
 
         function playBufferNow(buffer, vol) {
@@ -1484,7 +1498,7 @@
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
-            bgmAudio = new Audio('bgm.mp3'); bgmAudio.loop = true; bgmAudio.volume = 0.3 * bgmVolumeMult;
+            bgmAudio = new Audio('bgm.mp3'); bgmAudio.loop = true; bgmAudio.volume = bgmVolumeMult;
             bgmAudio.play().catch(() => { isBgmInitialized = false; });
         }
 
@@ -1559,6 +1573,7 @@
         function formatMochi(n) {
             n = Math.floor(n);
             if (n < 100000) return n.toLocaleString();
+            if (n >= 1e20) return (n / 1e20).toFixed(2) + '垓';
             if (n >= 1e16) return (n / 1e16).toFixed(2) + '京';
             if (n >= 1e12) return (n / 1e12).toFixed(2) + '兆';
             if (n >= 1e8) return (n / 1e8).toFixed(2) + '億';
@@ -1647,7 +1662,7 @@
         }
 
         function createParticle(x, y, isGold = false) {
-            if (particleList.length > 30) return; 
+            if (particleList.length > 50) return; 
             const rect = getGameScreenRect();
             particleList.push({
                 x: x - rect.left, y: y - rect.top,
@@ -1915,7 +1930,7 @@
         /* 🔮 スキル発動＆タイマー管理システムロジック */
         // 必殺技だけはクールタイムが「時間経過」ではなく「一定回数タップ」で回復する特別仕様
         function getHissatsuTapsRequired(lv) {
-            return Math.max(60, 200 - (lv - 1) * 15);
+            return Math.max(150, 400 - (lv - 1) * 20);
         }
 
         function useSkill(key) {
@@ -1981,7 +1996,7 @@
                 if (bgmAudio) bgmAudio.pause();
                 hissatsuBgmAudio = new Audio('hissatsu_bgm.mp3');
                 hissatsuBgmAudio.loop = true;
-                hissatsuBgmAudio.volume = 0.4 * bgmVolumeMult;
+                hissatsuBgmAudio.volume = Math.min(1, bgmVolumeMult * 1.3);
                 hissatsuBgmAudio.play().catch(()=>{});
 
                 // 親方化して巨大に固定
