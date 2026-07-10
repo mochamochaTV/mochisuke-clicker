@@ -563,6 +563,67 @@
             flex-shrink: 0;
         }
     </style>
+
+    <!-- 🏆 ランキング機能（Firebase Firestore使用）
+         firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
+         匿名認証で「自分の記録」だけを更新できるようにしているので、他人のスコアを
+         書き換えられる心配はありません（Firestoreのセキュリティルールで保護しています）。 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
+        const firebaseConfig = {
+            apiKey: "AIzaSyBoFBeCGJ77jOIJlI5jGTudMWZisyOI5UY",
+            authDomain: "punicker.firebaseapp.com",
+            projectId: "punicker",
+            storageBucket: "punicker.firebasestorage.app",
+            messagingSenderId: "801464732427",
+            appId: "1:801464732427:web:1ac677894304e13d1a700e"
+        };
+
+        let fbReady = false;
+        let currentUid = null;
+        let db = null;
+
+        try {
+            const fbApp = initializeApp(firebaseConfig);
+            const auth = getAuth(fbApp);
+            db = getFirestore(fbApp);
+            onAuthStateChanged(auth, (user) => {
+                if (user) { currentUid = user.uid; fbReady = true; }
+            });
+            signInAnonymously(auth).catch((e) => console.error("Firebase匿名認証エラー:", e));
+        } catch (e) {
+            console.error("Firebase初期化エラー（firebaseConfigが未設定の可能性があります）:", e);
+        }
+
+        // メインのゲームスクリプト（type=moduleではない）から呼べるようにwindowへ橋渡しする
+        window.submitRankingScore = async function (name, scoreVal) {
+            if (!fbReady || !db || !currentUid) return;
+            try {
+                await setDoc(doc(db, "rankings", currentUid), {
+                    name: String(name).slice(0, 20),
+                    score: Math.floor(scoreVal),
+                    updatedAt: Date.now()
+                });
+            } catch (e) { console.error("ランキング送信エラー:", e); }
+        };
+
+        window.fetchRankingList = async function () {
+            if (!db) return null;
+            try {
+                const q = query(collection(db, "rankings"), orderBy("score", "desc"), limit(20));
+                const snap = await getDocs(q);
+                const list = [];
+                snap.forEach((d) => list.push(d.data()));
+                return list;
+            } catch (e) { console.error("ランキング取得エラー:", e); return null; }
+        };
+
+        window.isRankingReady = function () { return fbReady; };
+    </script>
 </head>
 <body>
 
@@ -571,7 +632,7 @@
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-05</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-07</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -736,6 +797,14 @@
             </div>
 
             <div style="background:#f9f9f9; border-radius:10px; padding:12px; margin-bottom:16px;">
+                <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">🏆 ランキング表示名</div>
+                <div style="display:flex; gap:6px;">
+                    <input type="text" id="player-name-input" maxlength="20" style="flex:1; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:8px; font-size:0.85rem;">
+                    <button class="item-action-btn" onclick="savePlayerName()">保存</button>
+                </div>
+            </div>
+
+            <div style="background:#f9f9f9; border-radius:10px; padding:12px; margin-bottom:16px;">
                 <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">🔊 音量調整</div>
                 <label style="display:block; font-size:0.8rem; color:#5d4037; margin-bottom:4px;">BGM: <span id="bgm-vol-label"></span></label>
                 <input type="range" id="bgm-vol-slider" min="0" max="100" style="width:100%;" oninput="onBgmVolumeChange(this.value)">
@@ -801,7 +870,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-05</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-07</div>
                 </div>
             </div>
         </div>
@@ -916,6 +985,7 @@
         // ☰ メニュー機能
         function menuSaveGame() {
             saveGame();
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score);
             alert("💾 セーブしました！");
         }
 
@@ -979,11 +1049,23 @@
             document.getElementById('sfx-vol-slider').value = 100;
         }
 
+        function savePlayerName() {
+            const input = document.getElementById('player-name-input');
+            const name = input.value.trim();
+            if (!name) { alert('名前を入力してください'); return; }
+            playerName = name.slice(0, 20);
+            localStorage.setItem('punicker_player_name', playerName);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score);
+            alert('保存しました！');
+        }
+
         function initVolumeSliders() {
             const bgmSlider = document.getElementById('bgm-vol-slider');
             const sfxSlider = document.getElementById('sfx-vol-slider');
             if (bgmSlider) { bgmSlider.value = Math.round(bgmVolumeMult * 100); document.getElementById('bgm-vol-label').innerText = bgmSlider.value + '%'; }
             if (sfxSlider) { sfxSlider.value = Math.round(sfxVolumeMult * 100); document.getElementById('sfx-vol-label').innerText = sfxSlider.value + '%'; }
+            const nameInput = document.getElementById('player-name-input');
+            if (nameInput) nameInput.value = playerName;
         }
 
         // ✏️ 意見・要望の送信（サーバーが無いので、メールアプリに下書きを渡す形にしています。
@@ -1114,6 +1196,7 @@
         let totalTapsCount = 0;       // 日本制覇演出の統計表示用
         let firstPlayTimestamp = null; // 初回プレイ日時（統計表示用）
         let hasSeenJapanClear = false; // 日本制覇演出を出したかどうか（何度も出ないようにする）
+        let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
         let currentStageIndex = 0;     
         let selectedStageIndex = 0;    
         let currentStageProgress = 0;   
@@ -2506,20 +2589,37 @@
             }
         }
 
-        function openRanking() {
+        async function openRanking() {
             let listContainer = document.getElementById('ranking-list');
-            let dummyRanks = [
-                { name: "日本もち王", score: 900000000000000, isMe: false }, { name: "タイパーすけ", score: 500000000000, isMe: false },
-                { name: "あなた (もちすけ)", score: Math.floor(score), isMe: true }, { name: "見習いもち", score: 10, isMe: false }
-            ];
-            dummyRanks.sort((a, b) => b.score - a.score); listContainer.innerHTML = "";
-            dummyRanks.forEach((player, index) => {
+            listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
+            openModal('ranking-modal');
+
+            const ready = window.isRankingReady && window.isRankingReady();
+            let realList = ready ? await window.fetchRankingList() : null;
+
+            if (!realList) {
+                // Firebase未設定 or 通信エラー時は、自分のスコアだけのローカル表示にフォールバック
+                listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:10px;">ランキングサーバーに接続できませんでした。<br>あなたの現在のスコアだけ表示しています。</div>`;
+                const item = document.createElement('div'); item.className = "list-item"; item.style.background = "#fff9c4";
+                item.innerHTML = `<span>${playerName}（自分）</span><strong>${formatMochi(score)} もち</strong>`;
+                listContainer.appendChild(item);
+                return;
+            }
+
+            // 自分の記録がTOP20に無ければ末尾に追加表示する
+            const myEntry = { name: playerName, score: Math.floor(score), isMe: true };
+            const alreadyIn = realList.some(p => p.name === playerName && p.score === myEntry.score);
+            const combined = realList.map(p => ({ ...p, isMe: p.name === playerName }));
+            if (!alreadyIn) combined.push(myEntry);
+            combined.sort((a, b) => b.score - a.score);
+
+            listContainer.innerHTML = "";
+            combined.forEach((player, index) => {
                 let item = document.createElement('div'); item.className = "list-item";
                 if (player.isMe) item.style.background = "#fff9c4";
                 item.innerHTML = `<span>${index + 1}位. ${player.name}</span><strong>${formatMochi(player.score)} もち</strong>`;
                 listContainer.appendChild(item);
             });
-            openModal('ranking-modal');
         }
 
         // 定期メインループ（100ms周期で自動加算＆スキル秒数減算を一元管理）
@@ -2533,7 +2633,10 @@
             updateSkillTimers(0.1); // スキルのクールタイムや持続タイマーを100ms単位でリアルタイム更新
         }, 100);
 
-        setInterval(() => { saveGame(); }, 10000); // 10秒毎オートセーブ
+        setInterval(() => {
+            saveGame();
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score);
+        }, 10000); // 10秒毎オートセーブ＋ランキング送信
 
         let diaryPageIndex = 0;
         function openDiary() { diaryPageIndex = selectedStageIndex; renderDiaryPage(); openModal('diary-modal'); }
