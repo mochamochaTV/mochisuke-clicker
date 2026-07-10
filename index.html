@@ -296,9 +296,9 @@
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; gap: 8px; }
         .item-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: #fff; border: 1px solid #eee; flex-shrink: 0; }
         .item-info-row { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-        .item-info { display: flex; flex-direction: column; gap: 2px; }
-        .item-title { font-weight: bold; color: #333; font-size: 0.95rem; }
-        .item-desc { font-size: 0.75rem; color: #777; }
+        .item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+        .item-title { font-weight: bold; color: #333; font-size: 0.95rem; overflow-wrap: break-word; }
+        .item-desc { font-size: 0.75rem; color: #777; overflow-wrap: break-word; }
         .item-action-btn { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: none; min-width: 80px; text-align: center; font-weight: bold; cursor: pointer; }
         .item-action-btn:disabled { background: #ddd; color: #999; cursor: default; }
         .btn-blue { background: #2196f3; color: white; }
@@ -571,7 +571,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, addDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
         const firebaseConfig = {
@@ -623,6 +623,20 @@
         };
 
         window.isRankingReady = function () { return fbReady; };
+
+        // ✏️ ご意見・要望をFirestoreに直接送信（メールアプリを開く手間を無くすため）
+        window.submitFeedback = async function (text, name) {
+            if (!fbReady || !db) return false;
+            try {
+                await addDoc(collection(db, "feedback"), {
+                    text: String(text).slice(0, 1000),
+                    name: String(name || '').slice(0, 20),
+                    uid: currentUid || null,
+                    createdAt: Date.now()
+                });
+                return true;
+            } catch (e) { console.error("ご意見送信エラー:", e); return false; }
+        };
     </script>
 </head>
 <body>
@@ -632,7 +646,7 @@
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-07</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-08</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -870,7 +884,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-07</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-08</div>
                 </div>
             </div>
         </div>
@@ -1049,11 +1063,21 @@
             document.getElementById('sfx-vol-slider').value = 100;
         }
 
+        // 明らかにスパム/おかしな名前を弾く簡易チェック（記号だけ・同じ文字の連続など）
+        function sanitizePlayerName(rawName) {
+            let n = String(rawName || '').trim();
+            if (!n) return { ok: false, reason: '名前を入力してください' };
+            n = n.slice(0, 20);
+            if (/^(.)\1{2,}$/u.test(n)) return { ok: false, reason: '同じ文字の連続は使えません' };
+            if (!/[^\s!-\/:-@\[-`{-~]/u.test(n)) return { ok: false, reason: '記号だけの名前は使えません' };
+            return { ok: true, name: n };
+        }
+
         function savePlayerName() {
             const input = document.getElementById('player-name-input');
-            const name = input.value.trim();
-            if (!name) { alert('名前を入力してください'); return; }
-            playerName = name.slice(0, 20);
+            const result = sanitizePlayerName(input.value);
+            if (!result.ok) { alert(result.reason); return; }
+            playerName = result.name;
             localStorage.setItem('punicker_player_name', playerName);
             if (window.submitRankingScore) window.submitRankingScore(playerName, score);
             alert('保存しました！');
@@ -1071,9 +1095,20 @@
         // ✏️ 意見・要望の送信（サーバーが無いので、メールアプリに下書きを渡す形にしています。
         // 実際に使う時は下のFEEDBACK_EMAILを自分の受け取りたいメールアドレスに書き換えてください）
         const FEEDBACK_EMAIL = 'your-email@example.com';
-        function sendFeedback() {
-            const text = document.getElementById('feedback-text').value.trim();
+        async function sendFeedback() {
+            const textEl = document.getElementById('feedback-text');
+            const text = textEl.value.trim();
             if (!text) { alert("意見を入力してから送信してください！"); return; }
+
+            if (window.submitFeedback && window.isRankingReady && window.isRankingReady()) {
+                const ok = await window.submitFeedback(text, playerName);
+                if (ok) {
+                    alert("送信しました！ありがとうございます🍡");
+                    textEl.value = '';
+                    return;
+                }
+            }
+            // Firebaseが使えない場合はメールへフォールバック
             const subject = encodeURIComponent('【ぷにっかー】ご意見');
             const body = encodeURIComponent(text);
             window.location.href = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
@@ -1207,7 +1242,7 @@
 
         let isFever = false; let feverTimeLeft = 0; let feverInterval = null;
         let comboCount = 0; let comboTimer = null;
-        let bgmAudio = null; let hissatsuBgmAudio = null; let isBgmInitialized = false;
+        let isBgmInitialized = false;
         let canvas = null; let ctx = null; let particleList = [];
         const particleImg = new Image(); particleImg.src = 'mochi_particle.png';
         // ctx.filter (hue-rotate/drop-shadow) はスマホブラウザ(特にiOS Safari)で
@@ -1452,9 +1487,50 @@
         if (isNaN(bgmVolumeMult)) bgmVolumeMult = 1;
         if (isNaN(sfxVolumeMult)) sfxVolumeMult = 1;
 
+        // 🎵 BGM再生システム（Web Audio API方式）
+        // 【重要】iOSのSafariは<audio>要素の.volumeプロパティを完全に無視する仕様がある
+        // （音量はハードウェアの音量ボタンでしか変えられないようにする、というAppleの意図的な制限）。
+        // 効果音は既にWeb Audio APIのGainNodeで音量調整していたので問題なかったが、
+        // BGMだけ従来の<audio>要素のままだったため、スライダーを動かしても一切変化しなかった。
+        // BGMもGainNode経由の再生に統一し、これで確実に音量調整できるようにする。
+        let bgmGainNode = null;
+        let bgmSourceNode = null;
+        let currentBgmFile = null;
+
+        function ensureBgmGain() {
+            if (!bgmGainNode) {
+                const ctx = getAudioContext();
+                bgmGainNode = ctx.createGain();
+                bgmGainNode.gain.value = bgmVolumeMult;
+                bgmGainNode.connect(ctx.destination);
+            }
+            return bgmGainNode;
+        }
+
+        function playBgmLoop(fileName) {
+            if (currentBgmFile === fileName && bgmSourceNode) return; // 既に同じ曲が再生中なら何もしない
+            const ctx = getAudioContext();
+            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+            const gain = ensureBgmGain();
+            loadAudioBuffer(fileName).then((buffer) => {
+                if (!buffer) return;
+                if (bgmSourceNode) { try { bgmSourceNode.stop(); } catch (e) {} }
+                const source = ctx.createBufferSource();
+                source.buffer = buffer;
+                source.loop = true;
+                source.connect(gain);
+                source.start(0);
+                bgmSourceNode = source;
+                currentBgmFile = fileName;
+            });
+        }
+
+        function stopBgm() {
+            if (bgmSourceNode) { try { bgmSourceNode.stop(); } catch (e) {} bgmSourceNode = null; currentBgmFile = null; }
+        }
+
         function applyBgmVolume() {
-            if (bgmAudio) bgmAudio.volume = bgmVolumeMult;
-            if (hissatsuBgmAudio) hissatsuBgmAudio.volume = Math.min(1, bgmVolumeMult * 1.3);
+            if (bgmGainNode) bgmGainNode.gain.value = bgmVolumeMult;
         }
 
         function playBufferNow(buffer, vol) {
@@ -1628,8 +1704,7 @@
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
-            bgmAudio = new Audio('bgm.mp3'); bgmAudio.loop = true; bgmAudio.volume = bgmVolumeMult;
-            bgmAudio.play().catch(() => { isBgmInitialized = false; });
+            playBgmLoop('bgm.mp3');
         }
 
         // 🎬 OP画面をタップしてゲームへ。ブラウザの仕様上「一切操作なしで音を鳴らす」ことはiOSではできないが、
@@ -2122,12 +2197,8 @@
             }
             
             if (key === 'hissatsu') {
-                // 必殺技専用BGMの再生（通常BGMは一時停止）
-                if (bgmAudio) bgmAudio.pause();
-                hissatsuBgmAudio = new Audio('hissatsu_bgm.mp3');
-                hissatsuBgmAudio.loop = true;
-                hissatsuBgmAudio.volume = Math.min(1, bgmVolumeMult * 1.3);
-                hissatsuBgmAudio.play().catch(()=>{});
+                // 必殺技専用BGMの再生（通常BGMから切り替え）
+                playBgmLoop('hissatsu_bgm.mp3');
 
                 // 親方化して巨大に固定
                 mochiBtnElement.classList.remove('breathe-idle');
@@ -2143,13 +2214,7 @@
             if (key === 'skill3') { document.getElementById('bunshin-container').innerHTML = ''; bunshinCloneRects = []; bunshinCloneEls = []; }
             if (key === 'hissatsu') {
                 // 必殺技BGMを終了し通常BGMを再開
-                if (hissatsuBgmAudio) {
-                    hissatsuBgmAudio.pause();
-                    hissatsuBgmAudio = null;
-                }
-                if (bgmAudio && isBgmInitialized) {
-                    bgmAudio.play().catch(()=>{});
-                }
+                if (isBgmInitialized) playBgmLoop('bgm.mp3');
 
                 mochiBtnElement.style.transform = 'scale(1)';
                 const clones = document.querySelectorAll('.bunshin-clone-img');
@@ -2278,9 +2343,9 @@
             
             document.getElementById('warehouse-status-box').innerHTML = `
                 <strong>🏆 もちすけデータ</strong><br>
-                ・現在の所持金: ${Math.floor(score).toLocaleString()} もち<br>
-                ・現在の通常タップ力: +${getTapPower().toLocaleString()} もち<br>
-                ・自動生産力 (Mps): ${getMps().toLocaleString()} もち/秒<br>
+                ・現在の所持金: ${formatMochi(score)} もち<br>
+                ・現在の通常タップ力: +${formatMochi(getTapPower())} もち<br>
+                ・自動生産力 (Mps): ${formatMochi(getMps())} もち/秒<br>
                 ・解放したおみやげ: ${boughtCount} / ${stages.length} 種類<br>
                 ・現在の着用衣装: <strong>${currentClothe.name}</strong>
             `;
@@ -2330,11 +2395,11 @@
                     const stage = stages[i]; const currentLv = purchasedItems[i] || 0;
                     const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
                     const canBuy = score >= nextPrice;
-                    let btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyOmiyage(${i})" style="background:#ff9800; color:white;">${nextPrice.toLocaleString()}もち</button>`;
+                    let btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyOmiyage(${i})" style="background:#ff9800; color:white;">${formatMochi(nextPrice)}もち</button>`;
 
                     const row = document.createElement('div');
                     row.className = "list-item";
-                    row.innerHTML = `<div class="item-info"><span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span><span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${(currentLv * (stage.tapBonus || stage.mpsBonus)).toLocaleString()})</span></div>${btnHtml}`;
+                    row.innerHTML = `<div class="item-info"><span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span><span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${formatMochi(currentLv * (stage.tapBonus || stage.mpsBonus))})</span></div>${btnHtml}`;
                     listContainer.appendChild(row);
                 }
             } else if (currentShopTab === 'kisekae') {
@@ -2345,7 +2410,7 @@
                     if (isBought) { btnHtml = `<button class="item-action-btn" disabled>購入済</button>`; }
                     else {
                         const canBuy = score >= c.price;
-                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyKisekae('${c.id}')" style="background:#ff9800; color:white;">${c.price.toLocaleString()}もち</button>`;
+                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyKisekae('${c.id}')" style="background:#ff9800; color:white;">${formatMochi(c.price)}もち</button>`;
                     }
                     const row = document.createElement('div');
                     row.className = "list-item";
@@ -2369,12 +2434,12 @@
                     } else if (s.lv === 0) {
                         // 未獲得：獲得ボタン
                         const canBuy = score >= s.unlockPrice;
-                        row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name}</span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${s.unlockPrice.toLocaleString()}もちで獲得</button>`;
+                        row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name}</span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${formatMochi(s.unlockPrice)}もちで獲得</button>`;
                     } else {
                         // 獲得済み：レベルアップボタン
                         const nextPrice = Math.floor(s.unlockPrice * Math.pow(s.lvPriceMult, s.lv));
                         const canBuy = score >= nextPrice;
-                        row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name} <span style="color:#ff9800; font-weight:900;">Lv.${s.lv}</span></span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${nextPrice.toLocaleString()}もちでLvUP</button>`;
+                        row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name} <span style="color:#ff9800; font-weight:900;">Lv.${s.lv}</span></span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${formatMochi(nextPrice)}もちでLvUP</button>`;
                     }
                     listContainer.appendChild(row);
                 });
@@ -2543,7 +2608,7 @@
             const statsEl = document.getElementById('japan-clear-stats');
             if (statsEl) {
                 statsEl.innerHTML = `
-                    📍 総タップ数: ${totalTapsCount.toLocaleString()} 回<br>
+                    📍 総タップ数: ${formatMochi(totalTapsCount)} 回<br>
                     🍡 現在の所持もち: ${formatMochi(score)}<br>
                     📅 プレイ日数: ${days}日目
                 `;
@@ -2652,8 +2717,8 @@
             document.getElementById('prev-page-btn').disabled = (diaryPageIndex === 0);
             document.getElementById('next-page-btn').disabled = (diaryPageIndex === currentStageIndex || diaryPageIndex === stages.length - 1);
         }
-        function nextPage() { if (diaryPageIndex < currentStageIndex && diaryPageIndex < stages.length - 1) { diaryPageIndex++; playAudioFile('page_turn.mp3'); renderDiaryPage(); } }
-        function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; playAudioFile('page_turn.mp3'); renderDiaryPage(); } }
+        function nextPage() { if (diaryPageIndex < currentStageIndex && diaryPageIndex < stages.length - 1) { diaryPageIndex++; playAudioFile('page_turn.mp3', 1.0); renderDiaryPage(); } }
+        function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; playAudioFile('page_turn.mp3', 1.0); renderDiaryPage(); } }
     </script>
 </body>
 </html>
