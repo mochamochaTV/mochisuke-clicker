@@ -263,14 +263,15 @@
         }
         .nav-menu { display: flex; width: 92%; justify-content: space-between; gap: 8px; }
         .nav-btn {
-            flex: 1; padding: 12px 2px; font-size: 0.82rem; font-weight: bold;
+            flex: 1; padding: 10px 1px; font-size: 0.72rem; font-weight: bold;
             border: none; border-radius: 16px; cursor: pointer; text-align: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white;
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
             position: relative; transition: transform 0.1s, filter 0.2s;
         }
         .nav-btn:active { transform: scale(0.95); }
-        .nav-btn span:first-child { font-size: 1.4rem; }
+        .nav-btn span:first-child { font-size: 1.25rem; }
+        .btn-minigame { background: #26a69a; }
         
         .btn-warehouse { background: #ff769f; }
         .btn-shop { background: #ff9800; }
@@ -310,6 +311,13 @@
         .diary-img-area { width: 100%; background: #fafafa; border-radius: 10px; padding: 8px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; position: relative; flex-direction: column; }
         .diary-img { max-width: 100%; height: 180px; object-fit: contain; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         .img-caption { font-size: 0.8rem; font-weight: bold; color: #795548; text-align: center; margin-top: 6px; }
+        .diary-item-thumb {
+            position: absolute; top: 14px; right: 14px;
+            width: 44px; height: 44px; object-fit: cover;
+            border-radius: 8px; border: 2px solid #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            background: #fff;
+        }
         .diary-text-area { width: 100%; height: 180px; display: flex; flex-direction: column; align-items: flex-start; padding: 8px; box-sizing: border-box; border-radius: 8px; border: 1px solid #efebe9; background-image: linear-gradient(90deg, rgba(224,208,192,0.3) 1px, transparent 1px); background-size: 24px 100%; }
         .diary-title { font-size: 1.1rem; font-weight: bold; color: #5d4037; border-bottom: 2px dashed #bcaaa4; width: 100%; padding-bottom: 4px; margin-bottom: 8px; }
         .diary-text { writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl; font-size: 1.05rem; line-height: 1.8; color: #3e2723; height: 100%; width: 100%; overflow-x: auto; white-space: pre-wrap; font-family: "Hiragino Mincho ProN", "MS Mincho", serif; padding-bottom: 4px; }
@@ -646,7 +654,7 @@
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-08</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-09</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -724,6 +732,7 @@
                 <button class="nav-btn btn-shop" onclick="openShop()"><span>🛒</span><span>ショップ</span><span class="badge-dot"></span></button>
                 <button class="nav-btn btn-map" onclick="openMap()"><span>🗺️</span><span>地図</span></button>
                 <button class="nav-btn btn-diary" onclick="openDiary()"><span>📖</span><span>絵日記</span></button>
+                <button class="nav-btn btn-minigame" onclick="openMinigameCenter()"><span>🎮</span><span>ミニゲーム</span></button>
                 <button class="nav-btn btn-ranking" onclick="openRanking()"><span>🏆</span><span>順位</span></button>
             </div>
         </div>
@@ -797,6 +806,15 @@
             <p style="font-size:0.72rem; color:#a1887f; margin-top:8px;">※ 垓より先は、このゲームではまだ表示されることはほぼありません（豆知識として載せています）</p>
             <p style="font-size:0.78rem; color:#a1887f; margin-top:12px;">例：「12.34億」＝1,234,000,000（約12億3400万）</p>
             <button class="btn-red" onclick="closeModal('unit-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="minigame-center-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeMinigameCenter()">×</button>
+            <h2>🎮 ミニゲームセンター</h2>
+            <div id="minigame-tile-view" class="list-container"></div>
+            <div id="minigame-play-view" style="display:none;"></div>
         </div>
     </div>
 
@@ -884,7 +902,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-08</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-09</div>
                 </div>
             </div>
         </div>
@@ -895,6 +913,7 @@
             <button class="modal-close-x" onclick="closeModal('diary-modal')" style="color:#795548;">×</button>
             <div class="diary-img-area">
                 <img class="diary-img" id="diary-img-element" src="" alt="絵日記の画像">
+                <img id="diary-item-thumb" class="diary-item-thumb" src="" alt="おみやげ" style="display:none;">
                 <div class="img-caption" id="diary-img-caption">思い出の写真</div>
             </div>
             <div class="diary-text-area">
@@ -1232,6 +1251,22 @@
         let firstPlayTimestamp = null; // 初回プレイ日時（統計表示用）
         let hasSeenJapanClear = false; // 日本制覇演出を出したかどうか（何度も出ないようにする）
         let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
+
+        // ===================================================================
+        // 🎮 ミニゲームセンター
+        // ===================================================================
+        const minigames = {
+            quiz:          { id: "quiz",          name: "ご当地クイズ",         icon: "🗾", unlockStage: 0 },
+            timeattack:    { id: "timeattack",    name: "タップタイムアタック", icon: "⏱️", unlockStage: 0 },
+            concentration: { id: "concentration", name: "ご当地神経衰弱",       icon: "🃏", unlockStage: 5 },
+            mochitsuki:    { id: "mochitsuki",    name: "もちつきリズム",       icon: "🍡", unlockStage: 7 }
+        };
+        const MINIGAME_DAILY_LIMIT = 3; // 1日あたりのプレイ回数上限（調整しやすいよう定数化）
+
+        let minigameLastResetDate = null;
+        let minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
+        let minigameBests = { timeattack: 0, concentration: null }; // concentration=最少手数(小さいほど良い)
+        let isMinigameActive = false; // 立っている間はメインのタップ判定を無視する
         let currentStageIndex = 0;     
         let selectedStageIndex = 0;    
         let currentStageProgress = 0;   
@@ -1582,7 +1617,8 @@
                 currentStageProgress: currentStageProgress, purchasedItems: purchasedItems,
                 purchasedClothes: purchasedClothes, equippedClotheId: equippedClotheId,
                 skills: skills,
-                totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear
+                totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear,
+                minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -1602,6 +1638,9 @@
                     totalTapsCount = state.totalTapsCount ?? 0;
                     firstPlayTimestamp = state.firstPlayTimestamp ?? null;
                     hasSeenJapanClear = state.hasSeenJapanClear ?? false;
+                    minigameLastResetDate = state.minigameLastResetDate ?? null;
+                    minigamePlaysUsedToday = state.minigamePlaysUsedToday ?? { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
+                    minigameBests = state.minigameBests ?? { timeattack: 0, concentration: null };
                     if (state.skills) {
                         Object.keys(state.skills).forEach(k => {
                             if (skills[k]) skills[k].lv = state.skills[k].lv ?? skills[k].lv;
@@ -1768,6 +1807,7 @@
             startPresentSpawningLoop();
             startMochiLifeLoop();
             showOpeningGreeting();
+            resetMinigameCountsIfNewDay();
             initVolumeSliders();
             
             requestAnimationFrame(updateAndRenderParticles);
@@ -2042,6 +2082,7 @@
 
         // メインのもちすけタップ処理
         mochiBtnElement.addEventListener('pointerdown', (e) => {
+            if (isMinigameActive) return;
             e.preventDefault();
             initAndPlayBGM();
             playAudioFile('tap.mp3'); 
@@ -2076,6 +2117,7 @@
 
         // 必殺技（もちもちビッグバン）発動中の「画面のどこを触っても連打」をゲームスクリーン全体で検知
         document.getElementById('game-screen').addEventListener('pointerdown', (e) => {
+            if (isMinigameActive) return;
             if (skills.hissatsu.activeTimer > 0) {
                 // UIボタンやメニュー、モーダル内部の誤反応を防止
                 if (e.target.closest('#control-panel') || e.target.closest('#header-container') || e.target.closest('#progress-area') || e.target.closest('#ui-toggle-btn') || e.target.closest('.modal')) {
@@ -2377,6 +2419,15 @@
         }
 
         function openShop() { renderShopList(); openModal('shop-modal'); }
+        // お土産イラスト（stage.itemImg）表示用ヘルパー。未整備の県は🎁の絵文字にフォールバックする
+        function getItemThumbHtml(stage, size) {
+            size = size || 48;
+            if (stage.itemImg) {
+                return `<img class="item-thumb" src="${stage.itemImg}" style="width:${size}px; height:${size}px;" alt="${stage.item}">`;
+            }
+            return `<div class="item-thumb" style="width:${size}px; height:${size}px; display:flex; align-items:center; justify-content:center; font-size:${Math.floor(size * 0.5)}px; background:#fff8ec;">🎁</div>`;
+        }
+
         function switchShopTab(tab) {
             currentShopTab = tab;
             document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
@@ -2399,7 +2450,8 @@
 
                     const row = document.createElement('div');
                     row.className = "list-item";
-                    row.innerHTML = `<div class="item-info"><span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span><span class="item-desc">基礎効果: ${stage.effectDesc} (現在: +${formatMochi(currentLv * (stage.tapBonus || stage.mpsBonus))})</span></div>${btnHtml}`;
+                    const baseEffectText = stage.tapBonus ? `タップ力 +${formatMochi(stage.tapBonus)}` : `自動増加 +${formatMochi(stage.mpsBonus)}もち/秒`;
+                    row.innerHTML = `<div class="item-info-row">${getItemThumbHtml(stage)}<div class="item-info"><span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span><span class="item-desc">基礎効果: ${baseEffectText} (現在: +${formatMochi(currentLv * (stage.tapBonus || stage.mpsBonus))})</span></div></div>${btnHtml}`;
                     listContainer.appendChild(row);
                 }
             } else if (currentShopTab === 'kisekae') {
@@ -2529,8 +2581,21 @@
             }, 2000);
         }
 
+        // 🎁 プレゼント出現頻度・報酬の調整用定数（ここを変えるだけでバランス調整できます）
+        const PRESENT_SPAWN_CHANCE = 0.2;      // 20秒毎の抽選確率（旧0.4→期待間隔が約2倍の100秒程度に）
+        const PRESENT_SPAWN_INTERVAL_MS = 20000;
+        const PRESENT_REWARD_MIN = 400;        // 旧200→倍
+        const PRESENT_REWARD_DISTANCE_RATE = 0.1; // 旧0.05→倍
+        const PRESENT_REWARD_MPS_RATE = 120;      // 旧60→倍
+
+        // ミニゲームの基準報酬額（プレゼントボーナスと同じ考え方の基準額を使い回す）
+        function getMinigameBaseReward() {
+            const currentStage = stages[currentStageIndex] || stages[0];
+            return Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
+        }
+
         function startPresentSpawningLoop() {
-            setInterval(() => { if (!document.getElementById('lucky-present') && Math.random() < 0.4) spawnLuckyPresent(); }, 20000);
+            setInterval(() => { if (!document.getElementById('lucky-present') && Math.random() < PRESENT_SPAWN_CHANCE) spawnLuckyPresent(); }, PRESENT_SPAWN_INTERVAL_MS);
         }
 
         function spawnLuckyPresent() {
@@ -2547,7 +2612,7 @@
             present.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
                 const currentStage = stages[currentStageIndex] || stages[0];
-                const bonus = Math.max(200, Math.floor(currentStage.distance * 0.05) + Math.floor(getMps() * 60));
+                const bonus = Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
                 score += bonus; createParticle(e.clientX, e.clientY);
                 alert(`🎁 【福もちボーナス +${formatMochi(bonus)} もち】獲得！`);
                 saveGame(); present.remove(); updateDisplay();
@@ -2654,6 +2719,414 @@
             }
         }
 
+        // ===================================================================
+        // 🎮 ミニゲームセンター：共通ロジック
+        // ===================================================================
+        function resetMinigameCountsIfNewDay() {
+            const today = getLocalDateString(new Date());
+            if (minigameLastResetDate !== today) {
+                minigameLastResetDate = today;
+                minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
+                saveGame();
+            }
+        }
+
+        function openMinigameCenter() {
+            resetMinigameCountsIfNewDay();
+            document.getElementById('minigame-play-view').style.display = 'none';
+            document.getElementById('minigame-tile-view').style.display = 'flex';
+            renderMinigameTiles();
+            openModal('minigame-center-modal');
+        }
+
+        function closeMinigameCenter() {
+            cleanupActiveMinigameTimers();
+            isMinigameActive = false;
+            closeModal('minigame-center-modal');
+        }
+
+        // タイムアタック/もちつきのタイマーやアニメーションを、離脱時に必ず止めるための後始末
+        function cleanupActiveMinigameTimers() {
+            if (typeof timeAttackState !== 'undefined' && timeAttackState && timeAttackState.timerId) {
+                clearInterval(timeAttackState.timerId); timeAttackState = null;
+            }
+            if (typeof mochitsukiState !== 'undefined' && mochitsukiState && mochitsukiState.animId) {
+                cancelAnimationFrame(mochitsukiState.animId); mochitsukiState = null;
+            }
+        }
+
+        function renderMinigameTiles() {
+            const container = document.getElementById('minigame-tile-view');
+            container.innerHTML = '';
+            Object.values(minigames).forEach(g => {
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                const locked = currentStageIndex < g.unlockStage;
+                const usedToday = minigamePlaysUsedToday[g.id] || 0;
+                const remaining = MINIGAME_DAILY_LIMIT - usedToday;
+                if (locked) {
+                    const reqName = stages[g.unlockStage] ? stages[g.unlockStage].name : "???";
+                    row.style.opacity = "0.55";
+                    row.innerHTML = `<div class="item-info"><span class="item-title">🔒 ${g.icon} ${g.name}</span><span class="item-desc">「${reqName}」到達で解放</span></div><button class="item-action-btn" disabled>ロック中</button>`;
+                } else if (remaining <= 0) {
+                    row.innerHTML = `<div class="item-info"><span class="item-title">${g.icon} ${g.name}</span><span class="item-desc">本日は終了！また明日挑戦してね</span></div><button class="item-action-btn" disabled>終了</button>`;
+                } else {
+                    row.innerHTML = `<div class="item-info"><span class="item-title">${g.icon} ${g.name}</span><span class="item-desc">本日 ${usedToday}/${MINIGAME_DAILY_LIMIT}回</span></div><button class="item-action-btn btn-shop" style="background:#26a69a; color:#fff;" onclick="startMinigame('${g.id}')">あそぶ</button>`;
+                }
+                container.appendChild(row);
+            });
+        }
+
+        function startMinigame(id) {
+            if ((minigamePlaysUsedToday[id] || 0) >= MINIGAME_DAILY_LIMIT) return;
+            document.getElementById('minigame-tile-view').style.display = 'none';
+            const playView = document.getElementById('minigame-play-view');
+            playView.style.display = 'block';
+            isMinigameActive = true;
+            if (id === 'quiz') startQuizGame(playView);
+            else if (id === 'timeattack') startTimeAttackGame(playView);
+            else if (id === 'concentration') startConcentrationGame(playView);
+            else if (id === 'mochitsuki') startMochitsukiGame(playView);
+        }
+
+        function endMinigameToTiles() {
+            cleanupActiveMinigameTimers();
+            isMinigameActive = false;
+            document.getElementById('minigame-play-view').style.display = 'none';
+            document.getElementById('minigame-tile-view').style.display = 'flex';
+            renderMinigameTiles();
+        }
+
+        function consumeMinigamePlay(id) {
+            minigamePlaysUsedToday[id] = (minigamePlaysUsedToday[id] || 0) + 1;
+            saveGame();
+        }
+
+        function grantMinigameReward(multiplier) {
+            const final = Math.floor(getMinigameBaseReward() * multiplier);
+            score += final;
+            saveGame(); updateDisplay();
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score);
+            return final;
+        }
+
+        function showMinigameResult(title, detail, reward) {
+            isMinigameActive = false; // 結果画面ではメイン画面のタップ判定を戻してもよい
+            playAudioFile('levelup.mp3');
+            const container = document.getElementById('minigame-play-view');
+            container.innerHTML = `
+                <div style="text-align:center; padding:10px;">
+                    <div style="font-size:1.8rem; margin-bottom:8px;">🎉</div>
+                    <div style="font-weight:bold; font-size:1.05rem; margin-bottom:6px;">${title}</div>
+                    <div style="color:#5d4037; margin-bottom:10px; font-size:0.9rem;">${detail}</div>
+                    <div style="font-weight:bold; color:#ff9800; font-size:1.2rem; margin-bottom:16px;">+${formatMochi(reward)} もち獲得！</div>
+                    <button class="item-action-btn btn-red" style="width:100%;" onclick="endMinigameToTiles()">もどる</button>
+                </div>`;
+        }
+
+        // -------------------------------------------------------------
+        // 🗾 ① ご当地クイズ
+        // -------------------------------------------------------------
+        const QUIZ_REWARD_BY_CORRECT = { 3: 1.0, 2: 0.6, 1: 0.3, 0: 0.1 }; // 正解数ごとの倍率（調整用）
+
+        function startQuizGame(container) {
+            if (currentStageIndex + 1 < 2) {
+                container.innerHTML = `<div style="text-align:center; padding:20px;">
+                    <p style="margin-bottom:14px;">もう少し旅を進めてから挑戦してね！</p>
+                    <button class="item-action-btn" onclick="endMinigameToTiles()">もどる</button>
+                </div>`;
+                return;
+            }
+            consumeMinigamePlay('quiz');
+            const quizState = { qIndex: 0, correct: 0, questions: [] };
+            for (let i = 0; i < 3; i++) quizState.questions.push(generateQuizQuestion());
+            window.__quizState = quizState;
+            renderQuizQuestion(container, quizState);
+        }
+
+        function generateQuizQuestion() {
+            const pool = [];
+            for (let i = 0; i <= currentStageIndex; i++) pool.push(stages[i]);
+            const correctStage = pickRandom(pool);
+            const isNameToItem = Math.random() < 0.5; // true: 県名→名産品を当てる／false: 名産品→県名を当てる
+            const others = pool.filter(s => s !== correctStage).sort(() => Math.random() - 0.5);
+            const numDistractors = Math.min(2, others.length); // 解放済みが少ない時は2択にフォールバック
+            let choices = [correctStage, ...others.slice(0, numDistractors)];
+            choices = choices.sort(() => Math.random() - 0.5);
+            return { correctStage, isNameToItem, choices };
+        }
+
+        function renderQuizQuestion(container, quizState) {
+            const q = quizState.questions[quizState.qIndex];
+            const questionText = q.isNameToItem ? `${q.correctStage.name}の名産品は？` : `「${q.correctStage.item}」はどこの県の名産品？`;
+            const choiceButtons = q.choices.map(c => {
+                const label = q.isNameToItem ? c.item : c.name;
+                const isCorrect = c === q.correctStage;
+                return `<button class="item-action-btn" style="width:100%; margin-bottom:8px;" onclick="answerQuizQuestion(${isCorrect})">${label}</button>`;
+            }).join('');
+            container.innerHTML = `
+                <div style="text-align:center;">
+                    <div style="font-size:0.8rem; color:#999; margin-bottom:6px;">第${quizState.qIndex + 1}問 / 3問</div>
+                    <div style="font-weight:bold; font-size:1.05rem; margin-bottom:16px;">🗾 ${questionText}</div>
+                    ${choiceButtons}
+                </div>`;
+        }
+
+        function answerQuizQuestion(isCorrect) {
+            const quizState = window.__quizState;
+            if (!quizState) return;
+            if (isCorrect) { quizState.correct++; playAudioFile('critical.mp3'); }
+            else { playAudioFile('tap.mp3'); }
+            quizState.qIndex++;
+            if (quizState.qIndex < quizState.questions.length) {
+                renderQuizQuestion(document.getElementById('minigame-play-view'), quizState);
+            } else {
+                const mult = QUIZ_REWARD_BY_CORRECT[quizState.correct] ?? 0;
+                const reward = grantMinigameReward(mult);
+                showMinigameResult(`🗾 ご当地クイズ結果`, `${quizState.correct} / 3問 正解！`, reward);
+                window.__quizState = null;
+            }
+        }
+
+        // -------------------------------------------------------------
+        // ⏱️ ② タップタイムアタック
+        // -------------------------------------------------------------
+        const TIME_ATTACK_DURATION_SEC = 15;
+        const TIME_ATTACK_THRESHOLDS = [ // [必要タップ数, 倍率]（多い順に判定）
+            [60, 1.3], [40, 1.0], [20, 0.6], [0, 0.3]
+        ];
+        let timeAttackState = null;
+
+        function startTimeAttackGame(container) {
+            consumeMinigamePlay('timeattack');
+            container.innerHTML = `
+                <div style="text-align:center; padding:10px;">
+                    <div style="font-weight:bold; margin-bottom:10px;">⏱️ タップタイムアタック</div>
+                    <div style="font-size:0.85rem; color:#5d4037; margin-bottom:16px;">スタートを押したら${TIME_ATTACK_DURATION_SEC}秒間、ひたすらタップ！</div>
+                    <button class="item-action-btn btn-shop" style="background:#26a69a; color:#fff; width:100%;" onclick="beginTimeAttack()">スタート</button>
+                </div>`;
+        }
+
+        function beginTimeAttack() {
+            const container = document.getElementById('minigame-play-view');
+            timeAttackState = { taps: 0, timeLeft: TIME_ATTACK_DURATION_SEC, timerId: null };
+            container.innerHTML = `
+                <div style="text-align:center; padding:10px;">
+                    <div id="ta-timer" style="font-size:2rem; font-weight:bold; color:#ff9800;">${TIME_ATTACK_DURATION_SEC}秒</div>
+                    <div id="ta-count" style="font-size:1.5rem; font-weight:bold; margin:10px 0;">0 回</div>
+                    <button id="ta-tap-btn" style="width:140px; height:140px; border-radius:50%; background:#26a69a; color:#fff; font-size:1.1rem; font-weight:bold; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.2);">タップ！</button>
+                </div>`;
+            const btn = document.getElementById('ta-tap-btn');
+            btn.addEventListener('pointerdown', onTimeAttackTap);
+            timeAttackState.timerId = setInterval(() => {
+                if (!timeAttackState) return;
+                timeAttackState.timeLeft--;
+                const timerEl = document.getElementById('ta-timer');
+                if (timerEl) timerEl.innerText = timeAttackState.timeLeft + '秒';
+                if (timeAttackState.timeLeft <= 0) {
+                    clearInterval(timeAttackState.timerId);
+                    btn.removeEventListener('pointerdown', onTimeAttackTap);
+                    finishTimeAttack();
+                }
+            }, 1000);
+        }
+
+        function onTimeAttackTap(e) {
+            e.preventDefault();
+            if (!timeAttackState) return;
+            timeAttackState.taps++;
+            const countEl = document.getElementById('ta-count');
+            if (countEl) countEl.innerText = timeAttackState.taps + ' 回';
+        }
+
+        function finishTimeAttack() {
+            const taps = timeAttackState ? timeAttackState.taps : 0;
+            timeAttackState = null;
+            const found = TIME_ATTACK_THRESHOLDS.find(([min]) => taps >= min);
+            const mult = found ? found[1] : 0.3;
+            const reward = grantMinigameReward(mult);
+            const isNewBest = taps > (minigameBests.timeattack || 0);
+            if (isNewBest) { minigameBests.timeattack = taps; playAudioFile('levelup.mp3'); saveGame(); }
+            showMinigameResult(`⏱️ タイムアタック結果`, `${taps}回タップ！${isNewBest ? '🎉自己ベスト更新！' : `（自己ベスト: ${minigameBests.timeattack}回）`}`, reward);
+        }
+
+        // -------------------------------------------------------------
+        // 🃏 ③ ご当地神経衰弱
+        // -------------------------------------------------------------
+        const CONCENTRATION_THRESHOLDS = [ // [手数の上限, 倍率]（少ない順に判定）
+            [14, 1.4], [18, 1.0], [24, 0.6], [Infinity, 0.3]
+        ];
+        let concentrationState = null;
+
+        function startConcentrationGame(container) {
+            const candidates = [];
+            for (let i = 0; i <= currentStageIndex; i++) { if (stages[i].itemImg) candidates.push(stages[i]); }
+            if (candidates.length < 6) {
+                container.innerHTML = `<div style="text-align:center; padding:20px;">
+                    <div style="font-weight:bold; margin-bottom:10px;">🃏 ご当地神経衰弱</div>
+                    <p style="font-size:0.85rem; color:#999; margin-bottom:14px;">イラスト準備中です（もう少しお待ちください）</p>
+                    <button class="item-action-btn" onclick="endMinigameToTiles()">もどる</button>
+                </div>`;
+                return;
+            }
+            consumeMinigamePlay('concentration');
+            const chosen = candidates.sort(() => Math.random() - 0.5).slice(0, 6);
+            let cards = [];
+            chosen.forEach((stage, idx) => {
+                cards.push({ pairId: idx, stage, matched: false });
+                cards.push({ pairId: idx, stage, matched: false });
+            });
+            cards = cards.sort(() => Math.random() - 0.5);
+            concentrationState = { cards, flippedIndices: [], moves: 0, matchedPairs: 0, locked: false };
+            renderConcentrationBoard();
+        }
+
+        function renderConcentrationBoard() {
+            const container = document.getElementById('minigame-play-view');
+            const st = concentrationState;
+            if (!st) return;
+            const cardsHtml = st.cards.map((c, i) => {
+                const isFlipped = st.flippedIndices.includes(i) || c.matched;
+                const inner = isFlipped ? `<img src="${c.stage.itemImg}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;" alt="${c.stage.item}">` : '🍡';
+                return `<div onclick="flipConcentrationCard(${i})" style="aspect-ratio:1; background:${isFlipped ? '#fff' : '#ff9800'}; border:2px solid #ffcc80; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.15); overflow:hidden;">${inner}</div>`;
+            }).join('');
+            container.innerHTML = `
+                <div style="text-align:center; margin-bottom:8px; font-size:0.85rem; color:#5d4037;">🃏 めくった回数: ${st.moves}</div>
+                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:12px;">${cardsHtml}</div>
+            `;
+        }
+
+        function flipConcentrationCard(i) {
+            const st = concentrationState;
+            if (!st || st.locked) return;
+            if (st.flippedIndices.includes(i) || st.cards[i].matched) return;
+            if (st.flippedIndices.length >= 2) return;
+            st.flippedIndices.push(i);
+            playAudioFile('tap.mp3');
+            if (st.flippedIndices.length === 2) {
+                st.moves++;
+                renderConcentrationBoard();
+                const [a, b] = st.flippedIndices;
+                if (st.cards[a].pairId === st.cards[b].pairId) {
+                    st.cards[a].matched = true; st.cards[b].matched = true;
+                    st.matchedPairs++; st.flippedIndices = [];
+                    playAudioFile('critical.mp3');
+                    renderConcentrationBoard();
+                    if (st.matchedPairs === 6) setTimeout(() => finishConcentration(), 400);
+                } else {
+                    st.locked = true;
+                    setTimeout(() => {
+                        if (!concentrationState) return;
+                        concentrationState.flippedIndices = [];
+                        concentrationState.locked = false;
+                        renderConcentrationBoard();
+                    }, 800);
+                }
+            } else {
+                renderConcentrationBoard();
+            }
+        }
+
+        function finishConcentration() {
+            const moves = concentrationState.moves;
+            const found = CONCENTRATION_THRESHOLDS.find(([max]) => moves <= max);
+            const mult = found ? found[1] : 0.3;
+            const reward = grantMinigameReward(mult);
+            const isNewBest = minigameBests.concentration == null || moves < minigameBests.concentration;
+            if (isNewBest) { minigameBests.concentration = moves; playAudioFile('levelup.mp3'); saveGame(); }
+            concentrationState = null;
+            showMinigameResult(`🃏 神経衰弱結果`, `${moves}回でクリア！${isNewBest ? '🎉自己ベスト更新！' : `（自己ベスト: ${minigameBests.concentration}回）`}`, reward);
+        }
+
+        // -------------------------------------------------------------
+        // 🍡 ④ もちつきリズム
+        // -------------------------------------------------------------
+        const MOCHITSUKI_BEATS = 12;
+        const MOCHITSUKI_PERIOD_MS = 1100;
+        const MOCHITSUKI_PERFECT_RANGE = 6;  // 中央からの誤差(%)
+        const MOCHITSUKI_GOOD_RANGE = 16;
+        let mochitsukiState = null;
+
+        function startMochitsukiGame(container) {
+            consumeMinigamePlay('mochitsuki');
+            mochitsukiState = { beat: 0, perfect: 0, good: 0, miss: 0, startTime: null, animId: null };
+            container.innerHTML = `
+                <div style="text-align:center; padding:10px;">
+                    <div style="font-weight:bold; margin-bottom:8px;">🍡 もちつきリズム</div>
+                    <div style="font-size:0.78rem; color:#5d4037; margin-bottom:6px;">インジケーターが中央に来た瞬間にタップ！（${MOCHITSUKI_BEATS}拍）</div>
+                    <div id="mochi-beat-count" style="font-size:0.8rem; color:#999; margin-bottom:10px;">1 / ${MOCHITSUKI_BEATS}拍</div>
+                    <div style="position:relative; width:100%; max-width:280px; height:40px; margin:0 auto 16px; background:#fdf3e0; border-radius:20px; overflow:hidden; border:2px solid #ffd699;">
+                        <div style="position:absolute; left:47%; width:6%; height:100%; background:rgba(255,152,0,0.35);"></div>
+                        <div id="mochi-indicator" style="position:absolute; top:4px; width:32px; height:32px; border-radius:50%; background:#ff5722; box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>
+                    </div>
+                    <div id="mochi-judge-text" style="font-size:1.1rem; font-weight:bold; height:28px; margin-bottom:10px;"></div>
+                    <button id="mochi-tap-btn" style="width:100%; padding:14px; border-radius:14px; border:none; background:#26a69a; color:#fff; font-weight:bold; font-size:1rem;">タップ！</button>
+                </div>`;
+            mochitsukiState.startTime = performance.now();
+            document.getElementById('mochi-tap-btn').addEventListener('pointerdown', onMochitsukiTap);
+            animateMochitsukiIndicator();
+        }
+
+        function getMochitsukiIndicatorPercent(elapsedMs, periodMs) {
+            const t = elapsedMs % (periodMs * 2);
+            return t < periodMs ? (t / periodMs) * 100 : 100 - ((t - periodMs) / periodMs) * 100;
+        }
+
+        function animateMochitsukiIndicator() {
+            if (!mochitsukiState) return;
+            const el = document.getElementById('mochi-indicator');
+            const track = el ? el.parentElement : null;
+            if (el && track) {
+                const elapsed = performance.now() - mochitsukiState.startTime;
+                const percent = getMochitsukiIndicatorPercent(elapsed, MOCHITSUKI_PERIOD_MS);
+                const trackWidth = track.clientWidth;
+                el.style.left = Math.max(0, Math.min(trackWidth - 32, (percent / 100) * trackWidth - 16)) + 'px';
+            }
+            mochitsukiState.animId = requestAnimationFrame(animateMochitsukiIndicator);
+        }
+
+        function onMochitsukiTap(e) {
+            e.preventDefault();
+            if (!mochitsukiState) return;
+            const elapsed = performance.now() - mochitsukiState.startTime;
+            const percent = getMochitsukiIndicatorPercent(elapsed, MOCHITSUKI_PERIOD_MS);
+            const diff = Math.abs(percent - 50);
+            let judge;
+            if (diff <= MOCHITSUKI_PERFECT_RANGE) { judge = 'PERFECT'; mochitsukiState.perfect++; playAudioFile('critical.mp3'); vibrate(20); }
+            else if (diff <= MOCHITSUKI_GOOD_RANGE) { judge = 'GOOD'; mochitsukiState.good++; playAudioFile('tap.mp3'); }
+            else { judge = 'MISS'; mochitsukiState.miss++; }
+
+            const judgeEl = document.getElementById('mochi-judge-text');
+            if (judgeEl) {
+                judgeEl.innerText = judge;
+                judgeEl.style.color = judge === 'PERFECT' ? '#ff5722' : judge === 'GOOD' ? '#4caf50' : '#999';
+            }
+            const indicatorEl = document.getElementById('mochi-indicator');
+            if (indicatorEl) {
+                const rect = indicatorEl.getBoundingClientRect();
+                createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2, judge === 'PERFECT');
+            }
+
+            mochitsukiState.beat++;
+            if (mochitsukiState.beat >= MOCHITSUKI_BEATS) {
+                cancelAnimationFrame(mochitsukiState.animId);
+                document.getElementById('mochi-tap-btn').removeEventListener('pointerdown', onMochitsukiTap);
+                setTimeout(() => finishMochitsuki(), 400);
+            } else {
+                const beatEl = document.getElementById('mochi-beat-count');
+                if (beatEl) beatEl.innerText = `${mochitsukiState.beat + 1} / ${MOCHITSUKI_BEATS}拍`;
+            }
+        }
+
+        function finishMochitsuki() {
+            const st = mochitsukiState;
+            const raw = (st.perfect * 1.5 + st.good * 1.0 + st.miss * 0.3) / MOCHITSUKI_BEATS;
+            const mult = Math.min(1.5, raw);
+            mochitsukiState = null;
+            const reward = grantMinigameReward(mult);
+            showMinigameResult(`🍡 もちつきリズム結果`, `PERFECT:${st.perfect} GOOD:${st.good} MISS:${st.miss}`, reward);
+        }
+
         async function openRanking() {
             let listContainer = document.getElementById('ranking-list');
             listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
@@ -2708,9 +3181,17 @@
         function renderDiaryPage() {
             const stage = stages[diaryPageIndex]; const paper = document.getElementById('diary-paper-element');
             paper.classList.remove('page-animate'); void paper.offsetWidth; paper.classList.add('page-animate');
-            const hasItemText = (purchasedItems[diaryPageIndex] || 0) > 0 ? `🛍️ アイテム: ${stage.item} (Lv.${purchasedItems[diaryPageIndex]})` : "🛍️ アイテム: 未購入";
+            const isPurchased = (purchasedItems[diaryPageIndex] || 0) > 0;
+            const hasItemText = isPurchased ? `🛍️ アイテム: ${stage.item} (Lv.${purchasedItems[diaryPageIndex]})` : "🛍️ アイテム: 未購入";
             document.getElementById('diary-img-element').src = stage.diaryImg;
             document.getElementById('diary-img-caption').innerText = `【${stage.name}の思い出】 ・ ${hasItemText}`;
+            const thumbEl = document.getElementById('diary-item-thumb');
+            if (isPurchased && stage.itemImg) {
+                thumbEl.src = stage.itemImg;
+                thumbEl.style.display = 'block';
+            } else {
+                thumbEl.style.display = 'none';
+            }
             document.getElementById('diary-title-element').innerText = `${stage.name}編`;
             document.getElementById('diary-text-element').innerText = stage.diary;
             document.getElementById('diary-footer-element').innerText = `枚数: ${diaryPageIndex + 1} / ${currentStageIndex + 1}`;
