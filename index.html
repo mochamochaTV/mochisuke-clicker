@@ -143,7 +143,7 @@
         #menu-toggle-btn {
             position: fixed;
             top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
-            left: 10px;
+            right: 10px;
             width: 38px; height: 38px;
             border-radius: 50%;
             background: rgba(0,0,0,0.35);
@@ -161,8 +161,8 @@
 
         #ui-toggle-btn {
             position: fixed;
-            top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
-            right: 10px;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 88px);
+            left: 10px;
             width: 38px; height: 38px;
             border-radius: 50%;
             background: rgba(0,0,0,0.35);
@@ -625,7 +625,7 @@
                 const q = query(collection(db, "rankings"), orderBy("score", "desc"), limit(20));
                 const snap = await getDocs(q);
                 const list = [];
-                snap.forEach((d) => list.push(d.data()));
+                snap.forEach((d) => list.push({ ...d.data(), uid: d.id, isMe: d.id === currentUid }));
                 return list;
             } catch (e) { console.error("ランキング取得エラー:", e); return null; }
         };
@@ -654,7 +654,7 @@
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-09-09</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-11-01</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -703,7 +703,7 @@
 
             <div id="mochisuke-wrapper">
                 <div id="combo-display">🔥 0 Combo!</div>
-                <div id="mochi-balloon">画面をタップして もち集めるじゃ！</div>
+                <div id="mochi-balloon">画面をタップして もち集めような！</div>
                 <img id="mochisuke-btn" class="breathe-idle" src="image_0.png" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
                 
                 <div id="bunshin-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
@@ -866,7 +866,7 @@
         <div class="modal-content" style="text-align:center;">
             <button class="modal-close-x" onclick="closeModal('japan-clear-modal')">×</button>
             <h2>🎉 日本全国制覇！ 🎉</h2>
-            <p style="font-size:0.9rem; color:#5d4037; margin:10px 0;">もちすけと一緒に、鹿児島から沖縄まで<br>47都道府県をぜんぶ旅したのじゃ！</p>
+            <p style="font-size:0.9rem; color:#5d4037; margin:10px 0;">もちすけと一緒に、鹿児島から沖縄まで<br>47都道府県をぜんぶ旅したで！</p>
             <div id="japan-clear-stats" style="margin:14px 0; font-size:0.85rem; color:#5d4037; background:#fff8ec; border-radius:10px; padding:10px; line-height:1.8;"></div>
             <p style="font-weight:bold; color:#ff9800; font-size:1.05rem;">🏅「日本もち王」の称号を獲得！</p>
             <button class="btn-red" onclick="closeModal('japan-clear-modal')">もちすけとの旅を続ける</button>
@@ -902,7 +902,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-09-09</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-11-01</div>
                 </div>
             </div>
         </div>
@@ -1162,8 +1162,8 @@
 
         // 47都道府県ステージデータ
         const stages = [
-            { name: "鹿児島", distance: 500, item: "白熊アイス", price: 50, diary: "旅の始まりは鹿児島から！桜島がとっても雄大で、パワーをもらった気分だぞ。ここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
-            { name: "宮崎", distance: 900, item: "完熟マンゴー", price: 100, diary: "宮崎にやってきたぞ！ヤシの木が並んで南国気分満点だぁ。お日様を浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
+            { name: "鹿児島", distance: 500, item: "スイートポテト", itemImg: "omiyage_images/kagoshima_item.png", price: 50, diary: "旅の始まりは鹿児島から！桜島がとっても雄大で、パワーをもらった気分だぞ。ここから日本中をもちでいっぱいにしに行くぞ！", bg: "bg_images/kagoshima.png", diaryImg: "diary_images/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "宮崎", distance: 900, item: "完熟マンゴー", itemImg: "omiyage_images/miyazaki_item.png", price: 100, diary: "宮崎にやってきたぞ！ヤシの木が並んで南国気分満点だぁ。お日様を浴びたマンゴーは甘くて最高！", bg: "bg_images/miyazaki.png", diaryImg: "diary_images/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
             { name: "大分", distance: 1600, item: "かぼすソフト", price: 200, diary: "大分といえば温泉！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだや。", bg: "bg_images/oita.png", diaryImg: "diary_images/oita_d.png", effectDesc: "タップ力 +2", tapBonus: 2, mpsBonus: 0 },
             { name: "熊本", distance: 3000, item: "からし蓮根", price: 400, diary: "熊本城を見に行ったぞ！石垣がすごく高くて圧倒されちゃった。からし蓮根はツーンと大人の味！", bg: "bg_images/kumamoto.png", diaryImg: "diary_images/kumamoto_d.png", effectDesc: "自動増加 +3もち/秒", tapBonus: 0, mpsBonus: 3 },
             { name: "長崎", distance: 5500, item: "長崎カステラ", price: 800, diary: "長崎は坂の街！のぼり坂がいっぱいでいい運動になったよ。カステラもザラメがシャリシャリで美味しい！", bg: "bg_images/nagasaki.png", diaryImg: "diary_images/nagasaki_d.png", effectDesc: "タップ力 +6", tapBonus: 6, mpsBonus: 0 },
@@ -1318,102 +1318,102 @@
                 morning: [ // 5:00〜10:59
                     "おはよう！今日も一日頑張ろうな！",
                     "おはよう！朝ごはんもう食べたか？",
-                    "んー、よく寝たのじゃ！おはよう！",
-                    "おなかすいたのじゃ…朝ごはん食べようかの！"
+                    "んー、よう寝たわ！おはようさん！",
+                    "おなかすいたなあ…朝ごはん食べようや！"
                 ],
                 noon: [ // 11:00〜16:59
                     "こんちゃ！お昼ごはん何食べた？",
-                    "今日もいい天気じゃのう！",
-                    "お昼はもちを食べてひと休みするのじゃ！",
-                    "眠くなってきたのじゃ…お昼寝したいのう"
+                    "今日もええ天気やな！",
+                    "お昼はもち食べてひと休みするで！",
+                    "眠くなってきたわ…お昼寝したいなあ"
                 ],
                 evening: [ // 17:00〜21:59
-                    "こんばんは！今日も一日お疲れ様！",
-                    "そろそろ夕ごはんの時間かのう？",
-                    "今日もいっぱいもち集めたのじゃ！"
+                    "こんばんは！今日も一日お疲れさん！",
+                    "そろそろ夕ごはんの時間ちゃう？",
+                    "今日もいっぱいもち集めたで！"
                 ],
                 lateNight: [ // 22:00〜4:59
-                    "こんな時間まで一緒にいてくれるのか…嬉しいのじゃ！",
+                    "こんな時間まで一緒におってくれるんか…嬉しいなあ！",
                     "夜更かしはほどほどにな！",
-                    "もちすけは眠くないぞ…ふわぁ…"
+                    "もちすけは眠ないで…ふわぁ…"
                 ]
             },
 
             // 同じ時間帯にすでに挨拶済みで、また戻ってきた時に喋る「おかえり」セリフ
             welcomeBack: {
-                morning: ["おかえり！まだ朝じゃな！", "おかえりなのじゃ！引き続き頑張ろうな！"],
-                noon: ["おかえり！お昼からも頑張るのじゃ！", "おかえりなのじゃ！"],
-                evening: ["おかえり！夜も一緒に頑張ろうな！", "おかえりなのじゃ！"],
-                lateNight: ["おかえり…こんな時間まで一緒にいてくれるのか…", "おかえりなのじゃ！夜更かしはほどほどにな！"]
+                morning: ["おかえり！まだ朝やな！", "おかえりー！引き続き頑張ろうな！"],
+                noon: ["おかえり！お昼からも頑張るで！", "おかえりー！"],
+                evening: ["おかえり！夜も一緒に頑張ろうな！", "おかえりー！"],
+                lateNight: ["おかえり…こんな時間まで一緒におってくれるんか…", "おかえりー！夜更かしはほどほどにな！"]
             },
 
             idleComments: [
-                "画面をタップして もち集めるじゃ！",
+                "画面をタップして もち集めような！",
                 "もちすけと一緒に日本を旅しような！",
-                "次はどこに行こうかのう？",
-                "スキルも育てると効率アップするぞ！",
+                "次はどこ行こうか？",
+                "スキルも育てると効率アップするで！",
                 "もちもち？",
                 "おーい！",
-                "旅を続けるぞ！",
-                "寝てしまうぞ…"
+                "旅を続けるで！",
+                "寝てしまいそうや…"
             ],
 
             eventComments: {
-                presentSpawn: ["プレゼント飛んでるで！はやくキャッチじゃ！", "何か飛んできたぞ！取ってみるのじゃ！"],
-                goldMochiSpawn: ["黄金のもちが出たのじゃ！見逃すな！", "キラキラしたもちじゃ！急げー！"],
-                levelUp: ["レベルアップしたのじゃ！やったー！", "力がみなぎってきたぞ！"],
-                feverStart: ["フィーバータイムじゃー！！", "今がチャンスじゃ、連打するのじゃ！"]
+                presentSpawn: ["プレゼント飛んでるで！はよキャッチや！", "何か飛んできたで！取ってみいや！"],
+                goldMochiSpawn: ["黄金のもちが出たで！見逃すなよ！", "キラキラしたもちや！急げー！"],
+                levelUp: ["レベルアップしたで！やったー！", "力がみなぎってきたわ！"],
+                feverStart: ["フィーバータイムやー！！", "今がチャンスや、連打するで！"]
             },
 
             // 都道府県ごとのご当地限定セリフ（エリア到着時と、滞在中のつぶやきの両方で使われます）
             prefectureComments: {
-                "鹿児島": ["桜島は今も噴煙を上げる活火山なんじゃぞ！", "白熊アイスは山盛りのかき氷なのじゃ！"],
-                "宮崎": ["宮崎はマンゴーの生産量が有名なんじゃ！", "南国ムード満点で気分がいいのう！"],
-                "大分": ["大分は温泉の源泉数が日本一なんじゃぞ！", "地獄めぐりの温泉、迫力あったのう！"],
-                "熊本": ["熊本城の石垣は『武者返し』って呼ばれとるんじゃ！", "くまモンの故郷じゃのう！"],
-                "長崎": ["長崎は坂の街で、階段だらけなんじゃ！", "夜景がとっても綺麗な街なのじゃ！"],
-                "佐賀": ["佐賀の呼子は透明な活イカが名物なんじゃ！", "有田焼という綺麗な焼き物も有名じゃぞ！"],
-                "福岡": ["博多の屋台文化は日本でも珍しいんじゃぞ！", "とんこつラーメン発祥の地なのじゃ！"],
-                "山口": ["山口は本州の一番西側にあるんじゃ！", "下関のフグ料理は絶品じゃったのう！"],
-                "広島": ["厳島神社の鳥居は満潮時に海に浮かぶんじゃぞ！", "お好み焼きは広島風が本場なのじゃ！"],
-                "島根": ["出雲大社は縁結びの神様として有名じゃぞ！", "神在月には全国の神様が集まるんじゃ！"],
-                "鳥取": ["鳥取砂丘は日本最大級の砂丘なんじゃぞ！", "スイカの名産地でもあるのじゃ！"],
-                "岡山": ["岡山は『桃太郎伝説』発祥の地なんじゃ！", "晴れの日が多い『晴れの国』じゃぞ！"],
-                "香川": ["香川はうどん屋さんの数が日本一なんじゃぞ！", "面積は日本で一番小さい県なのじゃ！"],
-                "徳島": ["阿波踊りは400年以上の歴史があるんじゃぞ！", "すだちの生産量、日本一なのじゃ！"],
-                "高知": ["高知の桂浜は坂本龍馬の銅像があるんじゃ！", "カツオのたたきは藁焼きが本場なのじゃ！"],
-                "愛媛": ["愛媛はみかんの生産量トップクラスなんじゃぞ！", "道後温泉は日本最古の温泉の一つじゃ！"],
-                "兵庫": ["神戸港はおしゃれな港町なんじゃぞ！", "姫路城は白鷺城とも呼ばれとるのじゃ！"],
-                "大阪": ["通天閣のビリケンさんは幸運の神様なんじゃぞ！", "『儲かりまっか』が挨拶らしいのじゃ！"],
-                "和歌山": ["和歌山にはパンダがいる動物園があるんじゃ！", "紀州梅の生産量、日本一なのじゃ！"],
-                "奈良": ["奈良公園の鹿は約1000頭もいるんじゃぞ！", "東大寺の大仏は約15mもあるのじゃ！"],
-                "三重": ["伊勢神宮は日本人の心のふるさとなんじゃぞ！", "伊勢エビの水揚げ量トップクラスじゃ！"],
-                "滋賀": ["琵琶湖は日本一大きい湖なんじゃぞ！", "面積の約6分の1が琵琶湖なのじゃ！"],
-                "京都": ["金閣寺は金箔でピカピカなんじゃぞ！", "千年以上、都だった歴史ある街じゃ！"],
-                "福井": ["福井は恐竜の化石がたくさん見つかるんじゃぞ！", "越前ガニは冬の味覚の王様なのじゃ！"],
-                "石川": ["兼六園は日本三名園のひとつなんじゃぞ！", "金沢は金箔の生産量ほぼ100%じゃ！"],
-                "富山": ["立山連峰の雪景色は絶景なんじゃぞ！", "ホタルイカが名物なのじゃ！"],
-                "新潟": ["新潟はお米の生産量トップクラスなんじゃぞ！", "日本酒の蔵元がとっても多い県じゃ！"],
-                "長野": ["長野は標高の高い山がたくさんあるんじゃぞ！", "信州そばはのど越し抜群なのじゃ！"],
-                "岐阜": ["白川郷の合掌造りは世界遺産なんじゃぞ！", "飛騨牛はとろけるほど美味いのじゃ！"],
-                "愛知": ["名古屋城の金のシャチホコは有名なんじゃぞ！", "手羽先発祥の地とも言われとるのじゃ！"],
-                "静岡": ["富士山の景色は静岡側からも綺麗なんじゃぞ！", "お茶の生産量、日本一なのじゃ！"],
-                "山梨": ["富士五湖でのんびり過ごせるんじゃぞ！", "ぶどうと桃の生産量が有名なのじゃ！"],
-                "神奈川": ["横浜中華街は日本最大の中華街なんじゃぞ！", "みなとみらいの夜景は綺麗なのじゃ！"],
-                "東京": ["東京スカイツリーの高さは634mもあるんじゃぞ！", "東京タワーは333mもあるのじゃ！"],
-                "千葉": ["九十九里浜は総延長66kmもあるんじゃぞ！", "落花生の生産量、日本一なのじゃ！"],
-                "埼玉": ["川越は『小江戸』と呼ばれとるんじゃぞ！", "草加せんべいは香ばしくて美味いのじゃ！"],
-                "群馬": ["草津温泉の湯畑は迫力満点なんじゃぞ！", "だるまの生産量、日本一なのじゃ！"],
-                "栃木": ["日光東照宮には『三猿』の彫刻があるんじゃぞ！", "餃子の消費量が有名な街じゃ！"],
-                "茨城": ["納豆の生産で有名な県なんじゃぞ！", "偕楽園は日本三名園のひとつじゃ！"],
-                "福島": ["福島は果物の宝庫なんじゃぞ！", "会津の街並みは歴史を感じるのじゃ！"],
-                "宮城": ["仙台は『杜の都』と呼ばれとるんじゃぞ！", "牛タンが名物料理なのじゃ！"],
-                "山形": ["さくらんぼの生産量、日本一なんじゃぞ！", "蔵王の樹氷は幻想的なのじゃ！"],
-                "秋田": ["秋田美人という言葉があるくらいなんじゃぞ！", "なまはげは有名な伝統行事じゃ！"],
-                "岩手": ["岩手は面積が北海道の次に広いんじゃぞ！", "わんこそばに挑戦してみたいのう！"],
-                "青森": ["青森はりんごの生産量、日本一なんじゃぞ！", "ねぶた祭りは迫力満点らしいのじゃ！"],
-                "北海道": ["北海道は日本で一番広い都道府県なんじゃぞ！", "冬はとっても雪が積もるらしいのじゃ！"],
-                "沖縄": ["沖縄の海は透明度がとっても高いんじゃぞ！", "旅もいよいよ最終地点なのじゃ！"]
+                "鹿児島": ["桜島は今も噴煙を上げる活火山なんやで！", "スイートポテトはねっとり甘くて最高や！"],
+                "宮崎": ["宮崎はマンゴーの生産量が有名なんや！", "南国ムード満点で気分ええなあ！"],
+                "大分": ["大分は温泉の源泉数が日本一なんやで！", "地獄めぐりの温泉、迫力あったわ！"],
+                "熊本": ["熊本城の石垣は『武者返し』って呼ばれとるんや！", "くまモンの故郷やなあ！"],
+                "長崎": ["長崎は坂の街で、階段だらけなんや！", "夜景がとっても綺麗な街やで！"],
+                "佐賀": ["佐賀の呼子は透明な活イカが名物なんや！", "有田焼という綺麗な焼き物も有名やで！"],
+                "福岡": ["博多の屋台文化は日本でも珍しいんやで！", "とんこつラーメン発祥の地やで！"],
+                "山口": ["山口は本州の一番西側にあるんや！", "下関のフグ料理は絶品やったなあ！"],
+                "広島": ["厳島神社の鳥居は満潮時に海に浮かぶんやで！", "お好み焼きは広島風が本場やで！"],
+                "島根": ["出雲大社は縁結びの神様として有名やで！", "神在月には全国の神様が集まるんや！"],
+                "鳥取": ["鳥取砂丘は日本最大級の砂丘なんやで！", "スイカの名産地でもあるで！"],
+                "岡山": ["岡山は『桃太郎伝説』発祥の地なんや！", "晴れの日が多い『晴れの国』やで！"],
+                "香川": ["香川はうどん屋さんの数が日本一なんやで！", "面積は日本で一番小さい県やで！"],
+                "徳島": ["阿波踊りは400年以上の歴史があるんやで！", "すだちの生産量、日本一やで！"],
+                "高知": ["高知の桂浜は坂本龍馬の銅像があるんや！", "カツオのたたきは藁焼きが本場やで！"],
+                "愛媛": ["愛媛はみかんの生産量トップクラスなんやで！", "道後温泉は日本最古の温泉の一つやで！"],
+                "兵庫": ["神戸港はおしゃれな港町なんやで！", "姫路城は白鷺城とも呼ばれとるんや！"],
+                "大阪": ["通天閣のビリケンさんは幸運の神様なんやで！", "『儲かりまっか』が挨拶らしいで！"],
+                "和歌山": ["和歌山にはパンダがおる動物園があるんや！", "紀州梅の生産量、日本一やで！"],
+                "奈良": ["奈良公園の鹿は約1000頭もおるんやで！", "東大寺の大仏は約15mもあるんや！"],
+                "三重": ["伊勢神宮は日本人の心のふるさとなんやで！", "伊勢エビの水揚げ量トップクラスや！"],
+                "滋賀": ["琵琶湖は日本一大きい湖なんやで！", "面積の約6分の1が琵琶湖なんや！"],
+                "京都": ["金閣寺は金箔でピカピカなんやで！", "千年以上、都だった歴史ある街やで！"],
+                "福井": ["福井は恐竜の化石がたくさん見つかるんやで！", "越前ガニは冬の味覚の王様やで！"],
+                "石川": ["兼六園は日本三名園のひとつなんやで！", "金沢は金箔の生産量ほぼ100%やで！"],
+                "富山": ["立山連峰の雪景色は絶景なんやで！", "ホタルイカが名物なんや！"],
+                "新潟": ["新潟はお米の生産量トップクラスなんやで！", "日本酒の蔵元がとっても多い県やで！"],
+                "長野": ["長野は標高の高い山がたくさんあるんやで！", "信州そばはのど越し抜群やで！"],
+                "岐阜": ["白川郷の合掌造りは世界遺産なんやで！", "飛騨牛はとろけるほど美味いんや！"],
+                "愛知": ["名古屋城の金のシャチホコは有名なんやで！", "手羽先発祥の地とも言われとるで！"],
+                "静岡": ["富士山の景色は静岡側からも綺麗なんやで！", "お茶の生産量、日本一やで！"],
+                "山梨": ["富士五湖でのんびり過ごせるんやで！", "ぶどうと桃の生産量が有名なんや！"],
+                "神奈川": ["横浜中華街は日本最大の中華街なんやで！", "みなとみらいの夜景は綺麗やで！"],
+                "東京": ["東京スカイツリーの高さは634mもあるんやで！", "東京タワーは333mもあるんや！"],
+                "千葉": ["九十九里浜は総延長66kmもあるんやで！", "落花生の生産量、日本一やで！"],
+                "埼玉": ["川越は『小江戸』と呼ばれとるんや！", "草加せんべいは香ばしくて美味いんやで！"],
+                "群馬": ["草津温泉の湯畑は迫力満点なんやで！", "だるまの生産量、日本一やで！"],
+                "栃木": ["日光東照宮には『三猿』の彫刻があるんやで！", "餃子の消費量が有名な街やで！"],
+                "茨城": ["納豆の生産で有名な県なんや！", "偕楽園は日本三名園のひとつやで！"],
+                "福島": ["福島は果物の宝庫なんやで！", "会津の街並みは歴史を感じるなあ！"],
+                "宮城": ["仙台は『杜の都』と呼ばれとるんや！", "牛タンが名物料理やで！"],
+                "山形": ["さくらんぼの生産量、日本一なんやで！", "蔵王の樹氷は幻想的やなあ！"],
+                "秋田": ["秋田美人という言葉があるくらいなんや！", "なまはげは有名な伝統行事やで！"],
+                "岩手": ["岩手は面積が北海道の次に広いんやで！", "わんこそばに挑戦してみたいなあ！"],
+                "青森": ["青森はりんごの生産量、日本一なんやで！", "ねぶた祭りは迫力満点らしいで！"],
+                "北海道": ["北海道は日本で一番広い都道府県なんやで！", "冬はとっても雪が積もるらしいで！"],
+                "沖縄": ["沖縄の海は透明度がとっても高いんやで！", "旅もいよいよ最終地点や！"]
             }
         };
 
@@ -2548,7 +2548,7 @@
                 selectedStageIndex = idx; updateDisplay(); saveGame();
                 const name = stages[idx].name;
                 const prefPool = dialogueData.prefectureComments[name];
-                showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所じゃろな？`);
+                showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
             });
         }
 
@@ -2689,7 +2689,7 @@
                         selectedStageIndex = nextIdx; updateDisplay(); saveGame();
                         const name = stages[nextIdx].name;
                         const prefPool = dialogueData.prefectureComments[name];
-                        showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所じゃろな？`);
+                        showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
                     });
                 } else {
                     currentStageProgress = stages[currentStageIndex].distance; saveGame();
@@ -3043,23 +3043,34 @@
         // -------------------------------------------------------------
         const MOCHITSUKI_BEATS = 12;
         const MOCHITSUKI_PERIOD_MS = 1100;
-        const MOCHITSUKI_PERFECT_RANGE = 6;  // 中央からの誤差(%)
-        const MOCHITSUKI_GOOD_RANGE = 16;
+        // 判定ランク定義（中央からの誤差%が小さい順）。ここを調整するだけで難易度・演出のバランスを変えられます。
+        // range: この誤差(%)以内ならこのランク／color: 判定文字＆パーティクル色／particles: 弾けるパーティクル数／weight: 得点への重み
+        const MOCHITSUKI_RANKS = [
+            { name: 'PERFECT', range: 4,  color: '#ffd700', particles: 10, weight: 1.6, gold: true  },
+            { name: 'GREAT',   range: 8,  color: '#ff5722', particles: 7,  weight: 1.2, gold: false },
+            { name: 'GOOD',    range: 14, color: '#4caf50', particles: 4,  weight: 0.8, gold: false },
+            { name: 'OK',      range: 22, color: '#2196f3', particles: 2,  weight: 0.4, gold: false },
+            { name: 'MISS',    range: Infinity, color: '#999', particles: 0, weight: 0.1, gold: false }
+        ];
+        const MOCHITSUKI_REWARD_CAP = 1.6;
         let mochitsukiState = null;
 
         function startMochitsukiGame(container) {
             consumeMinigamePlay('mochitsuki');
-            mochitsukiState = { beat: 0, perfect: 0, good: 0, miss: 0, startTime: null, animId: null };
+            mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null };
+            MOCHITSUKI_RANKS.forEach(r => mochitsukiState.counts[r.name] = 0);
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
                     <div style="font-weight:bold; margin-bottom:8px;">🍡 もちつきリズム</div>
                     <div style="font-size:0.78rem; color:#5d4037; margin-bottom:6px;">インジケーターが中央に来た瞬間にタップ！（${MOCHITSUKI_BEATS}拍）</div>
                     <div id="mochi-beat-count" style="font-size:0.8rem; color:#999; margin-bottom:10px;">1 / ${MOCHITSUKI_BEATS}拍</div>
                     <div style="position:relative; width:100%; max-width:280px; height:40px; margin:0 auto 16px; background:#fdf3e0; border-radius:20px; overflow:hidden; border:2px solid #ffd699;">
-                        <div style="position:absolute; left:47%; width:6%; height:100%; background:rgba(255,152,0,0.35);"></div>
+                        <div style="position:absolute; left:44%; width:4%; height:100%; background:rgba(33,150,243,0.25);"></div>
+                        <div style="position:absolute; left:46%; width:8%; height:100%; background:rgba(76,175,80,0.3);"></div>
+                        <div style="position:absolute; left:48%; width:4%; height:100%; background:rgba(255,152,0,0.45);"></div>
                         <div id="mochi-indicator" style="position:absolute; top:4px; width:32px; height:32px; border-radius:50%; background:#ff5722; box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>
                     </div>
-                    <div id="mochi-judge-text" style="font-size:1.1rem; font-weight:bold; height:28px; margin-bottom:10px;"></div>
+                    <div id="mochi-judge-text" style="font-size:1.2rem; font-weight:900; height:30px; margin-bottom:10px;"></div>
                     <button id="mochi-tap-btn" style="width:100%; padding:14px; border-radius:14px; border:none; background:#26a69a; color:#fff; font-weight:bold; font-size:1rem;">タップ！</button>
                 </div>`;
             mochitsukiState.startTime = performance.now();
@@ -3091,20 +3102,26 @@
             const elapsed = performance.now() - mochitsukiState.startTime;
             const percent = getMochitsukiIndicatorPercent(elapsed, MOCHITSUKI_PERIOD_MS);
             const diff = Math.abs(percent - 50);
-            let judge;
-            if (diff <= MOCHITSUKI_PERFECT_RANGE) { judge = 'PERFECT'; mochitsukiState.perfect++; playAudioFile('critical.mp3'); vibrate(20); }
-            else if (diff <= MOCHITSUKI_GOOD_RANGE) { judge = 'GOOD'; mochitsukiState.good++; playAudioFile('tap.mp3'); }
-            else { judge = 'MISS'; mochitsukiState.miss++; }
+            const rank = MOCHITSUKI_RANKS.find(r => diff <= r.range);
+            mochitsukiState.counts[rank.name]++;
+
+            if (rank.name === 'PERFECT') { playAudioFile('critical.mp3'); vibrate(25); }
+            else if (rank.name === 'GREAT') { playAudioFile('critical.mp3', 0.4); vibrate(15); }
+            else if (rank.name === 'MISS') { /* 無音 */ }
+            else { playAudioFile('tap.mp3'); }
 
             const judgeEl = document.getElementById('mochi-judge-text');
-            if (judgeEl) {
-                judgeEl.innerText = judge;
-                judgeEl.style.color = judge === 'PERFECT' ? '#ff5722' : judge === 'GOOD' ? '#4caf50' : '#999';
-            }
+            if (judgeEl) { judgeEl.innerText = rank.name; judgeEl.style.color = rank.color; }
+
+            // 判定ランクに応じて、もちすけをタップした時と同じようにパーティクルが複数個弾ける
             const indicatorEl = document.getElementById('mochi-indicator');
-            if (indicatorEl) {
+            if (indicatorEl && rank.particles > 0) {
                 const rect = indicatorEl.getBoundingClientRect();
-                createParticle(rect.left + rect.width / 2, rect.top + rect.height / 2, judge === 'PERFECT');
+                for (let i = 0; i < rank.particles; i++) {
+                    const ox = (Math.random() - 0.5) * 30;
+                    const oy = (Math.random() - 0.5) * 20;
+                    createParticle(rect.left + rect.width / 2 + ox, rect.top + rect.height / 2 + oy, rank.gold);
+                }
             }
 
             mochitsukiState.beat++;
@@ -3120,11 +3137,12 @@
 
         function finishMochitsuki() {
             const st = mochitsukiState;
-            const raw = (st.perfect * 1.5 + st.good * 1.0 + st.miss * 0.3) / MOCHITSUKI_BEATS;
-            const mult = Math.min(1.5, raw);
+            const weightedSum = MOCHITSUKI_RANKS.reduce((sum, r) => sum + st.counts[r.name] * r.weight, 0);
+            const mult = Math.min(MOCHITSUKI_REWARD_CAP, weightedSum / MOCHITSUKI_BEATS);
             mochitsukiState = null;
             const reward = grantMinigameReward(mult);
-            showMinigameResult(`🍡 もちつきリズム結果`, `PERFECT:${st.perfect} GOOD:${st.good} MISS:${st.miss}`, reward);
+            const summary = MOCHITSUKI_RANKS.map(r => `${r.name}:${st.counts[r.name]}`).join(' ');
+            showMinigameResult(`🍡 もちつきリズム結果`, summary, reward);
         }
 
         async function openRanking() {
@@ -3144,11 +3162,16 @@
                 return;
             }
 
-            // 自分の記録がTOP20に無ければ末尾に追加表示する
-            const myEntry = { name: playerName, score: Math.floor(score), isMe: true };
-            const alreadyIn = realList.some(p => p.name === playerName && p.score === myEntry.score);
-            const combined = realList.map(p => ({ ...p, isMe: p.name === playerName }));
-            if (!alreadyIn) combined.push(myEntry);
+            // 自分の記録がTOP20に無ければ末尾に追加表示する（uid一致で判定するので、
+            // オートセーブ前後でスコアが少しズレていても二重表示にはならない）
+            const alreadyIn = realList.some(p => p.isMe);
+            const combined = realList.map(p => ({ ...p }));
+            if (!alreadyIn) combined.push({ name: playerName, score: Math.floor(score), isMe: true });
+            else {
+                // 自分の分だけ表示スコアを最新の値に更新（サーバー側は最大10秒遅れているため）
+                const mine = combined.find(p => p.isMe);
+                if (mine) mine.score = Math.floor(score);
+            }
             combined.sort((a, b) => b.score - a.score);
 
             listContainer.innerHTML = "";
