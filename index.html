@@ -654,7 +654,7 @@
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-11-01</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-11-02</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -743,9 +743,20 @@
             <button class="modal-close-x" onclick="closeModal('warehouse-modal')">×</button>
             <h2>📦 もちすけの倉庫</h2>
             <div class="status-box" id="warehouse-status-box"></div>
+            <button class="item-action-btn btn-shop" style="width:100%; background:#9c27b0; color:#fff; margin-bottom:10px;" onclick="openTrophyRoom()">🏅 都道府県トロフィー</button>
             <h3>👕 衣装をきがえる</h3>
             <div class="list-container" id="warehouse-clothes-list"></div>
             <button class="btn-red" onclick="closeModal('warehouse-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="trophy-room-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('trophy-room-modal')">×</button>
+            <h2>🏅 都道府県トロフィー</h2>
+            <p style="font-size:0.75rem; color:#8d6e63; margin-bottom:10px;">その県に滞在中タップした累計回数で🥉🥈🥇が決まります。タップすると詳細が見れます。</p>
+            <div id="trophy-grid" style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; margin-bottom:14px;"></div>
+            <button class="btn-red" onclick="closeModal('trophy-room-modal')">閉じる</button>
         </div>
     </div>
 
@@ -878,6 +889,10 @@
             <button class="modal-close-x" onclick="closeModal('ranking-modal')">×</button>
             <h2>🏆 もちもちランキング</h2>
             <div id="ranking-list" class="list-container"></div>
+
+            <h3 style="margin-top:18px;">🏅 <span id="pref-ranking-title">県内ランキング</span></h3>
+            <div id="pref-ranking-list" class="list-container"></div>
+
             <button class="btn-red" onclick="closeModal('ranking-modal')">閉じる</button>
 
             <!-- 🛠️ 開発者用メニュー（普段は畳んでおき、目立たない場所にちょこんと置いています。
@@ -902,7 +917,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-11-01</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-11-02</div>
                 </div>
             </div>
         </div>
@@ -1266,6 +1281,38 @@
         let minigameLastResetDate = null;
         let minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
         let minigameBests = { timeattack: 0, concentration: null }; // concentration=最少手数(小さいほど良い)
+
+        // ===================================================================
+        // 🏅 県内ランキング＆トロフィーシステム
+        // ===================================================================
+        // prefTaps[i]: その県に滞在中(selectedStageIndex===i)にタップした累計回数。
+        // 過去に訪れた県に戻ってタップしても加算され続ける（進行用のcurrentStageProgressとは別管理）。
+        let prefTaps = new Array(47).fill(0);
+
+        // 県ごとのボーダーライン（調整しやすいよう関数化。県のインデックスiに応じて段階的にスケール）
+        function getPrefTrophyLines(i) {
+            const bronzeLine = 50 + i * 15;
+            const silverLine = bronzeLine * 2.5;
+            const goldLine = bronzeLine * 6;
+            return { bronzeLine, silverLine, goldLine };
+        }
+
+        // タップ数は増える一方なので、この関数は常に「今まで到達した最高のトロフィー」を返す（ダウングレードしない）
+        function getPrefTrophy(i) {
+            const taps = prefTaps[i] || 0;
+            const { bronzeLine, silverLine, goldLine } = getPrefTrophyLines(i);
+            if (taps >= goldLine) return 'gold';
+            if (taps >= silverLine) return 'silver';
+            if (taps >= bronzeLine) return 'bronze';
+            return null;
+        }
+
+        function getPrefTrophyIcon(trophy) {
+            if (trophy === 'gold') return '🥇';
+            if (trophy === 'silver') return '🥈';
+            if (trophy === 'bronze') return '🥉';
+            return '　';
+        }
         let isMinigameActive = false; // 立っている間はメインのタップ判定を無視する
         let currentStageIndex = 0;     
         let selectedStageIndex = 0;    
@@ -1618,7 +1665,8 @@
                 purchasedClothes: purchasedClothes, equippedClotheId: equippedClotheId,
                 skills: skills,
                 totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear,
-                minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests
+                minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
+                prefTaps: prefTaps
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -1641,6 +1689,7 @@
                     minigameLastResetDate = state.minigameLastResetDate ?? null;
                     minigamePlaysUsedToday = state.minigamePlaysUsedToday ?? { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
                     minigameBests = state.minigameBests ?? { timeattack: 0, concentration: null };
+                    prefTaps = state.prefTaps ?? new Array(47).fill(0);
                     if (state.skills) {
                         Object.keys(state.skills).forEach(k => {
                             if (skills[k]) skills[k].lv = state.skills[k].lv ?? skills[k].lv;
@@ -1839,7 +1888,11 @@
             let power = 1; 
             stages.forEach((stage, idx) => {
                 const lv = purchasedItems[idx] || 0;
-                if (lv > 0) power += (stage.tapBonus * lv);
+                if (lv > 0) {
+                    let bonus = stage.tapBonus * lv;
+                    if (getPrefTrophy(idx) === 'gold') bonus *= 1.1; // 🥇金トロフィー：その県の効果+10%
+                    power += bonus;
+                }
             });
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) power += activeClothe.tapBonus;
@@ -1861,7 +1914,11 @@
             let mps = 0; 
             stages.forEach((stage, idx) => {
                 const lv = purchasedItems[idx] || 0;
-                if (lv > 0) mps += (stage.mpsBonus * lv);
+                if (lv > 0) {
+                    let bonus = stage.mpsBonus * lv;
+                    if (getPrefTrophy(idx) === 'gold') bonus *= 1.1; // 🥇金トロフィー：その県の効果+10%
+                    mps += bonus;
+                }
             });
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) mps += activeClothe.mpsBonus;
@@ -1890,6 +1947,29 @@
             if (s.endsWith('rem')) return parseFloat(s) * 16;
             if (s.endsWith('px')) return parseFloat(s);
             return parseFloat(s) || 16;
+        }
+
+        // モーダル内（ミニゲームなど）で使う軽量パーティクル演出。
+        // #particle-canvasはモーダルより下のレイヤーにあるため、モーダルを開いた状態でcreateParticle()を
+        // 呼んでも画面には映らない（もちすけの後ろに隠れて見える原因もこれ）。これはposition:fixedのDOM要素で
+        // モーダルより手前に直接描画するので、どこで呼んでも確実に見える。
+        function spawnModalParticleBurst(x, y, count, color) {
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 30 + Math.random() * 50;
+                const dx = Math.cos(angle) * dist;
+                const dy = Math.sin(angle) * dist - 20;
+                p.style.cssText = `position:fixed; left:${x}px; top:${y}px; width:10px; height:10px; border-radius:50%;
+                    background:${color}; z-index:30000; pointer-events:none;
+                    transition: transform 0.6s ease-out, opacity 0.6s ease-out; opacity:1; transform:translate(-50%,-50%);`;
+                document.body.appendChild(p);
+                requestAnimationFrame(() => {
+                    p.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                    p.style.opacity = '0';
+                });
+                setTimeout(() => p.remove(), 650);
+            }
         }
 
         function createRippleEffect(x, y) {
@@ -2088,6 +2168,7 @@
             playAudioFile('tap.mp3'); 
             totalTapsCount++;
             chargeHissatsuByTap();
+            prefTaps[selectedStageIndex] = (prefTaps[selectedStageIndex] || 0) + 1;
             
             lastTappedTime = Date.now();
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
@@ -2378,6 +2459,36 @@
         function openModal(id) { playAudioFile('skill_tap.mp3'); document.body.classList.add('modal-open'); document.getElementById(id).style.display = "flex"; }
         function closeModal(id) { document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none"; }
 
+        function openTrophyRoom() {
+            const grid = document.getElementById('trophy-grid');
+            grid.innerHTML = "";
+            stages.forEach((stage, i) => {
+                const cell = document.createElement('div');
+                cell.style.cssText = "text-align:center; padding:6px 2px; border-radius:8px; background:#fff8ec; cursor:pointer;";
+                if (i > currentStageIndex) {
+                    cell.style.opacity = "0.4";
+                    cell.innerHTML = `<div style="font-size:1.3rem;">❓</div><div style="font-size:0.55rem; color:#999;">???</div>`;
+                    cell.onclick = () => alert("まだ訪れていない県じゃ！旅を進めよう。");
+                } else {
+                    const trophy = getPrefTrophy(i);
+                    cell.innerHTML = `<div style="font-size:1.3rem;">${getPrefTrophyIcon(trophy)}</div><div style="font-size:0.55rem; color:#5d4037;">${stage.name}</div>`;
+                    cell.onclick = () => showPrefTrophyDetail(i);
+                }
+                grid.appendChild(cell);
+            });
+            openModal('trophy-room-modal');
+        }
+
+        function showPrefTrophyDetail(i) {
+            const stage = stages[i];
+            const taps = prefTaps[i] || 0;
+            const trophy = getPrefTrophy(i);
+            const { bronzeLine, silverLine, goldLine } = getPrefTrophyLines(i);
+            const trophyText = trophy ? `${getPrefTrophyIcon(trophy)} ${trophy.toUpperCase()}` : "未獲得";
+            const goldBonusText = trophy === 'gold' ? "（おみやげ効果+10%発動中！）" : "";
+            alert(`【${stage.name}】\n滞在中タップ数: ${taps.toLocaleString()}回\n現在のトロフィー: ${trophyText}${goldBonusText}\n\n🥉銅: ${bronzeLine}回\n🥈銀: ${Math.floor(silverLine)}回\n🥇金: ${Math.floor(goldLine)}回`);
+        }
+
         function openWarehouse() {
             let boughtCount = 0;
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
@@ -2445,11 +2556,18 @@
                     if (i >= stages.length) break;
                     const stage = stages[i]; const currentLv = purchasedItems[i] || 0;
                     const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
-                    const canBuy = score >= nextPrice;
-                    let btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyOmiyage(${i})" style="background:#ff9800; color:white;">${formatMochi(nextPrice)}もち</button>`;
+                    const isHere = selectedStageIndex === i; // 現在滞在中の県だけ購入可能（地図で移動する必要がある）
+                    const canBuy = isHere && score >= nextPrice;
+                    let btnHtml;
+                    if (!isHere) {
+                        btnHtml = `<button class="item-action-btn" disabled>この県に滞在中のみ購入可</button>`;
+                    } else {
+                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyOmiyage(${i})" style="background:#ff9800; color:white;">${formatMochi(nextPrice)}もち</button>`;
+                    }
 
                     const row = document.createElement('div');
                     row.className = "list-item";
+                    if (!isHere) row.style.opacity = "0.6";
                     const baseEffectText = stage.tapBonus ? `タップ力 +${formatMochi(stage.tapBonus)}` : `自動増加 +${formatMochi(stage.mpsBonus)}もち/秒`;
                     row.innerHTML = `<div class="item-info-row">${getItemThumbHtml(stage)}<div class="item-info"><span class="item-title">🎁 ${stage.item} <span style="color:#ff9800; font-weight:900;">Lv.${currentLv}</span></span><span class="item-desc">基礎効果: ${baseEffectText} (現在: +${formatMochi(currentLv * (stage.tapBonus || stage.mpsBonus))})</span></div></div>${btnHtml}`;
                     listContainer.appendChild(row);
@@ -2511,6 +2629,7 @@
         }
 
         function buyOmiyage(idx) {
+            if (selectedStageIndex !== idx) return; // 現在滞在中の県のみ購入可能
             const stage = stages[idx]; const currentLv = purchasedItems[idx] || 0;
             const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
             if (score >= nextPrice) {
@@ -3042,32 +3161,49 @@
         // 🍡 ④ もちつきリズム
         // -------------------------------------------------------------
         const MOCHITSUKI_BEATS = 12;
-        const MOCHITSUKI_PERIOD_MS = 1100;
-        // 判定ランク定義（中央からの誤差%が小さい順）。ここを調整するだけで難易度・演出のバランスを変えられます。
+        const MOCHITSUKI_INITIAL_PERIOD_MS = 1100; // 最初の速さ（半周期）
+        const MOCHITSUKI_MIN_PERIOD_MS = 480;       // どれだけ速くなっても、これ以上は速くならない下限
+        const MOCHITSUKI_SPEEDUP_RATE = 0.93;       // タップ毎に前回の何倍の速さになるか（小さいほど加速が急）
+        // 判定ランク定義（中央からの誤差%が小さい順、左右対称）。ここを調整するだけで難易度・演出のバランスを変えられます。
         // range: この誤差(%)以内ならこのランク／color: 判定文字＆パーティクル色／particles: 弾けるパーティクル数／weight: 得点への重み
         const MOCHITSUKI_RANKS = [
             { name: 'PERFECT', range: 4,  color: '#ffd700', particles: 10, weight: 1.6, gold: true  },
-            { name: 'GREAT',   range: 8,  color: '#ff5722', particles: 7,  weight: 1.2, gold: false },
-            { name: 'GOOD',    range: 14, color: '#4caf50', particles: 4,  weight: 0.8, gold: false },
-            { name: 'OK',      range: 22, color: '#2196f3', particles: 2,  weight: 0.4, gold: false },
+            { name: 'GREAT',   range: 9,  color: '#ff5722', particles: 7,  weight: 1.2, gold: false },
+            { name: 'GOOD',    range: 16, color: '#4caf50', particles: 4,  weight: 0.8, gold: false },
+            { name: 'OK',      range: 25, color: '#2196f3', particles: 2,  weight: 0.4, gold: false },
             { name: 'MISS',    range: Infinity, color: '#999', particles: 0, weight: 0.1, gold: false }
         ];
         const MOCHITSUKI_REWARD_CAP = 1.6;
         let mochitsukiState = null;
 
+        // MOCHITSUKI_RANKSから帯を自動生成するので、判定ロジックと見た目のズレ（対称性の崩れ）が原理的に起きない
+        function buildMochitsukiBandsHtml() {
+            const finite = MOCHITSUKI_RANKS.filter(r => isFinite(r.range)).slice().sort((a, b) => b.range - a.range);
+            return finite.map(r => {
+                const width = r.range * 2;
+                const left = 50 - r.range;
+                const rgba = hexToRgba(r.color, 0.35);
+                return `<div style="position:absolute; left:${left}%; width:${width}%; height:100%; background:${rgba};"></div>`;
+            }).join('');
+        }
+
+        function hexToRgba(hex, alpha) {
+            const h = hex.replace('#', '');
+            const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
+
         function startMochitsukiGame(container) {
             consumeMinigamePlay('mochitsuki');
-            mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null };
+            mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null, periodMs: MOCHITSUKI_INITIAL_PERIOD_MS };
             MOCHITSUKI_RANKS.forEach(r => mochitsukiState.counts[r.name] = 0);
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
                     <div style="font-weight:bold; margin-bottom:8px;">🍡 もちつきリズム</div>
-                    <div style="font-size:0.78rem; color:#5d4037; margin-bottom:6px;">インジケーターが中央に来た瞬間にタップ！（${MOCHITSUKI_BEATS}拍）</div>
+                    <div style="font-size:0.78rem; color:#5d4037; margin-bottom:6px;">インジケーターが中央に来た瞬間にタップ！タップ毎にどんどん速くなるで（${MOCHITSUKI_BEATS}拍）</div>
                     <div id="mochi-beat-count" style="font-size:0.8rem; color:#999; margin-bottom:10px;">1 / ${MOCHITSUKI_BEATS}拍</div>
                     <div style="position:relative; width:100%; max-width:280px; height:40px; margin:0 auto 16px; background:#fdf3e0; border-radius:20px; overflow:hidden; border:2px solid #ffd699;">
-                        <div style="position:absolute; left:44%; width:4%; height:100%; background:rgba(33,150,243,0.25);"></div>
-                        <div style="position:absolute; left:46%; width:8%; height:100%; background:rgba(76,175,80,0.3);"></div>
-                        <div style="position:absolute; left:48%; width:4%; height:100%; background:rgba(255,152,0,0.45);"></div>
+                        ${buildMochitsukiBandsHtml()}
                         <div id="mochi-indicator" style="position:absolute; top:4px; width:32px; height:32px; border-radius:50%; background:#ff5722; box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>
                     </div>
                     <div id="mochi-judge-text" style="font-size:1.2rem; font-weight:900; height:30px; margin-bottom:10px;"></div>
@@ -3089,7 +3225,7 @@
             const track = el ? el.parentElement : null;
             if (el && track) {
                 const elapsed = performance.now() - mochitsukiState.startTime;
-                const percent = getMochitsukiIndicatorPercent(elapsed, MOCHITSUKI_PERIOD_MS);
+                const percent = getMochitsukiIndicatorPercent(elapsed, mochitsukiState.periodMs);
                 const trackWidth = track.clientWidth;
                 el.style.left = Math.max(0, Math.min(trackWidth - 32, (percent / 100) * trackWidth - 16)) + 'px';
             }
@@ -3100,7 +3236,7 @@
             e.preventDefault();
             if (!mochitsukiState) return;
             const elapsed = performance.now() - mochitsukiState.startTime;
-            const percent = getMochitsukiIndicatorPercent(elapsed, MOCHITSUKI_PERIOD_MS);
+            const percent = getMochitsukiIndicatorPercent(elapsed, mochitsukiState.periodMs);
             const diff = Math.abs(percent - 50);
             const rank = MOCHITSUKI_RANKS.find(r => diff <= r.range);
             mochitsukiState.counts[rank.name]++;
@@ -3113,16 +3249,17 @@
             const judgeEl = document.getElementById('mochi-judge-text');
             if (judgeEl) { judgeEl.innerText = rank.name; judgeEl.style.color = rank.color; }
 
-            // 判定ランクに応じて、もちすけをタップした時と同じようにパーティクルが複数個弾ける
+            // 判定ランクに応じて、バーがあった位置からパーティクルが複数個弾ける
+            // （#particle-canvasはモーダルの下に隠れて見えなくなるため、モーダル内で完結する専用の演出を使う）
             const indicatorEl = document.getElementById('mochi-indicator');
             if (indicatorEl && rank.particles > 0) {
                 const rect = indicatorEl.getBoundingClientRect();
-                for (let i = 0; i < rank.particles; i++) {
-                    const ox = (Math.random() - 0.5) * 30;
-                    const oy = (Math.random() - 0.5) * 20;
-                    createParticle(rect.left + rect.width / 2 + ox, rect.top + rect.height / 2 + oy, rank.gold);
-                }
+                spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, rank.particles, rank.color);
             }
+
+            // タップ毎にバーがどんどん速くなる（下限あり）
+            mochitsukiState.periodMs = Math.max(MOCHITSUKI_MIN_PERIOD_MS, mochitsukiState.periodMs * MOCHITSUKI_SPEEDUP_RATE);
+            mochitsukiState.startTime = performance.now(); // 新しい速さで一拍目からリスタート
 
             mochitsukiState.beat++;
             if (mochitsukiState.beat >= MOCHITSUKI_BEATS) {
@@ -3145,10 +3282,47 @@
             showMinigameResult(`🍡 もちつきリズム結果`, summary, reward);
         }
 
+        function renderPrefRanking() {
+            const i = selectedStageIndex;
+            const stage = stages[i];
+            const titleEl = document.getElementById('pref-ranking-title');
+            if (titleEl) titleEl.innerText = `${stage.name}のランキング`;
+
+            const { bronzeLine, silverLine, goldLine } = getPrefTrophyLines(i);
+            const myTaps = prefTaps[i] || 0;
+            const trophy = getPrefTrophy(i);
+
+            // 固定ライバル（県ごとのボーダーラインを基準にスケール）
+            const rivals = [
+                { name: "ご当地チャンピオン", score: Math.floor(goldLine * 1.15) },
+                { name: "旅の先輩もち", score: Math.floor(silverLine * 1.2) },
+                { name: "地元のもちファン", score: Math.floor(bronzeLine * 1.4) }
+            ];
+            const combined = [...rivals, { name: playerName + "（自分）", score: myTaps, isMe: true }];
+            combined.sort((a, b) => b.score - a.score);
+
+            const listContainer = document.getElementById('pref-ranking-list');
+            listContainer.innerHTML = "";
+            combined.forEach((p, idx) => {
+                const item = document.createElement('div'); item.className = "list-item";
+                if (p.isMe) item.style.background = "#fff9c4";
+                item.innerHTML = `<span>${idx + 1}位. ${p.name}</span><strong>${formatMochi(p.score)} タップ</strong>`;
+                listContainer.appendChild(item);
+            });
+
+            const trophyInfo = document.createElement('div');
+            trophyInfo.style.cssText = "text-align:center; font-size:0.78rem; color:#5d4037; margin-top:6px;";
+            trophyInfo.innerHTML = trophy
+                ? `現在のトロフィー: ${getPrefTrophyIcon(trophy)} ${trophy.toUpperCase()}`
+                : `次の🥉銅トロフィーまであと ${Math.max(0, bronzeLine - myTaps).toLocaleString()} タップ`;
+            listContainer.appendChild(trophyInfo);
+        }
+
         async function openRanking() {
             let listContainer = document.getElementById('ranking-list');
             listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
             openModal('ranking-modal');
+            renderPrefRanking();
 
             const ready = window.isRankingReady && window.isRankingReady();
             let realList = ready ? await window.fetchRankingList() : null;
