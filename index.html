@@ -283,12 +283,26 @@
         /* モーダル共通 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         .modal-content { background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 75vh; overflow-y: auto; box-sizing: border-box; position: relative; }
+
+        /* 全画面表示のモーダル（地図・ショップ用）：スマホ画面サイズで作ったイラストをそのまま端まで生かす */
+        .modal-content.modal-fullscreen {
+            width: 100%; height: 100%; max-width: 480px; max-height: none;
+            padding: 0; border-radius: 0; text-align: left; overflow: hidden;
+            display: flex; flex-direction: column; box-shadow: none;
+        }
+        .modal-fullscreen-close {
+            position: absolute; top: 10px; left: 10px; z-index: 60;
+            width: 34px; height: 34px; border-radius: 50%; border: none;
+            background: rgba(0,0,0,0.4); color: #fff; font-size: 1.2rem; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            padding-bottom: 2px;
+        }
         .modal-content h2 { margin-top: 0; color: #333; font-size: 1.4rem; padding-right: 20px; }
         .btn-red { background: #e53935; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .modal-close-x { position: absolute; top: 14px; right: 16px; font-size: 1.6rem; color: #aaa; cursor: pointer; border: none; background: none; padding: 4px; line-height: 1; font-weight: bold; z-index: 99; }
 
         /* ショップ用タブ */
-        .shop-tabs { display: flex; gap: 8px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+        .shop-tabs { display: flex; gap: 8px; margin: 0; border-bottom: 2px solid #eee; padding: 52px 10px 8px; box-sizing: border-box; flex-shrink: 0; background: #fff; }
         .shop-tab-btn { flex: 1; padding: 8px; font-size: 0.9rem; background: #f0f0f0; color: #555; border: none; border-radius: 6px; }
         .shop-tab-btn.tab-active { background: #ff9800; color: white; font-weight: bold; }
 
@@ -311,27 +325,32 @@
         .diary-img-area { width: 100%; background: #fafafa; border-radius: 10px; padding: 8px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; position: relative; flex-direction: column; }
         .diary-img { max-width: 100%; height: 180px; object-fit: contain; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         .img-caption { font-size: 0.8rem; font-weight: bold; color: #795548; text-align: center; margin-top: 6px; }
-        /* 🎁 おみやげ屋さん（棚イラストUI） */
-        #omiyage-shelf-view { display: block; }
+        /* 🎁 おみやげ屋さん（棚イラストUI・全画面表示） */
+        #omiyage-shelf-view {
+            flex: 1; min-height: 0; display: flex; flex-direction: column;
+            box-sizing: border-box; padding: 6px;
+        }
+        #omiyage-shelf-container {
+            position: relative; flex: 1; min-height: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        /* #omiyage-image-frameはJSでイラストの実際の表示サイズ・位置にピッタリ合わせて配置される
+           （object-fitのレターボックス分を考慮しないと、中の%指定の商品位置がズレるため） */
+        #omiyage-image-frame { position: absolute; }
+        #omiyage-image-frame > img { width: 100%; height: 100%; display: block; }
+
         #omiyage-money-display {
-            font-weight: 900; font-size: 1rem; color: #5d4037;
-            background: #fff8ec; border: 2px solid #e8dcc0; border-radius: 20px;
-            padding: 4px 12px; margin-bottom: 8px;
-            float: left; clear: both;
+            position: absolute; top: 6px; left: 6px; z-index: 40;
+            font-weight: 900; font-size: 0.85rem; color: #5d4037;
+            background: rgba(255,248,236,0.92); border: 2px solid #e8dcc0; border-radius: 20px;
+            padding: 3px 10px;
         }
         #omiyage-money-flash {
-            font-weight: 900; color: #e53935; font-size: 0.95rem;
-            margin-left: 8px; opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateY(0);
-            float: left;
+            font-weight: 900; color: #e53935; font-size: 0.8rem;
+            margin-left: 6px; opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateY(0);
+            display: inline-block;
         }
-        #omiyage-money-flash.show { opacity: 1; transform: translateY(-6px); }
-        #omiyage-shelf-container { clear: both; }
-
-        #omiyage-shelf-container {
-            position: relative; width: 100%; aspect-ratio: 851 / 1847;
-            border-radius: 10px; overflow: hidden; background: #d8b978;
-        }
-        #omiyage-shelf-container > img { width: 100%; height: 100%; display: block; object-fit: cover; }
+        #omiyage-money-flash.show { opacity: 1; transform: translateY(-4px); }
 
         #omiyage-slots-layer { position: absolute; inset: 0; }
         .omiyage-slot {
@@ -359,7 +378,6 @@
         #omiyage-detail-panel {
             position: absolute; left: 4%; right: 4%; top: 78%; height: 8.5%;
             display: none; align-items: center; gap: 3%;
-            background: rgba(255,255,255,0.001); /* パネル自体は棚イラストの白背景をそのまま使う */
         }
         #omiyage-detail-panel.show { display: flex; }
         #omiyage-detail-img { width: 15%; height: 88%; object-fit: contain; }
@@ -383,18 +401,21 @@
             width: 34px; border: none; border-radius: 8px; background: #ff9800; color: #fff;
             font-weight: 900; font-size: 0.9rem; cursor: pointer;
         }
-        #omiyage-page-indicator { text-align: center; font-size: 0.75rem; color: #8d6e63; margin-top: 6px; }
+        #omiyage-page-indicator {
+            position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); z-index: 40;
+            font-size: 0.68rem; color: #8d6e63; background: rgba(255,248,236,0.85);
+            padding: 2px 10px; border-radius: 10px;
+        }
 
-        /* おみやげタブ以外を見ている時はこのビューごと隠す */
-        body.omiyage-hidden #omiyage-shelf-view { display: none; }
+        #shop-list-wrap { flex: 1; min-height: 0; overflow-y: auto; box-sizing: border-box; padding: 12px; }
+        #shop-list-wrap .list-container { margin: 0; }
 
         /* きせかえ・スキルタブの時は既存のリストUIを使うのでこちらを隠す（JSでも制御するが保険として） */
 
 
         #map-viewport {
-            width: 100%; height: 60vh; max-height: 480px;
+            width: 100%; flex: 1; min-height: 0;
             overflow: hidden; position: relative;
-            border-radius: 12px; border: 2px solid #e8dcc0;
             background: #cfe8f0; touch-action: none;
         }
         #map-canvas {
@@ -412,25 +433,26 @@
             cursor: pointer; touch-action: manipulation;
         }
         .map-pin-icon {
-            font-size: 26px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
+            font-size: 15px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
             animation: mapPinBob 1.8s ease-in-out infinite;
         }
-        .map-pin.map-pin-current .map-pin-icon { font-size: 32px; animation: mapPinBobStrong 1s ease-in-out infinite; }
-        .map-pin.map-pin-locked .map-pin-icon { font-size: 18px; opacity: 0.55; animation: none; filter: grayscale(1); }
+        .map-pin.map-pin-current .map-pin-icon { font-size: 19px; animation: mapPinBobStrong 1s ease-in-out infinite; }
+        .map-pin.map-pin-locked .map-pin-icon { font-size: 11px; opacity: 0.5; animation: none; filter: grayscale(1); }
         @keyframes mapPinBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         @keyframes mapPinBobStrong { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.1); } }
         .map-pin-label {
-            font-size: 9px; font-weight: bold; color: #5d4037; background: rgba(255,248,236,0.9);
-            padding: 1px 4px; border-radius: 6px; margin-top: 2px; white-space: nowrap;
-            border: 1px solid #e8dcc0;
+            font-size: 6px; font-weight: bold; color: #5d4037;
+            white-space: nowrap; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;
         }
 
         #map-zoom-controls {
-            display: flex; gap: 8px; justify-content: center; margin-top: 10px;
+            position: absolute; right: 10px; bottom: 10px; z-index: 55;
+            display: flex; flex-direction: column; gap: 6px;
         }
         #map-zoom-controls button {
-            width: 42px; height: 42px; border-radius: 50%; border: 2px solid #e8dcc0;
-            background: #fff8ec; color: #8d6e63; font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            width: 34px; height: 34px; border-radius: 50%; border: none;
+            background: rgba(255,248,236,0.9); color: #8d6e63; font-size: 1rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
         }
 
         /* 地図の移動確認ダイアログ（地図イラストの和紙っぽい雰囲気に合わせる） */
@@ -794,7 +816,7 @@
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-17-02</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-18-01</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -901,9 +923,8 @@
     </div>
 
     <div id="shop-modal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close-x" onclick="closeModal('shop-modal')">×</button>
-            <h2>🛒 よろずショップ</h2>
+        <div class="modal-content modal-fullscreen">
+            <button class="modal-fullscreen-close" onclick="closeModal('shop-modal')">×</button>
             <div class="shop-tabs">
                 <button id="shop-tab-omiyage" class="shop-tab-btn tab-active" onclick="switchShopTab('omiyage')">🎁 おみやげ</button>
                 <button id="shop-tab-kisekae" class="shop-tab-btn" onclick="switchShopTab('kisekae')">👕 きせかえ</button>
@@ -911,38 +932,36 @@
             </div>
 
             <div id="omiyage-shelf-view">
-                <div id="omiyage-money-display">🍡 <span id="omiyage-money-value">0</span></div>
-                <div id="omiyage-money-flash"></div>
                 <div id="omiyage-shelf-container">
-                    <img src="omiyage_shop_bg.png" alt="おみやげ屋さん" draggable="false">
-                    <div id="omiyage-slots-layer"></div>
-                    <div id="omiyage-detail-panel">
-                        <img id="omiyage-detail-img" src="" alt="">
-                        <div id="omiyage-detail-info">
-                            <div id="omiyage-detail-name"></div>
-                            <div id="omiyage-detail-effect"></div>
-                            <button id="omiyage-detail-buy-btn" class="item-action-btn btn-shop" style="background:#ff9800; color:#fff;"></button>
+                    <div id="omiyage-image-frame">
+                        <img id="omiyage-shelf-img" src="omiyage_shop_bg.png" alt="おみやげ屋さん" draggable="false">
+                        <div id="omiyage-slots-layer"></div>
+                        <div id="omiyage-detail-panel">
+                            <img id="omiyage-detail-img" src="" alt="">
+                            <div id="omiyage-detail-info">
+                                <div id="omiyage-detail-name"></div>
+                                <div id="omiyage-detail-effect"></div>
+                                <button id="omiyage-detail-buy-btn" class="item-action-btn btn-shop" style="background:#ff9800; color:#fff;"></button>
+                            </div>
+                        </div>
+                        <button id="omiyage-back-btn" onclick="closeOmiyageDetail()">↩ もどる</button>
+                        <div id="omiyage-page-nav">
+                            <button onclick="omiyagePageBy(-1)">←</button>
+                            <button onclick="omiyagePageBy(1)">→</button>
                         </div>
                     </div>
-                    <button id="omiyage-back-btn" onclick="closeOmiyageDetail()">↩ もどる</button>
-                    <div id="omiyage-page-nav">
-                        <button onclick="omiyagePageBy(-1)">←</button>
-                        <button onclick="omiyagePageBy(1)">→</button>
-                    </div>
+                    <div id="omiyage-money-display">🍡 <span id="omiyage-money-value">0</span><span id="omiyage-money-flash"></span></div>
+                    <div id="omiyage-page-indicator"></div>
                 </div>
-                <div id="omiyage-page-indicator"></div>
             </div>
 
-            <div class="list-container" id="shop-items-list"></div>
-            <button class="btn-red" onclick="closeModal('shop-modal')">閉じる</button>
+            <div id="shop-list-wrap"><div class="list-container" id="shop-items-list"></div></div>
         </div>
     </div>
 
     <div id="map-modal" class="modal">
-        <div class="modal-content" style="max-width:480px;">
-            <button class="modal-close-x" onclick="closeMapModal()">×</button>
-            <h2>🗺️ 日本地図（エリア移動）</h2>
-            <p style="font-size: 0.8rem; color:#666; margin-top:-5px; margin-bottom:8px;">行ったことがある場所をタップして移動できるぞ！ピンチ／ボタンで拡大縮小できます</p>
+        <div class="modal-content modal-fullscreen">
+            <button class="modal-fullscreen-close" onclick="closeMapModal()">×</button>
             <div id="map-viewport">
                 <div id="map-canvas">
                     <img id="map-illustration-img" src="map_illustration.png" alt="日本地図" draggable="false">
@@ -1100,7 +1119,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-17-02</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-18-01</div>
                 </div>
             </div>
         </div>
@@ -1393,10 +1412,10 @@
             { name: "静岡", pinX: 59, pinY: 59, distance: 18000000000, item: "富士宮やきそば", price: 50000000000, diary: "静岡からは富士山がとっても大きく見えたぞ！コシのある麺に削り粉がかかった富士宮やきそばは最高にウマい！", bg: "bg_images/shizuoka.png", diaryImg: "diary_images/shizuoka_d.png", effectDesc: "タップ力 +1600000000", tapBonus: 1600000000, mpsBonus: 0 },
             { name: "山梨", pinX: 61, pinY: 56, distance: 32000000000, item: "ほうとう", price: 100000000000, diary: "富士五湖の周りをのんびりお散歩。お夕飯に食べた具だくさんの熱々ほうとうは、お味噌の味が体に染みたの。", bg: "bg_images/yamanashi.png", diaryImg: "diary_images/yamanashi_d.png", effectDesc: "自動増加 +3500000000もち/秒", tapBonus: 0, mpsBonus: 3500000000 },
             { name: "神奈川", pinX: 70, pinY: 61, distance: 58000000000, item: "横浜シュウマイ", price: 200000000000, diary: "関東地方に突入、神奈川県！横浜中華街の活気ある雰囲気にワクワク。肉汁たっぷりの特製シュウマイを食べたぞ。", bg: "bg_images/kanagawa.png", diaryImg: "diary_images/kanagawa_d.png", effectDesc: "タップ力 +8000000000", tapBonus: 8000000000, mpsBonus: 0 },
-            { name: "東京", pinX: 71, pinY: 58, distance: 100000000000, item: "江戸前寿司", price: 400000000000, diary: "日本の中心、大都会東京！東京タワーの展望台からの景色にびっくり。新鮮なネタの江戸前寿司を贅沢に味わったや。", bg: "bg_images/tokyo.png", diaryImg: "diary_images/tokyo_d.png", effectDesc: "自動増加 +16000000000もち/秒", tapBonus: 0, mpsBonus: 16000000000 },
-            { name: "千葉", pinX: 76, pinY: 58, distance: 180000000000, item: "落花生最中", price: 800000000000, diary: "千葉の九十九里浜で波の音を聞いたぞ。名産の落花生を使った可愛い最中は、香ばしくて優しい甘さだったの。", bg: "bg_images/chiba.png", diaryImg: "diary_images/chiba_d.png", effectDesc: "タップ力 +35000000000", tapBonus: 35000000000, mpsBonus: 0 },
-            { name: "埼玉", pinX: 68, pinY: 55, distance: 320000000000, item: "草加せんべい", price: 1500000000000, diary: "川越の小江戸の街並みをお散歩タイム。お土産に買ったパリパリの草加せんべいは、お醤油の香りが香ばしい！", bg: "bg_images/saitama.png", diaryImg: "diary_images/saitama_d.png", effectDesc: "自動増加 +75000000000もち/秒", tapBonus: 0, mpsBonus: 75000000000 },
-            { name: "群馬", pinX: 63, pinY: 52, distance: 580000000000, item: "焼きまんじゅう", price: 3000000000000, diary: "草津温泉の湯畑はすごい迫力！濃厚な甘辛タレをつけて炭火で焼いた大きな焼きまんじゅう、フカフカで美味しい！", bg: "bg_images/gunma.png", diaryImg: "diary_images/gunma_d.png", effectDesc: "タップ力 +160000000000", tapBonus: 160000000000, mpsBonus: 0 },
+            { name: "東京", pinX: 70, pinY: 59, distance: 100000000000, item: "江戸前寿司", price: 400000000000, diary: "日本の中心、大都会東京！東京タワーの展望台からの景色にびっくり。新鮮なネタの江戸前寿司を贅沢に味わったや。", bg: "bg_images/tokyo.png", diaryImg: "diary_images/tokyo_d.png", effectDesc: "自動増加 +16000000000もち/秒", tapBonus: 0, mpsBonus: 16000000000 },
+            { name: "千葉", pinX: 78, pinY: 59, distance: 180000000000, item: "落花生最中", price: 800000000000, diary: "千葉の九十九里浜で波の音を聞いたぞ。名産の落花生を使った可愛い最中は、香ばしくて優しい甘さだったの。", bg: "bg_images/chiba.png", diaryImg: "diary_images/chiba_d.png", effectDesc: "タップ力 +35000000000", tapBonus: 35000000000, mpsBonus: 0 },
+            { name: "埼玉", pinX: 66, pinY: 54, distance: 320000000000, item: "草加せんべい", price: 1500000000000, diary: "川越の小江戸の街並みをお散歩タイム。お土産に買ったパリパリの草加せんべいは、お醤油の香りが香ばしい！", bg: "bg_images/saitama.png", diaryImg: "diary_images/saitama_d.png", effectDesc: "自動増加 +75000000000もち/秒", tapBonus: 0, mpsBonus: 75000000000 },
+            { name: "群馬", pinX: 61, pinY: 51, distance: 580000000000, item: "焼きまんじゅう", price: 3000000000000, diary: "草津温泉の湯畑はすごい迫力！濃厚な甘辛タレをつけて炭火で焼いた大きな焼きまんじゅう、フカフカで美味しい！", bg: "bg_images/gunma.png", diaryImg: "diary_images/gunma_d.png", effectDesc: "タップ力 +160000000000", tapBonus: 160000000000, mpsBonus: 0 },
             { name: "栃木", pinX: 70, pinY: 52, distance: 1000000000000, item: "宇都宮餃子", price: 6000000000000, diary: "日光東照宮の「見ざる聞かざる言わざる」を見てきたぞ。宇都宮で食べた餃子は、皮がパリッと中はジューシー！", bg: "bg_images/tochigi.png", diaryImg: "diary_images/tochigi_d.png", effectDesc: "自動増加 +350000000000もち/秒", tapBonus: 0, mpsBonus: 350000000000 },
             { name: "茨城", pinX: 74, pinY: 54, distance: 1800000000000, item: "納豆わらび餅", price: 12000000000000, diary: "ひたち海浜公園の一面のネモフィラ畑が綺麗だったなぁ。ちょっと珍しい納豆わらび餅はネバもち不思議な食感！", bg: "bg_images/ibaraki.png", diaryImg: "diary_images/ibaraki_d.png", effectDesc: "タップ力 +800000000000", tapBonus: 800000000000, mpsBonus: 0 },
             { name: "福島", pinX: 68, pinY: 47, distance: 3200000000000, item: "喜多方ラーメン", price: 25000000000000, diary: "東北地方に突入、福島県！鶴ヶ城がどっしり格好よかったの。ちぢれ麺の喜多方ラーメンはスープがすっきりウマい！", bg: "bg_images/fushima.png", diaryImg: "diary_images/fushima_d.png", effectDesc: "自動増加 +1600000000000もち/秒", tapBonus: 0, mpsBonus: 1600000000000 },
@@ -2713,7 +2732,7 @@
             saveGame(); openWarehouse(); updateDisplay();
         }
 
-        function openShop() { switchShopTab(currentShopTab); openModal('shop-modal'); }
+        function openShop() { openModal('shop-modal'); switchShopTab(currentShopTab); }
         // お土産イラスト（stage.itemImg）表示用ヘルパー。未整備の県は🎁の絵文字にフォールバックする
         function getItemThumbHtml(stage, size) {
             size = size || 48;
@@ -2728,8 +2747,8 @@
             document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
             document.getElementById('shop-tab-kisekae').classList.toggle('tab-active', tab === 'kisekae');
             document.getElementById('shop-tab-skills').classList.toggle('tab-active', tab === 'skills');
-            document.getElementById('omiyage-shelf-view').style.display = (tab === 'omiyage') ? 'block' : 'none';
-            document.getElementById('shop-items-list').style.display = (tab === 'omiyage') ? 'none' : 'flex';
+            document.getElementById('omiyage-shelf-view').style.display = (tab === 'omiyage') ? 'flex' : 'none';
+            document.getElementById('shop-list-wrap').style.display = (tab === 'omiyage') ? 'none' : 'block';
             renderShopList();
         }
 
@@ -2811,8 +2830,40 @@
 
         let omiyagePage = 0;
         let omiyageSelectedIdx = null;
+        const OMIYAGE_IMG_NATURAL_RATIO = 851 / 1847; // 棚イラストの実寸比率（幅/高さ）
+
+        // #omiyage-image-frameを、コンテナ内で棚イラストが実際に表示される範囲(レターボックス考慮済み)に
+        // ピッタリ合わせる。これにより、中の%指定（スロット位置・名札・詳細パネルなど）が常に画像基準で正確になる。
+        function syncOmiyageImageFrame() {
+            const container = document.getElementById('omiyage-shelf-container');
+            const frame = document.getElementById('omiyage-image-frame');
+            if (!container || !frame) return;
+            const cw = container.clientWidth, ch = container.clientHeight;
+            if (cw === 0 || ch === 0) return;
+            const containerRatio = cw / ch;
+            let w, h;
+            if (containerRatio > OMIYAGE_IMG_NATURAL_RATIO) {
+                // 横長すぎるコンテナ → 高さいっぱいに合わせて幅を計算（左右がレターボックス）
+                h = ch; w = ch * OMIYAGE_IMG_NATURAL_RATIO;
+            } else {
+                // 縦長すぎるコンテナ → 幅いっぱいに合わせて高さを計算（上下がレターボックス）
+                w = cw; h = cw / OMIYAGE_IMG_NATURAL_RATIO;
+            }
+            frame.style.width = w + 'px';
+            frame.style.height = h + 'px';
+            frame.style.left = ((cw - w) / 2) + 'px';
+            frame.style.top = ((ch - h) / 2) + 'px';
+        }
+
+        window.addEventListener('resize', () => {
+            const shopModal = document.getElementById('shop-modal');
+            if (shopModal && shopModal.style.display === 'flex' && currentShopTab === 'omiyage') {
+                syncOmiyageImageFrame();
+            }
+        });
 
         function renderOmiyageShelf() {
+            syncOmiyageImageFrame();
             const maxPage = Math.ceil(stages.length / OMIYAGE_PAGE_SIZE) - 1;
             if (omiyagePage > maxPage) omiyagePage = 0;
             document.getElementById('omiyage-money-value').innerText = formatMochi(score);
