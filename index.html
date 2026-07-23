@@ -320,9 +320,7 @@
         .modal-close-x { position: absolute; top: 14px; right: 16px; font-size: 1.6rem; color: #aaa; cursor: pointer; border: none; background: none; padding: 4px; line-height: 1; font-weight: bold; z-index: 99; }
 
         /* ショップ用タブ */
-        .shop-tabs { display: flex; gap: 8px; margin: 0; border-bottom: 2px solid #eee; padding: calc(52px + env(safe-area-inset-top, 0px)) 10px 8px; box-sizing: border-box; flex-shrink: 0; background: #fff; }
-        .shop-tab-btn { flex: 1; padding: 8px; font-size: 0.9rem; background: #f0f0f0; color: #555; border: none; border-radius: 6px; }
-        .shop-tab-btn.tab-active { background: #ff9800; color: white; font-weight: bold; }
+        /* .shop-tabs（旧・白背景のタブバー）は廃止。タブ切り替えは#shop-tab-buttons（棚イラスト上のピル型ボタン）に統合 */
 
         /* リストアイテム */
         .list-container { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; text-align: left; }
@@ -343,7 +341,7 @@
         .diary-img-area { width: 100%; background: #fafafa; border-radius: 10px; padding: 8px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; position: relative; flex-direction: column; }
         .diary-img { max-width: 100%; height: 180px; object-fit: contain; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         .img-caption { font-size: 0.8rem; font-weight: bold; color: #795548; text-align: center; margin-top: 6px; }
-        /* 🎁 おみやげ屋さん（棚イラストUI・全画面表示） */
+        /* 🎁 おみやげ屋さん（棚イラストUI・全画面表示。きせかえ／スキルもすべて同じイラストの上に重ねて表示する） */
         #omiyage-shelf-view {
             flex: 1; min-height: 0; display: flex; flex-direction: column;
             box-sizing: border-box; padding: 6px;
@@ -353,7 +351,7 @@
             display: flex; align-items: center; justify-content: center;
             background: #b8813c; /* イラストの縁の色に合わせた背景。レターボックスの隙間があっても白く浮かない */
         }
-        #shop-modal .modal-content.modal-fullscreen { background: #b8813c; }
+        #shop-modal .modal-content.modal-fullscreen { background: #b8813c; padding: 0; }
         /* #omiyage-image-frameはJSでイラストの実際の表示サイズ・位置にピッタリ合わせて配置される
            （object-fitのレターボックス分を考慮しないと、中の%指定の商品位置がズレるため） */
         #omiyage-image-frame { position: absolute; }
@@ -389,46 +387,67 @@
         }
         .omiyage-nameplate {
             position: absolute; display: flex; align-items: center; justify-content: center;
-            font-size: 0.62rem; font-weight: bold; color: #6d4c28; text-align: center;
-            padding: 0 4px; line-height: 1.1; overflow: hidden;
+            font-size: 0.56rem; font-weight: bold; color: #6d4c28; text-align: center;
+            padding: 0 3px; line-height: 1.1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             pointer-events: none;
         }
         .omiyage-slot.locked .omiyage-slot-emoji { opacity: 0.4; filter: grayscale(1); }
 
         #omiyage-detail-panel {
-            position: absolute; left: 4%; right: 4%; top: 78%; height: 8.5%;
+            position: absolute; left: 4%; right: 4%; top: 77%; height: 10%;
             display: none; align-items: center; gap: 3%;
+            background: rgba(255,248,236,0.97); border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            box-sizing: border-box; padding: 0 8% 0 3%;
         }
         #omiyage-detail-panel.show { display: flex; }
-        #omiyage-detail-img { width: 15%; height: 88%; object-fit: contain; }
+        #omiyage-detail-close {
+            position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%;
+            border: none; background: rgba(0,0,0,0.25); color: #fff; font-size: 0.7rem; line-height: 1;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+        }
+        #omiyage-detail-img { width: 15%; height: 80%; object-fit: contain; }
         #omiyage-detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
         #omiyage-detail-name { font-size: 0.7rem; font-weight: 900; color: #5d4037; overflow-wrap: break-word; }
-        #omiyage-detail-effect { font-size: 0.6rem; color: #8d6e63; overflow-wrap: break-word; }
-        #omiyage-detail-buy-btn { align-self: flex-start; padding: 3px 10px; font-size: 0.65rem; border-radius: 8px; }
+        #omiyage-detail-effect { font-size: 0.58rem; color: #8d6e63; overflow-wrap: break-word; }
+        #omiyage-detail-buy-btn { align-self: flex-start; padding: 3px 10px; font-size: 0.62rem; border-radius: 8px; }
 
-        #omiyage-back-btn {
-            position: absolute; left: 4%; top: 88.5%; height: 6%;
-            border: none; border-radius: 8px; background: #8d6e63; color: #fff;
-            font-size: 0.68rem; font-weight: bold; padding: 0 12px; display: none;
+        /* 常時表示バー：タブ切り替え(左)＋ページ送り(右)。棚下の床の余白部分に配置 */
+        #shop-bottom-bar {
+            position: absolute; left: 4%; right: 4%; bottom: 3%; height: 6.5%;
+            display: flex; align-items: center; justify-content: space-between;
         }
-        #omiyage-back-btn.show { display: block; }
+        #shop-tab-buttons { display: flex; gap: 6px; }
+        .shop-tab-pill {
+            width: 15%; aspect-ratio: 1; min-width: 0;
+            border: none; border-radius: 50%; background: rgba(255,248,236,0.85);
+            font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25); cursor: pointer;
+        }
+        .shop-tab-pill.tab-active { background: #ff9800; box-shadow: 0 2px 8px rgba(255,152,0,0.6); }
 
-        #omiyage-page-nav {
-            position: absolute; right: 4%; top: 88.5%; height: 6%;
-            display: flex; gap: 6px;
-        }
+        #omiyage-page-nav { display: flex; gap: 6px; }
         #omiyage-page-nav button {
-            width: 34px; border: none; border-radius: 8px; background: #ff9800; color: #fff;
+            width: 34px; height: 34px; border: none; border-radius: 8px; background: #ff9800; color: #fff;
             font-weight: 900; font-size: 0.9rem; cursor: pointer;
         }
         #omiyage-page-indicator {
             position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); z-index: 40;
-            font-size: 0.68rem; color: #8d6e63; background: rgba(255,248,236,0.85);
+            font-size: 0.65rem; color: #8d6e63; background: rgba(255,248,236,0.85);
             padding: 2px 10px; border-radius: 10px;
         }
 
-        #shop-list-wrap { flex: 1; min-height: 0; overflow-y: auto; box-sizing: border-box; padding: 12px; background: #fff; }
-        #shop-list-wrap .list-container { margin: 0; }
+        /* 👕きせかえ／✨スキル：同じ棚イラストの上に半透明カードで重ねて表示する（別画面に切り替えない） */
+        #shop-overlay-panel {
+            position: absolute; left: 6%; right: 6%; top: 17%; bottom: 12%;
+            display: none; flex-direction: column;
+            background: rgba(255,248,236,0.95); border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.25); border: 2px solid rgba(232,220,192,0.9);
+            overflow: hidden;
+        }
+        #shop-overlay-panel.show { display: flex; }
+        #shop-overlay-list { flex: 1; min-height: 0; overflow-y: auto; padding: 3%; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+        #shop-overlay-list .list-item { background: #fffaf0; }
 
         /* きせかえ・スキルタブの時は既存のリストUIを使うのでこちらを隠す（JSでも制御するが保険として） */
 
@@ -833,7 +852,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-18-02</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-21-01</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -941,18 +960,16 @@
     <div id="shop-modal" class="modal">
         <div class="modal-content modal-fullscreen">
             <button class="modal-fullscreen-close" onclick="closeModal('shop-modal')">×</button>
-            <div class="shop-tabs">
-                <button id="shop-tab-omiyage" class="shop-tab-btn tab-active" onclick="switchShopTab('omiyage')">🎁 おみやげ</button>
-                <button id="shop-tab-kisekae" class="shop-tab-btn" onclick="switchShopTab('kisekae')">👕 きせかえ</button>
-                <button id="shop-tab-skills" class="shop-tab-btn" onclick="switchShopTab('skills')">✨ スキル</button>
-            </div>
 
             <div id="omiyage-shelf-view">
                 <div id="omiyage-shelf-container">
                     <div id="omiyage-image-frame">
                         <img id="omiyage-shelf-img" src="omiyage_shop_bg.png" alt="おみやげ屋さん" draggable="false">
+
+                        <!-- 🎁おみやげタブの中身 -->
                         <div id="omiyage-slots-layer"></div>
                         <div id="omiyage-detail-panel">
+                            <button id="omiyage-detail-close" onclick="closeOmiyageDetail()">×</button>
                             <img id="omiyage-detail-img" src="" alt="">
                             <div id="omiyage-detail-info">
                                 <div id="omiyage-detail-name"></div>
@@ -960,18 +977,29 @@
                                 <button id="omiyage-detail-buy-btn" class="item-action-btn btn-shop" style="background:#ff9800; color:#fff;"></button>
                             </div>
                         </div>
-                        <button id="omiyage-back-btn" onclick="closeOmiyageDetail()">↩ もどる</button>
-                        <div id="omiyage-page-nav">
-                            <button onclick="omiyagePageBy(-1)">←</button>
-                            <button onclick="omiyagePageBy(1)">→</button>
+
+                        <!-- 👕きせかえ／✨スキルタブの中身（同じ棚イラストの上に半透明カードで重ねて表示） -->
+                        <div id="shop-overlay-panel">
+                            <div id="shop-overlay-list"></div>
+                        </div>
+
+                        <!-- 常時表示：タブ切り替え＆ページ送り（棚下の床の余白部分に配置） -->
+                        <div id="shop-bottom-bar">
+                            <div id="shop-tab-buttons">
+                                <button id="shop-tab-omiyage" class="shop-tab-pill tab-active" onclick="switchShopTab('omiyage')">🎁</button>
+                                <button id="shop-tab-kisekae" class="shop-tab-pill" onclick="switchShopTab('kisekae')">👕</button>
+                                <button id="shop-tab-skills" class="shop-tab-pill" onclick="switchShopTab('skills')">✨</button>
+                            </div>
+                            <div id="omiyage-page-nav">
+                                <button onclick="omiyagePageBy(-1)">←</button>
+                                <button onclick="omiyagePageBy(1)">→</button>
+                            </div>
                         </div>
                     </div>
                     <div id="omiyage-money-display">🍡 <span id="omiyage-money-value">0</span><span id="omiyage-money-flash"></span></div>
                     <div id="omiyage-page-indicator"></div>
                 </div>
             </div>
-
-            <div id="shop-list-wrap"><div class="list-container" id="shop-items-list"></div></div>
         </div>
     </div>
 
@@ -1135,7 +1163,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-18-02</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-21-01</div>
                 </div>
             </div>
         </div>
@@ -2763,18 +2791,25 @@
             document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
             document.getElementById('shop-tab-kisekae').classList.toggle('tab-active', tab === 'kisekae');
             document.getElementById('shop-tab-skills').classList.toggle('tab-active', tab === 'skills');
-            document.getElementById('omiyage-shelf-view').style.display = (tab === 'omiyage') ? 'flex' : 'none';
-            document.getElementById('shop-list-wrap').style.display = (tab === 'omiyage') ? 'none' : 'block';
+            // 棚イラスト自体は常に全画面表示のまま。おみやげ以外のタブでは、上に半透明パネルを重ねるだけ。
+            document.getElementById('omiyage-slots-layer').style.display = (tab === 'omiyage') ? 'block' : 'none';
+            document.getElementById('omiyage-page-nav').style.display = (tab === 'omiyage') ? 'flex' : 'none';
+            document.getElementById('omiyage-page-indicator').style.display = (tab === 'omiyage') ? 'block' : 'none';
+            document.getElementById('shop-overlay-panel').classList.toggle('show', tab !== 'omiyage');
+            if (tab !== 'omiyage') closeOmiyageDetail();
             renderShopList();
         }
 
         function renderShopList() {
-            const listContainer = document.getElementById('shop-items-list');
-            listContainer.innerHTML = "";
-
             if (currentShopTab === 'omiyage') {
                 renderOmiyageShelf();
-            } else if (currentShopTab === 'kisekae') {
+                return;
+            }
+
+            const listContainer = document.getElementById('shop-overlay-list');
+            listContainer.innerHTML = "";
+
+            if (currentShopTab === 'kisekae') {
                 clothesData.forEach(c => {
                     if (c.id === 'normal') return; 
                     const isBought = purchasedClothes[c.id];
@@ -2968,18 +3003,16 @@
             }
 
             document.getElementById('omiyage-detail-panel').classList.add('show');
-            document.getElementById('omiyage-back-btn').classList.add('show');
-            document.getElementById('omiyage-page-nav').style.display = 'none';
+            if (currentShopTab === 'omiyage') document.getElementById('omiyage-page-nav').style.display = 'none';
         }
 
         // 見た目だけ隠す（選択状態は保持しない呼び出し元でクリアする）
         function closeOmiyageDetailUI() {
             document.getElementById('omiyage-detail-panel').classList.remove('show');
-            document.getElementById('omiyage-back-btn').classList.remove('show');
-            document.getElementById('omiyage-page-nav').style.display = 'flex';
+            if (currentShopTab === 'omiyage') document.getElementById('omiyage-page-nav').style.display = 'flex';
         }
 
-        // 「もどる」ボタン用：選択も解除する
+        // 「×」ボタン用：選択も解除する
         function closeOmiyageDetail() {
             omiyageSelectedIdx = null;
             closeOmiyageDetailUI();
