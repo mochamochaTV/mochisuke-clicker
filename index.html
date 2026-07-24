@@ -60,8 +60,11 @@
             touch-action: none;
             overscroll-behavior: none;
             position: fixed;
-            inset: 0; /* top/right/bottom/leftを全部0にして、真の画面端に直接アンカーする。
-                         vh/dvh/innerHeightの実測値に頼らないので、その手のズレの影響を受けない */
+            top: 0; left: 0; width: 100%; height: 100%;
+            /* 以前はinset:0を使っていたが、同じ「position:fixed;端に固定」でも
+               inset:0だとiPhoneのPWAで下に隙間が残るのに対し、.modal（top/left/width/height指定）は
+               隙間なく端まで表示できていることが実機で確認できたため、同じ書き方に統一した。
+               WebKitのinsetショートハンドの実装上のクセの可能性が高い。 */
             box-sizing: border-box;
             /* 左右のノッチ避けだけ body側で確保（上下は各バー自身の背景色で埋めるので、
                ここではpadding-top/bottomを持たせない＝隙間に本体の背景色が見えてしまうのを防ぐ） */
@@ -385,6 +388,7 @@
             60% { transform: scale(1.18, 0.85); }
             100% { transform: scale(1); }
         }
+        .present-mochitto { animation: omiyageMochitto 0.3s ease; }
         .omiyage-nameplate {
             position: absolute; display: flex; align-items: center; justify-content: center;
             font-size: 0.56rem; font-weight: bold; color: #6d4c28; text-align: center;
@@ -489,6 +493,20 @@
             background: rgba(255,248,236,0.9); color: #8d6e63; font-size: 1rem; font-weight: bold; cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.25);
         }
+
+        #map-calib-toggle-btn {
+            position: absolute; left: calc(10px + env(safe-area-inset-left, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 55;
+            border: none; border-radius: 20px; background: rgba(0,0,0,0.45); color: #fff;
+            font-size: 0.68rem; font-weight: bold; padding: 8px 12px; cursor: pointer;
+        }
+        #map-calib-toggle-btn.active { background: #e53935; }
+        #map-calib-panel {
+            display: none; position: absolute; left: 4%; right: 4%; bottom: calc(52px + env(safe-area-inset-bottom, 0px)); z-index: 55;
+            background: rgba(255,248,236,0.97); border-radius: 10px; padding: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        #map-calib-panel.show { display: block; }
+        #map-calibration-textarea { width: 100%; height: 90px; box-sizing: border-box; font-size: 0.65rem; border-radius: 6px; border: 1px solid #ddd; padding: 6px; margin-bottom: 6px; }
+        #map-calib-panel button { padding: 4px 10px; font-size: 0.65rem; border-radius: 6px; border: none; background: #8d6e63; color: #fff; }
 
         /* 地図の移動確認ダイアログ（地図イラストの和紙っぽい雰囲気に合わせる） */
         #map-confirm-overlay {
@@ -713,7 +731,7 @@
 
         /* 吹き出し */
         #mochi-balloon {
-            position: absolute; top: 10px; background: white;
+            position: absolute; top: 82px; background: white;
             padding: 8px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;
             color: #4a3622; border: 3px solid #ff9800; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             white-space: nowrap; z-index: 10; opacity: 0; transform: scale(0.8);
@@ -852,7 +870,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-21-01</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-23-01</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -1017,6 +1035,12 @@
                 <button onclick="mapZoomBy(1/1.3)">－</button>
                 <button onclick="mapZoomReset()">⟲</button>
             </div>
+            <button id="map-calib-toggle-btn" onclick="toggleMapCalibration()">🎯 ピン計測</button>
+            <div id="map-calib-panel">
+                <div style="font-size:0.68rem; color:#5d4037; margin-bottom:4px;">地図をタップした位置の座標(%)が下に記録されます。都道府県名の上を順にタップして、この中身をコピーして送ってください。</div>
+                <textarea id="map-calibration-textarea" readonly></textarea>
+                <button onclick="clearMapCalibrationLog()">クリア</button>
+            </div>
         </div>
     </div>
 
@@ -1163,7 +1187,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-21-01</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-23-01</div>
                 </div>
             </div>
         </div>
@@ -1779,7 +1803,7 @@
         // 個別のAudio要素を大量に操作する必要が無くなり、軽量かつ確実になります。
         // また音声データは事前にデコードしてメモリ上に持つので、Service Workerのキャッシュ
         // （Rangeリクエストの不整合が起きやすい）を一切経由しません。
-        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3'];
+        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3', 'balloon_pop.mp3'];
         let audioCtx = null;
         const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
         const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
@@ -2111,14 +2135,15 @@
 
         // スキル効果を含んだタップ力計算コア
         // もちの数が大きくなりすぎてもUIからはみ出さないよう、日本語の単位（万/億/兆/京）で短く表示する
+        const MOCHI_DECIMAL_PLACES = 6; // 大きい数字の時、小数点以下を何桁まで表示するか（5〜10の範囲で調整可能）
         function formatMochi(n) {
             n = Math.floor(n);
             if (n < 100000) return n.toLocaleString();
-            if (n >= 1e20) return (n / 1e20).toFixed(2) + '垓';
-            if (n >= 1e16) return (n / 1e16).toFixed(2) + '京';
-            if (n >= 1e12) return (n / 1e12).toFixed(2) + '兆';
-            if (n >= 1e8) return (n / 1e8).toFixed(2) + '億';
-            return (n / 1e4).toFixed(1) + '万';
+            if (n >= 1e20) return (n / 1e20).toFixed(MOCHI_DECIMAL_PLACES) + '垓';
+            if (n >= 1e16) return (n / 1e16).toFixed(MOCHI_DECIMAL_PLACES) + '京';
+            if (n >= 1e12) return (n / 1e12).toFixed(MOCHI_DECIMAL_PLACES) + '兆';
+            if (n >= 1e8) return (n / 1e8).toFixed(MOCHI_DECIMAL_PLACES) + '億';
+            return (n / 1e4).toFixed(MOCHI_DECIMAL_PLACES) + '万';
         }
 
         // 📳 振動（ハプティクス）
@@ -2981,7 +3006,8 @@
             const stage = stages[idx];
             const currentLv = purchasedItems[idx] || 0;
             const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
-            const isHere = selectedStageIndex === idx;
+            const isFirstPurchase = currentLv === 0;
+            const isHere = !isFirstPurchase || selectedStageIndex === idx;
             const canBuy = isHere && score >= nextPrice;
             const baseEffectText = stage.tapBonus ? `タップ力 +${formatMochi(stage.tapBonus)}` : `自動増加 +${formatMochi(stage.mpsBonus)}もち/秒`;
 
@@ -2993,7 +3019,7 @@
 
             const buyBtn = document.getElementById('omiyage-detail-buy-btn');
             if (!isHere) {
-                buyBtn.innerText = 'この県に滞在中のみ購入可';
+                buyBtn.innerText = '初回はこの県に滞在中のみ購入可';
                 buyBtn.disabled = true;
                 buyBtn.onclick = null;
             } else {
@@ -3019,7 +3045,8 @@
         }
 
         function buyOmiyageFromShelf(idx, price) {
-            if (selectedStageIndex !== idx || score < price) return;
+            const isFirstPurchase = (purchasedItems[idx] || 0) === 0;
+            if ((isFirstPurchase && selectedStageIndex !== idx) || score < price) return;
             buyOmiyage(idx); // 既存の購入ロジックを流用（効果音・セリフ・セーブ・再描画まで全部やってくれる）
             flashOmiyageMoneySpent(price);
         }
@@ -3032,8 +3059,9 @@
         }
 
         function buyOmiyage(idx) {
-            if (selectedStageIndex !== idx) return; // 現在滞在中の県のみ購入可能
             const stage = stages[idx]; const currentLv = purchasedItems[idx] || 0;
+            const isFirstPurchase = currentLv === 0;
+            if (isFirstPurchase && selectedStageIndex !== idx) return; // 初回入手だけは現在滞在中の県が必要
             const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
             if (score >= nextPrice) {
                 score -= nextPrice; purchasedItems[idx] = currentLv + 1;
@@ -3054,9 +3082,43 @@
         // 🗺️ 地図の拡大縮小・ドラッグ操作の状態
         let mapZoom = 1;
         let mapPanX = 0, mapPanY = 0;
-        let mapDragging = false, mapDragStartX = 0, mapDragStartY = 0, mapPanStartX = 0, mapPanStartY = 0;
+        let mapDragging = false, mapDragStartX = 0, mapDragStartY = 0, mapPanStartX = 0, mapPanStartY = 0, mapPointerDownX = 0, mapPointerDownY = 0;
         let mapPinchStartDist = 0, mapPinchStartZoom = 1;
         const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
+
+        // 🎯 ピン位置キャリブレーションツール（開発用）
+        // 実機で地図をタップすると、その位置の正確な%座標が分かる。目視での座標合わせより確実。
+        let mapCalibrationMode = false;
+        let mapCalibrationLog = [];
+
+        function toggleMapCalibration() {
+            mapCalibrationMode = !mapCalibrationMode;
+            document.getElementById('map-calib-toggle-btn').classList.toggle('active', mapCalibrationMode);
+            document.getElementById('map-calib-panel').classList.toggle('show', mapCalibrationMode);
+        }
+
+        function clearMapCalibrationLog() {
+            mapCalibrationLog = [];
+            document.getElementById('map-calibration-textarea').value = '';
+        }
+
+        function recordMapCalibrationTap(clientX, clientY) {
+            const img = document.getElementById('map-illustration-img');
+            const rect = img.getBoundingClientRect(); // ズーム・パン後の実際の見た目のサイズ・位置を反映した値
+            const xPct = ((clientX - rect.left) / rect.width * 100).toFixed(1);
+            const yPct = ((clientY - rect.top) / rect.height * 100).toFixed(1);
+            mapCalibrationLog.push(`x:${xPct}, y:${yPct}`);
+            const ta = document.getElementById('map-calibration-textarea');
+            if (ta) { ta.value = mapCalibrationLog.join('\n'); ta.scrollTop = ta.scrollHeight; }
+
+            // タップした場所に一瞬だけ赤いマーカーを出す（押し間違い確認用）
+            const marker = document.createElement('div');
+            marker.style.cssText = `position:fixed; left:${clientX}px; top:${clientY}px; width:14px; height:14px; border-radius:50%;
+                background:#e53935; border:2px solid #fff; transform:translate(-50%,-50%); z-index:99999; pointer-events:none;
+                box-shadow:0 0 6px rgba(0,0,0,0.5);`;
+            document.body.appendChild(marker);
+            setTimeout(() => marker.remove(), 1200);
+        }
 
         function openMap() {
             const pinsLayer = document.getElementById('map-pins-layer');
@@ -3168,6 +3230,7 @@
                 mapDragging = true;
                 mapDragStartX = e.clientX; mapDragStartY = e.clientY;
                 mapPanStartX = mapPanX; mapPanStartY = mapPanY;
+                mapPointerDownX = e.clientX; mapPointerDownY = e.clientY;
             });
             viewport.addEventListener('pointermove', (e) => {
                 if (!mapDragging) return;
@@ -3176,7 +3239,12 @@
                 clampMapPan();
                 applyMapTransform();
             });
-            const endDrag = () => { mapDragging = false; };
+            const endDrag = (e) => {
+                mapDragging = false;
+                if (mapCalibrationMode && e && Math.abs(e.clientX - mapPointerDownX) < 6 && Math.abs(e.clientY - mapPointerDownY) < 6) {
+                    recordMapCalibrationTap(e.clientX, e.clientY);
+                }
+            };
             viewport.addEventListener('pointerup', endDrag);
             viewport.addEventListener('pointerleave', endDrag);
             viewport.addEventListener('pointercancel', endDrag);
@@ -3253,6 +3321,8 @@
             setInterval(() => { if (!document.getElementById('lucky-present') && Math.random() < PRESENT_SPAWN_CHANCE) spawnLuckyPresent(); }, PRESENT_SPAWN_INTERVAL_MS);
         }
 
+        const PRESENT_TAPS_REQUIRED = 10; // 風船(プレゼント)を割るのに必要なタップ数
+
         function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             showMochiComment(pickRandom(dialogueData.eventComments.presentSpawn));
@@ -3263,13 +3333,30 @@
             present.style.left = '-110px'; present.style.top = (Math.random() * (rect.height - 350) + 160) + 'px';
             gameScreen.appendChild(present);
             setTimeout(() => present.style.transform = `translateX(${rect.width + 220}px)`, 50);
-            
+
+            let popTaps = 0;
+            const imgEl = present.querySelector('.present-floating-img');
+
             present.addEventListener('pointerdown', (e) => {
                 e.stopPropagation();
+                popTaps++;
+
+                if (popTaps < PRESENT_TAPS_REQUIRED) {
+                    // もちすけをタップした時と同じ「もちっ」演出＋効果音（まだ割れない）
+                    playAudioFile('tap.mp3');
+                    imgEl.classList.remove('present-mochitto'); void imgEl.offsetWidth; imgEl.classList.add('present-mochitto');
+                    createParticle(e.clientX, e.clientY);
+                    return;
+                }
+
+                // 10回目：破裂してもちを獲得
+                playAudioFile('balloon_pop.mp3');
+                vibrate([20, 30, 60]);
                 const currentStage = stages[currentStageIndex] || stages[0];
                 const bonus = Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
-                score += bonus; createParticle(e.clientX, e.clientY);
-                alert(`🎁 【福もちボーナス +${formatMochi(bonus)} もち】獲得！`);
+                score += bonus;
+                for (let i = 0; i < 14; i++) createParticle(e.clientX + (Math.random() - 0.5) * 70, e.clientY + (Math.random() - 0.5) * 70, true);
+                createFloatingText(e.clientX, e.clientY, `🎁福もちボーナス +${formatMochi(bonus)}`, "#ff9800", "1.5rem");
                 saveGame(); present.remove(); updateDisplay();
                 hideMochiComment();
             });
