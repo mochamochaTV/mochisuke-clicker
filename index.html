@@ -505,8 +505,27 @@
             background: rgba(255,248,236,0.97); border-radius: 10px; padding: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
         #map-calib-panel.show { display: block; }
+        #map-calib-pref-select { width: 100%; padding: 6px; font-size: 0.75rem; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 4px; }
+        #map-calib-hint { font-size: 0.72rem; font-weight: bold; color: #ff9800; margin-bottom: 6px; min-height: 1.2em; }
         #map-calibration-textarea { width: 100%; height: 90px; box-sizing: border-box; font-size: 0.65rem; border-radius: 6px; border: 1px solid #ddd; padding: 6px; margin-bottom: 6px; }
         #map-calib-panel button { padding: 4px 10px; font-size: 0.65rem; border-radius: 6px; border: none; background: #8d6e63; color: #fff; }
+
+        #shelf-calib-toggle-btn {
+            position: absolute; right: 6px; top: 40px; z-index: 55;
+            border: none; border-radius: 20px; background: rgba(0,0,0,0.45); color: #fff;
+            font-size: 0.65rem; font-weight: bold; padding: 6px 10px; cursor: pointer;
+        }
+        #shelf-calib-toggle-btn.active { background: #e53935; }
+        #shelf-calib-panel {
+            display: none; position: absolute; left: 4%; right: 4%; top: 12%; z-index: 56;
+            background: rgba(255,248,236,0.97); border-radius: 10px; padding: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        #shelf-calib-panel.show { display: block; }
+        #shelf-calib-slot-select { width: 100%; padding: 6px; font-size: 0.72rem; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 4px; }
+        #shelf-calib-hint { font-size: 0.68rem; font-weight: bold; color: #ff9800; margin-bottom: 6px; min-height: 1.2em; }
+        #shelf-calibration-textarea { width: 100%; height: 110px; box-sizing: border-box; font-size: 0.62rem; border-radius: 6px; border: 1px solid #ddd; padding: 6px; margin-bottom: 6px; }
+        #shelf-calib-panel button { padding: 4px 10px; font-size: 0.65rem; border-radius: 6px; border: none; background: #8d6e63; color: #fff; }
+
 
         /* 地図の移動確認ダイアログ（地図イラストの和紙っぽい雰囲気に合わせる） */
         #map-confirm-overlay {
@@ -870,7 +889,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-23-01</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-23-03</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -1016,6 +1035,16 @@
                     </div>
                     <div id="omiyage-money-display">🍡 <span id="omiyage-money-value">0</span><span id="omiyage-money-flash"></span></div>
                     <div id="omiyage-page-indicator"></div>
+                    <button id="shelf-calib-toggle-btn" onclick="toggleShelfCalibration()">🎯 棚計測</button>
+                    <div id="shelf-calib-panel">
+                        <select id="shelf-calib-slot-select"><option value="">枠を選択</option></select>
+                        <div id="shelf-calib-hint">↑まず枠を選んでね</div>
+                        <textarea id="shelf-calibration-textarea" readonly></textarea>
+                        <div style="display:flex; gap:6px;">
+                            <button onclick="copyShelfCalibrationLog()" style="flex:1; background:#ff9800;">📋 まとめてコピー</button>
+                            <button onclick="clearShelfCalibrationLog()">クリア</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1037,9 +1066,13 @@
             </div>
             <button id="map-calib-toggle-btn" onclick="toggleMapCalibration()">🎯 ピン計測</button>
             <div id="map-calib-panel">
-                <div style="font-size:0.68rem; color:#5d4037; margin-bottom:4px;">地図をタップした位置の座標(%)が下に記録されます。都道府県名の上を順にタップして、この中身をコピーして送ってください。</div>
+                <select id="map-calib-pref-select"><option value="">都道府県を選択</option></select>
+                <div id="map-calib-hint">↑まず都道府県を選んでね</div>
                 <textarea id="map-calibration-textarea" readonly></textarea>
-                <button onclick="clearMapCalibrationLog()">クリア</button>
+                <div style="display:flex; gap:6px;">
+                    <button onclick="copyMapCalibrationLog()" style="flex:1; background:#ff9800;">📋 まとめてコピー</button>
+                    <button onclick="clearMapCalibrationLog()">クリア</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1187,7 +1220,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-23-01</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-23-03</div>
                 </div>
             </div>
         </div>
@@ -3087,14 +3120,42 @@
         const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
 
         // 🎯 ピン位置キャリブレーションツール（開発用）
-        // 実機で地図をタップすると、その位置の正確な%座標が分かる。目視での座標合わせより確実。
+        // 都道府県を選ぶ→地図をタップ→自動で「県名: x,y」の形で記録→次の未記録の県へ自動で進む。
         let mapCalibrationMode = false;
         let mapCalibrationLog = [];
+        let mapCalibSelectedPref = null;
 
         function toggleMapCalibration() {
             mapCalibrationMode = !mapCalibrationMode;
             document.getElementById('map-calib-toggle-btn').classList.toggle('active', mapCalibrationMode);
             document.getElementById('map-calib-panel').classList.toggle('show', mapCalibrationMode);
+            if (mapCalibrationMode) populateMapCalibSelect();
+        }
+
+        function populateMapCalibSelect() {
+            const sel = document.getElementById('map-calib-pref-select');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">都道府県を選択</option>';
+            stages.forEach((s, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = s.name;
+                sel.appendChild(opt);
+            });
+            if (!sel.dataset.bound) {
+                sel.dataset.bound = '1';
+                sel.addEventListener('change', () => {
+                    mapCalibSelectedPref = sel.value === '' ? null : stages[sel.value].name;
+                    updateMapCalibHint();
+                });
+            }
+            mapCalibSelectedPref = null;
+            updateMapCalibHint();
+        }
+
+        function updateMapCalibHint() {
+            const hint = document.getElementById('map-calib-hint');
+            if (hint) hint.innerText = mapCalibSelectedPref ? `📍「${mapCalibSelectedPref}」の位置を地図でタップ！` : '↑まず都道府県を選んでね';
         }
 
         function clearMapCalibrationLog() {
@@ -3102,12 +3163,27 @@
             document.getElementById('map-calibration-textarea').value = '';
         }
 
+        function copyMapCalibrationLog() {
+            const text = mapCalibrationLog.join('\n');
+            if (!text) { alert('まだ記録がありません'); return; }
+            const ta = document.getElementById('map-calibration-textarea');
+            ta.select();
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => alert('コピーしました！')).catch(() => { document.execCommand('copy'); alert('コピーしました！'); });
+                } else {
+                    document.execCommand('copy'); alert('コピーしました！');
+                }
+            } catch (e) { alert('コピーできませんでした。テキストを長押しして手動でコピーしてください'); }
+        }
+
         function recordMapCalibrationTap(clientX, clientY) {
+            if (!mapCalibSelectedPref) { alert('先に都道府県を選んでからタップしてください！'); return; }
             const img = document.getElementById('map-illustration-img');
             const rect = img.getBoundingClientRect(); // ズーム・パン後の実際の見た目のサイズ・位置を反映した値
             const xPct = ((clientX - rect.left) / rect.width * 100).toFixed(1);
             const yPct = ((clientY - rect.top) / rect.height * 100).toFixed(1);
-            mapCalibrationLog.push(`x:${xPct}, y:${yPct}`);
+            mapCalibrationLog.push(`${mapCalibSelectedPref}: x:${xPct}, y:${yPct}`);
             const ta = document.getElementById('map-calibration-textarea');
             if (ta) { ta.value = mapCalibrationLog.join('\n'); ta.scrollTop = ta.scrollHeight; }
 
@@ -3118,7 +3194,165 @@
                 box-shadow:0 0 6px rgba(0,0,0,0.5);`;
             document.body.appendChild(marker);
             setTimeout(() => marker.remove(), 1200);
+
+            advanceToNextUnrecordedPref();
         }
+
+        function advanceToNextUnrecordedPref() {
+            const sel = document.getElementById('map-calib-pref-select');
+            const recordedNames = mapCalibrationLog.map(line => line.split(':')[0]);
+            const currentIdx = sel.value === '' ? -1 : parseInt(sel.value);
+            for (let i = currentIdx + 1; i < stages.length; i++) {
+                if (!recordedNames.includes(stages[i].name)) {
+                    sel.value = i;
+                    mapCalibSelectedPref = stages[i].name;
+                    updateMapCalibHint();
+                    return;
+                }
+            }
+            // 全部埋まっていれば完了表示、まだ抜けがあれば最初から探す
+            for (let i = 0; i < stages.length; i++) {
+                if (!recordedNames.includes(stages[i].name)) {
+                    sel.value = i;
+                    mapCalibSelectedPref = stages[i].name;
+                    updateMapCalibHint();
+                    return;
+                }
+            }
+            mapCalibSelectedPref = null;
+            sel.value = '';
+            document.getElementById('map-calib-hint').innerText = '✅ 全部記録済み！「まとめてコピー」を押してね';
+        }
+
+        // 🎯 おみやげ棚のキャリブレーションツール（開発用）
+        // OMIYAGE_ROWS/OMIYAGE_COLSは行・列で共有される値なので、スロット9個分ではなく
+        // 「行の上端/下端」「列の左端/右端」だけ測れば十分（18回のタップで棚全体を再計算できる）。
+        let shelfCalibrationMode = false;
+        let shelfCalibrationLog = [];
+        let shelfCalibSelectedLabel = null;
+        const SHELF_CALIB_LABELS = [
+            ['row1-item-top', '1段目：アイテム枠の上端'], ['row1-item-bottom', '1段目：アイテム枠の下端'],
+            ['row1-plate-top', '1段目：名札枠の上端'], ['row1-plate-bottom', '1段目：名札枠の下端'],
+            ['row2-item-top', '2段目：アイテム枠の上端'], ['row2-item-bottom', '2段目：アイテム枠の下端'],
+            ['row2-plate-top', '2段目：名札枠の上端'], ['row2-plate-bottom', '2段目：名札枠の下端'],
+            ['row3-item-top', '3段目：アイテム枠の上端'], ['row3-item-bottom', '3段目：アイテム枠の下端'],
+            ['row3-plate-top', '3段目：名札枠の上端'], ['row3-plate-bottom', '3段目：名札枠の下端'],
+            ['col1-left', '1列目：左端'], ['col1-right', '1列目：右端'],
+            ['col2-left', '2列目：左端'], ['col2-right', '2列目：右端'],
+            ['col3-left', '3列目：左端'], ['col3-right', '3列目：右端']
+        ];
+
+        function toggleShelfCalibration() {
+            shelfCalibrationMode = !shelfCalibrationMode;
+            document.getElementById('shelf-calib-toggle-btn').classList.toggle('active', shelfCalibrationMode);
+            document.getElementById('shelf-calib-panel').classList.toggle('show', shelfCalibrationMode);
+            if (shelfCalibrationMode) populateShelfCalibSelect();
+        }
+
+        function populateShelfCalibSelect() {
+            const sel = document.getElementById('shelf-calib-slot-select');
+            if (!sel) return;
+            sel.innerHTML = '<option value="">枠を選択</option>';
+            SHELF_CALIB_LABELS.forEach(([key, label]) => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.innerText = label;
+                sel.appendChild(opt);
+            });
+            if (!sel.dataset.bound) {
+                sel.dataset.bound = '1';
+                sel.addEventListener('change', () => {
+                    shelfCalibSelectedLabel = sel.value || null;
+                    updateShelfCalibHint();
+                });
+            }
+            shelfCalibSelectedLabel = null;
+            updateShelfCalibHint();
+        }
+
+        function updateShelfCalibHint() {
+            const hint = document.getElementById('shelf-calib-hint');
+            const labelObj = SHELF_CALIB_LABELS.find(([k]) => k === shelfCalibSelectedLabel);
+            if (hint) hint.innerText = labelObj ? `🎯「${labelObj[1]}」の位置をタップ！（縦線・横線をイメージしてその線上をタップ）` : '↑まず枠を選んでね';
+        }
+
+        function clearShelfCalibrationLog() {
+            shelfCalibrationLog = [];
+            document.getElementById('shelf-calibration-textarea').value = '';
+        }
+
+        function copyShelfCalibrationLog() {
+            const text = shelfCalibrationLog.join('\n');
+            if (!text) { alert('まだ記録がありません'); return; }
+            const ta = document.getElementById('shelf-calibration-textarea');
+            ta.select();
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(() => alert('コピーしました！')).catch(() => { document.execCommand('copy'); alert('コピーしました！'); });
+                } else {
+                    document.execCommand('copy'); alert('コピーしました！');
+                }
+            } catch (e) { alert('コピーできませんでした。テキストを長押しして手動でコピーしてください'); }
+        }
+
+        function recordShelfCalibrationTap(clientX, clientY) {
+            if (!shelfCalibSelectedLabel) { alert('先に枠を選んでからタップしてください！'); return; }
+            const img = document.getElementById('omiyage-shelf-img');
+            const rect = img.getBoundingClientRect(); // フレーム同期後の実際の表示範囲を反映した値
+            const xPct = ((clientX - rect.left) / rect.width * 100).toFixed(1);
+            const yPct = ((clientY - rect.top) / rect.height * 100).toFixed(1);
+            const labelObj = SHELF_CALIB_LABELS.find(([k]) => k === shelfCalibSelectedLabel);
+            shelfCalibrationLog.push(`${labelObj[1]}(${shelfCalibSelectedLabel}): x:${xPct}, y:${yPct}`);
+            const ta = document.getElementById('shelf-calibration-textarea');
+            if (ta) { ta.value = shelfCalibrationLog.join('\n'); ta.scrollTop = ta.scrollHeight; }
+
+            const marker = document.createElement('div');
+            marker.style.cssText = `position:fixed; left:${clientX}px; top:${clientY}px; width:12px; height:12px; border-radius:50%;
+                background:#e53935; border:2px solid #fff; transform:translate(-50%,-50%); z-index:99999; pointer-events:none;
+                box-shadow:0 0 6px rgba(0,0,0,0.5);`;
+            document.body.appendChild(marker);
+            setTimeout(() => marker.remove(), 1200);
+
+            advanceToNextUnrecordedShelfLabel();
+        }
+
+        function advanceToNextUnrecordedShelfLabel() {
+            const sel = document.getElementById('shelf-calib-slot-select');
+            const recordedKeys = shelfCalibrationLog.map(line => {
+                const m = line.match(/\(([^)]+)\):/);
+                return m ? m[1] : null;
+            });
+            const currentIdx = SHELF_CALIB_LABELS.findIndex(([k]) => k === shelfCalibSelectedLabel);
+            for (let i = currentIdx + 1; i < SHELF_CALIB_LABELS.length; i++) {
+                if (!recordedKeys.includes(SHELF_CALIB_LABELS[i][0])) {
+                    sel.value = SHELF_CALIB_LABELS[i][0];
+                    shelfCalibSelectedLabel = SHELF_CALIB_LABELS[i][0];
+                    updateShelfCalibHint();
+                    return;
+                }
+            }
+            for (let i = 0; i < SHELF_CALIB_LABELS.length; i++) {
+                if (!recordedKeys.includes(SHELF_CALIB_LABELS[i][0])) {
+                    sel.value = SHELF_CALIB_LABELS[i][0];
+                    shelfCalibSelectedLabel = SHELF_CALIB_LABELS[i][0];
+                    updateShelfCalibHint();
+                    return;
+                }
+            }
+            shelfCalibSelectedLabel = null;
+            sel.value = '';
+            document.getElementById('shelf-calib-hint').innerText = '✅ 全部記録済み！「まとめてコピー」を押してね';
+        }
+
+        // キャリブレーション中は棚のタップ(商品選択など)より計測を優先する
+        document.addEventListener('click', (e) => {
+            if (!shelfCalibrationMode) return;
+            if (!e.target.closest('#omiyage-shelf-container')) return;
+            if (e.target.closest('#shelf-calib-toggle-btn') || e.target.closest('#shelf-calib-panel')) return;
+            e.stopPropagation();
+            e.preventDefault();
+            recordShelfCalibrationTap(e.clientX, e.clientY);
+        }, true);
 
         function openMap() {
             const pinsLayer = document.getElementById('map-pins-layer');
