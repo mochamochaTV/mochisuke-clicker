@@ -889,7 +889,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-23-03</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-23-04</div>
 
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
@@ -1220,7 +1220,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-23-03</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-07-23-04</div>
                 </div>
             </div>
         </div>
@@ -3583,15 +3583,15 @@
                     return;
                 }
 
-                // 10回目：破裂してもちを獲得
+                // 10回目：破裂して白いもちが10個飛び出す（もち数の直接ボーナスは無し。見た目だけの演出）
                 playAudioFile('balloon_pop.mp3');
                 vibrate([20, 30, 60]);
-                const currentStage = stages[currentStageIndex] || stages[0];
-                const bonus = Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
-                score += bonus;
-                for (let i = 0; i < 14; i++) createParticle(e.clientX + (Math.random() - 0.5) * 70, e.clientY + (Math.random() - 0.5) * 70, true);
-                createFloatingText(e.clientX, e.clientY, `🎁福もちボーナス +${formatMochi(bonus)}`, "#ff9800", "1.5rem");
-                saveGame(); present.remove(); updateDisplay();
+                for (let i = 0; i < 10; i++) {
+                    const angle = (Math.PI * 2 * i) / 10 + Math.random() * 0.3;
+                    const dist = 30 + Math.random() * 20;
+                    createParticle(e.clientX + Math.cos(angle) * dist, e.clientY + Math.sin(angle) * dist, false);
+                }
+                present.remove();
                 hideMochiComment();
             });
             setTimeout(() => { if (present.parentNode) { present.remove(); hideMochiComment(); } }, 11000);
