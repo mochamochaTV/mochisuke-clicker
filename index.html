@@ -511,20 +511,24 @@
         #map-calib-panel button { padding: 4px 10px; font-size: 0.65rem; border-radius: 6px; border: none; background: #8d6e63; color: #fff; }
 
         #shelf-calib-toggle-btn {
-            position: absolute; right: 6px; top: 40px; z-index: 55;
+            position: absolute; right: 6px; top: 130px; z-index: 55;
             border: none; border-radius: 20px; background: rgba(0,0,0,0.45); color: #fff;
             font-size: 0.65rem; font-weight: bold; padding: 6px 10px; cursor: pointer;
         }
         #shelf-calib-toggle-btn.active { background: #e53935; }
         #shelf-calib-panel {
-            display: none; position: absolute; left: 4%; right: 4%; top: 12%; z-index: 56;
-            background: rgba(255,248,236,0.97); border-radius: 10px; padding: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            display: none; position: absolute; left: 4%; right: 4%; top: 1%; z-index: 56;
+            background: rgba(255,248,236,0.95); border-radius: 8px; padding: 5px 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
         #shelf-calib-panel.show { display: block; }
-        #shelf-calib-slot-select { width: 100%; padding: 6px; font-size: 0.72rem; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 4px; }
-        #shelf-calib-hint { font-size: 0.68rem; font-weight: bold; color: #ff9800; margin-bottom: 6px; min-height: 1.2em; }
-        #shelf-calibration-textarea { width: 100%; height: 110px; box-sizing: border-box; font-size: 0.62rem; border-radius: 6px; border: 1px solid #ddd; padding: 6px; margin-bottom: 6px; }
-        #shelf-calib-panel button { padding: 4px 10px; font-size: 0.65rem; border-radius: 6px; border: none; background: #8d6e63; color: #fff; }
+        #shelf-calib-bar { display: flex; gap: 4px; align-items: center; }
+        #shelf-calib-slot-select { flex: 1; min-width: 0; padding: 4px; font-size: 0.62rem; border-radius: 6px; border: 1px solid #ddd; }
+        #shelf-calib-details-toggle { flex-shrink: 0; padding: 4px 8px; font-size: 0.6rem; border-radius: 6px; border: none; background: #8d6e63; color: #fff; }
+        #shelf-calib-hint { font-size: 0.62rem; font-weight: bold; color: #ff9800; margin-top: 3px; min-height: 1.1em; line-height: 1.3; }
+        #shelf-calib-details { display: none; margin-top: 5px; }
+        #shelf-calib-details.show { display: block; }
+        #shelf-calibration-textarea { width: 100%; height: 70px; box-sizing: border-box; font-size: 0.58rem; border-radius: 6px; border: 1px solid #ddd; padding: 5px; margin-bottom: 5px; }
+        #shelf-calib-details button { padding: 4px 10px; font-size: 0.62rem; border-radius: 6px; border: none; background: #8d6e63; color: #fff; }
 
 
         /* 地図の移動確認ダイアログ（地図イラストの和紙っぽい雰囲気に合わせる） */
@@ -813,7 +817,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, addDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, addDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
         const firebaseConfig = {
@@ -851,6 +855,28 @@
                     updatedAt: Date.now()
                 });
             } catch (e) { console.error("ランキング送信エラー:", e); }
+        };
+
+        // 💾 セーブデータのクラウドバックアップ（localStorageが消えても復元できるようにする保険）
+        // 匿名ログインの状態（IndexedDB）がlocalStorageと別に保持されているケースが多いため、
+        // localStorageだけ消えてもこのバックアップから復元できる可能性が高い。
+        window.backupSaveData = async function (saveJsonString) {
+            if (!fbReady || !db || !currentUid) return;
+            try {
+                await setDoc(doc(db, "saveBackups", currentUid), {
+                    data: saveJsonString,
+                    updatedAt: Date.now()
+                });
+            } catch (e) { console.error("クラウドバックアップ送信エラー:", e); }
+        };
+
+        window.restoreSaveData = async function () {
+            if (!fbReady || !db || !currentUid) return null;
+            try {
+                const snap = await getDoc(doc(db, "saveBackups", currentUid));
+                if (snap.exists()) return snap.data();
+                return null;
+            } catch (e) { console.error("クラウド復元エラー:", e); return null; }
         };
 
         window.fetchRankingList = async function () {
@@ -1037,12 +1063,17 @@
                     <div id="omiyage-page-indicator"></div>
                     <button id="shelf-calib-toggle-btn" onclick="toggleShelfCalibration()">🎯 棚計測</button>
                     <div id="shelf-calib-panel">
-                        <select id="shelf-calib-slot-select"><option value="">枠を選択</option></select>
+                        <div id="shelf-calib-bar">
+                            <select id="shelf-calib-slot-select"><option value="">枠を選択</option></select>
+                            <button id="shelf-calib-details-toggle" onclick="toggleShelfCalibDetails()">結果 ▾</button>
+                        </div>
                         <div id="shelf-calib-hint">↑まず枠を選んでね</div>
-                        <textarea id="shelf-calibration-textarea" readonly></textarea>
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="copyShelfCalibrationLog()" style="flex:1; background:#ff9800;">📋 まとめてコピー</button>
-                            <button onclick="clearShelfCalibrationLog()">クリア</button>
+                        <div id="shelf-calib-details">
+                            <textarea id="shelf-calibration-textarea" readonly></textarea>
+                            <div style="display:flex; gap:6px;">
+                                <button onclick="copyShelfCalibrationLog()" style="flex:1; background:#ff9800;">📋 まとめてコピー</button>
+                                <button onclick="clearShelfCalibrationLog()">クリア</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1165,7 +1196,9 @@
                 <button class="item-action-btn" style="width:100%; margin-bottom:6px;" onclick="exportSaveData()">📤 このデータを書き出す</button>
                 <textarea id="save-export-text" rows="3" readonly style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:6px; font-size:0.7rem; margin-bottom:8px;" placeholder="ここに書き出したデータが表示されます"></textarea>
                 <textarea id="save-import-text" rows="3" style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:6px; font-size:0.7rem; margin-bottom:6px;" placeholder="他の端末/URLで書き出したデータをここに貼り付け"></textarea>
-                <button class="item-action-btn btn-red" style="width:100%;" onclick="importSaveData()">📥 このデータを読み込む（上書き注意）</button>
+                <button class="item-action-btn btn-red" style="width:100%; margin-bottom:10px;" onclick="importSaveData()">📥 このデータを読み込む（上書き注意）</button>
+                <div style="font-size:0.75rem; color:#8d6e63; margin-bottom:6px; border-top:1px dashed #ddd; padding-top:10px;">10秒ごとに自動でクラウドにもバックアップしています。もしセーブデータが消えてしまったら、こちらから復元を試せます。</div>
+                <button class="item-action-btn" style="width:100%; background:#4caf50; color:#fff;" onclick="restoreFromCloud()">☁️ クラウドから復元する</button>
             </div>
 
             <div style="background:#f9f9f9; border-radius:10px; padding:12px;">
@@ -1378,6 +1411,26 @@
             } catch (e) {
                 alert('データの形式が正しくありません。コピーが途中で切れていないか確認してください');
             }
+        }
+
+        async function restoreFromCloud() {
+            if (!window.restoreSaveData) { alert('クラウド機能の準備ができていません。少し待ってからもう一度試してください'); return; }
+            const backup = await window.restoreSaveData();
+            if (!backup || !backup.data) {
+                alert('クラウド上にバックアップが見つかりませんでした。\n（10秒以上プレイ・セーブされたことがある端末でのみバックアップが作られます）');
+                return;
+            }
+            try {
+                JSON.parse(backup.data); // 壊れたデータでないか検証
+            } catch (e) {
+                alert('クラウド上のデータが壊れているようです。復元できませんでした');
+                return;
+            }
+            const when = backup.updatedAt ? new Date(backup.updatedAt).toLocaleString('ja-JP') : '不明';
+            if (!confirm(`クラウドに保存されたデータ（最終更新: ${when}）で、今のセーブデータを上書きします。よろしいですか？`)) return;
+            localStorage.setItem('mochisuke_save_data', backup.data);
+            alert('復元しました！ページを再読み込みします');
+            location.reload();
         }
 
         function onBgmVolumeChange(val) {
@@ -3116,6 +3169,7 @@
         let mapZoom = 1;
         let mapPanX = 0, mapPanY = 0;
         let mapDragging = false, mapDragStartX = 0, mapDragStartY = 0, mapPanStartX = 0, mapPanStartY = 0, mapPointerDownX = 0, mapPointerDownY = 0;
+        let mapGestureHandled = false; // 1回のタップでpointerup/pointerleave等が重複発火するのを防ぐ
         let mapPinchStartDist = 0, mapPinchStartZoom = 1;
         const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
 
@@ -3274,6 +3328,14 @@
             const hint = document.getElementById('shelf-calib-hint');
             const labelObj = SHELF_CALIB_LABELS.find(([k]) => k === shelfCalibSelectedLabel);
             if (hint) hint.innerText = labelObj ? `🎯「${labelObj[1]}」の位置をタップ！（縦線・横線をイメージしてその線上をタップ）` : '↑まず枠を選んでね';
+        }
+
+        function toggleShelfCalibDetails() {
+            const details = document.getElementById('shelf-calib-details');
+            const btn = document.getElementById('shelf-calib-details-toggle');
+            const show = !details.classList.contains('show');
+            details.classList.toggle('show', show);
+            if (btn) btn.innerText = show ? '結果 ▴' : '結果 ▾';
         }
 
         function clearShelfCalibrationLog() {
@@ -3462,6 +3524,7 @@
 
             viewport.addEventListener('pointerdown', (e) => {
                 mapDragging = true;
+                mapGestureHandled = false;
                 mapDragStartX = e.clientX; mapDragStartY = e.clientY;
                 mapPanStartX = mapPanX; mapPanStartY = mapPanY;
                 mapPointerDownX = e.clientX; mapPointerDownY = e.clientY;
@@ -3474,7 +3537,10 @@
                 applyMapTransform();
             });
             const endDrag = (e) => {
+                if (!mapDragging) return; // すでにこのジェスチャーは処理済み（pointerup後のpointerleave等）
                 mapDragging = false;
+                if (mapGestureHandled) return;
+                mapGestureHandled = true;
                 if (mapCalibrationMode && e && Math.abs(e.clientX - mapPointerDownX) < 6 && Math.abs(e.clientY - mapPointerDownY) < 6) {
                     recordMapCalibrationTap(e.clientX, e.clientY);
                 }
@@ -3576,14 +3642,13 @@
                 popTaps++;
 
                 if (popTaps < PRESENT_TAPS_REQUIRED) {
-                    // もちすけをタップした時と同じ「もちっ」演出＋効果音（まだ割れない）
+                    // もちすけをタップした時と同じ「もちっ」演出＋効果音のみ（まだ割れない・もちは出さない）
                     playAudioFile('tap.mp3');
                     imgEl.classList.remove('present-mochitto'); void imgEl.offsetWidth; imgEl.classList.add('present-mochitto');
-                    createParticle(e.clientX, e.clientY);
                     return;
                 }
 
-                // 10回目：破裂して白いもちが10個飛び出す（もち数の直接ボーナスは無し。見た目だけの演出）
+                // 10回目：破裂して白いもちが10個飛び出す＋福もちボーナス獲得
                 playAudioFile('balloon_pop.mp3');
                 vibrate([20, 30, 60]);
                 for (let i = 0; i < 10; i++) {
@@ -3591,6 +3656,11 @@
                     const dist = 30 + Math.random() * 20;
                     createParticle(e.clientX + Math.cos(angle) * dist, e.clientY + Math.sin(angle) * dist, false);
                 }
+                const currentStage = stages[currentStageIndex] || stages[0];
+                const bonus = Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
+                score += bonus;
+                createFloatingText(e.clientX, e.clientY, `🎁福もちボーナス +${formatMochi(bonus)}`, "#ff9800", "1.5rem");
+                saveGame(); updateDisplay();
                 present.remove();
                 hideMochiComment();
             });
@@ -4228,7 +4298,11 @@
         setInterval(() => {
             saveGame();
             if (window.submitRankingScore) window.submitRankingScore(playerName, score);
-        }, 10000); // 10秒毎オートセーブ＋ランキング送信
+            if (window.backupSaveData) {
+                const raw = localStorage.getItem('mochisuke_save_data');
+                if (raw) window.backupSaveData(raw);
+            }
+        }, 10000); // 10秒毎オートセーブ＋ランキング送信＋クラウドバックアップ
 
         let diaryPageIndex = 0;
         function openDiary() { diaryPageIndex = selectedStageIndex; renderDiaryPage(); openModal('diary-modal'); }
