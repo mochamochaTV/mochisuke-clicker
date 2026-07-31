@@ -959,7 +959,7 @@
         <canvas id="mochi-rain-canvas"></canvas>
         <canvas id="particle-canvas"></canvas>
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal')" aria-label="メニュー">☰</button>
+        <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
         <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-23-04</div>
 
@@ -1248,6 +1248,7 @@
                 <textarea id="save-import-text" rows="3" style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:6px; font-size:0.7rem; margin-bottom:6px;" placeholder="他の端末/URLで書き出したデータをここに貼り付け"></textarea>
                 <button class="item-action-btn btn-red" style="width:100%; margin-bottom:10px;" onclick="importSaveData()">📥 このデータを読み込む（上書き注意）</button>
                 <div style="font-size:0.75rem; color:#8d6e63; margin-bottom:6px; border-top:1px dashed #ddd; padding-top:10px;">10秒ごとに自動でクラウドにもバックアップしています。もしセーブデータが消えてしまったら、こちらから復元を試せます。</div>
+                <div id="cloud-backup-status" style="font-size:0.7rem; color:#aaa; margin-bottom:6px;">最終バックアップ: 確認中…</div>
                 <button class="item-action-btn" style="width:100%; background:#4caf50; color:#fff;" onclick="restoreFromCloud()">☁️ クラウドから復元する</button>
             </div>
 
@@ -1460,6 +1461,19 @@
                 location.reload();
             } catch (e) {
                 alert('データの形式が正しくありません。コピーが途中で切れていないか確認してください');
+            }
+        }
+
+        async function refreshCloudBackupStatus() {
+            const el = document.getElementById('cloud-backup-status');
+            if (!el) return;
+            el.innerText = '最終バックアップ: 確認中…';
+            if (!window.restoreSaveData) { el.innerText = '最終バックアップ: 準備中（少し待ってから開き直してください）'; return; }
+            const backup = await window.restoreSaveData();
+            if (backup && backup.updatedAt) {
+                el.innerText = `最終バックアップ: ${new Date(backup.updatedAt).toLocaleString('ja-JP')}`;
+            } else {
+                el.innerText = '最終バックアップ: まだありません（もう少しプレイすると作られます）';
             }
         }
 
@@ -2117,8 +2131,10 @@
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
 
+        let hadLocalSaveOnLoad = false;
         function loadGame() {
             const data = localStorage.getItem('mochisuke_save_data');
+            hadLocalSaveOnLoad = !!data;
             if (data) {
                 try {
                     const state = JSON.parse(data);
@@ -2144,6 +2160,34 @@
                 } catch(e) { console.error("データ読み込み失敗", e); }
             }
             if (!firstPlayTimestamp) firstPlayTimestamp = Date.now();
+        }
+
+        // 🛟 ローカルにセーブが全く無い状態で起動した時、クラウドにバックアップが残っていないか自動でチェックする
+        // （「データが消えたことに気づかないまま最初からプレイしてしまう」事故を防ぐための保険）
+        function checkForCloudRestoreOnLoad() {
+            if (hadLocalSaveOnLoad) return; // ローカルにセーブがあれば何もしない
+            let attempts = 0;
+            const poll = setInterval(async () => {
+                attempts++;
+                if (window.isRankingReady && window.isRankingReady()) {
+                    clearInterval(poll);
+                    const backup = await window.restoreSaveData();
+                    if (!backup || !backup.data) return;
+                    try {
+                        const parsed = JSON.parse(backup.data);
+                        // 意味のある進行データがある場合だけ声をかける（真っさらな空バックアップは無視）
+                        const hasProgress = (parsed.score && parsed.score > 0) || (parsed.currentStageIndex && parsed.currentStageIndex > 0);
+                        if (!hasProgress) return;
+                        const when = backup.updatedAt ? new Date(backup.updatedAt).toLocaleString('ja-JP') : '不明';
+                        if (confirm(`このブラウザにはセーブデータが見当たりませんが、クラウドに以前のデータ（最終更新: ${when}）が見つかりました。復元しますか？`)) {
+                            localStorage.setItem('mochisuke_save_data', backup.data);
+                            location.reload();
+                        }
+                    } catch (e) { /* 壊れたバックアップは無視 */ }
+                } else if (attempts > 20) { // 約10秒待っても繋がらなければ諦める（オフライン等）
+                    clearInterval(poll);
+                }
+            }, 500);
         }
 
         /* 🛠️ 開発・制作段階限定の各種デバッグ関数 */
@@ -2294,6 +2338,7 @@
             preloadAllSfx(); // 会心・黄金など出現頻度の低い効果音も先に読み込んでおき、初回再生の遅延を防ぐ
 
             loadGame();
+            checkForCloudRestoreOnLoad();
 
             resetMochiFilter();
 
