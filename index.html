@@ -398,9 +398,9 @@
 
         #omiyage-money-display {
             position: absolute; top: calc(6px + env(safe-area-inset-top, 0px)); left: 6px; z-index: 40;
-            font-weight: 900; font-size: 0.85rem; color: #5d4037;
-            background: rgba(255,248,236,0.92); border: 2px solid #e8dcc0; border-radius: 20px;
-            padding: 3px 10px;
+            font-weight: 900; font-size: 1.15rem; color: #5d4037;
+            background: rgba(255,248,236,0.92); border: 2px solid #e8dcc0; border-radius: 22px;
+            padding: 5px 14px;
         }
         #omiyage-money-flash {
             font-weight: 900; color: #e53935; font-size: 0.8rem;
@@ -435,22 +435,22 @@
         .omiyage-slot.locked .omiyage-slot-emoji { opacity: 0.4; filter: grayscale(1); }
 
         #omiyage-detail-panel {
-            position: absolute; left: 4%; right: 4%; top: 77%; height: 10%;
+            position: absolute; left: 4%; right: 4%; top: 76%; height: 13%;
             display: none; align-items: center; gap: 3%;
-            background: rgba(255,248,236,0.97); border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            box-sizing: border-box; padding: 0 8% 0 3%;
+            box-sizing: border-box; padding: 0 3%;
         }
         #omiyage-detail-panel.show { display: flex; }
-        #omiyage-detail-close {
-            position: absolute; top: 3px; right: 3px; width: 18px; height: 18px; border-radius: 50%;
-            border: none; background: rgba(0,0,0,0.25); color: #fff; font-size: 0.7rem; line-height: 1;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+        #omiyage-detail-img { width: 16%; height: 85%; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
+        #omiyage-detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+        #omiyage-detail-name {
+            font-size: 0.85rem; font-weight: 900; color: #5d4037; overflow-wrap: break-word;
+            text-shadow: 0 0 4px #fff8ec, 0 0 4px #fff8ec, 0 0 6px #fff8ec, 0 0 6px #fff8ec;
         }
-        #omiyage-detail-img { width: 15%; height: 80%; object-fit: contain; }
-        #omiyage-detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-        #omiyage-detail-name { font-size: 0.7rem; font-weight: 900; color: #5d4037; overflow-wrap: break-word; }
-        #omiyage-detail-effect { font-size: 0.58rem; color: #8d6e63; overflow-wrap: break-word; }
-        #omiyage-detail-buy-btn { align-self: flex-start; padding: 3px 10px; font-size: 0.62rem; border-radius: 8px; }
+        #omiyage-detail-effect {
+            font-size: 0.68rem; color: #6d4c28; overflow-wrap: break-word;
+            text-shadow: 0 0 4px #fff8ec, 0 0 4px #fff8ec, 0 0 6px #fff8ec, 0 0 6px #fff8ec;
+        }
+        #omiyage-detail-buy-btn { flex-shrink: 0; padding: 8px 14px; font-size: 0.72rem; border-radius: 10px; font-weight: bold; }
 
         /* 常時表示バー：タブ切り替え(左)＋ページ送り(右)。棚下の床の余白部分に配置 */
         #shop-bottom-bar {
@@ -459,12 +459,12 @@
         }
         #shop-tab-buttons { display: flex; gap: 6px; }
         .shop-tab-pill {
-            width: 15%; aspect-ratio: 1; min-width: 0;
-            border: none; border-radius: 50%; background: rgba(255,248,236,0.85);
-            font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.25); cursor: pointer;
+            width: 20%; aspect-ratio: 1; min-width: 0;
+            border: none; border-radius: 50%; background: rgba(255,248,236,0.9);
+            font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer;
         }
-        .shop-tab-pill.tab-active { background: #ff9800; box-shadow: 0 2px 8px rgba(255,152,0,0.6); }
+        .shop-tab-pill.tab-active { background: #ff9800; box-shadow: 0 2px 10px rgba(255,152,0,0.7); }
 
         #omiyage-page-nav { display: flex; gap: 6px; }
         #omiyage-page-nav button {
@@ -749,7 +749,9 @@
         #mochisuke-btn {
             width: 190px; height: auto; max-height: 230px;
             object-fit: contain; cursor: pointer; z-index: 5;
-            transition: filter 0.2s, transform 0.1s ease;
+            transition: transform 0.1s ease; /* filterのtransitionは意図的に外した。会心の光がずっと残って見えるバグの原因がこれで、
+                                                 タップ間隔が200msより短いと前の光の変化が終わる前に次の変化が始まり、
+                                                 途中状態のまま次々と割り込まれて光ったように見え続けていた */
             transform-origin: center bottom;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
@@ -1078,13 +1080,12 @@
                         <!-- 🎁おみやげタブの中身 -->
                         <div id="omiyage-slots-layer"></div>
                         <div id="omiyage-detail-panel">
-                            <button id="omiyage-detail-close" onclick="closeOmiyageDetail()">×</button>
                             <img id="omiyage-detail-img" src="" alt="">
                             <div id="omiyage-detail-info">
                                 <div id="omiyage-detail-name"></div>
                                 <div id="omiyage-detail-effect"></div>
-                                <button id="omiyage-detail-buy-btn" class="item-action-btn btn-shop" style="background:#ff9800; color:#fff;"></button>
                             </div>
+                            <button id="omiyage-detail-buy-btn" class="item-action-btn btn-shop" style="background:#ff9800; color:#fff;"></button>
                         </div>
 
                         <!-- 👕きせかえ／✨スキルタブの中身（同じ棚イラストの上に半透明カードで重ねて表示） -->
@@ -1125,6 +1126,14 @@
                             <div class="shelf-calib-slider-row">
                                 <span id="shelf-calib-edge2-label">下端</span>
                                 <input type="range" id="shelf-calib-edge2" min="0" max="100" step="0.1" value="35">
+                            </div>
+                            <div class="shelf-calib-slider-row" id="shelf-calib-edge3-row">
+                                <span id="shelf-calib-edge3-label">左端</span>
+                                <input type="range" id="shelf-calib-edge3" min="0" max="100" step="0.1" value="10">
+                            </div>
+                            <div class="shelf-calib-slider-row" id="shelf-calib-edge4-row">
+                                <span id="shelf-calib-edge4-label">右端</span>
+                                <input type="range" id="shelf-calib-edge4" min="0" max="100" step="0.1" value="90">
                             </div>
                             <button id="shelf-calib-confirm-btn" onclick="confirmShelfCalibItem()">✅ この位置で決定</button>
                         </div>
@@ -2655,33 +2664,46 @@
             let isCrit = false;
             let isGold = false;
 
-            // スキル4：黄金のもち福の判定（会心と重ねて乗ってOK。ただし前回×10だと強すぎたので×2に調整）
+            // 万が一前のタップの会心演出が残っていても、新しいタップの度に必ず正しい状態へ戻してから判定する
+            // （見た目がずっと光ったまま固まってしまうバグの再発防止用）
+            clearTimeout(critFilterTimeout);
+            resetMochiFilter();
+
+            // 各スキルの倍率を「%」で積み上げて、最後にまとめて1回だけ掛ける方式に変更。
+            // 以前は ×2 × ×2 × ×3 のように掛け算を連鎖させていたため、全部同時発動すると
+            // 最大12倍(確率込みだと更に上)まで跳ね上がってしまっていた。
+            // 加算方式なら +100% +100% +200% = 合計+400%(＝5倍)で頭打ちになり、伸びすぎを防げる。
+            let bonusPercent = 0;
+
+            // スキル4：黄金のもち福の判定（会心と重ねて乗ってOK）
             if (skills.skill4.activeTimer > 0) {
                 const goldChance = 0.10 + (skills.skill4.lv - 1) * 0.02;
                 if (Math.random() < goldChance) {
                     isGold = true;
-                    power = Math.floor(power * 2);
+                    bonusPercent += 100;
                 }
             }
 
-            // スキル2：会心のもち肌の判定（黄金と重複してOK。前回×3〜5.5だと強すぎたので×2に調整）
+            // スキル2：会心のもち肌の判定（黄金と重複してOK）
             if (skills.skill2.activeTimer > 0) {
                 const critChance = 0.20 + (skills.skill2.lv - 1) * 0.05;
                 if (Math.random() < critChance) {
                     isCrit = true;
-                    power = Math.floor(power * 2);
+                    bonusPercent += 100;
                 }
             }
 
-            // スキル3：分身発動中は打撃力そのものにも倍率がかかる。
-            // Lv8未満は固定3倍、Lv8以降はそこからさらに緩やかに伸びる（急激に強くなりすぎないよう調整）
+            // スキル3：分身発動中は打撃力そのものにもボーナスが乗る。
+            // Lv8未満は固定+200%(×3相当)、Lv8以降はそこからさらに緩やかに伸びる
             const SKILL3_SCALING_LV = 8;
             if (skills.skill3.activeTimer > 0) {
-                const skill3Mult = skills.skill3.lv < SKILL3_SCALING_LV
-                    ? 3
-                    : 3 + (skills.skill3.lv - SKILL3_SCALING_LV) * 0.25;
-                power = Math.floor(power * skill3Mult);
+                const skill3Bonus = skills.skill3.lv < SKILL3_SCALING_LV
+                    ? 200
+                    : 200 + (skills.skill3.lv - SKILL3_SCALING_LV) * 25;
+                bonusPercent += skill3Bonus;
             }
+
+            power = Math.floor(power * (1 + bonusPercent / 100));
 
             // パーティクルの色設定（スキル4の確率判定(isGold)に当たった時だけ金色にする）
             let isGoldParticle = isGold;
@@ -2719,7 +2741,10 @@
                 createFloatingText(clientX, clientY, `🔥会心! +${formatMochi(power)}`, "#ff3d00", "1.65rem");
                 mochiBtnElement.style.filter = "contrast(2.5) brightness(1.1) grayscale(0.2)";
                 clearTimeout(critFilterTimeout); // 連続で会心が出た時に前のタイマーが後から発火して消し合うのを防ぐ
-                critFilterTimeout = setTimeout(() => { resetMochiFilter(); }, 180);
+                const myCritId = ++critTapId;
+                critFilterTimeout = setTimeout(() => {
+                    if (myCritId === critTapId) resetMochiFilter(); // 自分より後の会心が発生していなければリセット
+                }, 180);
             } else if (isGold) {
                 playAudioFile('gold_mochi.mp3');
                 vibrate([20, 30, 20]);
@@ -2928,6 +2953,7 @@
         }
 
         let critFilterTimeout = null;
+        let critTapId = 0;
         function resetMochiFilter() {
             const target = clothesData.find(c => c.id === equippedClotheId);
             mochiBtnElement.src = (target && target.img) ? target.img : 'image_0.png';
@@ -3114,6 +3140,12 @@
         }
 
         function openShop() { openModal('shop-modal'); switchShopTab(currentShopTab); }
+
+        // ✖ボタンを廃止した代わりに、棚の背景(商品以外の場所)をタップすると詳細パネルを閉じるようにする
+        document.addEventListener('DOMContentLoaded', () => {
+            const shelfImg = document.getElementById('omiyage-shelf-img');
+            if (shelfImg) shelfImg.addEventListener('click', () => { if (omiyageSelectedIdx != null) closeOmiyageDetail(); });
+        });
         // お土産イラスト（stage.itemImg）表示用ヘルパー。未整備の県は🎁の絵文字にフォールバックする
         function getItemThumbHtml(stage, size) {
             size = size || 48;
@@ -3403,7 +3435,8 @@
             ['row3-plate', '3段目：名札枠（縦位置）', 'row'],
             ['col1', '1列目（横位置）', 'col'],
             ['col2', '2列目（横位置）', 'col'],
-            ['col3', '3列目（横位置）', 'col']
+            ['col3', '3列目（横位置）', 'col'],
+            ['detail-panel', '商品詳細パネル（四角全体）', 'box']
         ];
 
         function toggleShelfCalibration() {
@@ -3437,12 +3470,14 @@
         }
 
         function bindShelfCalibSliders() {
-            const e1 = document.getElementById('shelf-calib-edge1');
-            const e2 = document.getElementById('shelf-calib-edge2');
+            const ids = ['shelf-calib-edge1', 'shelf-calib-edge2', 'shelf-calib-edge3', 'shelf-calib-edge4'];
+            const e1 = document.getElementById(ids[0]);
             if (e1.dataset.bound) return;
-            e1.dataset.bound = '1'; e2.dataset.bound = '1';
-            e1.addEventListener('input', renderShelfCalibBand);
-            e2.addEventListener('input', renderShelfCalibBand);
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                el.dataset.bound = '1';
+                el.addEventListener('input', renderShelfCalibBand);
+            });
         }
 
         function selectShelfCalibItem(key) {
@@ -3450,6 +3485,8 @@
             const item = SHELF_CALIB_ITEMS.find(([k]) => k === key);
             const sliders = document.getElementById('shelf-calib-sliders');
             const overlay = document.getElementById('shelf-calib-band-overlay');
+            const row3 = document.getElementById('shelf-calib-edge3-row');
+            const row4 = document.getElementById('shelf-calib-edge4-row');
             if (!item) {
                 sliders.classList.remove('show');
                 overlay.classList.remove('show');
@@ -3460,14 +3497,21 @@
             sliders.classList.add('show');
             overlay.classList.add('show');
             overlay.dataset.mode = mode;
-            document.getElementById('shelf-calib-edge1-label').innerText = mode === 'row' ? '上端' : '左端';
-            document.getElementById('shelf-calib-edge2-label').innerText = mode === 'row' ? '下端' : '右端';
+            row3.style.display = mode === 'box' ? 'flex' : 'none';
+            row4.style.display = mode === 'box' ? 'flex' : 'none';
+            document.getElementById('shelf-calib-edge1-label').innerText = mode === 'col' ? '左端' : '上端';
+            document.getElementById('shelf-calib-edge2-label').innerText = mode === 'col' ? '右端' : '下端';
 
             const existing = shelfCalibResults[key];
             const e1 = document.getElementById('shelf-calib-edge1');
             const e2 = document.getElementById('shelf-calib-edge2');
+            const e3 = document.getElementById('shelf-calib-edge3');
+            const e4 = document.getElementById('shelf-calib-edge4');
             if (existing) {
                 e1.value = existing.edge1; e2.value = existing.edge2;
+                if (mode === 'box') { e3.value = existing.edge3; e4.value = existing.edge4; }
+            } else if (mode === 'box') {
+                e1.value = 76; e2.value = 89; e3.value = 4; e4.value = 96;
             } else {
                 e1.value = mode === 'row' ? 20 : 10;
                 e2.value = mode === 'row' ? 34 : 30;
@@ -3486,9 +3530,15 @@
             if (mode === 'row') {
                 band.style.left = '0%'; band.style.width = '100%';
                 band.style.top = lo + '%'; band.style.height = (hi - lo) + '%';
-            } else {
+            } else if (mode === 'col') {
                 band.style.top = '0%'; band.style.height = '100%';
                 band.style.left = lo + '%'; band.style.width = (hi - lo) + '%';
+            } else { // box：4つのスライダーで独立した四角形を指定
+                const e3 = parseFloat(document.getElementById('shelf-calib-edge3').value);
+                const e4 = parseFloat(document.getElementById('shelf-calib-edge4').value);
+                const xLo = Math.min(e3, e4), xHi = Math.max(e3, e4);
+                band.style.top = lo + '%'; band.style.height = (hi - lo) + '%';
+                band.style.left = xLo + '%'; band.style.width = (xHi - xLo) + '%';
             }
         }
 
@@ -3507,10 +3557,19 @@
 
         function confirmShelfCalibItem() {
             if (!shelfCalibSelectedItem) { alert('先に項目を選んでください'); return; }
+            const item = SHELF_CALIB_ITEMS.find(([k]) => k === shelfCalibSelectedItem);
+            const mode = item ? item[2] : 'row';
             const e1 = parseFloat(document.getElementById('shelf-calib-edge1').value);
             const e2 = parseFloat(document.getElementById('shelf-calib-edge2').value);
             const lo = Math.min(e1, e2).toFixed(1), hi = Math.max(e1, e2).toFixed(1);
-            shelfCalibResults[shelfCalibSelectedItem] = { edge1: lo, edge2: hi };
+            const result = { edge1: lo, edge2: hi };
+            if (mode === 'box') {
+                const e3 = parseFloat(document.getElementById('shelf-calib-edge3').value);
+                const e4 = parseFloat(document.getElementById('shelf-calib-edge4').value);
+                result.edge3 = Math.min(e3, e4).toFixed(1);
+                result.edge4 = Math.max(e3, e4).toFixed(1);
+            }
+            shelfCalibResults[shelfCalibSelectedItem] = result;
             rebuildShelfCalibLog();
             populateShelfCalibSelect();
             document.getElementById('shelf-calib-slot-select').value = shelfCalibSelectedItem;
@@ -3522,6 +3581,7 @@
                 .filter(([key]) => shelfCalibResults[key])
                 .map(([key, label, mode]) => {
                     const r = shelfCalibResults[key];
+                    if (mode === 'box') return `${label}(${key}): top:${r.edge1}, bottom:${r.edge2}, left:${r.edge3}, right:${r.edge4}`;
                     const names = mode === 'row' ? ['top', 'bottom'] : ['left', 'right'];
                     return `${label}(${key}): ${names[0]}:${r.edge1}, ${names[1]}:${r.edge2}`;
                 });
