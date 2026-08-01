@@ -75,7 +75,7 @@
         #game-screen {
             width: 100%; max-width: 480px;
             flex: 1 1 auto; min-height: 0;
-            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+            position: relative; display: flex; flex-direction: column; align-items: center;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             background-image: url('bg_images/kyushu_okinawa/oita.png');
             background-position: center;
@@ -866,6 +866,7 @@
             border-top: 2px solid #f3ebd9;
             box-sizing: border-box;
             flex-shrink: 0;
+            margin-top: auto; /* mochisuke-areaがflexから抜けたので、これで自分だけ下端に押し出す */
         }
     </style>
 
@@ -1637,11 +1638,11 @@
         const stages = [
             { name: "鹿児島", pinX: 17.1, pinY: 76.5, distance: 500, item: "スイートポテト", itemImg: "omiyage_images/kyushu_okinawa/kagoshima_item.png", price: 50, diary: "旅の始まりは鹿児島から！桜島がとっても雄大で、パワーをもらった気分やで。ここから日本中をもちでいっぱいにしに行くで！", bg: "bg_images/kyushu_okinawa/kagoshima.png", diaryImg: "diary_images/kyushu_okinawa/kagoshima_d.png", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", pinX: 21.0, pinY: 73.3, distance: 900, item: "完熟マンゴー", itemImg: "omiyage_images/kyushu_okinawa/miyazaki_item.png", price: 100, diary: "宮崎にやってきたで！ヤシの木が並んで南国気分満点やなあ。お日様を浴びたマンゴーは甘くて最高や！", bg: "bg_images/kyushu_okinawa/miyazaki.png", diaryImg: "diary_images/kyushu_okinawa/miyazaki_d.png", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
-            { name: "大分", pinX: 21.5, pinY: 69.4, distance: 1600, item: "かぼすソフト", price: 200, diary: "大分といえば温泉やで！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだわ。", bg: "bg_images/kyushu_okinawa/oita.png", diaryImg: "diary_images/kyushu_okinawa/oita_d.png", effectDesc: "タップ力 +2", tapBonus: 2, mpsBonus: 0 },
-            { name: "熊本", pinX: 16.2, pinY: 71.8, distance: 3000, item: "からし蓮根", price: 400, diary: "熊本城を見に行ったで！石垣がすごく高くて圧倒されちゃったわ。からし蓮根はツーンと大人の味や！", bg: "bg_images/kyushu_okinawa/kumamoto.png", diaryImg: "diary_images/kyushu_okinawa/kumamoto_d.png", effectDesc: "自動増加 +3もち/秒", tapBonus: 0, mpsBonus: 3 },
-            { name: "長崎", pinX: 10.6, pinY: 71.6, distance: 5500, item: "長崎カステラ", price: 800, diary: "長崎は坂の街やなあ！のぼり坂がいっぱいでいい運動になったで。カステラもザラメがシャリシャリで美味しいわ！", bg: "bg_images/kyushu_okinawa/nagasaki.png", diaryImg: "diary_images/kyushu_okinawa/nagasaki_d.png", effectDesc: "タップ力 +6", tapBonus: 6, mpsBonus: 0 },
-            { name: "佐賀", pinX: 11.3, pinY: 69.1, distance: 10000, item: "呼子のイカ", price: 1500, diary: "佐賀の呼子で透明なイカを食べたで！コリコリしていて甘くて、今まで食べたイカと全然違うんや！", bg: "bg_images/kyushu_okinawa/saga.png", diaryImg: "diary_images/kyushu_okinawa/saga_d.png", effectDesc: "自動増加 +12もち/秒", tapBonus: 0, mpsBonus: 12 },
-            { name: "福岡", pinX: 17.2, pinY: 67.0, distance: 18000, item: "博多ラーメン", price: 3000, diary: "中洲の屋台街はとっても賑やかでワクワクしたで。美味しいとんこつラーメンをバッチリ替玉まで完食や！", bg: "bg_images/kyushu_okinawa/fukuoka.png", diaryImg: "diary_images/kyushu_okinawa/fukuoka_d.png", effectDesc: "タップ力 +25", tapBonus: 25, mpsBonus: 0 },
+            { name: "大分", pinX: 21.5, pinY: 69.4, distance: 1600, item: "かぼすソフト", itemImg: "omiyage_images/kyushu_okinawa/oita_item.png", price: 200, diary: "大分といえば温泉やで！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだわ。", bg: "bg_images/kyushu_okinawa/oita.png", diaryImg: "diary_images/kyushu_okinawa/oita_d.png", effectDesc: "タップ力 +2", tapBonus: 2, mpsBonus: 0 },
+            { name: "熊本", pinX: 16.2, pinY: 71.8, distance: 3000, item: "からし蓮根", itemImg: "omiyage_images/kyushu_okinawa/kumamoto_item.png", price: 400, diary: "熊本城を見に行ったで！石垣がすごく高くて圧倒されちゃったわ。からし蓮根はツーンと大人の味や！", bg: "bg_images/kyushu_okinawa/kumamoto.png", diaryImg: "diary_images/kyushu_okinawa/kumamoto_d.png", effectDesc: "自動増加 +3もち/秒", tapBonus: 0, mpsBonus: 3 },
+            { name: "長崎", pinX: 10.6, pinY: 71.6, distance: 5500, item: "長崎カステラ", itemImg: "omiyage_images/kyushu_okinawa/nagasaki_item.png", price: 800, diary: "長崎は坂の街やなあ！のぼり坂がいっぱいでいい運動になったで。カステラもザラメがシャリシャリで美味しいわ！", bg: "bg_images/kyushu_okinawa/nagasaki.png", diaryImg: "diary_images/kyushu_okinawa/nagasaki_d.png", effectDesc: "タップ力 +6", tapBonus: 6, mpsBonus: 0 },
+            { name: "佐賀", pinX: 11.3, pinY: 69.1, distance: 10000, item: "呼子のイカ", itemImg: "omiyage_images/kyushu_okinawa/saga_item.png", price: 1500, diary: "佐賀の呼子で透明なイカを食べたで！コリコリしていて甘くて、今まで食べたイカと全然違うんや！", bg: "bg_images/kyushu_okinawa/saga.png", diaryImg: "diary_images/kyushu_okinawa/saga_d.png", effectDesc: "自動増加 +12もち/秒", tapBonus: 0, mpsBonus: 12 },
+            { name: "福岡", pinX: 17.2, pinY: 67.0, distance: 18000, item: "博多ラーメン", itemImg: "omiyage_images/kyushu_okinawa/fukuoka_item.png", price: 3000, diary: "中洲の屋台街はとっても賑やかでワクワクしたで。美味しいとんこつラーメンをバッチリ替玉まで完食や！", bg: "bg_images/kyushu_okinawa/fukuoka.png", diaryImg: "diary_images/kyushu_okinawa/fukuoka_d.png", effectDesc: "タップ力 +25", tapBonus: 25, mpsBonus: 0 },
             { name: "山口", pinX: 19.0, pinY: 61.8, distance: 32000, item: "下関のフグ", price: 6000, diary: "本州に突入、最初は山口県やで！下関のフグはお皿が透けるくらい綺麗で、ぷにぷに歯ごたえが最高やったわ。", bg: "bg_images/chugoku_shikoku/yamaguchi.png", diaryImg: "diary_images/chugoku_shikoku/yamaguchi_d.png", effectDesc: "自動増加 +50もち/秒", tapBonus: 0, mpsBonus: 50 },
             { name: "広島", pinX: 25.7, pinY: 61.6, distance: 58000, item: "焼き牡蠣", price: 12000, diary: "広島県にきたで！厳島神社の大きな鳥居が海に浮かんでいて神秘的やったわ。アツアツの焼き牡蠣は海の旨味がたっぷりや！", bg: "bg_images/chugoku_shikoku/hiroshima.png", diaryImg: "diary_images/chugoku_shikoku/hiroshima_d.png", effectDesc: "タップ力 +110", tapBonus: 110, mpsBonus: 0 },
             { name: "島根", pinX: 23.6, pinY: 57.9, distance: 100000, item: "出雲そば", price: 25000, diary: "出雲大社にお参りしてきたで！良いご縁がありますように。割子で食べる出雲そばは香りがすごく良かったなあ。", bg: "bg_images/chugoku_shikoku/shimane.png", diaryImg: "diary_images/chugoku_shikoku/shimane_d.png", effectDesc: "自動増加 +220もち/秒", tapBonus: 0, mpsBonus: 220 },
@@ -1681,7 +1682,7 @@
             { name: "岩手", pinX: 71.2, pinY: 34.7, distance: 32000000000000, item: "盛岡冷麺", price: 400000000000000, diary: "中尊寺金色堂がキラキラでとっても厳かやったなあ。コシがものすごく強い盛岡冷麺は、ピリ辛スープでツルッと完食したで！", bg: "bg_images/tohoku_hokkaido/iwate.png", diaryImg: "diary_images/tohoku_hokkaido/iwate_d.png", effectDesc: "自動増加 +35000000000000もち/秒", tapBonus: 0, mpsBonus: 35000000000000 },
             { name: "青森", pinX: 67.0, pinY: 31.1, distance: 58000000000000, item: "リンゴパイ", price: 800000000000000, diary: "ねぶた祭りの迫力ある灯籠に大興奮したで！青森名物のリンゴがたっぷり入った焼き立てパイは、サクサクで甘酸っぱくて最高や！", bg: "bg_images/tohoku_hokkaido/aomori.png", diaryImg: "diary_images/tohoku_hokkaido/aomori_d.png", effectDesc: "タップ力 +160000000000000", tapBonus: 160000000000000, mpsBonus: 0 },
             { name: "北海道", pinX: 75.1, pinY: 19.6, distance: 100000000000000, item: "タラバガニ", price: 1500000000000000, diary: "広大な北の大地、北海道やで！どこまでも真っ直ぐな道が続いてたなあ。特大のタラバガニは身がぷりぷりで美味しすぎてほっぺが落ちたわ！", bg: "bg_images/tohoku_hokkaido/hokkaido.png", diaryImg: "diary_images/tohoku_hokkaido/hokkaido_d.png", effectDesc: "自動増加 +150000000000000もち/秒", tapBonus: 0, mpsBonus: 150000000000000 },
-            { name: "沖縄", pinX: 27.5, pinY: 87.7, distance: 250000000000000, item: "シーサー", price: 4000000000000000, diary: "感動のゴール沖縄やで！北の大地から南の楽園へワープや！青い海を見ながら最高の日本縦断旅を締めくくったで！", bg: "bg_images/kyushu_okinawa/okinawa.png", diaryImg: "diary_images/kyushu_okinawa/okinawa_d.png", effectDesc: "タップ力 +1000000000000000", tapBonus: 1000000000000000, mpsBonus: 0 }
+            { name: "沖縄", pinX: 27.5, pinY: 87.7, distance: 250000000000000, item: "シーサー", itemImg: "omiyage_images/kyushu_okinawa/okinawa_item.png", price: 4000000000000000, diary: "感動のゴール沖縄やで！北の大地から南の楽園へワープや！青い海を見ながら最高の日本縦断旅を締めくくったで！", bg: "bg_images/kyushu_okinawa/okinawa.png", diaryImg: "diary_images/kyushu_okinawa/okinawa_d.png", effectDesc: "タップ力 +1000000000000000", tapBonus: 1000000000000000, mpsBonus: 0 }
         ];
 
         // ===================================================================
