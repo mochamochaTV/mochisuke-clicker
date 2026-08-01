@@ -294,6 +294,34 @@
         }
         #score-text { display: inline-block; }
         .digit-pop { display: inline-block; animation: digitPop 0.22s ease-out; }
+
+        /* 🃏 ご当地神経衰弱：本物のカードめくり風3D回転アニメーション */
+        .concentration-card-outer { aspect-ratio: 1; perspective: 700px; cursor: pointer; }
+        .concentration-card-inner {
+            position: relative; width: 100%; height: 100%;
+            transform-style: preserve-3d; transition: transform 0.45s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+        .concentration-card-inner.flipped { transform: rotateY(180deg); }
+        .concentration-card-face {
+            position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: 2px solid #ffcc80; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            overflow: hidden; box-sizing: border-box;
+        }
+        .concentration-card-back { background: #ff9800; font-size: 1.6rem; }
+        .concentration-card-front { background: #fff; transform: rotateY(180deg); }
+        .concentration-card-front img { width: 100%; height: 100%; object-fit: cover; }
+        .concentration-card-inner.matched .concentration-card-face {
+            border-color: #4caf50; box-shadow: 0 0 10px rgba(76,175,80,0.7);
+        }
+        .concentration-card-inner.shake { animation: concentrationShake 0.4s ease; }
+        @keyframes concentrationShake {
+            0%, 100% { transform: rotateY(180deg) translateX(0); }
+            20% { transform: rotateY(180deg) translateX(-6px); }
+            40% { transform: rotateY(180deg) translateX(6px); }
+            60% { transform: rotateY(180deg) translateX(-4px); }
+            80% { transform: rotateY(180deg) translateX(4px); }
+        }
         @keyframes digitPop {
             0% { transform: scale(1); }
             45% { transform: scale(1.35); }
@@ -722,6 +750,38 @@
             100% { box-shadow: 0 0 14px #fff, 0 0 20px #ffeb3b; transform: scale(1.04); }
         }
 
+        /* 🗾 ご当地クイズ：正解/不正解のフィードバック */
+        .quiz-correct-glow { background: #4caf50 !important; color: #fff !important; animation: pulseGlow 0.4s ease-in-out 2; }
+        .quiz-wrong-shake { background: #e57373 !important; color: #fff !important; animation: quizWrongShake 0.4s ease; }
+        @keyframes quizWrongShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+
+        /* 🍡 もちつきリズム：判定文字のポップ、PERFECT時のトラック発光、MISS時のよろけ */
+        .mochi-judge-pop { animation: mochiJudgePop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1); }
+        @keyframes mochiJudgePop {
+            0% { transform: scale(0.3); opacity: 0; }
+            60% { transform: scale(1.25); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .mochi-track-glow { animation: mochiTrackGlow 0.4s ease; }
+        @keyframes mochiTrackGlow {
+            0% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.08); }
+            40% { box-shadow: 0 0 18px 4px rgba(255,215,0,0.7), inset 0 2px 6px rgba(0,0,0,0.08); }
+            100% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.08); }
+        }
+        .mochi-track-miss { animation: mochiTrackMiss 0.35s ease; }
+        @keyframes mochiTrackMiss {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-5px) rotate(-1deg); }
+            50% { transform: translateX(4px) rotate(1deg); }
+            75% { transform: translateX(-3px) rotate(-0.5deg); }
+        }
+
         #mochisuke-wrapper {
             position: relative; display: flex; justify-content: center; align-items: center; flex: 1; height: 100%;
         }
@@ -873,13 +933,14 @@
         }
 
         // メインのゲームスクリプト（type=moduleではない）から呼べるようにwindowへ橋渡しする
-        window.submitRankingScore = async function (name, scoreVal, totalTapsVal) {
+        window.submitRankingScore = async function (name, scoreVal, totalTapsVal, prestigeCountVal) {
             if (!fbReady || !db || !currentUid) return;
             try {
                 await setDoc(doc(db, "rankings", currentUid), {
                     name: String(name).slice(0, 20),
                     score: Math.floor(scoreVal),
                     totalTaps: Math.floor(totalTapsVal || 0),
+                    prestigeCount: Math.floor(prestigeCountVal || 0),
                     updatedAt: Date.now()
                 });
             } catch (e) { console.error("ランキング送信エラー:", e); }
@@ -894,6 +955,17 @@
                 snap.forEach((d) => list.push({ ...d.data(), uid: d.id, isMe: d.id === currentUid }));
                 return list;
             } catch (e) { console.error("タップ数ランキング取得エラー:", e); return null; }
+        };
+
+        window.fetchPrestigeRankingList = async function () {
+            if (!db) return null;
+            try {
+                const q = query(collection(db, "rankings"), orderBy("prestigeCount", "desc"), limit(20));
+                const snap = await getDocs(q);
+                const list = [];
+                snap.forEach((d) => list.push({ ...d.data(), uid: d.id, isMe: d.id === currentUid }));
+                return list;
+            } catch (e) { console.error("転生回数ランキング取得エラー:", e); return null; }
         };
 
         // 💾 セーブデータのクラウドバックアップ（localStorageが消えても復元できるようにする保険）
@@ -1045,6 +1117,8 @@
             <h2>📦 もちすけの倉庫</h2>
             <div class="status-box" id="warehouse-status-box"></div>
             <button class="item-action-btn btn-shop" style="width:100%; background:#9c27b0; color:#fff; margin-bottom:10px;" onclick="openTrophyRoom()">🏅 都道府県トロフィー</button>
+            <button class="item-action-btn btn-shop" style="width:100%; background:#3f51b5; color:#fff; margin-bottom:10px;" onclick="openPrestigeConfirm()">🔄 転生する（日本制覇後に解放）</button>
+            <button class="item-action-btn btn-shop" style="width:100%; background:#009688; color:#fff; margin-bottom:10px;" onclick="openPrestigeShop()">🛍️ 転生ポイントショップ</button>
             <h3>👕 衣装をきがえる</h3>
             <div class="list-container" id="warehouse-clothes-list"></div>
             <button class="btn-red" onclick="closeModal('warehouse-modal')">閉じる</button>
@@ -1225,6 +1299,27 @@
         </div>
     </div>
 
+    <div id="prestige-shop-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('prestige-shop-modal')">×</button>
+            <h2>🛍️ 転生ポイントショップ</h2>
+            <p style="font-size:0.75rem; color:#8d6e63; margin-bottom:8px;">転生で貯めたポイントを使って、便利な機能を永久に強化できます（タップ力などの「強さ」には使えません）</p>
+            <div id="prestige-shop-points" style="font-weight:bold; color:#3f51b5; margin-bottom:8px;"></div>
+            <div id="prestige-shop-list" class="list-container"></div>
+            <button class="btn-red" onclick="closeModal('prestige-shop-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="offline-earnings-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <h2>🎁 おかえりなさい！</h2>
+            <p id="offline-earnings-time" style="font-size:0.9rem; color:#5d4037; margin:10px 0;"></p>
+            <div style="font-weight:900; color:#ff9800; font-size:1.5rem; margin:14px 0;" id="offline-earnings-amount"></div>
+            <p id="offline-earnings-note" style="font-size:0.7rem; color:#aaa; margin-bottom:10px;"></p>
+            <button class="btn-red" onclick="closeModal('offline-earnings-modal')">受け取る！</button>
+        </div>
+    </div>
+
     <div id="japan-clear-modal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <button class="modal-close-x" onclick="closeModal('japan-clear-modal')">×</button>
@@ -1243,6 +1338,7 @@
             <div style="display:flex; gap:8px; margin-bottom:10px;">
                 <button id="rank-tab-score" class="rank-tab-btn active" onclick="switchRankingTab('score')">🍡 もち数</button>
                 <button id="rank-tab-taps" class="rank-tab-btn" onclick="switchRankingTab('taps')">👆 タップ数（全国合計）</button>
+                <button id="rank-tab-prestige" class="rank-tab-btn" onclick="switchRankingTab('prestige')">🔄 転生回数</button>
             </div>
             <div id="ranking-list" class="list-container"></div>
 
@@ -1389,7 +1485,7 @@
         // ☰ メニュー機能
         function menuSaveGame() {
             saveGame();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
             alert("💾 セーブしました！");
         }
 
@@ -1502,7 +1598,7 @@
             if (!result.ok) { alert(result.reason); return; }
             playerName = result.name;
             localStorage.setItem('punicker_player_name', playerName);
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
             alert('保存しました！');
         }
 
@@ -1653,6 +1749,58 @@
         let score = 0; 
         let totalTapsCount = 0;       // 日本制覇演出の統計表示用
         let firstPlayTimestamp = null; // 初回プレイ日時（統計表示用）
+        let lastActiveTimestamp = null; // 最後にセーブした時刻（オフライン収益の計算に使う）
+        const OFFLINE_EARNINGS_CAP_HOURS_BASE = 4; // オフライン収益として計算する時間の上限（これ以上離れていても4時間分だけ）
+        const OFFLINE_EARNINGS_MIN_SECONDS = 90; // これより短い離席では出さない（毎回のリロードで鬱陶しくならないように）
+
+        // 🔄 転生システム
+        let prestigeCount = 0;      // 転生した回数
+        let prestigePoints = 0;     // 転生ポイント（所持数、将来のショップで消費する予定）
+        const PRESTIGE_BONUS_PER_COUNT = 0.02; // 転生1回につき、タップ力・自動増加が恒久的に+2%（控えめ・線形。世界編を見据えてここは急激に伸ばさない）
+        function getPrestigeBonusMultiplier() {
+            return 1 + prestigeCount * PRESTIGE_BONUS_PER_COUNT;
+        }
+
+        // 🛍️ 転生ポイントショップ（世界編を見据えて、パワーではなく利便性(QOL)だけに使える設計にしている）
+        let offlineCapBonusHours = 0;   // 購入済みの「オフライン収益上限+○時間」の合計
+        let minigameDailyBonusPlays = 0; // 購入済みの「ミニゲーム1日プレイ回数+○」の合計
+        const PRESTIGE_SHOP_ITEMS = {
+            offlineCap: { name: 'オフライン収益 上限+1時間', cost: 3, max: 8 },      // 4時間→最大12時間まで
+            minigamePlays: { name: 'ミニゲーム 1日プレイ回数+1', cost: 5, max: 3 }   // 3回→最大6回まで
+        };
+        function getOfflineEarningsCapHours() { return OFFLINE_EARNINGS_CAP_HOURS_BASE + offlineCapBonusHours; }
+        function getMinigameDailyLimit() { return MINIGAME_DAILY_LIMIT_BASE + minigameDailyBonusPlays; }
+
+        function buyPrestigeShopItem(key) {
+            const item = PRESTIGE_SHOP_ITEMS[key];
+            if (!item) return;
+            const currentCount = key === 'offlineCap' ? offlineCapBonusHours : minigameDailyBonusPlays;
+            if (currentCount >= item.max) { alert('これ以上は購入できません（上限に達しています）'); return; }
+            if (prestigePoints < item.cost) { alert('転生ポイントが足りません'); return; }
+            prestigePoints -= item.cost;
+            if (key === 'offlineCap') offlineCapBonusHours++; else minigameDailyBonusPlays++;
+            saveGame();
+            renderPrestigeShop();
+        }
+
+        function renderPrestigeShop() {
+            const el = document.getElementById('prestige-shop-list');
+            if (!el) return;
+            el.innerHTML = '';
+            Object.entries(PRESTIGE_SHOP_ITEMS).forEach(([key, item]) => {
+                const currentCount = key === 'offlineCap' ? offlineCapBonusHours : minigameDailyBonusPlays;
+                const maxed = currentCount >= item.max;
+                const canBuy = !maxed && prestigePoints >= item.cost;
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `<div class="item-info"><span class="item-title">${item.name}</span><span class="item-desc">現在: +${currentCount}（上限 +${item.max}）</span></div>` +
+                    `<button class="item-action-btn btn-shop" style="background:#3f51b5; color:#fff;" ${maxed || !canBuy ? 'disabled' : ''} onclick="buyPrestigeShopItem('${key}')">${maxed ? '上限達成' : `🔄${item.cost}pt`}</button>`;
+                el.appendChild(row);
+            });
+            const ptEl = document.getElementById('prestige-shop-points');
+            if (ptEl) ptEl.innerText = `所持転生ポイント: ${prestigePoints}`;
+        }
+
         let hasSeenJapanClear = false; // 日本制覇演出を出したかどうか（何度も出ないようにする）
         let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
 
@@ -1665,7 +1813,7 @@
             concentration: { id: "concentration", name: "ご当地神経衰弱",       icon: "🃏", unlockStage: 5 },
             mochitsuki:    { id: "mochitsuki",    name: "もちつきリズム",       icon: "🍡", unlockStage: 7 }
         };
-        const MINIGAME_DAILY_LIMIT = 3; // 1日あたりのプレイ回数上限（調整しやすいよう定数化）
+        const MINIGAME_DAILY_LIMIT_BASE = 3; // 1日あたりのプレイ回数上限（調整しやすいよう定数化）
 
         let minigameLastResetDate = null;
         let minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
@@ -1720,14 +1868,17 @@
         let rainCanvas = null; let rainCtx = null;
         // 🌧️ もちの雨（自動増加(mps)がある時、もちすけの後ろにうっすら降ってくる。収入が少ない時はほとんど降らない）
         let mochiRainList = [];
+        const MOCHI_RAIN_MAX = 10;
         function spawnMochiRain() {
             const mps = getMps();
             if (!rainCanvas || mps <= 0 || document.hidden) return;
+            if (mochiRainList.length >= MOCHI_RAIN_MAX) return; // 上限に達している間は新規追加を控える（既存の粒を消して落下を妨げないため）
             // mpsが小さいうちは滅多に降らないようにし、育つにつれて自然に増える
             const spawnChance = Math.min(1, mps / 40);
             if (Math.random() > spawnChance) return;
             const dropCount = Math.min(3, Math.max(1, Math.floor(Math.log10(mps + 1) / 1.5)));
             for (let i = 0; i < dropCount; i++) {
+                if (mochiRainList.length >= MOCHI_RAIN_MAX) break;
                 mochiRainList.push({
                     x: Math.random() * rainCanvas.width,
                     y: -20,
@@ -1738,7 +1889,6 @@
                     size: 36 + Math.random() * 14
                 });
             }
-            if (mochiRainList.length > 10) mochiRainList.splice(0, mochiRainList.length - 10); // 増えすぎ防止
         }
         setInterval(spawnMochiRain, 1200);
         // ✨ 常時ふわふわ漂う環境パーティクル（タップしていない時も画面に生命感を出す）
@@ -2054,10 +2204,11 @@
             if (bgmGainNode) bgmGainNode.gain.value = bgmVolumeMult;
         }
 
-        function playBufferNow(buffer, vol) {
+        function playBufferNow(buffer, vol, rate = 1) {
             const ctx = getAudioContext();
             const source = ctx.createBufferSource();
             source.buffer = buffer;
+            source.playbackRate.value = rate;
             const gain = ctx.createGain();
             gain.gain.value = vol * sfxVolumeMult;
             source.connect(gain).connect(ctx.destination);
@@ -2076,6 +2227,18 @@
             } else {
                 // まだデコードが終わっていない場合（通常は起動直後の一瞬だけ）は、終わり次第再生する
                 loadAudioBuffer(fileName).then((buf) => { if (buf) playBufferNow(buf, vol); });
+            }
+        }
+
+        // ピッチを変えて再生する版（ミニゲームの連続成功演出などで使用）
+        function playAudioFilePitched(fileName, vol, rate) {
+            const ctx = getAudioContext();
+            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+            const buffer = audioBuffers[fileName];
+            if (buffer) {
+                playBufferNow(buffer, vol, rate);
+            } else {
+                loadAudioBuffer(fileName).then((buf) => { if (buf) playBufferNow(buf, vol, rate); });
             }
         }
 
@@ -2098,6 +2261,7 @@
         // タップ音はもちすけ本体（下のpointerdownハンドラ）と、必殺技中の「どこでも連打」時のみ鳴る。
 
         function saveGame() {
+            lastActiveTimestamp = Date.now();
             const state = {
                 score: score, currentStageIndex: currentStageIndex, selectedStageIndex: selectedStageIndex,
                 currentStageProgress: currentStageProgress, purchasedItems: purchasedItems,
@@ -2105,7 +2269,9 @@
                 skills: skills,
                 totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear,
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
-                prefTaps: prefTaps
+                prefTaps: prefTaps, lastActiveTimestamp: lastActiveTimestamp,
+                prestigeCount: prestigeCount, prestigePoints: prestigePoints,
+                offlineCapBonusHours: offlineCapBonusHours, minigameDailyBonusPlays: minigameDailyBonusPlays
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -2131,6 +2297,11 @@
                     minigamePlaysUsedToday = state.minigamePlaysUsedToday ?? { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
                     minigameBests = state.minigameBests ?? { timeattack: 0, concentration: null };
                     prefTaps = state.prefTaps ?? new Array(47).fill(0);
+                    lastActiveTimestamp = state.lastActiveTimestamp ?? null;
+                    prestigeCount = state.prestigeCount ?? 0;
+                    prestigePoints = state.prestigePoints ?? 0;
+                    offlineCapBonusHours = state.offlineCapBonusHours ?? 0;
+                    minigameDailyBonusPlays = state.minigameDailyBonusPlays ?? 0;
                     if (state.skills) {
                         Object.keys(state.skills).forEach(k => {
                             if (skills[k]) skills[k].lv = state.skills[k].lv ?? skills[k].lv;
@@ -2167,6 +2338,33 @@
                     clearInterval(poll);
                 }
             }, 500);
+        }
+
+        // 🎁 オフライン収益：離れている間の自動増加(mps)ぶんを、もちの数だけ増やす（進行度には一切影響させない）
+        function checkOfflineEarnings() {
+            if (!lastActiveTimestamp) return; // 初回プレイなど、前回の記録が無ければ何もしない
+            const elapsedSeconds = (Date.now() - lastActiveTimestamp) / 1000;
+            if (elapsedSeconds < OFFLINE_EARNINGS_MIN_SECONDS) return;
+            const cappedSeconds = Math.min(elapsedSeconds, getOfflineEarningsCapHours() * 3600);
+            const mps = getMps();
+            const earnings = Math.floor(mps * cappedSeconds);
+            if (earnings <= 0) return;
+
+            score += earnings;
+            saveGame(); updateDisplay();
+
+            const totalMinutes = Math.floor(elapsedSeconds / 60);
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const timeText = hours > 0 ? `${hours}時間${minutes}分` : `${minutes}分`;
+            const cappedNote = elapsedSeconds > getOfflineEarningsCapHours() * 3600
+                ? `（オフライン収益は最大${getOfflineEarningsCapHours()}時間分までです）` : '';
+
+            document.getElementById('offline-earnings-time').innerText = `${timeText}の間、もちすけがひとりで頑張ってくれてたで！`;
+            document.getElementById('offline-earnings-amount').innerText = `+${formatMochi(earnings)} もち`;
+            document.getElementById('offline-earnings-note').innerText = cappedNote;
+            playAudioFile('gold_mochi.mp3');
+            openModal('offline-earnings-modal', true);
         }
 
         /* 🛠️ 開発・制作段階限定の各種デバッグ関数 */
@@ -2318,6 +2516,7 @@
 
             loadGame();
             checkForCloudRestoreOnLoad();
+            checkOfflineEarnings();
 
             resetMochiFilter();
 
@@ -2397,15 +2596,11 @@
             if (activeClothe) power += activeClothe.tapBonus;
             if (comboCount >= 10) power += Math.floor(comboCount / 10);
             if (isFever) power *= 5;
+            power *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
 
-            // スキル1：もちもちクリック効果 (Lvに応じた倍率)
-            if (skills.skill1.activeTimer > 0) {
-                power *= (2 + (skills.skill1.lv - 1) * 0.5);
-            }
-            // スキル3：分身の術効果 (連動タップ倍率)
-            if (skills.skill3.activeTimer > 0) {
-                power *= (skills.skill3.lv >= 3 ? 5 : 3);
-            }
+            // 【重要】スキル1(もちもちクリック)・スキル3(分身)によるタップ力ブーストは、
+            // ここではなくexecuteSingleTap()側の加算方式(bonusPercent)でのみ適用する。
+            // 以前はここでも掛け算していたため、実際のタップ時に二重にブーストがかかってしまっていた。
             return Math.floor(power);
         }
 
@@ -2421,6 +2616,7 @@
             });
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) mps += activeClothe.mpsBonus;
+            mps *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
             return mps;
         }
 
@@ -2644,6 +2840,11 @@
             // 最大12倍(確率込みだと更に上)まで跳ね上がってしまっていた。
             // 加算方式なら +100% +100% +200% = 合計+400%(＝5倍)で頭打ちになり、伸びすぎを防げる。
             let bonusPercent = 0;
+
+            // スキル1：もちもちクリック効果（Lvに応じて加算）。旧・掛け算式(2 + (lv-1)*0.5)の等価値
+            if (skills.skill1.activeTimer > 0) {
+                bonusPercent += 100 + (skills.skill1.lv - 1) * 50;
+            }
 
             // スキル4：黄金のもち福の判定（会心と重ねて乗ってOK）
             if (skills.skill4.activeTimer > 0) {
@@ -3087,7 +3288,9 @@
                 ・現在の通常タップ力: +${formatMochi(getTapPower())} もち<br>
                 ・自動生産力 (Mps): ${formatMochi(getMps())} もち/秒<br>
                 ・解放したおみやげ: ${boughtCount} / ${stages.length} 種類<br>
-                ・現在の着用衣装: <strong>${currentClothe.name}</strong>
+                ・現在の着用衣装: <strong>${currentClothe.name}</strong><br>
+                ・転生回数: ${prestigeCount}回（恒久ボーナス +${(prestigeCount * PRESTIGE_BONUS_PER_COUNT * 100).toFixed(0)}%）<br>
+                ・所持転生ポイント: ${prestigePoints}
             `;
 
             const listContainer = document.getElementById('warehouse-clothes-list');
@@ -3326,7 +3529,7 @@
         function showOmiyageDetail(idx) {
             const stage = stages[idx];
             const currentLv = purchasedItems[idx] || 0;
-            const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
+            const nextPrice = Math.floor(stage.price * Math.pow(1.7, currentLv));
             const canBuy = score >= nextPrice;
             const baseEffectText = stage.tapBonus ? `タップ力 +${formatMochi(stage.tapBonus)}` : `自動増加 +${formatMochi(stage.mpsBonus)}もち/秒`;
 
@@ -3334,7 +3537,18 @@
             if (stage.itemImg) { imgEl.src = stage.itemImg; imgEl.style.display = 'block'; }
             else { imgEl.style.display = 'none'; }
             document.getElementById('omiyage-detail-name').innerText = `${stage.item} Lv.${currentLv}`;
-            document.getElementById('omiyage-detail-effect').innerText = `${baseEffectText}（現在+${formatMochi(currentLv * (stage.tapBonus || stage.mpsBonus))}）`;
+
+            // このおみやげ1つが、今のタップ力(or 自動増加)全体のうち何%を占めているかを表示する
+            // →どのおみやげが伸びすぎているか、プレイヤー自身が実感しやすいように
+            let contributionText = '';
+            if (currentLv > 0) {
+                const isGoldTrophyHere = getPrefTrophy(idx) === 'gold';
+                const myValue = currentLv * (stage.tapBonus || stage.mpsBonus) * (isGoldTrophyHere ? 1.1 : 1);
+                const totalValue = stage.tapBonus ? getTapPower() : getMps();
+                const percent = totalValue > 0 ? (myValue / totalValue * 100) : 0;
+                contributionText = ` ／ 全体の${percent < 0.1 ? '<0.1' : percent.toFixed(1)}%`;
+            }
+            document.getElementById('omiyage-detail-effect').innerText = `${baseEffectText}（現在+${formatMochi(currentLv * (stage.tapBonus || stage.mpsBonus))}${contributionText}）`;
 
             const buyBtn = document.getElementById('omiyage-detail-buy-btn');
             buyBtn.innerText = `${formatMochi(nextPrice)}もちで購入`;
@@ -3370,7 +3584,7 @@
 
         function buyOmiyage(idx) {
             const stage = stages[idx]; const currentLv = purchasedItems[idx] || 0;
-            const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
+            const nextPrice = Math.floor(stage.price * Math.pow(1.7, currentLv));
             if (score >= nextPrice) {
                 score -= nextPrice; purchasedItems[idx] = currentLv + 1;
                 playAudioFile('levelup.mp3');
@@ -3667,6 +3881,50 @@
         }
 
         // 🎉 日本全国制覇の演出
+        const PRESTIGE_POINTS_PER_RUN = 5; // 転生1回あたりに獲得する転生ポイント（v1はシンプルに固定値。将来調整可）
+
+        function openPrestigeShop() {
+            renderPrestigeShop();
+            openModal('prestige-shop-modal');
+        }
+
+        function canPrestige() {
+            return hasSeenJapanClear; // 日本全国制覇済みなら転生可能
+        }
+
+        function openPrestigeConfirm() {
+            if (!canPrestige()) {
+                alert('日本全国を制覇すると転生できるようになります。まずは沖縄まで旅を続けよう！');
+                return;
+            }
+            const currentBonus = (prestigeCount * PRESTIGE_BONUS_PER_COUNT * 100).toFixed(0);
+            const nextBonus = ((prestigeCount + 1) * PRESTIGE_BONUS_PER_COUNT * 100).toFixed(0);
+            const msg = `転生すると、もちの数・都道府県の進み具合・おみやげ・スキルレベルが全てリセットされます。\n\n` +
+                `代わりに転生ポイントを${PRESTIGE_POINTS_PER_RUN}獲得し、タップ力・自動増加への恒久ボーナスが+${PRESTIGE_BONUS_PER_COUNT * 100}%増えます` +
+                `（現在: +${currentBonus}% → 転生後: +${nextBonus}%）。\n\n` +
+                `※累計タップ数・都道府県トロフィー・衣装・転生回数は引き継がれます。\n\n本当に転生しますか？`;
+            if (confirm(msg)) doPrestige();
+        }
+
+        function doPrestige() {
+            prestigeCount++;
+            prestigePoints += PRESTIGE_POINTS_PER_RUN;
+            score = 0;
+            currentStageIndex = 0;
+            selectedStageIndex = 0;
+            currentStageProgress = 0;
+            purchasedItems = {};
+            Object.keys(skills).forEach(k => {
+                skills[k].lv = 0;
+                skills[k].activeTimer = 0;
+                skills[k].currentCd = 0;
+            });
+            saveGame();
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
+            alert(`転生完了！転生ポイントを${PRESTIGE_POINTS_PER_RUN}獲得しました（合計: ${prestigePoints}）\nもちすけと、また鹿児島から旅をやり直そう！`);
+            location.reload(); // 画面各所を確実に初期状態へ戻すため、リロードして最初から表示し直す
+        }
+
         function triggerJapanClearCelebration() {
             if (hasSeenJapanClear) return;
             hasSeenJapanClear = true;
@@ -3802,7 +4060,7 @@
                 row.className = 'list-item';
                 const locked = currentStageIndex < g.unlockStage;
                 const usedToday = minigamePlaysUsedToday[g.id] || 0;
-                const remaining = MINIGAME_DAILY_LIMIT - usedToday;
+                const remaining = getMinigameDailyLimit() - usedToday;
                 if (locked) {
                     const reqName = stages[g.unlockStage] ? stages[g.unlockStage].name : "???";
                     row.style.opacity = "0.55";
@@ -3810,14 +4068,14 @@
                 } else if (remaining <= 0) {
                     row.innerHTML = `<div class="item-info"><span class="item-title">${g.icon} ${g.name}</span><span class="item-desc">本日は終了！また明日挑戦してね</span></div><button class="item-action-btn" disabled>終了</button>`;
                 } else {
-                    row.innerHTML = `<div class="item-info"><span class="item-title">${g.icon} ${g.name}</span><span class="item-desc">本日 ${usedToday}/${MINIGAME_DAILY_LIMIT}回</span></div><button class="item-action-btn btn-shop" style="background:#26a69a; color:#fff;" onclick="startMinigame('${g.id}')">あそぶ</button>`;
+                    row.innerHTML = `<div class="item-info"><span class="item-title">${g.icon} ${g.name}</span><span class="item-desc">本日 ${usedToday}/${getMinigameDailyLimit()}回</span></div><button class="item-action-btn btn-shop" style="background:#26a69a; color:#fff;" onclick="startMinigame('${g.id}')">あそぶ</button>`;
                 }
                 container.appendChild(row);
             });
         }
 
         function startMinigame(id) {
-            if ((minigamePlaysUsedToday[id] || 0) >= MINIGAME_DAILY_LIMIT) return;
+            if ((minigamePlaysUsedToday[id] || 0) >= getMinigameDailyLimit()) return;
             document.getElementById('minigame-tile-view').style.display = 'none';
             const playView = document.getElementById('minigame-play-view');
             playView.style.display = 'block';
@@ -3845,7 +4103,7 @@
             const final = Math.floor(getMinigameBaseReward() * multiplier);
             score += final;
             saveGame(); updateDisplay();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
             return final;
         }
 
@@ -3898,10 +4156,10 @@
         function renderQuizQuestion(container, quizState) {
             const q = quizState.questions[quizState.qIndex];
             const questionText = q.isNameToItem ? `${q.correctStage.name}の名産品は？` : `「${q.correctStage.item}」はどこの県の名産品？`;
-            const choiceButtons = q.choices.map(c => {
+            const choiceButtons = q.choices.map((c, idx) => {
                 const label = q.isNameToItem ? c.item : c.name;
                 const isCorrect = c === q.correctStage;
-                return `<button class="item-action-btn" style="width:100%; margin-bottom:8px;" onclick="answerQuizQuestion(${isCorrect})">${label}</button>`;
+                return `<button class="item-action-btn quiz-choice-btn" id="quiz-choice-${idx}" style="width:100%; margin-bottom:8px;" onclick="answerQuizQuestion(${isCorrect}, ${idx})">${label}</button>`;
             }).join('');
             container.innerHTML = `
                 <div style="text-align:center;">
@@ -3911,20 +4169,37 @@
                 </div>`;
         }
 
-        function answerQuizQuestion(isCorrect) {
+        function answerQuizQuestion(isCorrect, choiceIdx) {
             const quizState = window.__quizState;
             if (!quizState) return;
-            if (isCorrect) { quizState.correct++; playAudioFile('critical.mp3'); }
-            else { playAudioFile('tap.mp3'); }
-            quizState.qIndex++;
-            if (quizState.qIndex < quizState.questions.length) {
-                renderQuizQuestion(document.getElementById('minigame-play-view'), quizState);
+            document.querySelectorAll('.quiz-choice-btn').forEach(b => b.onclick = null); // 連打防止
+
+            const btn = document.getElementById(`quiz-choice-${choiceIdx}`);
+            if (isCorrect) {
+                quizState.correct++;
+                playAudioFile('critical.mp3');
+                if (btn) btn.classList.add('quiz-correct-glow');
             } else {
-                const mult = QUIZ_REWARD_BY_CORRECT[quizState.correct] ?? 0;
-                const reward = grantMinigameReward(mult);
-                showMinigameResult(`🗾 ご当地クイズ結果`, `${quizState.correct} / 3問 正解！`, reward);
-                window.__quizState = null;
+                playAudioFile('tap.mp3');
+                if (btn) btn.classList.add('quiz-wrong-shake');
+                // 不正解の時は、正解の選択肢も光らせて教えてあげる
+                const q = quizState.questions[quizState.qIndex];
+                const correctIdx = q.choices.findIndex(c => c === q.correctStage);
+                const correctBtn = document.getElementById(`quiz-choice-${correctIdx}`);
+                if (correctBtn) correctBtn.classList.add('quiz-correct-glow');
             }
+
+            setTimeout(() => {
+                quizState.qIndex++;
+                if (quizState.qIndex < quizState.questions.length) {
+                    renderQuizQuestion(document.getElementById('minigame-play-view'), quizState);
+                } else {
+                    const mult = QUIZ_REWARD_BY_CORRECT[quizState.correct] ?? 0;
+                    const reward = grantMinigameReward(mult);
+                    showMinigameResult(`🗾 ご当地クイズ結果`, `${quizState.correct} / 3問 正解！`, reward);
+                    window.__quizState = null;
+                }
+            }, 750); // フィードバックが見えるよう少し間を置いてから次の問題へ
         }
 
         // -------------------------------------------------------------
@@ -3951,9 +4226,12 @@
             timeAttackState = { taps: 0, timeLeft: TIME_ATTACK_DURATION_SEC, timerId: null };
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
-                    <div id="ta-timer" style="font-size:2rem; font-weight:bold; color:#ff9800;">${TIME_ATTACK_DURATION_SEC}秒</div>
-                    <div id="ta-count" style="font-size:1.5rem; font-weight:bold; margin:10px 0;">0 回</div>
-                    <button id="ta-tap-btn" style="width:140px; height:140px; border-radius:50%; background:#26a69a; color:#fff; font-size:1.1rem; font-weight:bold; border:none; box-shadow:0 4px 10px rgba(0,0,0,0.2);">タップ！</button>
+                    <div id="ta-timer-bar-outer" style="width:100%; height:12px; background:#eee; border-radius:8px; overflow:hidden; margin-bottom:10px; box-shadow:inset 0 1px 3px rgba(0,0,0,0.15);">
+                        <div id="ta-timer-bar-inner" style="height:100%; width:100%; background:#4caf50; transition:width 0.9s linear, background 0.3s;"></div>
+                    </div>
+                    <div id="ta-timer" style="font-size:1.5rem; font-weight:900; color:#ff9800; margin-bottom:4px;">${TIME_ATTACK_DURATION_SEC}秒</div>
+                    <div id="ta-count" style="font-size:2.4rem; font-weight:900; margin:6px 0; color:#5d4037; line-height:1;">0<span style="font-size:1rem; font-weight:bold;"> 回</span></div>
+                    <button id="ta-tap-btn" style="width:150px; height:150px; border-radius:50%; background:#26a69a; color:#fff; font-size:1.15rem; font-weight:bold; border:none; box-shadow:0 5px 14px rgba(0,0,0,0.25);">タップ！</button>
                 </div>`;
             const btn = document.getElementById('ta-tap-btn');
             btn.addEventListener('pointerdown', onTimeAttackTap);
@@ -3962,6 +4240,16 @@
                 timeAttackState.timeLeft--;
                 const timerEl = document.getElementById('ta-timer');
                 if (timerEl) timerEl.innerText = timeAttackState.timeLeft + '秒';
+                const barInner = document.getElementById('ta-timer-bar-inner');
+                if (barInner) {
+                    const pct = Math.max(0, (timeAttackState.timeLeft / TIME_ATTACK_DURATION_SEC) * 100);
+                    barInner.style.width = pct + '%';
+                    barInner.style.background = pct > 50 ? '#4caf50' : pct > 20 ? '#ffc107' : '#f44336';
+                }
+                if (timeAttackState.timeLeft > 0 && timeAttackState.timeLeft <= 3) {
+                    playAudioFile('skill_tap.mp3', 0.35); // ラスト3秒のカウントダウン合図に流用
+                    vibrate(15);
+                }
                 if (timeAttackState.timeLeft <= 0) {
                     clearInterval(timeAttackState.timerId);
                     btn.removeEventListener('pointerdown', onTimeAttackTap);
@@ -3975,7 +4263,25 @@
             if (!timeAttackState) return;
             timeAttackState.taps++;
             const countEl = document.getElementById('ta-count');
-            if (countEl) countEl.innerText = timeAttackState.taps + ' 回';
+            if (countEl) countEl.innerHTML = timeAttackState.taps + '<span style="font-size:1rem; font-weight:bold;"> 回</span>';
+
+            const btn = document.getElementById('ta-tap-btn');
+            if (btn) {
+                // タップの度に「もちっ」と潰れて戻る手応えを出す
+                btn.animate([
+                    { transform: 'scale(0.82, 1.14)' },
+                    { transform: 'scale(1.08, 0.92)', offset: 0.45 },
+                    { transform: 'scale(1, 1)' }
+                ], { duration: 160, easing: 'ease-out' });
+                const rect = btn.getBoundingClientRect();
+                spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 2, '#26a69a');
+            }
+
+            // 叩けば叩くほど音がだんだん高くなっていく（連打の気持ちよさを強化）
+            const rate = 1 + Math.min(0.6, timeAttackState.taps * 0.015);
+            playAudioFilePitched('tap.mp3', 0.5, rate);
+
+            if (timeAttackState.taps % 20 === 0) { vibrate(20); screenFlash('#26a69a', 0.12); }
         }
 
         function finishTimeAttack() {
@@ -3985,7 +4291,7 @@
             const mult = found ? found[1] : 0.3;
             const reward = grantMinigameReward(mult);
             const isNewBest = taps > (minigameBests.timeattack || 0);
-            if (isNewBest) { minigameBests.timeattack = taps; playAudioFile('levelup.mp3'); saveGame(); }
+            if (isNewBest) { minigameBests.timeattack = taps; playAudioFile('levelup.mp3'); saveGame(); screenFlash('#ffd700', 0.35); }
             showMinigameResult(`⏱️ タイムアタック結果`, `${taps}回タップ！${isNewBest ? '🎉自己ベスト更新！' : `（自己ベスト: ${minigameBests.timeattack}回）`}`, reward);
         }
 
@@ -4017,22 +4323,37 @@
             });
             cards = cards.sort(() => Math.random() - 0.5);
             concentrationState = { cards, flippedIndices: [], moves: 0, matchedPairs: 0, locked: false };
-            renderConcentrationBoard();
+            buildConcentrationBoard(); // DOMはここで1回だけ作る。以降はクラス切り替えのみでCSSアニメーションを効かせる
         }
 
-        function renderConcentrationBoard() {
+        // カードのDOMを最初の1回だけ組み立てる（毎回作り直すとCSSのtransitionが再生されないため）
+        function buildConcentrationBoard() {
             const container = document.getElementById('minigame-play-view');
             const st = concentrationState;
-            if (!st) return;
-            const cardsHtml = st.cards.map((c, i) => {
-                const isFlipped = st.flippedIndices.includes(i) || c.matched;
-                const inner = isFlipped ? `<img src="${c.stage.itemImg}" style="width:100%; height:100%; object-fit:cover; border-radius:8px;" alt="${c.stage.item}">` : '🍡';
-                return `<div onclick="flipConcentrationCard(${i})" style="aspect-ratio:1; background:${isFlipped ? '#fff' : '#ff9800'}; border:2px solid #ffcc80; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.15); overflow:hidden;">${inner}</div>`;
-            }).join('');
+            const cardsHtml = st.cards.map((c, i) => `
+                <div class="concentration-card-outer" onclick="flipConcentrationCard(${i})">
+                    <div class="concentration-card-inner" id="concent-inner-${i}">
+                        <div class="concentration-card-face concentration-card-back">🍡</div>
+                        <div class="concentration-card-face concentration-card-front">
+                            <img src="${c.stage.itemImg}" alt="${c.stage.item}">
+                        </div>
+                    </div>
+                </div>
+            `).join('');
             container.innerHTML = `
-                <div style="text-align:center; margin-bottom:8px; font-size:0.85rem; color:#5d4037;">🃏 めくった回数: ${st.moves}</div>
+                <div style="text-align:center; margin-bottom:8px; font-size:0.85rem; color:#5d4037;">🃏 めくった回数: <span id="concent-moves">${st.moves}</span></div>
                 <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-bottom:12px;">${cardsHtml}</div>
             `;
+        }
+
+        // 個別カードの見た目だけを更新する（既存のDOM要素のクラスを切り替えるだけなので、3D回転アニメーションが正しく再生される）
+        function updateConcentrationCardVisual(i) {
+            const st = concentrationState;
+            const inner = document.getElementById(`concent-inner-${i}`);
+            if (!inner) return;
+            const isFlipped = st.flippedIndices.includes(i) || st.cards[i].matched;
+            inner.classList.toggle('flipped', isFlipped);
+            inner.classList.toggle('matched', st.cards[i].matched);
         }
 
         function flipConcentrationCard(i) {
@@ -4042,27 +4363,37 @@
             if (st.flippedIndices.length >= 2) return;
             st.flippedIndices.push(i);
             playAudioFile('tap.mp3');
+            updateConcentrationCardVisual(i);
+
             if (st.flippedIndices.length === 2) {
                 st.moves++;
-                renderConcentrationBoard();
+                const movesEl = document.getElementById('concent-moves');
+                if (movesEl) movesEl.innerText = st.moves;
                 const [a, b] = st.flippedIndices;
                 if (st.cards[a].pairId === st.cards[b].pairId) {
                     st.cards[a].matched = true; st.cards[b].matched = true;
-                    st.matchedPairs++; st.flippedIndices = [];
+                    st.matchedPairs++;
                     playAudioFile('critical.mp3');
-                    renderConcentrationBoard();
-                    if (st.matchedPairs === 6) setTimeout(() => finishConcentration(), 400);
+                    updateConcentrationCardVisual(a);
+                    updateConcentrationCardVisual(b);
+                    st.flippedIndices = [];
+                    if (st.matchedPairs === 6) setTimeout(() => finishConcentration(), 500);
                 } else {
                     st.locked = true;
+                    // 不一致の合図に、2枚を軽くシェイクさせる
+                    [a, b].forEach(idx => {
+                        const inner = document.getElementById(`concent-inner-${idx}`);
+                        if (inner) { inner.classList.remove('shake'); void inner.offsetWidth; inner.classList.add('shake'); }
+                    });
                     setTimeout(() => {
                         if (!concentrationState) return;
+                        const [oldA, oldB] = concentrationState.flippedIndices;
                         concentrationState.flippedIndices = [];
                         concentrationState.locked = false;
-                        renderConcentrationBoard();
+                        updateConcentrationCardVisual(oldA);
+                        updateConcentrationCardVisual(oldB);
                     }, 800);
                 }
-            } else {
-                renderConcentrationBoard();
             }
         }
 
@@ -4115,19 +4446,20 @@
 
         function startMochitsukiGame(container) {
             consumeMinigamePlay('mochitsuki');
-            mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null, periodMs: MOCHITSUKI_INITIAL_PERIOD_MS };
+            mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null, periodMs: MOCHITSUKI_INITIAL_PERIOD_MS, streak: 0, bestStreak: 0 };
             MOCHITSUKI_RANKS.forEach(r => mochitsukiState.counts[r.name] = 0);
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
                     <div style="font-weight:bold; margin-bottom:8px;">🍡 もちつきリズム</div>
                     <div style="font-size:0.78rem; color:#5d4037; margin-bottom:6px;">インジケーターが中央に来た瞬間にタップ！タップ毎にどんどん速くなるで（${MOCHITSUKI_BEATS}拍）</div>
-                    <div id="mochi-beat-count" style="font-size:0.8rem; color:#999; margin-bottom:10px;">1 / ${MOCHITSUKI_BEATS}拍</div>
-                    <div style="position:relative; width:100%; max-width:280px; height:40px; margin:0 auto 16px; background:#fdf3e0; border-radius:20px; overflow:hidden; border:2px solid #ffd699;">
+                    <div id="mochi-beat-count" style="font-size:0.8rem; color:#999; margin-bottom:4px;">1 / ${MOCHITSUKI_BEATS}拍</div>
+                    <div id="mochi-streak-text" style="font-size:0.75rem; font-weight:bold; color:#ff9800; height:1.2em; margin-bottom:6px;"></div>
+                    <div id="mochi-track" style="position:relative; width:100%; max-width:280px; height:48px; margin:0 auto 14px; background:linear-gradient(#fffaf0,#fdf3e0); border-radius:24px; overflow:hidden; border:3px solid #ffd699; box-shadow:inset 0 2px 6px rgba(0,0,0,0.08);">
                         ${buildMochitsukiBandsHtml()}
-                        <div id="mochi-indicator" style="position:absolute; top:4px; width:32px; height:32px; border-radius:50%; background:#ff5722; box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>
+                        <div id="mochi-indicator" style="position:absolute; top:5px; width:38px; height:38px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ff8a5c, #ff5722); box-shadow:0 3px 6px rgba(0,0,0,0.35), 0 0 10px rgba(255,87,34,0.5);"></div>
                     </div>
-                    <div id="mochi-judge-text" style="font-size:1.2rem; font-weight:900; height:30px; margin-bottom:10px;"></div>
-                    <button id="mochi-tap-btn" style="width:100%; padding:14px; border-radius:14px; border:none; background:#26a69a; color:#fff; font-weight:bold; font-size:1rem;">タップ！</button>
+                    <div id="mochi-judge-text" style="font-size:1.5rem; font-weight:900; height:36px; margin-bottom:8px;"></div>
+                    <button id="mochi-tap-btn" style="width:100%; padding:16px; border-radius:16px; border:none; background:#26a69a; color:#fff; font-weight:bold; font-size:1.05rem; box-shadow:0 4px 10px rgba(0,0,0,0.2);">タップ！</button>
                 </div>`;
             mochitsukiState.startTime = performance.now();
             document.getElementById('mochi-tap-btn').addEventListener('pointerdown', onMochitsukiTap);
@@ -4147,7 +4479,7 @@
                 const elapsed = performance.now() - mochitsukiState.startTime;
                 const percent = getMochitsukiIndicatorPercent(elapsed, mochitsukiState.periodMs);
                 const trackWidth = track.clientWidth;
-                el.style.left = Math.max(0, Math.min(trackWidth - 32, (percent / 100) * trackWidth - 16)) + 'px';
+                el.style.left = Math.max(0, Math.min(trackWidth - 38, (percent / 100) * trackWidth - 19)) + 'px';
             }
             mochitsukiState.animId = requestAnimationFrame(animateMochitsukiIndicator);
         }
@@ -4161,13 +4493,41 @@
             const rank = MOCHITSUKI_RANKS.find(r => diff <= r.range);
             mochitsukiState.counts[rank.name]++;
 
-            if (rank.name === 'PERFECT') { playAudioFile('critical.mp3'); vibrate(25); }
-            else if (rank.name === 'GREAT') { playAudioFile('critical.mp3', 0.4); vibrate(15); }
-            else if (rank.name === 'MISS') { /* 無音 */ }
-            else { playAudioFile('tap.mp3'); }
-
+            // 判定文字を毎回アニメーションさせつつ表示
             const judgeEl = document.getElementById('mochi-judge-text');
-            if (judgeEl) { judgeEl.innerText = rank.name; judgeEl.style.color = rank.color; }
+            if (judgeEl) {
+                judgeEl.innerText = rank.name;
+                judgeEl.style.color = rank.color;
+                judgeEl.style.textShadow = rank.gold ? '0 0 10px rgba(255,215,0,0.8)' : 'none';
+                judgeEl.classList.remove('mochi-judge-pop'); void judgeEl.offsetWidth; judgeEl.classList.add('mochi-judge-pop');
+            }
+
+            const track = document.getElementById('mochi-track');
+            if (rank.name === 'MISS') {
+                // ミス：連続記録をリセットし、トラックが軽くよろける演出＋もちすけの反応
+                mochitsukiState.streak = 0;
+                if (track) { track.classList.remove('mochi-track-miss'); void track.offsetWidth; track.classList.add('mochi-track-miss'); }
+                if (Math.random() < 0.4) showMochiComment(pickRandom(["あちゃー！", "むむっ、ズレたで！", "おっと〜！"]));
+            } else {
+                mochitsukiState.streak++;
+                mochitsukiState.bestStreak = Math.max(mochitsukiState.bestStreak, mochitsukiState.streak);
+                if (rank.name === 'PERFECT') {
+                    playAudioFile('critical.mp3'); vibrate(25);
+                    screenFlash('#ffd700', 0.28);
+                    if (track) { track.classList.remove('mochi-track-glow'); void track.offsetWidth; track.classList.add('mochi-track-glow'); }
+                } else if (rank.name === 'GREAT') {
+                    playAudioFile('critical.mp3', 0.4); vibrate(15);
+                } else {
+                    playAudioFile('tap.mp3');
+                }
+                // 3連続以上決まったら節目としてもう一段派手にする
+                if (mochitsukiState.streak > 0 && mochitsukiState.streak % 5 === 0) {
+                    screenShake('small'); vibrate([20, 30, 20]);
+                }
+            }
+
+            const streakEl = document.getElementById('mochi-streak-text');
+            if (streakEl) streakEl.innerText = mochitsukiState.streak >= 3 ? `🔥 ${mochitsukiState.streak}連続！` : '';
 
             // 判定ランクに応じて、バーがあった位置からパーティクルが複数個弾ける
             // （#particle-canvasはモーダルの下に隠れて見えなくなるため、モーダル内で完結する専用の演出を使う）
@@ -4208,7 +4568,7 @@
             const mult = Math.min(MOCHITSUKI_REWARD_CAP, weightedSum / MOCHITSUKI_BEATS);
             mochitsukiState = null;
             const reward = grantMinigameReward(mult);
-            const summary = MOCHITSUKI_RANKS.map(r => `${r.name}:${st.counts[r.name]}`).join(' ');
+            const summary = MOCHITSUKI_RANKS.map(r => `${r.name}:${st.counts[r.name]}`).join(' ') + (st.bestStreak >= 3 ? ` ／ 最大${st.bestStreak}連続！` : '');
             showMinigameResult(`🍡 もちつきリズム結果`, summary, reward);
         }
 
@@ -4254,6 +4614,7 @@
             currentRankingTab = tab;
             document.getElementById('rank-tab-score').classList.toggle('active', tab === 'score');
             document.getElementById('rank-tab-taps').classList.toggle('active', tab === 'taps');
+            document.getElementById('rank-tab-prestige').classList.toggle('active', tab === 'prestige');
             renderRankingList();
         }
 
@@ -4267,14 +4628,15 @@
             const listContainer = document.getElementById('ranking-list');
             listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
 
-            const isTaps = currentRankingTab === 'taps';
+            const tab = currentRankingTab; // 'score' | 'taps' | 'prestige'
             const ready = window.isRankingReady && window.isRankingReady();
-            let realList = ready ? await (isTaps ? window.fetchTapRankingList() : window.fetchRankingList()) : null;
+            const fetchFn = tab === 'taps' ? window.fetchTapRankingList : tab === 'prestige' ? window.fetchPrestigeRankingList : window.fetchRankingList;
+            let realList = ready ? await fetchFn() : null;
 
-            const unit = isTaps ? 'タップ' : 'もち';
-            const myValue = isTaps ? totalTapsCount : score;
-            const formatValue = (v) => isTaps ? Math.floor(v).toLocaleString() : formatMochi(v);
-            const getValue = (p) => isTaps ? (p.totalTaps || 0) : (p.score || 0);
+            const unit = tab === 'taps' ? 'タップ' : tab === 'prestige' ? '回' : 'もち';
+            const myValue = tab === 'taps' ? totalTapsCount : tab === 'prestige' ? prestigeCount : score;
+            const formatValue = (v) => tab === 'score' ? formatMochi(v) : Math.floor(v).toLocaleString();
+            const getValue = (p) => tab === 'taps' ? (p.totalTaps || 0) : tab === 'prestige' ? (p.prestigeCount || 0) : (p.score || 0);
 
             if (!realList) {
                 // Firebase未設定 or 通信エラー時は、自分のスコアだけのローカル表示にフォールバック
@@ -4289,11 +4651,11 @@
             // オートセーブ前後でスコアが少しズレていても二重表示にはならない）
             const alreadyIn = realList.some(p => p.isMe);
             const combined = realList.map(p => ({ ...p }));
-            if (!alreadyIn) combined.push({ name: playerName, score: Math.floor(score), totalTaps: totalTapsCount, isMe: true });
+            if (!alreadyIn) combined.push({ name: playerName, score: Math.floor(score), totalTaps: totalTapsCount, prestigeCount: prestigeCount, isMe: true });
             else {
                 // 自分の分だけ表示値を最新のものに更新（サーバー側は最大10秒遅れているため）
                 const mine = combined.find(p => p.isMe);
-                if (mine) { mine.score = Math.floor(score); mine.totalTaps = totalTapsCount; }
+                if (mine) { mine.score = Math.floor(score); mine.totalTaps = totalTapsCount; mine.prestigeCount = prestigeCount; }
             }
             combined.sort((a, b) => getValue(b) - getValue(a));
 
@@ -4319,7 +4681,7 @@
 
         setInterval(() => {
             saveGame();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
             if (window.backupSaveData) {
                 const raw = localStorage.getItem('mochisuke_save_data');
                 if (raw) window.backupSaveData(raw);
