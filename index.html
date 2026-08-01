@@ -75,7 +75,7 @@
         #game-screen {
             width: 100%; max-width: 480px;
             flex: 1 1 auto; min-height: 0;
-            position: relative; display: flex; flex-direction: column; align-items: center;
+            position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             background-image: url('bg_images/kyushu_okinawa/oita.png');
             background-position: center;
@@ -361,6 +361,12 @@
         /* ショップ用タブ */
         /* .shop-tabs（旧・白背景のタブバー）は廃止。タブ切り替えは#shop-tab-buttons（棚イラスト上のピル型ボタン）に統合 */
 
+        .rank-tab-btn {
+            flex: 1; padding: 9px 4px; font-size: 0.8rem; font-weight: bold;
+            background: #f0f0f0; color: #777; border: none; border-radius: 8px; cursor: pointer;
+        }
+        .rank-tab-btn.active { background: #ff9800; color: #fff; }
+
         /* リストアイテム */
         .list-container { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; text-align: left; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; gap: 8px; }
@@ -397,7 +403,7 @@
         #omiyage-image-frame > img { width: 100%; height: 100%; display: block; }
 
         #omiyage-money-display {
-            position: absolute; top: calc(6px + env(safe-area-inset-top, 0px)); left: 6px; z-index: 40;
+            position: absolute; top: calc(48px + env(safe-area-inset-top, 0px)); left: 6px; z-index: 40;
             font-weight: 900; font-size: 1.15rem; color: #5d4037;
             background: rgba(255,248,236,0.92); border: 2px solid #e8dcc0; border-radius: 22px;
             padding: 5px 14px;
@@ -435,22 +441,22 @@
         .omiyage-slot.locked .omiyage-slot-emoji { opacity: 0.4; filter: grayscale(1); }
 
         #omiyage-detail-panel {
-            position: absolute; left: 4%; right: 4%; top: 76%; height: 13%;
+            position: absolute; left: 4.2%; right: calc(100% - 95.1%); top: 74.1%; height: calc(87.3% - 74.1%);
             display: none; align-items: center; gap: 3%;
             box-sizing: border-box; padding: 0 3%;
         }
         #omiyage-detail-panel.show { display: flex; }
-        #omiyage-detail-img { width: 16%; height: 85%; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35)); }
-        #omiyage-detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+        #omiyage-detail-img { width: 20%; height: 92%; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35)); }
+        #omiyage-detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; justify-content: center; }
         #omiyage-detail-name {
-            font-size: 0.85rem; font-weight: 900; color: #5d4037; overflow-wrap: break-word;
-            text-shadow: 0 0 4px #fff8ec, 0 0 4px #fff8ec, 0 0 6px #fff8ec, 0 0 6px #fff8ec;
+            font-size: 1.15rem; font-weight: 900; color: #5d4037; overflow-wrap: break-word;
+            text-shadow: 0 0 5px #fff8ec, 0 0 5px #fff8ec, 0 0 8px #fff8ec, 0 0 8px #fff8ec;
         }
         #omiyage-detail-effect {
-            font-size: 0.68rem; color: #6d4c28; overflow-wrap: break-word;
-            text-shadow: 0 0 4px #fff8ec, 0 0 4px #fff8ec, 0 0 6px #fff8ec, 0 0 6px #fff8ec;
+            font-size: 0.92rem; color: #6d4c28; overflow-wrap: break-word;
+            text-shadow: 0 0 5px #fff8ec, 0 0 5px #fff8ec, 0 0 8px #fff8ec, 0 0 8px #fff8ec;
         }
-        #omiyage-detail-buy-btn { flex-shrink: 0; padding: 8px 14px; font-size: 0.72rem; border-radius: 10px; font-weight: bold; }
+        #omiyage-detail-buy-btn { flex-shrink: 0; padding: 12px 18px; font-size: 0.95rem; border-radius: 12px; font-weight: bold; }
 
         /* 常時表示バー：タブ切り替え(左)＋ページ送り(右)。棚下の床の余白部分に配置 */
         #shop-bottom-bar {
@@ -702,8 +708,15 @@
 
         /* キャラクター＆スキルエリア */
         #mochisuke-area {
-            flex: 1; display: flex; justify-content: space-between; align-items: center; position: relative; width: 100%;
-            padding: 0 8px; box-sizing: border-box;
+            /* flex:1をやめて絶対配置にした。以前はheader/control-panelを非表示にすると、その分の余白を
+               flex:1のmochisuke-areaが吸収して大きくなり、中の絵が再センタリングされて位置がズレていた。
+               UIの表示状態に関わらず常に同じ場所を確保するよう、header/control-panel分の余白を
+               表示・非表示に関係なく固定でpaddingとして常に取っておく方式にした。 */
+            position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+            padding: 0 8px;
+            padding-top: 175px; padding-bottom: 130px;
+            display: flex; justify-content: space-between; align-items: center; width: 100%;
+            box-sizing: border-box; z-index: 1;
         }
         
         /* 左右スキルコンテナ */
@@ -892,15 +905,27 @@
         }
 
         // メインのゲームスクリプト（type=moduleではない）から呼べるようにwindowへ橋渡しする
-        window.submitRankingScore = async function (name, scoreVal) {
+        window.submitRankingScore = async function (name, scoreVal, totalTapsVal) {
             if (!fbReady || !db || !currentUid) return;
             try {
                 await setDoc(doc(db, "rankings", currentUid), {
                     name: String(name).slice(0, 20),
                     score: Math.floor(scoreVal),
+                    totalTaps: Math.floor(totalTapsVal || 0),
                     updatedAt: Date.now()
                 });
             } catch (e) { console.error("ランキング送信エラー:", e); }
+        };
+
+        window.fetchTapRankingList = async function () {
+            if (!db) return null;
+            try {
+                const q = query(collection(db, "rankings"), orderBy("totalTaps", "desc"), limit(20));
+                const snap = await getDocs(q);
+                const list = [];
+                snap.forEach((d) => list.push({ ...d.data(), uid: d.id, isMe: d.id === currentUid }));
+                return list;
+            } catch (e) { console.error("タップ数ランキング取得エラー:", e); return null; }
         };
 
         // 💾 セーブデータのクラウドバックアップ（localStorageが消えても復元できるようにする保険）
@@ -1283,7 +1308,11 @@
     <div id="ranking-modal" class="modal">
         <div class="modal-content">
             <button class="modal-close-x" onclick="closeModal('ranking-modal')">×</button>
-            <h2>🏆 もちもちランキング</h2>
+            <h2>🏆 ランキング</h2>
+            <div style="display:flex; gap:8px; margin-bottom:10px;">
+                <button id="rank-tab-score" class="rank-tab-btn active" onclick="switchRankingTab('score')">🍡 もち数</button>
+                <button id="rank-tab-taps" class="rank-tab-btn" onclick="switchRankingTab('taps')">👆 タップ数（全国合計）</button>
+            </div>
             <div id="ranking-list" class="list-container"></div>
 
             <h3 style="margin-top:18px;">🏅 <span id="pref-ranking-title">県内ランキング</span></h3>
@@ -1429,7 +1458,7 @@
         // ☰ メニュー機能
         function menuSaveGame() {
             saveGame();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount);
             alert("💾 セーブしました！");
         }
 
@@ -1542,7 +1571,7 @@
             if (!result.ok) { alert(result.reason); return; }
             playerName = result.name;
             localStorage.setItem('punicker_player_name', playerName);
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount);
             alert('保存しました！');
         }
 
@@ -1753,6 +1782,8 @@
 
         let isFever = false; let feverTimeLeft = 0; let feverInterval = null;
         let comboCount = 0; let comboTimer = null;
+        let mochiLongPressTimer = null;
+        const MOCHI_LONGPRESS_MS = 600; // これ以上押しっぱなしにすると「つぶれる〜」的なセリフが出る
         let isBgmInitialized = false;
         let canvas = null; let ctx = null; let particleList = [];
         let rainCanvas = null; let rainCtx = null;
@@ -1773,7 +1804,7 @@
                     vx: (Math.random() - 0.5) * 0.4,
                     rot: Math.random() * 360,
                     rotSpeed: (Math.random() - 0.5) * 3,
-                    size: 24 + Math.random() * 10
+                    size: 36 + Math.random() * 14
                 });
             }
             if (mochiRainList.length > 14) mochiRainList.splice(0, mochiRainList.length - 14); // 増えすぎ防止
@@ -1872,6 +1903,14 @@
                 "おーい！",
                 "旅を続けるで！",
                 "寝てしまいそうや…"
+            ],
+
+            longPressComments: [
+                "つぶれるぅ〜！",
+                "ちょ、そんなに押さんといて〜！",
+                "むぎゅーってなってもうた〜",
+                "もちもち、伸びるやろ〜？",
+                "そんなに押したら形変わってまうで〜"
             ],
 
             eventComments: {
@@ -2626,7 +2665,7 @@
                     if (r.y > rainCanvas.height + 30) { mochiRainList.splice(i, 1); continue; }
                     const fadeOut = r.y > rainCanvas.height - 80 ? Math.max(0, (rainCanvas.height - r.y) / 80) : 1;
                     rainCtx.save();
-                    rainCtx.globalAlpha = 0.85 * fadeOut;
+                    rainCtx.globalAlpha = 1.0 * fadeOut;
                     rainCtx.translate(r.x, r.y);
                     rainCtx.rotate(r.rot * Math.PI / 180);
                     if (particleImg) rainCtx.drawImage(particleImg, -r.size / 2, -r.size / 2, r.size, r.size);
@@ -2787,6 +2826,12 @@
 
             createRippleEffect(e.clientX, e.clientY);
 
+            // 長押し検知：一定時間押しっぱなしにすると「つぶれる〜」的なセリフを言う
+            clearTimeout(mochiLongPressTimer);
+            mochiLongPressTimer = setTimeout(() => {
+                showMochiComment(pickRandom(dialogueData.longPressComments));
+            }, MOCHI_LONGPRESS_MS);
+
             // 必殺技発動中なら1タップが10連打になる
             let clickLoops = skills.hissatsu.activeTimer > 0 ? 10 : 1;
             for (let i = 0; i < clickLoops; i++) {
@@ -2818,6 +2863,7 @@
         function releaseMochiSucre() {
             if (!isMochiPressed) return;
             isMochiPressed = false;
+            clearTimeout(mochiLongPressTimer);
 
             const clones = bunshinCloneEls;
 
@@ -4075,7 +4121,7 @@
             const final = Math.floor(getMinigameBaseReward() * multiplier);
             score += final;
             saveGame(); updateDisplay();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount);
             return final;
         }
 
@@ -4478,20 +4524,39 @@
             listContainer.appendChild(trophyInfo);
         }
 
+        let currentRankingTab = 'score';
+
+        function switchRankingTab(tab) {
+            currentRankingTab = tab;
+            document.getElementById('rank-tab-score').classList.toggle('active', tab === 'score');
+            document.getElementById('rank-tab-taps').classList.toggle('active', tab === 'taps');
+            renderRankingList();
+        }
+
         async function openRanking() {
-            let listContainer = document.getElementById('ranking-list');
-            listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
             openModal('ranking-modal');
             renderPrefRanking();
+            await renderRankingList();
+        }
 
+        async function renderRankingList() {
+            const listContainer = document.getElementById('ranking-list');
+            listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
+
+            const isTaps = currentRankingTab === 'taps';
             const ready = window.isRankingReady && window.isRankingReady();
-            let realList = ready ? await window.fetchRankingList() : null;
+            let realList = ready ? await (isTaps ? window.fetchTapRankingList() : window.fetchRankingList()) : null;
+
+            const unit = isTaps ? 'タップ' : 'もち';
+            const myValue = isTaps ? totalTapsCount : score;
+            const formatValue = (v) => isTaps ? Math.floor(v).toLocaleString() : formatMochi(v);
+            const getValue = (p) => isTaps ? (p.totalTaps || 0) : (p.score || 0);
 
             if (!realList) {
                 // Firebase未設定 or 通信エラー時は、自分のスコアだけのローカル表示にフォールバック
-                listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:10px;">ランキングサーバーに接続できませんでした。<br>あなたの現在のスコアだけ表示しています。</div>`;
+                listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:10px;">ランキングサーバーに接続できませんでした。<br>あなたの現在の${unit}数だけ表示しています。</div>`;
                 const item = document.createElement('div'); item.className = "list-item"; item.style.background = "#fff9c4";
-                item.innerHTML = `<span>${playerName}（自分）</span><strong>${formatMochi(score)} もち</strong>`;
+                item.innerHTML = `<span>${playerName}（自分）</span><strong>${formatValue(myValue)} ${unit}</strong>`;
                 listContainer.appendChild(item);
                 return;
             }
@@ -4500,19 +4565,19 @@
             // オートセーブ前後でスコアが少しズレていても二重表示にはならない）
             const alreadyIn = realList.some(p => p.isMe);
             const combined = realList.map(p => ({ ...p }));
-            if (!alreadyIn) combined.push({ name: playerName, score: Math.floor(score), isMe: true });
+            if (!alreadyIn) combined.push({ name: playerName, score: Math.floor(score), totalTaps: totalTapsCount, isMe: true });
             else {
-                // 自分の分だけ表示スコアを最新の値に更新（サーバー側は最大10秒遅れているため）
+                // 自分の分だけ表示値を最新のものに更新（サーバー側は最大10秒遅れているため）
                 const mine = combined.find(p => p.isMe);
-                if (mine) mine.score = Math.floor(score);
+                if (mine) { mine.score = Math.floor(score); mine.totalTaps = totalTapsCount; }
             }
-            combined.sort((a, b) => b.score - a.score);
+            combined.sort((a, b) => getValue(b) - getValue(a));
 
             listContainer.innerHTML = "";
             combined.forEach((player, index) => {
                 let item = document.createElement('div'); item.className = "list-item";
                 if (player.isMe) item.style.background = "#fff9c4";
-                item.innerHTML = `<span>${index + 1}位. ${player.name}</span><strong>${formatMochi(player.score)} もち</strong>`;
+                item.innerHTML = `<span>${index + 1}位. ${player.name}</span><strong>${formatValue(getValue(player))} ${unit}</strong>`;
                 listContainer.appendChild(item);
             });
         }
@@ -4530,7 +4595,7 @@
 
         setInterval(() => {
             saveGame();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount);
             if (window.backupSaveData) {
                 const raw = localStorage.getItem('mochisuke_save_data');
                 if (raw) window.backupSaveData(raw);
