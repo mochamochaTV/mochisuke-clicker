@@ -2598,15 +2598,12 @@
             for (let i = mochiRainList.length - 1; i >= 0; i--) {
                 const r = mochiRainList[i];
                 r.x += r.vx; r.y += r.vy; r.rot += r.rotSpeed;
-                if (r.y > rainCanvas.height + 30) { mochiRainList.splice(i, 1); continue; }
-                const fadeOut = r.y > rainCanvas.height - 80 ? Math.max(0, (rainCanvas.height - r.y) / 80) : 1;
+                if (r.y > rainCanvas.height) { mochiRainList.splice(i, 1); continue; } // 下端に着いたらそこで消える（手前でフェードしない）
                 const rad = r.rot * Math.PI / 180;
-                rainCtx.globalAlpha = fadeOut;
                 rainCtx.setTransform(Math.cos(rad), Math.sin(rad), -Math.sin(rad), Math.cos(rad), r.x, r.y);
                 if (particleImg) rainCtx.drawImage(particleImg, -r.size / 2, -r.size / 2, r.size, r.size);
             }
             rainCtx.setTransform(1, 0, 0, 1, 0, 0); // 変形をまとめて1回だけリセット
-            rainCtx.globalAlpha = 1;
         }
 
         function handleCombo() {
