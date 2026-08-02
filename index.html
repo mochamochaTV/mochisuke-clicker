@@ -1537,15 +1537,28 @@
             const text = document.getElementById('save-import-text').value.trim();
             if (!text) { alert('貼り付け欄が空です'); return; }
             if (!confirm('今のセーブデータに上書きします。よろしいですか？（今のデータは失われます）')) return;
+
+            let raw = null;
+            // まずBase64形式（通常の「書き出し」機能の形式）として試す
             try {
-                const raw = decodeURIComponent(escape(atob(text)));
-                JSON.parse(raw); // 壊れたデータでないか検証
-                localStorage.setItem('mochisuke_save_data', raw);
-                alert('読み込みました！ページを再読み込みします');
-                location.reload();
+                const decoded = decodeURIComponent(escape(atob(text)));
+                JSON.parse(decoded);
+                raw = decoded;
             } catch (e) {
-                alert('データの形式が正しくありません。コピーが途中で切れていないか確認してください');
+                // Base64で読めなければ、Firestoreの生データ（素のJSON文字列）としてそのまま試す
+                // （FirebaseコンソールのsaveBackups→dataの中身を直接コピペして復元する場合など）
+                try {
+                    JSON.parse(text);
+                    raw = text;
+                } catch (e2) {
+                    alert('データの形式が正しくありません。コピーが途中で切れていないか確認してください');
+                    return;
+                }
             }
+
+            localStorage.setItem('mochisuke_save_data', raw);
+            alert('読み込みました！ページを再読み込みします');
+            location.reload();
         }
 
         async function refreshCloudBackupStatus() {
