@@ -993,9 +993,29 @@
         // 💾 セーブデータのクラウドバックアップ（localStorageが消えても復元できるようにする保険）
         // 匿名ログインの状態（IndexedDB）がlocalStorageと別に保持されているケースが多いため、
         // localStorageだけ消えてもこのバックアップから復元できる可能性が高い。
-        window.backupSaveData = async function (saveJsonString) {
+        // バックアップが「進んでいる状態」を「進んでいない状態」で誤って上書きしてしまう事故を防ぐガード。
+        // 複数タブ/複数端末を行き来した際に、古い（進んでいない）方のタブが後からオートセーブして
+        // 大事な進行データを消してしまう、という事故が実際に起きたための対策。
+        // force=trueの時だけ（転生など、意図的なリセットの直後）このチェックをスキップする。
+        window.backupSaveData = async function (saveJsonString, force) {
             if (!fbReady || !db || !currentUid) return;
             try {
+                if (!force) {
+                    try {
+                        const existing = await getDoc(doc(db, "saveBackups", currentUid));
+                        if (existing.exists() && existing.data().data) {
+                            const oldParsed = JSON.parse(existing.data().data);
+                            const newParsed = JSON.parse(saveJsonString);
+                            const oldScore = oldParsed.score || 0;
+                            const newScore = newParsed.score || 0;
+                            // 既存バックアップの半分未満に急に落ち込んでいたら、上書きせず様子を見る
+                            if (oldScore > 1000 && newScore < oldScore * 0.5) {
+                                console.warn("クラウドバックアップの上書きをスキップしました（急激なスコア低下を検知）", { oldScore, newScore });
+                                return;
+                            }
+                        }
+                    } catch (e) { /* 既存バックアップの確認に失敗しても、念のため通常通り保存は続行する */ }
+                }
                 await setDoc(doc(db, "saveBackups", currentUid), {
                     data: saveJsonString,
                     updatedAt: Date.now()
@@ -3953,6 +3973,10 @@
             });
             saveGame();
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
+            if (window.backupSaveData) {
+                const raw = localStorage.getItem('mochisuke_save_data');
+                if (raw) window.backupSaveData(raw, true); // 転生による意図的なリセットなので、ガードを無視して確実にバックアップを更新する
+            }
             alert(`転生完了！転生ポイントを${PRESTIGE_POINTS_PER_RUN}獲得しました（合計: ${prestigePoints}）\nもちすけと、また鹿児島から旅をやり直そう！`);
             location.reload(); // 画面各所を確実に初期状態へ戻すため、リロードして最初から表示し直す
         }
@@ -4698,8 +4722,12 @@
             updateSkillTimers(0.1); // スキルのクールタイムや持続タイマーを100ms単位でリアルタイム更新
         }, 100);
 
+        const appStartTime = Date.now();
+        const AUTOSAVE_CLOUD_GRACE_MS = 8000; // 起動直後の数秒間は、クラウドへの送信（ランキング・バックアップ）を見送る
+                                                 // （起動直後の一瞬だけ表示がおかしくなるケースがあっても、それをクラウドに送ってしまわないための保険）
         setInterval(() => {
             saveGame();
+            if (Date.now() - appStartTime < AUTOSAVE_CLOUD_GRACE_MS) return; // 起動直後はクラウド送信を見送る
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
             if (window.backupSaveData) {
                 const raw = localStorage.getItem('mochisuke_save_data');
