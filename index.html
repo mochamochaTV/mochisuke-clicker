@@ -369,6 +369,10 @@
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         .modal-content { background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 75vh; overflow-y: auto; box-sizing: border-box; position: relative; }
 
+        /* ミニゲーム中は連打の勢いで画面がスクロールしてズレてしまわないよう固定する */
+        #minigame-center-modal .modal-content { overflow: hidden; touch-action: none; overscroll-behavior: none; }
+        #minigame-play-view { touch-action: none; }
+
         /* 全画面表示のモーダル（地図・ショップ用）：スマホ画面サイズで作ったイラストをそのまま端まで生かす */
         .modal-content.modal-fullscreen {
             width: 100%; height: 100%; max-width: 480px; max-height: none;
@@ -2622,9 +2626,15 @@
         }
 
         // 🎬 画面フラッシュ（会心・黄金・フィーバーなどの「決まった瞬間」を派手に見せる）
+        let lastScreenFlashTime = 0;
         function screenFlash(color, peakOpacity = 0.35) {
             const el = document.getElementById('screen-flash-overlay');
             if (!el) return;
+            const now = performance.now();
+            // 連打で会心が連発すると、フラッシュが完全に消える前に次のフラッシュが割り込み、
+            // 画面(もちすけを含む)がずっと光ったまま見えてしまうため、短い間隔では新しいフラッシュを間引く
+            if (now - lastScreenFlashTime < 120) return;
+            lastScreenFlashTime = now;
             el.classList.remove('fade-out');
             el.style.background = color;
             el.style.opacity = String(peakOpacity);
@@ -4032,13 +4042,18 @@
         // もちの数表示を1文字ずつ<span>に分けて描画し、前回と値が違う文字だけポンっと弾ませる
         // （右詰めで比較するので、桁が増えて全体がズレても「実際に変わった桁」だけを正しく判定できる）
         function renderScoreDigits(container, newText, oldText) {
-            const maxLen = Math.max(oldText.length, newText.length);
-            const oldPadded = oldText.padStart(maxLen, '\u0000');
-            const newPadded = newText.padStart(maxLen, '\u0000');
-            const offset = maxLen - newText.length;
+            // Array.from()でUnicodeのコードポイント単位に分割する。
+            // 単純な文字列インデックス(newText[j])だと絵文字(🔥など)がサロゲートペアで
+            // 2つに分断され、それぞれが壊れた文字(□□)として表示されてしまうため。
+            const newChars = Array.from(newText);
+            const oldChars = Array.from(oldText);
+            const maxLen = Math.max(oldChars.length, newChars.length);
+            const oldPadded = new Array(maxLen - oldChars.length).fill('\u0000').concat(oldChars);
+            const newPadded = new Array(maxLen - newChars.length).fill('\u0000').concat(newChars);
+            const offset = maxLen - newChars.length;
             let html = '';
-            for (let j = 0; j < newText.length; j++) {
-                const ch = newText[j] === ' ' ? '&nbsp;' : newText[j];
+            for (let j = 0; j < newChars.length; j++) {
+                const ch = newChars[j] === ' ' ? '&nbsp;' : newChars[j];
                 const changed = oldPadded[offset + j] !== newPadded[offset + j];
                 html += changed ? `<span class="digit-pop">${ch}</span>` : `<span>${ch}</span>`;
             }
