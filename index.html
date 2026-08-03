@@ -790,6 +790,18 @@
             animation: feedBuffPulse 0.6s ease-in-out infinite alternate;
         }
         #feed-buff-indicator.show { display: flex; }
+
+        /* 😱 じらしすぎて叫ぶ演出（専用イラストが無いので、既存の絵を激しく震わせて表現） */
+        .mochi-scream { animation: mochiScreamShake 0.5s ease-in-out; }
+        @keyframes mochiScreamShake {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            10% { transform: translate(-6px, -3px) rotate(-3deg); }
+            25% { transform: translate(6px, 2px) rotate(3deg); }
+            40% { transform: translate(-5px, -4px) rotate(-2deg); }
+            55% { transform: translate(5px, 3px) rotate(2deg); }
+            70% { transform: translate(-4px, -2px) rotate(-1deg); }
+            85% { transform: translate(4px, 1px) rotate(1deg); }
+        }
         @keyframes feedBuffPulse {
             from { box-shadow: 0 3px 10px rgba(255,152,0,0.5); }
             to { box-shadow: 0 3px 16px rgba(255,193,7,0.85); }
@@ -1115,7 +1127,7 @@
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
         <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-23-04</div>
 
-        <div id="feed-buff-indicator">⚡ タップ力2倍中！ <span id="feed-buff-timer">20</span>秒</div>
+        <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
                 🍡 <span id="score-text">0 もち</span>
@@ -2251,7 +2263,7 @@
         // 個別のAudio要素を大量に操作する必要が無くなり、軽量かつ確実になります。
         // また音声データは事前にデコードしてメモリ上に持つので、Service Workerのキャッシュ
         // （Rangeリクエストの不整合が起きやすい）を一切経由しません。
-        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3', 'balloon_pop.mp3', 'mochi_eat.mp3'];
+        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3', 'balloon_pop.mp3', 'mochi_eat.mp3', 'mochi_scream.mp3'];
         let audioCtx = null;
         const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
         const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
@@ -2759,6 +2771,7 @@
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) mps += activeClothe.mpsBonus;
             mps *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
+            if (Date.now() < feedBuffActiveUntil) mps *= 2; // もちすけにお土産をあげた効果（一時的）
             return mps;
         }
 
@@ -3746,6 +3759,38 @@
         // 🍴 もちすけにあげる：おみやげを自由にドラッグして、もちすけの上で離すと食べてくれる
         let feedDragState = null;
 
+        // じらすとだんだん機嫌が悪くなっていくセリフ（最終段階で叫ぶ）
+        const feedTeaseComments = ["ちょうだい！", "まだ〜？", "はやくよこせ！"];
+        const FEED_TEASE_MAX_LEVEL = feedTeaseComments.length; // これ以上は毎回叫ぶだけになる
+        const FEED_TEASE_TIME_MS = 4000; // これだけ経つと、ドロップに失敗しなくても自動で機嫌が悪くなる
+        let feedTeaseLevel = 0;
+        let feedTeaseTimer = null;
+
+        function scheduleFeedTeaseEscalation() {
+            clearTimeout(feedTeaseTimer);
+            if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) return; // 最大まで達したら、時間経過では増やさない（外した時だけ増える）
+            feedTeaseTimer = setTimeout(() => {
+                feedTeaseLevel++;
+                showFeedTeaseComment();
+                scheduleFeedTeaseEscalation();
+            }, FEED_TEASE_TIME_MS);
+        }
+
+        function showFeedTeaseComment() {
+            if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) {
+                // 我慢の限界：専用の叫び効果音＋見た目の変化（専用イラストが用意でき次第、差し替え予定）
+                playAudioFile('mochi_scream.mp3');
+                vibrate([60, 40, 60, 40, 80]);
+                screenShake('big');
+                mochiBtnElement.classList.remove('mochi-scream');
+                void mochiBtnElement.offsetWidth;
+                mochiBtnElement.classList.add('mochi-scream');
+                showMochiComment('あ\u3099'.repeat(10) + '！！');
+            } else {
+                showMochiComment(feedTeaseComments[feedTeaseLevel]);
+            }
+        }
+
         function placeFeedIconNearMochisuke(idx) {
             const stage = stages[idx];
             closeModal('omiyage-feed-confirm-modal');
@@ -3770,7 +3815,9 @@
                     filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4)); touch-action:none; cursor:grab;`;
                 document.body.appendChild(icon);
 
-                showMochiComment("ちょうだい！");
+                feedTeaseLevel = 0;
+                showFeedTeaseComment(); // level 0の「ちょうだい！」
+                scheduleFeedTeaseEscalation();
 
                 // このアイコン自体を長押し・ドラッグして、もちすけの上まで運んでもらう
                 icon.addEventListener('pointerdown', (e) => startFeedDrag(idx, icon, e));
@@ -3818,13 +3865,18 @@
                 icon.style.top = (mochiRectNow.bottom - 10) + 'px';
                 icon.style.cursor = 'grab';
                 setTimeout(() => { icon.style.transition = 'none'; }, 320);
-                hideMochiComment();
+                feedTeaseLevel++;
+                showFeedTeaseComment();
             }
         }
 
         function feedMochisuke(idx) {
             const stage = stages[idx];
             if (!stage) return;
+
+            clearTimeout(feedTeaseTimer);
+            feedTeaseLevel = 0;
+            mochiBtnElement.classList.remove('mochi-scream');
 
             feedBuffActiveUntil = Date.now() + FEED_BUFF_DURATION_MS;
             saveGame();
