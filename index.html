@@ -772,6 +772,28 @@
         .quiz-dot-current { background: #ff9800; box-shadow: 0 0 0 3px rgba(255,152,0,0.25); }
         .quiz-dot-correct { background: #4caf50; }
         .quiz-dot-wrong { background: #e57373; }
+
+        /* 🍴 もちすけにお土産をあげる：足元に置かれた時のポンと弾む出現演出 */
+        .feed-icon-drop-in { animation: feedDropIn 0.4s cubic-bezier(0.3, 1.6, 0.4, 1); }
+        @keyframes feedDropIn {
+            0% { transform: translate(-50%, -140%) scale(0.4); opacity: 0; }
+            60% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        /* ⚡ タップ力2倍中のバフ表示 */
+        #feed-buff-indicator {
+            position: absolute; top: calc(52px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+            z-index: 45; display: none; align-items: center; gap: 5px;
+            background: linear-gradient(135deg, #ff6f00, #ff9800); color: #fff; font-weight: 900; font-size: 0.78rem;
+            padding: 6px 14px; border-radius: 20px; box-shadow: 0 3px 10px rgba(255,152,0,0.5);
+            animation: feedBuffPulse 0.6s ease-in-out infinite alternate;
+        }
+        #feed-buff-indicator.show { display: flex; }
+        @keyframes feedBuffPulse {
+            from { box-shadow: 0 3px 10px rgba(255,152,0,0.5); }
+            to { box-shadow: 0 3px 16px rgba(255,193,7,0.85); }
+        }
         .quiz-correct-glow { background: #4caf50 !important; color: #fff !important; animation: pulseGlow 0.4s ease-in-out 2; }
         .quiz-wrong-shake { background: #e57373 !important; color: #fff !important; animation: quizWrongShake 0.4s ease; }
         @keyframes quizWrongShake {
@@ -1093,6 +1115,7 @@
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
         <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-07-23-04</div>
 
+        <div id="feed-buff-indicator">⚡ タップ力2倍中！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
                 🍡 <span id="score-text">0 もち</span>
@@ -1206,7 +1229,7 @@
             <div id="omiyage-shelf-view">
                 <div id="omiyage-shelf-container">
                     <div id="omiyage-image-frame">
-                        <img id="omiyage-shelf-img" src="omiyage_shop_bg.png" alt="おみやげ屋さん" draggable="false">
+                        <img id="omiyage-shelf-img" data-src="omiyage_shop_bg.png" alt="おみやげ屋さん" draggable="false">
 
                         <!-- 🎁おみやげタブの中身 -->
                         <div id="omiyage-slots-layer"></div>
@@ -1249,7 +1272,7 @@
             <button class="modal-fullscreen-close" onclick="closeMapModal()">×</button>
             <div id="map-viewport">
                 <div id="map-canvas">
-                    <img id="map-illustration-img" src="map_illustration.png" alt="日本地図" draggable="false">
+                    <img id="map-illustration-img" data-src="map_illustration.png" alt="日本地図" draggable="false">
                     <div id="map-pins-layer"></div>
                 </div>
             </div>
@@ -2603,9 +2626,15 @@
         // これで万一OS側のビューポート計算のクセで数十px程度のズレが残っても、
         // 見えるのは同じ背景の続きになるので「白い余白」としては目立たなくなる。
         function setGameBackground(url) {
+            const gameScreen = document.getElementById('game-screen');
             const bgCss = `url('${url}')`;
-            document.getElementById('game-screen').style.backgroundImage = bgCss;
-            document.body.style.backgroundImage = bgCss;
+            // 先読みしてから切り替えることで、読み込み中に背景が真っ白/壊れて見える瞬間を防ぐ
+            const preloader = new Image();
+            preloader.onload = preloader.onerror = () => {
+                gameScreen.style.backgroundImage = bgCss;
+                document.body.style.backgroundImage = bgCss;
+            };
+            preloader.src = url;
         }
 
         window.onload = function() {
@@ -3432,7 +3461,13 @@
             saveGame(); openWarehouse(); updateDisplay();
         }
 
-        function openShop() { openModal('shop-modal'); switchShopTab(currentShopTab); }
+        // 起動時に読み込まなくていい大きな画像（マップ・おみやげ屋の背景）は、実際に開いた時だけ読み込む
+        function lazyLoadImage(imgId) {
+            const img = document.getElementById(imgId);
+            if (img && !img.src && img.dataset.src) img.src = img.dataset.src;
+        }
+
+        function openShop() { lazyLoadImage('omiyage-shelf-img'); openModal('shop-modal'); switchShopTab(currentShopTab); }
 
         // ✖ボタンを廃止した代わりに、棚の背景(商品以外の場所)をタップすると詳細パネルを閉じるようにする
         document.addEventListener('DOMContentLoaded', () => {
@@ -3703,7 +3738,7 @@
             document.getElementById('feed-confirm-img').src = stage.itemImg;
             document.getElementById('feed-confirm-name').innerText = `${stage.item}（${lv}個持っている）`;
             document.getElementById('feed-confirm-desc').innerText = `${stage.name}のお土産。もちすけにあげると喜んで食べてくれる。`;
-            document.getElementById('feed-confirm-btn').onpointerdown = (e) => startFeedDrag(idx, e);
+            document.getElementById('feed-confirm-btn').onclick = () => placeFeedIconNearMochisuke(idx);
             closeModal('omiyage-collection-modal');
             openModal('omiyage-feed-confirm-modal');
         }
@@ -3711,22 +3746,43 @@
         // 🍴 もちすけにあげる：おみやげを自由にドラッグして、もちすけの上で離すと食べてくれる
         let feedDragState = null;
 
-        function startFeedDrag(idx, e) {
-            e.preventDefault();
+        function placeFeedIconNearMochisuke(idx) {
             const stage = stages[idx];
             closeModal('omiyage-feed-confirm-modal');
             closeModal('warehouse-modal'); // もちすけが見える画面まで戻す
 
-            const icon = document.createElement('img');
-            icon.src = stage.itemImg;
-            icon.alt = stage.item;
-            icon.style.cssText = `position:fixed; width:80px; height:80px; object-fit:contain; z-index:99999;
-                left:${e.clientX}px; top:${e.clientY}px; transform:translate(-50%,-50%);
-                filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4)); touch-action:none;`;
-            document.body.appendChild(icon);
+            // 既に置きっぱなしのアイコンが残っていたら片付ける
+            const old = document.getElementById('feed-placed-icon');
+            if (old) old.remove();
 
+            setTimeout(() => {
+                const mochiRect = mochiBtnElement.getBoundingClientRect();
+                const startX = mochiRect.left + mochiRect.width / 2;
+                const startY = mochiRect.bottom - 10; // もちすけの足元くらい
+
+                const icon = document.createElement('img');
+                icon.id = 'feed-placed-icon';
+                icon.src = stage.itemImg;
+                icon.alt = stage.item;
+                icon.className = 'feed-icon-drop-in';
+                icon.style.cssText = `position:fixed; width:78px; height:78px; object-fit:contain; z-index:99999;
+                    left:${startX}px; top:${startY}px; transform:translate(-50%,-50%);
+                    filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4)); touch-action:none; cursor:grab;`;
+                document.body.appendChild(icon);
+
+                showMochiComment("ちょうだい！");
+
+                // このアイコン自体を長押し・ドラッグして、もちすけの上まで運んでもらう
+                icon.addEventListener('pointerdown', (e) => startFeedDrag(idx, icon, e));
+            }, 150); // 倉庫のモーダルが閉じるアニメーションと被らないよう少し待つ
+        }
+
+        function startFeedDrag(idx, icon, e) {
+            e.preventDefault();
+            icon.classList.remove('feed-icon-drop-in');
+            icon.style.cursor = 'grabbing';
+            icon.style.transition = 'none';
             feedDragState = { idx, icon };
-            showMochiComment("ちょうだい！");
 
             document.addEventListener('pointermove', onFeedDragMove);
             document.addEventListener('pointerup', onFeedDragEnd);
@@ -3755,11 +3811,13 @@
                 icon.remove();
                 feedMochisuke(idx);
             } else {
-                // もちすけの上じゃなければ、その場でふわっと消える
-                icon.style.transition = 'opacity 0.3s, transform 0.3s';
-                icon.style.opacity = '0';
-                icon.style.transform += ' scale(0.5)';
-                setTimeout(() => icon.remove(), 300);
+                // もちすけの上じゃなければ、足元にすとんと戻って、またやり直せるようにする
+                const mochiRectNow = mochiBtnElement.getBoundingClientRect();
+                icon.style.transition = 'left 0.3s ease-out, top 0.3s ease-out, transform 0.3s';
+                icon.style.left = (mochiRectNow.left + mochiRectNow.width / 2) + 'px';
+                icon.style.top = (mochiRectNow.bottom - 10) + 'px';
+                icon.style.cursor = 'grab';
+                setTimeout(() => { icon.style.transition = 'none'; }, 320);
                 hideMochiComment();
             }
         }
@@ -3770,10 +3828,13 @@
 
             feedBuffActiveUntil = Date.now() + FEED_BUFF_DURATION_MS;
             saveGame();
+            startFeedBuffIndicator();
 
             const mochiRect = mochiBtnElement.getBoundingClientRect();
             playAudioFile('mochi_eat.mp3');
             vibrate([20, 40, 20]);
+            screenFlash('#ff9800', 0.3);
+            screenShake('small');
             mochiBtnElement.animate([
                 { transform: 'scale(1, 1) rotate(0deg)' },
                 { transform: 'scale(1.25, 0.8) rotate(-4deg)', offset: 0.25 },
@@ -3782,10 +3843,32 @@
                 { transform: 'scale(1, 1) rotate(0deg)' }
             ], { duration: 500, easing: 'ease-in-out' });
             createFloatingText(mochiRect.left + mochiRect.width / 2, mochiRect.top + mochiRect.height / 3, `${stage.item}おいしい〜！`, "#ff9800", "1.1rem");
+            setTimeout(() => {
+                createFloatingText(mochiRect.left + mochiRect.width / 2, mochiRect.top + mochiRect.height / 2.2, `⚡タップ力2倍！`, "#e91e63", "1.3rem");
+            }, 300);
             showMochiComment(pickRandom(dialogueData.feedComments).replace('○○', stage.item));
-            for (let i = 0; i < 8; i++) {
-                createParticle(mochiRect.left + mochiRect.width / 2 + (Math.random() - 0.5) * 60, mochiRect.top + mochiRect.height / 2 + (Math.random() - 0.5) * 60, true);
+            for (let i = 0; i < 16; i++) {
+                createParticle(mochiRect.left + mochiRect.width / 2 + (Math.random() - 0.5) * 90, mochiRect.top + mochiRect.height / 2 + (Math.random() - 0.5) * 90, true);
             }
+        }
+
+        // ⚡ タップ力2倍中のバフ表示を、残り秒数のカウントダウン付きで出す
+        let feedBuffIndicatorTimer = null;
+        function startFeedBuffIndicator() {
+            const el = document.getElementById('feed-buff-indicator');
+            const timerEl = document.getElementById('feed-buff-timer');
+            if (!el) return;
+            el.classList.add('show');
+            clearInterval(feedBuffIndicatorTimer);
+            feedBuffIndicatorTimer = setInterval(() => {
+                const remaining = Math.ceil((feedBuffActiveUntil - Date.now()) / 1000);
+                if (remaining <= 0) {
+                    el.classList.remove('show');
+                    clearInterval(feedBuffIndicatorTimer);
+                } else if (timerEl) {
+                    timerEl.innerText = remaining;
+                }
+            }, 250);
         }
 
         // 「×」ボタン用：選択も解除する
@@ -3834,6 +3917,7 @@
         const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
 
         function openMap() {
+            lazyLoadImage('map-illustration-img');
             const pinsLayer = document.getElementById('map-pins-layer');
             pinsLayer.innerHTML = "";
             stages.forEach((stage, i) => {
