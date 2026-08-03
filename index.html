@@ -825,24 +825,6 @@
             50% { transform: scale(1.18); }
         }
 
-        /* 🍴 もちすけにお土産をあげる：長押し中のチャージ演出、飛んでいくアイコン */
-        #omiyage-feed-btn { position: relative; overflow: hidden; }
-        #omiyage-feed-btn.feed-charging::after {
-            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 0%;
-            background: rgba(255,255,255,0.35);
-            animation: feedCharge 0.7s linear forwards;
-        }
-        @keyframes feedCharge { from { width: 0%; } to { width: 100%; } }
-        .feed-flying-icon {
-            position: fixed; z-index: 30000; pointer-events: none; object-fit: contain;
-            animation: feedFly 0.55s cubic-bezier(0.3, 0.4, 0.6, 1) forwards;
-        }
-        @keyframes feedFly {
-            0% { transform: translate(0, 0) scale(1); opacity: 1; }
-            70% { transform: translate(calc(var(--fly-x) * 0.9), calc(var(--fly-y) * 0.9)) scale(0.6); opacity: 1; }
-            100% { transform: translate(var(--fly-x), var(--fly-y)) scale(0.1); opacity: 0; }
-        }
-
         #mochisuke-wrapper {
             position: relative; display: flex; justify-content: center; align-items: center; flex: 1; height: 100%;
         }
@@ -1200,6 +1182,7 @@
             <button class="item-action-btn btn-shop" style="width:100%; background:#9c27b0; color:#fff; margin-bottom:10px;" onclick="openTrophyRoom()">🏅 都道府県トロフィー</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#3f51b5; color:#fff; margin-bottom:10px;" onclick="openPrestigeConfirm()">🔄 転生する（日本制覇後に解放）</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#009688; color:#fff; margin-bottom:10px;" onclick="openPrestigeShop()">🛍️ 転生ポイントショップ</button>
+            <button class="item-action-btn btn-shop" style="width:100%; background:#e91e63; color:#fff; margin-bottom:10px;" onclick="openOmiyageCollection()">🍡 お土産一覧（もちすけにあげる）</button>
             <h3>👕 衣装をきがえる</h3>
             <div class="list-container" id="warehouse-clothes-list"></div>
             <button class="btn-red" onclick="closeModal('warehouse-modal')">閉じる</button>
@@ -1233,11 +1216,7 @@
                                 <div id="omiyage-detail-name"></div>
                                 <div id="omiyage-detail-effect"></div>
                             </div>
-                            <div style="display:flex; flex-direction:column; gap:3px; flex-shrink:0;">
-                                <button id="omiyage-detail-buy-btn" class="item-action-btn btn-shop" style="background:#ff9800; color:#fff;"></button>
-                                <button id="omiyage-feed-btn" class="item-action-btn" style="background:#8d6e63; color:#fff; display:none;"
-                                    onpointerdown="startFeedLongPress(event)" onpointerup="cancelFeedLongPress()" onpointerleave="cancelFeedLongPress()">🍴 あげる（長押し）</button>
-                            </div>
+                            <button id="omiyage-detail-buy-btn" class="item-action-btn btn-shop" style="background:#ff9800; color:#fff;"></button>
                         </div>
 
                         <!-- 👕きせかえ／✨スキルタブの中身（同じ棚イラストの上に半透明カードで重ねて表示） -->
@@ -1381,6 +1360,26 @@
                 <textarea id="feedback-text" rows="4" style="width:100%; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:8px; font-size:0.85rem;" placeholder="感想・不具合報告・要望など、なんでもどうぞ"></textarea>
                 <button class="item-action-btn btn-shop" style="margin-top:8px; width:100%; background:#ff9800; color:#fff;" onclick="sendFeedback()">送信する</button>
             </div>
+        </div>
+    </div>
+
+    <div id="omiyage-collection-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('omiyage-collection-modal')">×</button>
+            <h2>🍡 お土産一覧</h2>
+            <p style="font-size:0.72rem; color:#8d6e63; margin-bottom:10px;">タップすると、もちすけにあげられます</p>
+            <div id="omiyage-collection-grid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; max-height:50vh; overflow-y:auto; margin-bottom:10px;"></div>
+            <button class="btn-red" onclick="closeModal('omiyage-collection-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="omiyage-feed-confirm-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <button class="modal-close-x" onclick="closeModal('omiyage-feed-confirm-modal')">×</button>
+            <img id="feed-confirm-img" src="" alt="" style="width:110px; height:110px; object-fit:contain; margin:6px auto;">
+            <div id="feed-confirm-name" style="font-weight:900; font-size:1.05rem; color:#5d4037; margin-bottom:6px;"></div>
+            <div id="feed-confirm-desc" style="font-size:0.8rem; color:#8d6e63; margin-bottom:16px;"></div>
+            <button id="feed-confirm-btn" class="item-action-btn btn-shop" style="width:100%; background:#e91e63; color:#fff;">🍴 もちすけにあげる</button>
         </div>
     </div>
 
@@ -1898,14 +1897,9 @@
 
         let hasSeenJapanClear = false; // 日本制覇演出を出したかどうか（何度も出ないようにする）
 
-        // 🍴 もちすけにお土産をあげる機能
-        let feedLastResetDate = null;
-        let feedPlaysUsedToday = 0;
-        const FEED_DAILY_LIMIT = 3; // 1日にあげられる回数
+        // 🍴 もちすけにお土産をあげる機能（回数制限なし）
         const FEED_BUFF_DURATION_MS = 20000; // 効果の持続時間（20秒）
-        const FEED_LONGPRESS_MS = 700; // 長押しと判定するまでの時間
         let feedBuffActiveUntil = 0; // このタイムスタンプまで、タップ力が2倍になる
-        let feedLongPressTimer = null;
         let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
 
         // ===================================================================
@@ -2234,7 +2228,7 @@
         // 個別のAudio要素を大量に操作する必要が無くなり、軽量かつ確実になります。
         // また音声データは事前にデコードしてメモリ上に持つので、Service Workerのキャッシュ
         // （Rangeリクエストの不整合が起きやすい）を一切経由しません。
-        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3', 'balloon_pop.mp3'];
+        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3', 'balloon_pop.mp3', 'mochi_eat.mp3'];
         let audioCtx = null;
         const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
         const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
@@ -2383,8 +2377,7 @@
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
                 prefTaps: prefTaps, lastActiveTimestamp: lastActiveTimestamp,
                 prestigeCount: prestigeCount, prestigePoints: prestigePoints,
-                offlineCapBonusHours: offlineCapBonusHours, minigameDailyBonusPlays: minigameDailyBonusPlays,
-                feedLastResetDate: feedLastResetDate, feedPlaysUsedToday: feedPlaysUsedToday
+                offlineCapBonusHours: offlineCapBonusHours, minigameDailyBonusPlays: minigameDailyBonusPlays
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -2415,8 +2408,6 @@
                     prestigePoints = state.prestigePoints ?? 0;
                     offlineCapBonusHours = state.offlineCapBonusHours ?? 0;
                     minigameDailyBonusPlays = state.minigameDailyBonusPlays ?? 0;
-                    feedLastResetDate = state.feedLastResetDate ?? null;
-                    feedPlaysUsedToday = state.feedPlaysUsedToday ?? 0;
                     if (state.skills) {
                         Object.keys(state.skills).forEach(k => {
                             if (skills[k]) skills[k].lv = state.skills[k].lv ?? skills[k].lv;
@@ -3677,19 +3668,6 @@
             buyBtn.disabled = !canBuy;
             buyBtn.onclick = () => buyOmiyageFromShelf(idx, nextPrice);
 
-            // 🍴 あげるボタン：持っている(Lv>0)時だけ表示し、本日の残り回数を出す
-            resetFeedCountIfNewDay();
-            const feedBtn = document.getElementById('omiyage-feed-btn');
-            currentFeedTargetIdx = idx;
-            if (currentLv > 0) {
-                const remaining = FEED_DAILY_LIMIT - feedPlaysUsedToday;
-                feedBtn.style.display = 'block';
-                feedBtn.disabled = remaining <= 0;
-                feedBtn.innerText = remaining > 0 ? `🍴 あげる（長押し）本日${remaining}回` : '🍴 本日は終了';
-            } else {
-                feedBtn.style.display = 'none';
-            }
-
             document.getElementById('omiyage-detail-panel').classList.add('show');
         }
 
@@ -3698,84 +3676,116 @@
             document.getElementById('omiyage-detail-panel').classList.remove('show');
         }
 
-        // 🍴 もちすけにお土産をあげる
-        let currentFeedTargetIdx = null;
-
-        function resetFeedCountIfNewDay() {
-            const today = getLocalDateString(new Date());
-            if (feedLastResetDate !== today) {
-                feedLastResetDate = today;
-                feedPlaysUsedToday = 0;
-                saveGame();
+        // 🍡 お土産一覧（倉庫）：持っているおみやげを並べて、タップで「もちすけにあげる」を選べる
+        function openOmiyageCollection() {
+            const grid = document.getElementById('omiyage-collection-grid');
+            grid.innerHTML = '';
+            const owned = stages.map((s, i) => ({ s, i, lv: purchasedItems[i] || 0 })).filter(o => o.lv > 0 && o.s.itemImg);
+            if (owned.length === 0) {
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#999; font-size:0.8rem; padding:20px;">まだ持っているおみやげがありません</div>`;
+            } else {
+                owned.forEach(({ s, i, lv }) => {
+                    const cell = document.createElement('div');
+                    cell.style.cssText = 'text-align:center; cursor:pointer; padding:6px; border-radius:10px; background:#fff8ec; border:1px solid #f0d5b5;';
+                    cell.innerHTML = `<img src="${s.itemImg}" alt="${s.item}" style="width:100%; aspect-ratio:1; object-fit:contain;">
+                        <div style="font-size:0.62rem; font-weight:bold; color:#5d4037; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${s.item}</div>
+                        <div style="font-size:0.58rem; color:#ff9800;">×${lv}</div>`;
+                    cell.onclick = () => showOmiyageFeedConfirm(i);
+                    grid.appendChild(cell);
+                });
             }
+            openModal('omiyage-collection-modal');
         }
 
-        function startFeedLongPress(e) {
+        function showOmiyageFeedConfirm(idx) {
+            const stage = stages[idx];
+            const lv = purchasedItems[idx] || 0;
+            document.getElementById('feed-confirm-img').src = stage.itemImg;
+            document.getElementById('feed-confirm-name').innerText = `${stage.item}（${lv}個持っている）`;
+            document.getElementById('feed-confirm-desc').innerText = `${stage.name}のお土産。もちすけにあげると喜んで食べてくれる。`;
+            document.getElementById('feed-confirm-btn').onpointerdown = (e) => startFeedDrag(idx, e);
+            closeModal('omiyage-collection-modal');
+            openModal('omiyage-feed-confirm-modal');
+        }
+
+        // 🍴 もちすけにあげる：おみやげを自由にドラッグして、もちすけの上で離すと食べてくれる
+        let feedDragState = null;
+
+        function startFeedDrag(idx, e) {
             e.preventDefault();
-            const btn = document.getElementById('omiyage-feed-btn');
-            if (btn.disabled) return;
-            btn.classList.add('feed-charging');
-            clearTimeout(feedLongPressTimer);
-            feedLongPressTimer = setTimeout(() => {
-                btn.classList.remove('feed-charging');
-                feedMochisuke(currentFeedTargetIdx);
-            }, FEED_LONGPRESS_MS);
+            const stage = stages[idx];
+            closeModal('omiyage-feed-confirm-modal');
+            closeModal('warehouse-modal'); // もちすけが見える画面まで戻す
+
+            const icon = document.createElement('img');
+            icon.src = stage.itemImg;
+            icon.alt = stage.item;
+            icon.style.cssText = `position:fixed; width:80px; height:80px; object-fit:contain; z-index:99999;
+                left:${e.clientX}px; top:${e.clientY}px; transform:translate(-50%,-50%);
+                filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4)); touch-action:none;`;
+            document.body.appendChild(icon);
+
+            feedDragState = { idx, icon };
+            showMochiComment("ちょうだい！");
+
+            document.addEventListener('pointermove', onFeedDragMove);
+            document.addEventListener('pointerup', onFeedDragEnd);
+            document.addEventListener('pointercancel', onFeedDragEnd);
         }
 
-        function cancelFeedLongPress() {
-            clearTimeout(feedLongPressTimer);
-            const btn = document.getElementById('omiyage-feed-btn');
-            if (btn) btn.classList.remove('feed-charging');
+        function onFeedDragMove(e) {
+            if (!feedDragState) return;
+            feedDragState.icon.style.left = e.clientX + 'px';
+            feedDragState.icon.style.top = e.clientY + 'px';
+        }
+
+        function onFeedDragEnd(e) {
+            if (!feedDragState) return;
+            const { idx, icon } = feedDragState;
+            document.removeEventListener('pointermove', onFeedDragMove);
+            document.removeEventListener('pointerup', onFeedDragEnd);
+            document.removeEventListener('pointercancel', onFeedDragEnd);
+            feedDragState = null;
+
+            const mochiRect = mochiBtnElement.getBoundingClientRect();
+            const x = e.clientX, y = e.clientY;
+            const isOverMochi = x >= mochiRect.left && x <= mochiRect.right && y >= mochiRect.top && y <= mochiRect.bottom;
+
+            if (isOverMochi) {
+                icon.remove();
+                feedMochisuke(idx);
+            } else {
+                // もちすけの上じゃなければ、その場でふわっと消える
+                icon.style.transition = 'opacity 0.3s, transform 0.3s';
+                icon.style.opacity = '0';
+                icon.style.transform += ' scale(0.5)';
+                setTimeout(() => icon.remove(), 300);
+                hideMochiComment();
+            }
         }
 
         function feedMochisuke(idx) {
-            if (idx == null) return;
-            resetFeedCountIfNewDay();
-            if (feedPlaysUsedToday >= FEED_DAILY_LIMIT) return;
             const stage = stages[idx];
-            if (!stage || (purchasedItems[idx] || 0) <= 0) return;
+            if (!stage) return;
 
-            feedPlaysUsedToday++;
             feedBuffActiveUntil = Date.now() + FEED_BUFF_DURATION_MS;
             saveGame();
 
-            // 商品アイコンがもちすけに向かって飛んでいく演出
-            const itemImgEl = document.getElementById('omiyage-detail-img');
             const mochiRect = mochiBtnElement.getBoundingClientRect();
-            if (itemImgEl && itemImgEl.style.display !== 'none') {
-                const startRect = itemImgEl.getBoundingClientRect();
-                const flyer = document.createElement('img');
-                flyer.src = itemImgEl.src;
-                flyer.className = 'feed-flying-icon';
-                flyer.style.left = startRect.left + 'px';
-                flyer.style.top = startRect.top + 'px';
-                flyer.style.width = startRect.width + 'px';
-                flyer.style.height = startRect.height + 'px';
-                flyer.style.setProperty('--fly-x', (mochiRect.left + mochiRect.width / 2 - startRect.left - startRect.width / 2) + 'px');
-                flyer.style.setProperty('--fly-y', (mochiRect.top + mochiRect.height / 2 - startRect.top - startRect.height / 2) + 'px');
-                document.body.appendChild(flyer);
-                setTimeout(() => flyer.remove(), 650);
+            playAudioFile('mochi_eat.mp3');
+            vibrate([20, 40, 20]);
+            mochiBtnElement.animate([
+                { transform: 'scale(1, 1) rotate(0deg)' },
+                { transform: 'scale(1.25, 0.8) rotate(-4deg)', offset: 0.25 },
+                { transform: 'scale(0.85, 1.2) rotate(4deg)', offset: 0.5 },
+                { transform: 'scale(1.1, 0.92) rotate(-2deg)', offset: 0.75 },
+                { transform: 'scale(1, 1) rotate(0deg)' }
+            ], { duration: 500, easing: 'ease-in-out' });
+            createFloatingText(mochiRect.left + mochiRect.width / 2, mochiRect.top + mochiRect.height / 3, `${stage.item}おいしい〜！`, "#ff9800", "1.1rem");
+            showMochiComment(pickRandom(dialogueData.feedComments).replace('○○', stage.item));
+            for (let i = 0; i < 8; i++) {
+                createParticle(mochiRect.left + mochiRect.width / 2 + (Math.random() - 0.5) * 60, mochiRect.top + mochiRect.height / 2 + (Math.random() - 0.5) * 60, true);
             }
-
-            // もちすけがもぐもぐ食べる反応（専用イラストが無いので、既存の絵に大きめのバウンドアニメで表現）
-            setTimeout(() => {
-                playAudioFile('levelup.mp3');
-                vibrate([20, 40, 20]);
-                mochiBtnElement.animate([
-                    { transform: 'scale(1, 1) rotate(0deg)' },
-                    { transform: 'scale(1.25, 0.8) rotate(-4deg)', offset: 0.25 },
-                    { transform: 'scale(0.85, 1.2) rotate(4deg)', offset: 0.5 },
-                    { transform: 'scale(1.1, 0.92) rotate(-2deg)', offset: 0.75 },
-                    { transform: 'scale(1, 1) rotate(0deg)' }
-                ], { duration: 500, easing: 'ease-in-out' });
-                createFloatingText(mochiRect.left + mochiRect.width / 2, mochiRect.top + mochiRect.height / 3, `${stage.item}おいしい〜！`, "#ff9800", "1.1rem");
-                showMochiComment(pickRandom(dialogueData.feedComments).replace('○○', stage.item));
-                for (let i = 0; i < 8; i++) {
-                    createParticle(mochiRect.left + mochiRect.width / 2 + (Math.random() - 0.5) * 60, mochiRect.top + mochiRect.height / 2 + (Math.random() - 0.5) * 60, true);
-                }
-            }, 550);
-
-            renderOmiyageShelf(); // 残り回数の表示を更新
         }
 
         // 「×」ボタン用：選択も解除する
@@ -4358,7 +4368,6 @@
                 </div>`;
                 return;
             }
-            consumeMinigamePlay('quiz');
             const quizState = { qIndex: 0, correct: 0, questions: [] };
             for (let i = 0; i < 3; i++) quizState.questions.push(generateQuizQuestion());
             window.__quizState = quizState;
@@ -4435,6 +4444,7 @@
                 if (quizState.qIndex < quizState.questions.length) {
                     renderQuizQuestion(document.getElementById('minigame-play-view'), quizState);
                 } else {
+                    consumeMinigamePlay('quiz');
                     const mult = QUIZ_REWARD_BY_CORRECT[quizState.correct] ?? 0;
                     const reward = grantMinigameReward(mult);
                     if (quizState.correct === 3) screenFlash('#ffd700', 0.3);
@@ -4454,7 +4464,6 @@
         let timeAttackState = null;
 
         function startTimeAttackGame(container) {
-            consumeMinigamePlay('timeattack');
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
                     <div style="font-weight:bold; margin-bottom:10px;">⏱️ タップタイムアタック</div>
@@ -4549,6 +4558,7 @@
         }
 
         function finishTimeAttack() {
+            consumeMinigamePlay('timeattack');
             const taps = timeAttackState ? timeAttackState.taps : 0;
             timeAttackState = null;
             const found = TIME_ATTACK_THRESHOLDS.find(([min]) => taps >= min);
@@ -4578,7 +4588,6 @@
                 </div>`;
                 return;
             }
-            consumeMinigamePlay('concentration');
             const chosen = candidates.sort(() => Math.random() - 0.5).slice(0, 6);
             let cards = [];
             chosen.forEach((stage, idx) => {
@@ -4663,6 +4672,7 @@
         }
 
         function finishConcentration() {
+            consumeMinigamePlay('concentration');
             const moves = concentrationState.moves;
             const found = CONCENTRATION_THRESHOLDS.find(([max]) => moves <= max);
             const mult = found ? found[1] : 0.3;
@@ -4717,7 +4727,6 @@
         }
 
         function startMochitsukiGame(container) {
-            consumeMinigamePlay('mochitsuki');
             mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null, periodMs: MOCHITSUKI_INITIAL_PERIOD_MS, streak: 0, bestStreak: 0 };
             MOCHITSUKI_RANKS.forEach(r => mochitsukiState.counts[r.name] = 0);
             container.innerHTML = `
@@ -4837,6 +4846,7 @@
         }
 
         function finishMochitsuki() {
+            consumeMinigamePlay('mochitsuki');
             const st = mochitsukiState;
             const weightedSum = MOCHITSUKI_RANKS.reduce((sum, r) => sum + st.counts[r.name] * r.weight, 0);
             const mult = Math.min(MOCHITSUKI_REWARD_CAP, weightedSum / MOCHITSUKI_BEATS);
