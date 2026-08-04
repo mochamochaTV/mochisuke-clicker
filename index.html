@@ -3039,6 +3039,7 @@
 
         // 単一タップの計算と個別エフェクト処理の分離
         function executeSingleTap(clientX, clientY) {
+            handleCombo(); // コンボ処理（以前は関数だけあって、どこからも呼ばれていなかった）
             let power = getTapPower();
             let isCrit = false;
             let isGold = false;
@@ -3820,7 +3821,7 @@
         // じらすとだんだん機嫌が悪くなっていくセリフ（最終段階で叫ぶ）
         const feedTeaseComments = ["ちょうだい！", "まだ〜？", "はやくよこせ！"];
         const FEED_TEASE_MAX_LEVEL = feedTeaseComments.length; // これ以上は毎回叫ぶだけになる
-        const FEED_TEASE_TIME_MS = 4000; // これだけ経つと、ドロップに失敗しなくても自動で機嫌が悪くなる
+        const FEED_TEASE_TIME_MS = 10000; // これだけ経つと、ドロップに失敗しなくても自動で機嫌が悪くなる
         let feedTeaseLevel = 0;
         let feedTeaseTimer = null;
 
@@ -3834,18 +3835,47 @@
             }, FEED_TEASE_TIME_MS);
         }
 
+        let mochiScreamTimeout = null;
         function showFeedTeaseComment() {
             if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) {
-                // 我慢の限界：専用の叫び効果音＋見た目の変化（専用イラストが用意でき次第、差し替え予定）
+                // 我慢の限界：専用の叫び効果音＋専用イラスト＋周りに散る「あ゛」で叫んでる感を強化
                 playAudioFile('mochi_scream.mp3');
-                vibrate([60, 40, 60, 40, 80]);
+                vibrate([60, 40, 60, 40, 80, 40, 100]);
                 screenShake('big');
+                screenFlash('#ff1744', 0.28);
+
                 mochiBtnElement.classList.remove('mochi-scream');
                 void mochiBtnElement.offsetWidth;
                 mochiBtnElement.classList.add('mochi-scream');
+
+                // 叫び顔イラストに一時的に差し替えて、収まったら元の衣装に戻す
+                mochiBtnElement.src = 'image_scream.png';
+                clearTimeout(mochiScreamTimeout);
+                mochiScreamTimeout = setTimeout(() => {
+                    const target = clothesData.find(c => c.id === equippedClotheId);
+                    mochiBtnElement.src = (target && target.img) ? target.img : 'image_0.png';
+                }, 900);
+
+                spawnScreamKanaBurst();
                 showMochiComment('あ\u3099'.repeat(10) + '！！');
             } else {
                 showMochiComment(feedTeaseComments[feedTeaseLevel]);
+            }
+        }
+
+        // もちすけの周りに「あ゛」を何個も時間差で飛び散らせる（叫んでいる迫力を強化）
+        function spawnScreamKanaBurst() {
+            const rect = mochiBtnElement.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            for (let i = 0; i < 8; i++) {
+                setTimeout(() => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 35 + Math.random() * 75;
+                    const x = cx + Math.cos(angle) * dist;
+                    const y = cy + Math.sin(angle) * dist - 20;
+                    createFloatingText(x, y, 'あ\u3099', '#e91e63', (1.1 + Math.random() * 0.9) + 'rem');
+                }, i * 55);
             }
         }
 
@@ -3861,7 +3891,7 @@
             setTimeout(() => {
                 const mochiRect = mochiBtnElement.getBoundingClientRect();
                 const startX = mochiRect.left + mochiRect.width / 2;
-                const startY = mochiRect.bottom - 10; // もちすけの足元くらい
+                const startY = mochiRect.bottom + 68; // もちすけの足元より、アイコン1個分ほど下
 
                 const icon = document.createElement('img');
                 icon.id = 'feed-placed-icon';
@@ -3920,7 +3950,7 @@
                 const mochiRectNow = mochiBtnElement.getBoundingClientRect();
                 icon.style.transition = 'left 0.3s ease-out, top 0.3s ease-out, transform 0.3s';
                 icon.style.left = (mochiRectNow.left + mochiRectNow.width / 2) + 'px';
-                icon.style.top = (mochiRectNow.bottom - 10) + 'px';
+                icon.style.top = (mochiRectNow.bottom + 68) + 'px';
                 icon.style.cursor = 'grab';
                 setTimeout(() => { icon.style.transition = 'none'; }, 320);
                 feedTeaseLevel++;
@@ -3933,6 +3963,7 @@
             if (!stage) return;
 
             clearTimeout(feedTeaseTimer);
+            clearTimeout(mochiScreamTimeout);
             feedTeaseLevel = 0;
             mochiBtnElement.classList.remove('mochi-scream');
 
