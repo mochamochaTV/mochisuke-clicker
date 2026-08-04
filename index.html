@@ -792,15 +792,15 @@
         #feed-buff-indicator.show { display: flex; }
 
         /* 😱 じらしすぎて叫ぶ演出（専用イラストが無いので、既存の絵を激しく震わせて表現） */
-        .mochi-scream { animation: mochiScreamShake 0.5s ease-in-out; transform: scale(1.3); }
+        .mochi-scream { animation: mochiScreamShake 0.5s ease-in-out; transform: scale(1.6); }
         @keyframes mochiScreamShake {
-            0%, 100% { transform: translate(0, 0) rotate(0) scale(1.3); }
-            10% { transform: translate(-6px, -3px) rotate(-3deg) scale(1.3); }
-            25% { transform: translate(6px, 2px) rotate(3deg) scale(1.3); }
-            40% { transform: translate(-5px, -4px) rotate(-2deg) scale(1.3); }
-            55% { transform: translate(5px, 3px) rotate(2deg) scale(1.3); }
-            70% { transform: translate(-4px, -2px) rotate(-1deg) scale(1.3); }
-            85% { transform: translate(4px, 1px) rotate(1deg) scale(1.3); }
+            0%, 100% { transform: translate(0, 0) rotate(0) scale(1.6); }
+            10% { transform: translate(-6px, -3px) rotate(-3deg) scale(1.6); }
+            25% { transform: translate(6px, 2px) rotate(3deg) scale(1.6); }
+            40% { transform: translate(-5px, -4px) rotate(-2deg) scale(1.6); }
+            55% { transform: translate(5px, 3px) rotate(2deg) scale(1.6); }
+            70% { transform: translate(-4px, -2px) rotate(-1deg) scale(1.6); }
+            85% { transform: translate(4px, 1px) rotate(1deg) scale(1.6); }
         }
         @keyframes feedBuffPulse {
             from { box-shadow: 0 3px 10px rgba(255,152,0,0.5); }
@@ -884,7 +884,7 @@
 
         /* 中央必殺技ボタン */
         .hissatsu-btn {
-            position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%);
             background: linear-gradient(135deg, #ff3d00, #b100e8); color: white;
             padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 0.78rem;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 15;
@@ -923,35 +923,24 @@
         .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
 
         #combo-display {
-            position: absolute; top: 5px; font-size: 1.1rem; font-weight: 900; font-style: italic;
-            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
-            padding: 6px 16px; border-radius: 10px;
-            box-shadow: 0 3px 12px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,215,0,0.35);
-            opacity: 0; transform: scale(0.5) skewX(-4deg); transition: all 0.1s ease; z-index: 80;
+            position: absolute; top: 5px; font-size: 1.1rem; font-weight: 900;
+            background: #fff8ec; color: #ff5722;
+            padding: 6px 16px; border-radius: 20px;
+            border: 3px solid #ffb74d;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            opacity: 0; transform: scale(0.5); transition: all 0.15s cubic-bezier(0.3, 1.4, 0.5, 1); z-index: 80;
             pointer-events: none; white-space: nowrap;
         }
-        #combo-display .combo-num-part {
-            background: linear-gradient(135deg, #ffe066, #ff8a00);
-            -webkit-background-clip: text; background-clip: text; color: transparent;
-            text-shadow: none; filter: drop-shadow(0 0 6px rgba(255,140,0,0.6));
-        }
-        #combo-display .combo-mult-part { color: #fff; opacity: 0.85; font-size: 0.85em; margin-left: 2px; }
-        .combo-bounce { opacity: 1 !important; transform: scale(1.08) skewX(-4deg) !important; }
-        /* コンボが伸びるほど、光る色もサイズも派手になっていく */
-        .combo-bounce.combo-tier1 .combo-num-part { background: linear-gradient(135deg, #ffe066, #ff5722); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 0 7px rgba(255,87,34,0.7)); }
-        .combo-bounce.combo-tier1 { transform: scale(1.16) skewX(-4deg) !important; }
-        .combo-bounce.combo-tier2 .combo-num-part { background: linear-gradient(135deg, #ff5ec4, #d500f9); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 0 8px rgba(213,0,249,0.75)); }
-        .combo-bounce.combo-tier2 {
-            transform: scale(1.28) skewX(-4deg) !important;
-            box-shadow: 0 3px 16px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(213,0,249,0.5);
-        }
-        .combo-bounce.combo-tier3 .combo-num-part { background: linear-gradient(135deg, #7cf0ff, #7c4dff); -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 0 10px rgba(124,205,255,0.85)); }
+        #combo-display .combo-mult-part { opacity: 0.75; font-size: 0.85em; margin-left: 3px; }
+        .combo-bounce { opacity: 1 !important; transform: scale(1.1) !important; }
+        /* コンボが伸びるほど、縁と文字の色が暖色から順に変わり、もちっと弾む幅も大きくなる */
+        .combo-bounce.combo-tier1 { transform: scale(1.2) !important; border-color: #ff7043; color: #ff3d00; }
+        .combo-bounce.combo-tier2 { transform: scale(1.32) !important; border-color: #ec407a; color: #e91e63; background: #fff0f5; }
         .combo-bounce.combo-tier3 {
-            transform: scale(1.4) skewX(-4deg) !important;
-            box-shadow: 0 3px 20px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(124,205,255,0.6);
-            animation: comboTier3Pulse 0.3s ease-in-out infinite alternate;
+            transform: scale(1.45) !important; border-color: #ab47bc; color: #8e24aa; background: #f8ecff;
+            animation: comboTier3Pulse 0.4s ease-in-out infinite alternate;
         }
-        @keyframes comboTier3Pulse { from { filter: brightness(1); } to { filter: brightness(1.3); } }
+        @keyframes comboTier3Pulse { from { transform: scale(1.45); } to { transform: scale(1.52); } }
 
         /* 金もちボタン */
         #fever-pop {
@@ -3036,9 +3025,9 @@
             const comboEl = document.getElementById('combo-display');
             if (comboCount >= 10) {
                 const multiplier = (1 + getComboBonusPercent() / 100).toFixed(2);
-                comboEl.innerHTML = `<span class="combo-num-part">${comboCount} COMBO</span><span class="combo-mult-part">×${multiplier}</span>`;
+                comboEl.innerHTML = `${comboCount} Combo!<span class="combo-mult-part">×${multiplier}</span>`;
             } else {
-                comboEl.innerHTML = `<span class="combo-num-part">${comboCount} COMBO</span>`;
+                comboEl.innerText = `${comboCount} Combo!`;
             }
             comboEl.classList.remove('combo-bounce', 'combo-tier1', 'combo-tier2', 'combo-tier3');
             void comboEl.offsetWidth;
@@ -4329,7 +4318,6 @@
             const gameScreen = document.getElementById('game-screen');
             showMochiComment(pickRandom(dialogueData.eventComments.goldMochiSpawn));
             const goldMochi = document.createElement('div'); goldMochi.id = 'fever-pop';
-            goldMochi.innerHTML = '<div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:11px; font-weight:bold; color:#3e2723; white-space:nowrap; pointer-events:none;">✨金✨</div>';
             const rect = gameScreen.getBoundingClientRect();
             goldMochi.style.left = (Math.random() * (rect.width - 80)) + 'px'; goldMochi.style.top = (Math.random() * (rect.height - 350) + 160) + 'px';
             gameScreen.appendChild(goldMochi);
