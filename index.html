@@ -1429,6 +1429,16 @@
         </div>
     </div>
 
+    <div id="tutorial-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <div id="tutorial-dots" style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;"></div>
+            <div id="tutorial-emoji" style="font-size:2.6rem; margin-bottom:8px;"></div>
+            <h2 id="tutorial-title" style="margin-bottom:10px;"></h2>
+            <p id="tutorial-text" style="font-size:0.88rem; color:#5d4037; line-height:1.6; margin-bottom:20px;"></p>
+            <button id="tutorial-next-btn" class="btn-red" style="width:100%;" onclick="tutorialNext()"></button>
+        </div>
+    </div>
+
     <div id="offline-earnings-modal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h2>🎁 おかえりなさい！</h2>
@@ -1931,6 +1941,7 @@
         }
 
         let hasSeenJapanClear = false; // 日本制覇演出を出したかどうか（何度も出ないようにする）
+        let hasSeenTutorial = false; // 初回チュートリアルを見せたかどうか
 
         // 🍴 もちすけにお土産をあげる機能（回数制限なし）
         const FEED_BUFF_DURATION_MS = 20000; // 効果の持続時間（20秒）
@@ -2235,6 +2246,51 @@
         // 既に挨拶済みなら「おかえり」を出す。両方ともlocalStorageに記録して次回に引き継ぐ。
         const GREETING_STATE_KEY = 'punicker_last_greeting_bucket';
         let lastGreetingHourBucket = -1;
+        // 📖 初回チュートリアル
+        const TUTORIAL_STEPS = [
+            { emoji: '🍡', title: 'ようこそ！', text: 'もちすけと一緒に、日本を鹿児島から沖縄まで縦断する旅に出よう！' },
+            { emoji: '👆', title: 'タップでもちを集めよう', text: '画面のもちすけをタップすると、もちが増えていくで。連打するとコンボも伸びていくで！' },
+            { emoji: '🎁', title: 'おみやげでパワーアップ', text: '集めたもちで、ショップのおみやげを買おう。タップ力や自動増加がどんどん上がっていくで！' },
+            { emoji: '⚡', title: 'スキルも活用しよう', text: '左右のスキルボタンを使うと、もっと効率よくもちを稼げるようになるで。必殺技もあるから狙ってみてな！' },
+            { emoji: '🗾', title: '日本全国を旅しよう', text: '🗺️ボタンから地図を開いて、好きな都道府県に飛べるで。ミニゲームやおみやげ集めも楽しみながら、日本全国制覇を目指そう！' }
+        ];
+        let tutorialStepIndex = 0;
+
+        function checkShowTutorial() {
+            if (hasSeenTutorial) return;
+            // 何かしら既にプレイした形跡があれば、初見扱いにしない
+            if (score > 0 || totalTapsCount > 0) { hasSeenTutorial = true; saveGame(); return; }
+            openTutorial();
+        }
+
+        function openTutorial() {
+            tutorialStepIndex = 0;
+            renderTutorialStep();
+            openModal('tutorial-modal', true);
+        }
+
+        function renderTutorialStep() {
+            const step = TUTORIAL_STEPS[tutorialStepIndex];
+            document.getElementById('tutorial-emoji').innerText = step.emoji;
+            document.getElementById('tutorial-title').innerText = step.title;
+            document.getElementById('tutorial-text').innerText = step.text;
+            const isLast = tutorialStepIndex === TUTORIAL_STEPS.length - 1;
+            document.getElementById('tutorial-next-btn').innerText = isLast ? 'はじめる！' : 'つぎへ';
+            const dots = TUTORIAL_STEPS.map((_, i) => `<span style="width:8px; height:8px; border-radius:50%; background:${i === tutorialStepIndex ? '#ff9800' : '#e0d5c5'};"></span>`).join('');
+            document.getElementById('tutorial-dots').innerHTML = dots;
+        }
+
+        function tutorialNext() {
+            if (tutorialStepIndex < TUTORIAL_STEPS.length - 1) {
+                tutorialStepIndex++;
+                renderTutorialStep();
+            } else {
+                hasSeenTutorial = true;
+                saveGame();
+                closeModal('tutorial-modal');
+            }
+        }
+
         function showOpeningGreeting() {
             const now = new Date();
             const bucketIdx = getTimeBucketIndex(now.getHours());
@@ -2408,7 +2464,7 @@
                 currentStageProgress: currentStageProgress, purchasedItems: purchasedItems,
                 purchasedClothes: purchasedClothes, equippedClotheId: equippedClotheId,
                 skills: skills,
-                totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear,
+                totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear, hasSeenTutorial: hasSeenTutorial,
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
                 prefTaps: prefTaps, lastActiveTimestamp: lastActiveTimestamp,
                 prestigeCount: prestigeCount, prestigePoints: prestigePoints,
@@ -2434,6 +2490,7 @@
                     totalTapsCount = state.totalTapsCount ?? 0;
                     firstPlayTimestamp = state.firstPlayTimestamp ?? null;
                     hasSeenJapanClear = state.hasSeenJapanClear ?? false;
+                    hasSeenTutorial = state.hasSeenTutorial ?? false;
                     minigameLastResetDate = state.minigameLastResetDate ?? null;
                     minigamePlaysUsedToday = state.minigamePlaysUsedToday ?? { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
                     minigameBests = state.minigameBests ?? { timeattack: 0, concentration: null };
@@ -2664,6 +2721,7 @@
             loadGame();
             checkForCloudRestoreOnLoad();
             checkOfflineEarnings();
+            setTimeout(checkShowTutorial, 1200);
 
             resetMochiFilter();
 
