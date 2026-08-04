@@ -792,15 +792,15 @@
         #feed-buff-indicator.show { display: flex; }
 
         /* 😱 じらしすぎて叫ぶ演出（専用イラストが無いので、既存の絵を激しく震わせて表現） */
-        .mochi-scream { animation: mochiScreamShake 0.5s ease-in-out; transform: scale(1.6); }
+        .mochi-scream { animation: mochiScreamShake 0.5s ease-in-out; transform: scale(1.3) !important; }
         @keyframes mochiScreamShake {
-            0%, 100% { transform: translate(0, 0) rotate(0) scale(1.6); }
-            10% { transform: translate(-6px, -3px) rotate(-3deg) scale(1.6); }
-            25% { transform: translate(6px, 2px) rotate(3deg) scale(1.6); }
-            40% { transform: translate(-5px, -4px) rotate(-2deg) scale(1.6); }
-            55% { transform: translate(5px, 3px) rotate(2deg) scale(1.6); }
-            70% { transform: translate(-4px, -2px) rotate(-1deg) scale(1.6); }
-            85% { transform: translate(4px, 1px) rotate(1deg) scale(1.6); }
+            0%, 100% { transform: translate(0, 0) rotate(0) scale(1.3); }
+            10% { transform: translate(-6px, -3px) rotate(-3deg) scale(1.3); }
+            25% { transform: translate(6px, 2px) rotate(3deg) scale(1.3); }
+            40% { transform: translate(-5px, -4px) rotate(-2deg) scale(1.3); }
+            55% { transform: translate(5px, 3px) rotate(2deg) scale(1.3); }
+            70% { transform: translate(-4px, -2px) rotate(-1deg) scale(1.3); }
+            85% { transform: translate(4px, 1px) rotate(1deg) scale(1.3); }
         }
         @keyframes feedBuffPulse {
             from { box-shadow: 0 3px 10px rgba(255,152,0,0.5); }
@@ -3854,6 +3854,7 @@
                 screenShake('big');
                 screenFlash('#ff1744', 0.28);
 
+                mochiBtnElement.classList.remove('breathe-idle'); // 常時アニメーションが叫ぶ演出を上書きしてしまうため、この間だけ止める
                 mochiBtnElement.classList.remove('mochi-scream');
                 void mochiBtnElement.offsetWidth;
                 mochiBtnElement.classList.add('mochi-scream');
@@ -3865,6 +3866,7 @@
                     const target = clothesData.find(c => c.id === equippedClotheId);
                     mochiBtnElement.src = (target && target.img) ? target.img : 'image_0.png';
                     mochiBtnElement.classList.remove('mochi-scream');
+                    if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
                 }, 900);
 
                 spawnScreamKanaBurst();
@@ -3977,6 +3979,7 @@
             clearTimeout(mochiScreamTimeout);
             feedTeaseLevel = 0;
             mochiBtnElement.classList.remove('mochi-scream');
+            if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
 
             feedBuffActiveUntil = Date.now() + FEED_BUFF_DURATION_MS;
             saveGame();
