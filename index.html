@@ -45,7 +45,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
-    <link rel="apple-touch-icon" href="app_icon.png">
+    <link rel="apple-touch-icon" href="app_icon.webp">
     <style>
         /* 全体スタイル - ズームやスクロールを完全禁止 */
         html {
@@ -1143,7 +1143,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-04-08</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-04-10</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1325,7 +1325,7 @@
     </div>
 
     <div id="op-screen" onclick="startGameFromOpScreen()">
-        <img id="op-screen-img" src="op_screen.png" alt="タップしてスタート">
+        <img id="op-screen-img" src="op_screen.webp" alt="タップしてスタート">
         <div id="op-screen-hint">タップしてスタート</div>
     </div>
 
@@ -1513,7 +1513,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-04-08</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-04-10</div>
                 </div>
             </div>
         </div>
@@ -1865,7 +1865,7 @@
             { name: "岩手", pinX: 71.2, pinY: 34.7, distance: 32000000000000, item: "盛岡冷麺", itemImg: "omiyage_images/tohoku_hokkaido/iwate_item.webp", price: 100000000000000, diary: "中尊寺金色堂がキラキラでとっても厳かやったなあ。コシがものすごく強い盛岡冷麺は、ピリ辛スープでツルッと完食したで！", bg: "bg_images/tohoku_hokkaido/iwate.webp", diaryImg: "diary_images/tohoku_hokkaido/iwate_d.webp", effectDesc: "自動増加 +38888888889もち/秒", tapBonus: 0, mpsBonus: 38888888889 },
             { name: "青森", pinX: 67.0, pinY: 31.1, distance: 58000000000000, item: "気になるリンゴ", itemImg: "omiyage_images/tohoku_hokkaido/aomori_item.webp", price: 200000000000000, diary: "ねぶた祭りの迫力ある灯籠に大興奮したで！青森名物のリンゴがたっぷり入った焼き立てパイは、サクサクで甘酸っぱくて最高や！", bg: "bg_images/tohoku_hokkaido/aomori.webp", diaryImg: "diary_images/tohoku_hokkaido/aomori_d.webp", effectDesc: "タップ力 +177777777778", tapBonus: 177777777778, mpsBonus: 0 },
             { name: "北海道", pinX: 75.1, pinY: 19.6, distance: 100000000000000, item: "白い恋人", itemImg: "omiyage_images/tohoku_hokkaido/hokkaido_item.webp", price: 375000000000000, diary: "広大な北の大地、北海道やで！どこまでも真っ直ぐな道が続いてたなあ。特大のタラバガニは身がぷりぷりで美味しすぎてほっぺが落ちたわ！", bg: "bg_images/tohoku_hokkaido/hokkaido.webp", diaryImg: "diary_images/tohoku_hokkaido/hokkaido_d.webp", effectDesc: "自動増加 +166666666667もち/秒", tapBonus: 0, mpsBonus: 166666666667 },
-            { name: "沖縄", pinX: 27.5, pinY: 87.7, distance: 250000000000000, item: "シーサー", itemImg: "omiyage_images/kyushu_okinawa/okinawa_item.webp", price: 1000000000000000, diary: "感動のゴール沖縄やで！北の大地から南の楽園へワープや！青い海を見ながら最高の日本縦断旅を締めくくったで！", bg: "bg_images/kyushu_okinawa/okinawa.webp", diaryImg: "diary_images/kyushu_okinawa/okinawa_d.webp", effectDesc: "タップ力 +1111111111111", tapBonus: 1111111111111, mpsBonus: 0 }
+            { name: "沖縄", pinX: 27.5, pinY: 87.7, distance: 250000000000000, item: "サーターアンダギー", itemImg: "omiyage_images/kyushu_okinawa/okinawa_item.webp", price: 1000000000000000, diary: "感動のゴール沖縄やで！北の大地から南の楽園へワープや！青い海を見ながら最高の日本縦断旅を締めくくったで！", bg: "bg_images/kyushu_okinawa/okinawa.webp", diaryImg: "diary_images/kyushu_okinawa/okinawa_d.webp", effectDesc: "タップ力 +1111111111111", tapBonus: 1111111111111, mpsBonus: 0 }
         ];
 
         // ===================================================================
@@ -1876,7 +1876,7 @@
         // price    : ショップでの購入価格（もち）。0にすると最初から所持済み扱いになります
         // desc     : 倉庫・ショップに表示される説明文（能力の説明もここに書いてください）
         // img      : 【新規追加時はここに画像ファイル名を書くだけでOK】
-        //            例: "img: 'costume_ninja.png'" のように書くと、その画像に着せ替わります。
+        //            例: "img: 'costume_ninja.webp'" のように書くと、その画像に着せ替わります。
         //            画像を用意しない場合はこの行を省略すれば、filterで色味だけ変える従来方式になります。
         // filter   : imgを指定しない場合の色味加工（CSSのfilter）。imgがある場合は無視されます。
         // tapBonus : 装備中、タップ力に加算される値
@@ -1888,7 +1888,7 @@
             { id: "crown", name: "王様の冠", price: 3000, desc: "気品溢れる姿。自動増加 +12もち/秒", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1.2) sepia(0.5) saturate(2.5)", tapBonus: 0, mpsBonus: 12 },
             { id: "ninja", name: "忍びの服", price: 15000, desc: "影からもち増産。タップ力+10 / 自動+40", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(0.4) contrast(1.5)", tapBonus: 10, mpsBonus: 40 }
             // 👇 追加する時はこんな感じでコピペして書き換えてください（画像ありパターンの例）
-            // , { id: "yukata", name: "浴衣すがた", price: 30000, img: "costume_yukata.png", desc: "夏祭り気分。タップ力+20 / 自動+80", tapBonus: 20, mpsBonus: 80 }
+            // , { id: "yukata", name: "浴衣すがた", price: 30000, img: "costume_yukata.webp", desc: "夏祭り気分。タップ力+20 / 自動+80", tapBonus: 20, mpsBonus: 80 }
         ];
 
         // スキル総合コアシステムデータ
@@ -3891,7 +3891,7 @@
                 mochiBtnElement.classList.add('mochi-scream');
 
                 // 叫び顔イラストに一時的に差し替えて、収まったら元の衣装に戻す
-                mochiBtnElement.src = 'image_scream.png';
+                mochiBtnElement.src = 'image_scream.webp';
                 clearTimeout(mochiScreamTimeout);
                 mochiScreamTimeout = setTimeout(() => {
                     const target = clothesData.find(c => c.id === equippedClotheId);
@@ -4304,7 +4304,7 @@
             const gameScreen = document.getElementById('game-screen');
             showMochiComment(pickRandom(dialogueData.eventComments.presentSpawn));
             const present = document.createElement('div'); present.id = 'lucky-present';
-            present.innerHTML = '<img src="present.png" alt="プレゼント" class="present-floating-img" style="width:95px; height:95px; object-fit:contain; pointer-events:none;">';
+            present.innerHTML = '<img src="present.webp" alt="プレゼント" class="present-floating-img" style="width:95px; height:95px; object-fit:contain; pointer-events:none;">';
             present.style.position = 'absolute'; present.style.cursor = 'pointer'; present.style.zIndex = '95'; present.style.transition = 'transform 11s linear';
             const rect = gameScreen.getBoundingClientRect();
             present.style.left = '-110px'; present.style.top = (Math.random() * (rect.height - 350) + 160) + 'px';
