@@ -733,8 +733,8 @@
            上下にURLバー・共有ボタン等のブラウザUIが常時表示され、その分ゲーム画面が縮む。
            固定pxの余白のままだと必殺技ボタンやセリフが画面外にはみ出す/隠れるので、この時だけ余白を詰める。 */
         body.browser-tab-mode #mochisuke-area { padding-top: 210px; padding-bottom: 95px; }
-        body.browser-tab-mode #mochi-balloon { top: -68px; } /* padding-topを75px減らした分、吹き出しも同じだけ引き上げて位置を保つ */
-        body.browser-tab-mode .hissatsu-btn { bottom: 10px; } /* 下端のブラウザUIに重ならないよう少し余裕を持たせる */
+        html.browser-mode #mochi-balloon { top: 70px; } /* Web版はブラウザのUIぶん上の余白が減るため、セリフがゲージと重ならないよう下げる */
+        html.browser-mode .hissatsu-btn { bottom: 10px; } /* 下端のブラウザUIに重ならないよう少し余裕を持たせる */
         
         /* 左右スキルコンテナ */
         .skill-side-container {
@@ -1143,7 +1143,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-04-11</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-04-12</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1513,7 +1513,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-04-11</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-04-12</div>
                 </div>
             </div>
         </div>
