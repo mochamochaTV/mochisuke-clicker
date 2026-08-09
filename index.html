@@ -659,10 +659,15 @@
             text-align: center;
         }
         #journey-progress-text {
-            font-size: 0.72rem;
+            font-size: 0.58rem;
             font-weight: bold;
-            color: #ff6f00;
-            margin-bottom: 2px;
+            line-height: 1.15;
+            color: #fff;
+            background: #ff9800;
+            padding: 1px 6px;
+            border-radius: 8px;
+            margin-left: 4px;
+            text-align: center;
         }
         #distance-text {
             font-size: 0.8rem;
@@ -1149,7 +1154,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-04-13</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-04-14</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1159,6 +1164,7 @@
             <div class="info-row">
                 <div class="header-box location-display">
                     <span class="pin">📍</span><span id="current-location-text">鹿児島</span>
+                    <span id="journey-progress-text">0/47県<br>制覇</span>
                 </div>
                 <div class="status-display">
                     <div id="mps-display">↗ 自動増加: 0 もち/秒</div>
@@ -1174,7 +1180,6 @@
         </div>
 
         <div id="progress-area">
-            <div id="journey-progress-text">🗾 0 / 47県 制覇</div>
             <div id="distance-text">次のエリアまで : 500 もちkcal</div>
             <div id="progress-flex">
                 <div id="progress-container">
@@ -1520,7 +1525,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-04-13</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-04-14</div>
                 </div>
             </div>
         </div>
@@ -4521,7 +4526,7 @@
             const progressBar = document.getElementById('progress-bar');
             const journeyText = document.getElementById('journey-progress-text');
             const isFullyCleared = currentStageIndex === stages.length - 1 && currentStageProgress >= stages[currentStageIndex].distance;
-            if (journeyText) journeyText.innerText = `🗾 ${isFullyCleared ? stages.length : currentStageIndex} / ${stages.length}県 制覇`;
+            if (journeyText) journeyText.innerHTML = `${isFullyCleared ? stages.length : currentStageIndex}/${stages.length}県<br>制覇`;
             if (selectedStageIndex < currentStageIndex) { distText.innerText = "このエリアは踏破済みです"; progressBar.style.width = "100%"; }
             else if (isFullyCleared) { distText.innerText = "🎉 祝・日本縦断すべてのエリアを制覇完了！！"; progressBar.style.width = "100%"; }
             else {
