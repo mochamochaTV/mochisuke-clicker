@@ -1154,7 +1154,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-04-14</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-01</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1525,7 +1525,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-04-14</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-01</div>
                 </div>
             </div>
         </div>
@@ -2339,7 +2339,15 @@
             showMochiComment(text);
         }
 
-        let breatheTimer = null; let isMochiPressed = false; 
+        let breatheTimer = null; let isMochiPressed = false;
+        // 🫧 スクイーズ機能：引っ張った方向にもちすけが伸び縮みする（回転はしない）
+        let squeezeStartX = 0, squeezeStartY = 0, isDraggingSqueeze = false;
+        let squeezeLastDx = 0, squeezeLastDy = 0;
+        const SQUEEZE_MAX_DRAG = 70; // これ以上引っ張っても伸びが頭打ちになる距離(px)
+        const SQUEEZE_MAX_STRETCH = 0.38; // 最大でどれだけ伸びるか（+38%）
+        const SQUEEZE_MAX_SQUASH = 0.22; // 伸びる方向と垂直に、最大どれだけ縮むか（-22%）
+        let stretchSoundSource = null, stretchSoundGain = null;
+        
 
         // 🔊 効果音再生システム（Web Audio API方式）
         // これまでは<audio>要素を1音につき6個ずつ使い回すプール方式でしたが、iOSは
@@ -2350,7 +2358,7 @@
         // 個別のAudio要素を大量に操作する必要が無くなり、軽量かつ確実になります。
         // また音声データは事前にデコードしてメモリ上に持つので、Service Workerのキャッシュ
         // （Rangeリクエストの不整合が起きやすい）を一切経由しません。
-        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3', 'balloon_pop.mp3', 'mochi_eat.mp3', 'mochi_scream.mp3'];
+        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3', 'balloon_pop.mp3', 'mochi_eat.mp3', 'mochi_scream.mp3', 'mochi_stretch.mp3'];
         let audioCtx = null;
         const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
         const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
@@ -3195,6 +3203,7 @@
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             if (isMinigameActive) return;
             e.preventDefault();
+            try { mochiBtnElement.setPointerCapture(e.pointerId); } catch (err) {}
             initAndPlayBGM();
             playAudioFile('tap.mp3'); 
             totalTapsCount++;
@@ -3215,6 +3224,10 @@
             } else {
                 mochiBtnElement.style.transform = 'scale(1.25, 0.72)';
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)');
+                // 🫧 スクイーズ：ここから指の動きを追いかけて、引っ張った方向に伸縮させる
+                squeezeStartX = e.clientX; squeezeStartY = e.clientY;
+                isDraggingSqueeze = true;
+                startStretchSound();
             }
 
             createRippleEffect(e.clientX, e.clientY);
@@ -3261,16 +3274,90 @@
             }
         });
 
+        // 引っ張った方向・距離から、回転はさせずに「その方向へ伸びて、垂直方向は縮む」変形を作る
+        function applySqueezeTransform(dx, dy) {
+            let dist = Math.sqrt(dx * dx + dy * dy);
+            dist = Math.min(dist, SQUEEZE_MAX_DRAG);
+            const ratio = dist / SQUEEZE_MAX_DRAG; // 0〜1
+            const angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+            const stretch = 1 + ratio * SQUEEZE_MAX_STRETCH;
+            const squash = 1 - ratio * SQUEEZE_MAX_SQUASH;
+            // 引っ張り方向に座標系を回転→非対称スケール→回転を戻す、ことで見た目は回転せず伸縮だけする
+            mochiBtnElement.style.transform = `rotate(${angleDeg}deg) scale(${stretch}, ${squash}) rotate(${-angleDeg}deg)`;
+            updateStretchSound(ratio);
+            return ratio;
+        }
+
+        // 🔊 伸ばしている間だけ鳴る、ループ再生＋伸びに応じてピッチが変わる効果音
+        function startStretchSound() {
+            if (stretchSoundSource) return;
+            const ctx = getAudioContext();
+            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+            const buffer = audioBuffers['mochi_stretch.mp3'];
+            if (!buffer) return;
+            stretchSoundSource = ctx.createBufferSource();
+            stretchSoundSource.buffer = buffer;
+            stretchSoundSource.loop = true;
+            stretchSoundGain = ctx.createGain();
+            stretchSoundGain.gain.value = 0;
+            stretchSoundSource.connect(stretchSoundGain).connect(ctx.destination);
+            stretchSoundSource.start(0);
+        }
+        function updateStretchSound(ratio) {
+            if (!stretchSoundSource) return;
+            stretchSoundSource.playbackRate.value = 0.85 + ratio * 0.5; // 伸びるほど音が高くなる
+            stretchSoundGain.gain.value = ratio * 0.35 * sfxVolumeMult; // 伸びるほど音が大きくなる
+        }
+        function stopStretchSound() {
+            if (!stretchSoundSource) return;
+            try { stretchSoundSource.stop(); } catch (e) {}
+            stretchSoundSource = null;
+            stretchSoundGain = null;
+        }
+
+        // 指を離した時、伸ばしていた分だけ大きく「ぷるん」と揺れ戻ってから通常に収束する
+        function releaseSqueezeWithOvershoot(dx, dy) {
+            const dist = Math.min(Math.sqrt(dx * dx + dy * dy), SQUEEZE_MAX_DRAG);
+            const ratio = dist / SQUEEZE_MAX_DRAG;
+            const angleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+            const kf = (sx, sy) => `rotate(${angleDeg}deg) scale(${sx}, ${sy}) rotate(${-angleDeg}deg)`;
+            const stretch = 1 + ratio * SQUEEZE_MAX_STRETCH;
+            const squash = 1 - ratio * SQUEEZE_MAX_SQUASH;
+            const overshoot = ratio * 0.28; // 伸ばした分だけ、戻る時のプルンも大きくなる
+
+            mochiBtnElement.animate([
+                { transform: kf(stretch, squash) },
+                { transform: kf(1 - overshoot * 0.65, 1 + overshoot * 0.65), offset: 0.32 },
+                { transform: kf(1 + overshoot * 0.32, 1 - overshoot * 0.32), offset: 0.58 },
+                { transform: kf(1 - overshoot * 0.12, 1 + overshoot * 0.12), offset: 0.8 },
+                { transform: 'scale(1, 1)' },
+            ], { duration: 420 + ratio * 280, easing: 'ease-out' });
+            mochiBtnElement.style.transform = 'scale(1, 1)';
+        }
+
         function releaseMochiSucre() {
             if (!isMochiPressed) return;
             isMochiPressed = false;
             clearTimeout(mochiLongPressTimer);
+            stopStretchSound();
 
             const clones = bunshinCloneEls;
 
             if (skills.hissatsu.activeTimer > 0) {
                 mochiBtnElement.style.transform = 'scale(1.5)';
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.5)');
+            } else if (isDraggingSqueeze) {
+                // 🫧 スクイーズ：伸ばしていた分だけ大きく「ぷるん」と揺れ戻る
+                releaseSqueezeWithOvershoot(squeezeLastDx, squeezeLastDy);
+                clones.forEach(c => {
+                    c.animate([
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.86, 1.14)', offset: 0.4 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.04, 0.96)', offset: 0.75 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)' }
+                    ], { duration: 240, easing: 'ease-out' });
+                    c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
+                });
             } else {
                 mochiBtnElement.animate([
                     { transform: 'scale(1.25, 0.72)' },
@@ -3290,6 +3377,8 @@
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
                 });
             }
+            isDraggingSqueeze = false;
+            squeezeLastDx = 0; squeezeLastDy = 0;
 
             breatheTimer = setTimeout(() => {
                 if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
@@ -3300,6 +3389,15 @@
 
         mochiBtnElement.addEventListener('pointerup', releaseMochiSucre);
         mochiBtnElement.addEventListener('pointerleave', releaseMochiSucre);
+        mochiBtnElement.addEventListener('pointercancel', releaseMochiSucre);
+
+        // 🫧 スクイーズ：押している間、指の動きを追いかけて伸縮を更新する（要素の外に出ても追従させたいのでdocument側で監視）
+        document.addEventListener('pointermove', (e) => {
+            if (!isDraggingSqueeze || !isMochiPressed) return;
+            squeezeLastDx = e.clientX - squeezeStartX;
+            squeezeLastDy = e.clientY - squeezeStartY;
+            applySqueezeTransform(squeezeLastDx, squeezeLastDy);
+        });
 
         /* 🔮 スキル発動＆タイマー管理システムロジック */
         // 必殺技だけはクールタイムが「時間経過」ではなく「一定回数タップ」で回復する特別仕様
