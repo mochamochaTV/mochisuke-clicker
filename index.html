@@ -751,8 +751,7 @@
            以前ここにあった body.browser-tab-mode の重複ルールは、同じ詳細度で後に書かれていたため
            html.browser-mode側のpaddingを意図せず上書きしてしまい（15pxぶん余白が減っていた）、
            もちすけの位置だけが上にズレて、セリフ吹き出しと鼻が重なる原因になっていた（重複を削除して解消）。 */
-        html.browser-mode #mochi-balloon { top: 20px; } /* Web版はブラウザのUIぶん上の余白が減るため、セリフがゲージと重ならないよう下げる（ただし、もちすけの顔に被らない範囲で） */
-        html.browser-mode .hissatsu-btn { bottom: 10px; } /* 下端のブラウザUIに重ならないよう少し余裕を持たせる */
+        html.browser-mode #mochi-balloon { top: 4px; } /* Web版はブラウザのUIぶん上の余白が減るため、セリフがゲージと重ならないよう下げる（ただし、もちすけの顔に被らない範囲で） */
         
         /* 左右スキルコンテナ */
         .skill-side-container {
@@ -788,6 +787,25 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             text-align: center; color: #fff; font-weight: bold; line-height: 1.15;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.65); overflow: hidden;
+        }
+
+        /* 💡「次のおすすめアクション」のハイライト（スキルの光り方=白/オレンジと区別するため、緑系に） */
+        .recommended-glow {
+            animation: recommendedPulse 1s infinite alternate;
+        }
+        .recommended-glow::after {
+            content: '👉';
+            position: absolute; top: -16px; left: 50%; transform: translateX(-50%);
+            font-size: 1rem; z-index: 20; pointer-events: none;
+            animation: recommendedBounce 0.6s infinite alternate;
+        }
+        @keyframes recommendedPulse {
+            0% { filter: drop-shadow(0 0 3px #8bc34a) drop-shadow(0 0 6px #4caf50); }
+            100% { filter: drop-shadow(0 0 9px #cddc39) drop-shadow(0 0 14px #4caf50); }
+        }
+        @keyframes recommendedBounce {
+            0% { transform: translateX(-50%) translateY(0); }
+            100% { transform: translateX(-50%) translateY(-4px); }
         }
 
         /* 使用可能時のピカピカアニメーション */
@@ -1175,7 +1193,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-10</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-13</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1231,7 +1249,7 @@
                 
                 <div id="bunshin-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
 
-                <div id="hissatsu-wrap" style="position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 15;">
+                <div id="hissatsu-wrap" style="position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 15;">
                     <div id="btn-hissatsu" class="hissatsu-btn" onclick="useSkill('hissatsu')" style="background-image: url('ui_images/hissatsu.webp');">
                         <span class="btn-illust-label" style="top:30.0%; left:18.3%; width:71.3%; height:40.6%; font-size:0.66rem;">もちもちビッグバン<span class="sk-lv" id="lv-hissatsu">Lv.1</span></span>
                     </div>
@@ -1255,20 +1273,20 @@
 
         <div id="control-panel">
             <div class="nav-menu">
-                <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.webp');">
+                <button id="nav-btn-warehouse" class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.webp');">
                     <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
                 </button>
-                <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
+                <button id="nav-btn-shop" class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
                     <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
                     <span class="badge-dot"></span>
                 </button>
-                <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
+                <button id="nav-btn-diary" class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
                     <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
                 </button>
-                <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.webp');">
+                <button id="nav-btn-minigame" class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.webp');">
                     <span class="btn-illust-label" style="top:73.5%; left:9%; width:82%; height:20.2%; font-size:0.68rem; white-space:nowrap;">ミニゲーム</span>
                 </button>
-                <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');">
+                <button id="nav-btn-ranking" class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');">
                     <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
                 </button>
             </div>
@@ -1561,7 +1579,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-10</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-13</div>
                 </div>
             </div>
         </div>
@@ -1967,24 +1985,41 @@
             return 1 + prestigeCount * PRESTIGE_BONUS_PER_COUNT;
         }
 
-        // 🛍️ 転生ポイントショップ（世界編を見据えて、パワーではなく利便性(QOL)だけに使える設計にしている）
-        let offlineCapBonusHours = 0;   // 購入済みの「オフライン収益上限+○時間」の合計
-        let minigameDailyBonusPlays = 0; // 購入済みの「ミニゲーム1日プレイ回数+○」の合計
-        const PRESTIGE_SHOP_ITEMS = {
-            offlineCap: { name: 'オフライン収益 上限+1時間', cost: 3, max: 8 },      // 4時間→最大12時間まで
-            minigamePlays: { name: 'ミニゲーム 1日プレイ回数+1', cost: 5, max: 3 }   // 3回→最大6回まで
+        // 🛍️ 転生ポイントショップ（世界編を見据えて、パワーではなく利便性(QOL)中心。ただし今回、周回の土台になる部分もいくつか追加）
+        let prestigeShopLv = {
+            offlineCap: 0, minigamePlays: 0,
+            omiyagePriceDiscount: 0, omiyagePriceCurve: 0,
+            startingBonus: 0, skillCdReduction: 0, minigameReward: 0,
         };
-        function getOfflineEarningsCapHours() { return OFFLINE_EARNINGS_CAP_HOURS_BASE + offlineCapBonusHours; }
-        function getMinigameDailyLimit() { return MINIGAME_DAILY_LIMIT_BASE + minigameDailyBonusPlays; }
+        const PRESTIGE_SHOP_ITEMS = {
+            offlineCap: { name: 'オフライン収益 上限+1時間', cost: 3, max: 8, step: 1, unit: '時間' },
+            minigamePlays: { name: 'ミニゲーム 1日プレイ回数+1', cost: 5, max: 3, step: 1, unit: '回' },
+            omiyagePriceDiscount: { name: 'おみやげ価格 -2%', cost: 4, max: 10, step: 2, unit: '%引き' },
+            omiyagePriceCurve: { name: 'おみやげ値上がり率 -0.01', cost: 6, max: 5, step: 1, unit: '', desc: '（1.5倍→最大1.45倍まで緩やかに）' },
+            startingBonus: { name: '初期タップ力・自動増加 +1', cost: 4, max: 10, step: 1, unit: '' },
+            skillCdReduction: { name: 'スキル基本クールタイム -1秒', cost: 5, max: 5, step: 1, unit: '秒' },
+            minigameReward: { name: 'ミニゲーム報酬 +5%', cost: 4, max: 10, step: 5, unit: '%' },
+        };
+        function getOfflineEarningsCapHours() { return OFFLINE_EARNINGS_CAP_HOURS_BASE + prestigeShopLv.offlineCap; }
+        function getMinigameDailyLimit() { return MINIGAME_DAILY_LIMIT_BASE + prestigeShopLv.minigamePlays; }
+        // 恒久強化の効果を返す関数群（買い物ショップ・スキルクールタイム・ミニゲーム報酬・初期ボーナス計算から呼ばれる）
+        function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
+        function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
+        function getOmiyagePrice(stage, currentLv) {
+            return Math.floor(stage.price * Math.pow(getOmiyagePriceCurveBase(), currentLv) * getOmiyagePriceMultiplier());
+        }
+        function getPrestigeStartingBonus() { return prestigeShopLv.startingBonus; }                     // タップ力・自動増加の初期加算値
+        function getPrestigeCdReductionSec() { return prestigeShopLv.skillCdReduction; }                 // スキル基本クールタイムからの短縮秒数
+        function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
 
         function buyPrestigeShopItem(key) {
             const item = PRESTIGE_SHOP_ITEMS[key];
             if (!item) return;
-            const currentCount = key === 'offlineCap' ? offlineCapBonusHours : minigameDailyBonusPlays;
+            const currentCount = prestigeShopLv[key] || 0;
             if (currentCount >= item.max) { alert('これ以上は購入できません（上限に達しています）'); return; }
             if (prestigePoints < item.cost) { alert('転生ポイントが足りません'); return; }
             prestigePoints -= item.cost;
-            if (key === 'offlineCap') offlineCapBonusHours++; else minigameDailyBonusPlays++;
+            prestigeShopLv[key] = currentCount + 1;
             saveGame();
             renderPrestigeShop();
         }
@@ -1994,12 +2029,13 @@
             if (!el) return;
             el.innerHTML = '';
             Object.entries(PRESTIGE_SHOP_ITEMS).forEach(([key, item]) => {
-                const currentCount = key === 'offlineCap' ? offlineCapBonusHours : minigameDailyBonusPlays;
+                const currentCount = prestigeShopLv[key] || 0;
                 const maxed = currentCount >= item.max;
                 const canBuy = !maxed && prestigePoints >= item.cost;
                 const row = document.createElement('div');
                 row.className = 'list-item';
-                row.innerHTML = `<div class="item-info"><span class="item-title">${item.name}</span><span class="item-desc">現在: +${currentCount}（上限 +${item.max}）</span></div>` +
+                const currentEffect = currentCount * item.step;
+                row.innerHTML = `<div class="item-info"><span class="item-title">${item.name}</span><span class="item-desc">現在: +${currentEffect}${item.unit}（上限 +${item.max * item.step}${item.unit}）${item.desc || ''}</span></div>` +
                     `<button class="item-action-btn btn-shop" style="background:#3f51b5; color:#fff;" ${maxed || !canBuy ? 'disabled' : ''} onclick="buyPrestigeShopItem('${key}')">${maxed ? '上限達成' : `🔄${item.cost}pt`}</button>`;
                 el.appendChild(row);
             });
@@ -2545,7 +2581,7 @@
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
                 prefTaps: prefTaps, lastActiveTimestamp: lastActiveTimestamp,
                 prestigeCount: prestigeCount, prestigePoints: prestigePoints, prestigeScoreHistory: prestigeScoreHistory,
-                offlineCapBonusHours: offlineCapBonusHours, minigameDailyBonusPlays: minigameDailyBonusPlays
+                prestigeShopLv: prestigeShopLv
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -2576,8 +2612,13 @@
                     prestigeCount = state.prestigeCount ?? 0;
                     prestigeScoreHistory = state.prestigeScoreHistory ?? [];
                     prestigePoints = state.prestigePoints ?? 0;
-                    offlineCapBonusHours = state.offlineCapBonusHours ?? 0;
-                    minigameDailyBonusPlays = state.minigameDailyBonusPlays ?? 0;
+                    // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
+                    prestigeShopLv = state.prestigeShopLv ?? {
+                        offlineCap: state.offlineCapBonusHours ?? 0,
+                        minigamePlays: state.minigameDailyBonusPlays ?? 0,
+                        omiyagePriceDiscount: 0, omiyagePriceCurve: 0,
+                        startingBonus: 0, skillCdReduction: 0, minigameReward: 0,
+                    };
                     if (state.skills) {
                         Object.keys(state.skills).forEach(k => {
                             if (skills[k]) skills[k].lv = state.skills[k].lv ?? skills[k].lv;
@@ -2882,7 +2923,7 @@
         }
 
         function getTapPower() {
-            let power = 1; 
+            let power = 1 + getPrestigeStartingBonus(); 
             stages.forEach((stage, idx) => {
                 const lv = purchasedItems[idx] || 0;
                 if (lv > 0) {
@@ -2905,7 +2946,7 @@
         }
 
         function getMps() {
-            let mps = 0; 
+            let mps = getPrestigeStartingBonus(); 
             stages.forEach((stage, idx) => {
                 const lv = purchasedItems[idx] || 0;
                 if (lv > 0) {
@@ -3461,6 +3502,17 @@
             return Math.max(150, 400 - (lv - 1) * 20);
         }
 
+        // 各スキルの実際のクールタイムを計算する共通関数（レベルによる短縮＋転生ポイントショップの恒久短縮を反映）
+        function getSkillCalculatedCd(key, s) {
+            const reduce = getPrestigeCdReductionSec();
+            if (key === 'skill1') return Math.max(6, s.cd - (s.lv - 1) - reduce);
+            if (key === 'skill2') return Math.max(10, s.cd - (s.lv - 1) - reduce);
+            if (key === 'skill3') return Math.max(14, s.cd - (s.lv - 1) - reduce);
+            if (key === 'skill4') return Math.max(18, s.cd - (s.lv - 1) * 2 - reduce);
+            if (key === 'hissatsu') return getHissatsuTapsRequired(s.lv); // タップ数なので短縮対象外
+            return s.cd;
+        }
+
         function useSkill(key) {
             const s = skills[key];
             if (s.lv === 0) {
@@ -3481,12 +3533,7 @@
             s.activeTimer = s.duration;
             
             // クールタイム計算 (Lvアップに応じて段階的に短縮)
-            let calculatedCd = s.cd;
-            if (key === 'skill1') calculatedCd = Math.max(10, s.cd - (s.lv - 1));
-            if (key === 'skill2') calculatedCd = Math.max(15, s.cd - (s.lv - 1));
-            if (key === 'skill3') calculatedCd = Math.max(20, s.cd - (s.lv - 1));
-            if (key === 'skill4') calculatedCd = Math.max(25, s.cd - (s.lv - 1) * 2);
-            if (key === 'hissatsu') calculatedCd = getHissatsuTapsRequired(s.lv); // ← 秒数ではなく「必要タップ数」
+            let calculatedCd = getSkillCalculatedCd(key, s);
             s.currentCd = calculatedCd;
 
             // スキル個別発動ビジュアル演出の開始
@@ -3617,12 +3664,7 @@
                 }
 
                 // クールタイム目標計算
-                let calculatedCd = s.cd;
-                if (key === 'skill1') calculatedCd = Math.max(10, s.cd - (s.lv - 1));
-                if (key === 'skill2') calculatedCd = Math.max(15, s.cd - (s.lv - 1));
-                if (key === 'skill3') calculatedCd = Math.max(20, s.cd - (s.lv - 1));
-                if (key === 'skill4') calculatedCd = Math.max(25, s.cd - (s.lv - 1) * 2);
-                if (key === 'hissatsu') calculatedCd = getHissatsuTapsRequired(s.lv); // ← 秒数ではなく「必要タップ数」
+                let calculatedCd = getSkillCalculatedCd(key, s);
 
                 const overlay = btn.querySelector('.cd-overlay');
                 const gaugeFill = key === 'hissatsu' ? document.getElementById('hissatsu-gauge-fill') : null;
@@ -3963,7 +4005,7 @@
         function showOmiyageDetail(idx) {
             const stage = stages[idx];
             const currentLv = purchasedItems[idx] || 0;
-            const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
+            const nextPrice = getOmiyagePrice(stage, currentLv);
             const canBuy = score >= nextPrice;
             const baseEffectText = stage.tapBonus ? `タップ力 +${formatMochi(stage.tapBonus)}` : `自動増加 +${formatMochi(stage.mpsBonus)}もち/秒`;
 
@@ -4251,7 +4293,7 @@
 
         function buyOmiyage(idx) {
             const stage = stages[idx]; const currentLv = purchasedItems[idx] || 0;
-            const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
+            const nextPrice = getOmiyagePrice(stage, currentLv);
             if (score >= nextPrice) {
                 score -= nextPrice; purchasedItems[idx] = currentLv + 1;
                 playAudioFile('audio/levelup.mp3');
@@ -4518,7 +4560,7 @@
         }
 
         function startFeverSpawningLoop() {
-            setInterval(() => { if (!isFever && !document.getElementById('fever-pop') && Math.random() < 0.3) spawnGoldMochi(); }, 25000);
+            setInterval(() => { if (!isFever && !document.getElementById('fever-pop') && Math.random() < 0.08) spawnGoldMochi(); }, 25000);
         }
 
         function spawnGoldMochi() {
@@ -4582,6 +4624,7 @@
             selectedStageIndex = 0;
             currentStageProgress = 0;
             purchasedItems = {};
+            hasSeenJapanClear = false; // 🐛修正：これが無いと、2回目以降は沖縄クリア無しで転生し放題になってしまっていた
             Object.keys(skills).forEach(k => {
                 skills[k].lv = 0;
                 skills[k].activeTimer = 0;
@@ -4666,7 +4709,46 @@
             container.innerHTML = html;
         }
 
+        // 💡「次のおすすめアクション」判定：初心者が迷わないよう、状況に応じて1箇所だけハイライトする
+        let lastRecommendCheckTime = 0;
+        function getRecommendedActionTargetId() {
+            // ① 今いる県のおみやげをまだ買っていない、かつ購入できる資金がある → ショップへ
+            const stage = stages[selectedStageIndex];
+            const curLv = purchasedItems[selectedStageIndex] || 0;
+            if (curLv === 0 && stage && score >= getOmiyagePrice(stage, 0)) {
+                return 'nav-btn-shop';
+            }
+            // ② スキルを1つも取得していない、かつ一番安いスキルが買える資金がある → ショップへ
+            const anySkillUnlocked = Object.values(skills).some(s => s.lv > 0);
+            if (!anySkillUnlocked) {
+                const cheapestUnlockPrice = Math.min(...Object.values(skills).map(s => s.unlockPrice || Infinity));
+                if (score >= cheapestUnlockPrice) return 'nav-btn-shop';
+            }
+            // ③ 使用可能（クールタイム明け）なスキルがある → そのスキルボタンへ
+            const readyEntry = Object.entries(skills).find(([k, s]) => k !== 'hissatsu' && s.lv > 0 && s.currentCd <= 0 && s.activeTimer <= 0);
+            if (readyEntry) return 'btn-' + readyEntry[0];
+            // ④ 必殺技が使用可能 → 必殺技ボタンへ
+            if (skills.hissatsu.lv > 0 && skills.hissatsu.currentCd <= 0 && skills.hissatsu.activeTimer <= 0) return 'btn-hissatsu';
+            // ⑤ 今日のミニゲームがまだ遊べる → ミニゲームへ
+            const anyMinigameLeft = Object.keys(minigamePlaysUsedToday || {}).some(g => (minigamePlaysUsedToday[g] || 0) < getMinigameDailyLimit());
+            if (anyMinigameLeft) return 'nav-btn-minigame';
+            // 特に無ければハイライトしない
+            return null;
+        }
+        function updateRecommendedActionHighlight() {
+            const now = Date.now();
+            if (now - lastRecommendCheckTime < 1000) return; // 連打のたびに毎回判定しなくていいよう、1秒に1回だけ再計算
+            lastRecommendCheckTime = now;
+            document.querySelectorAll('.recommended-glow').forEach(el => el.classList.remove('recommended-glow'));
+            const targetId = getRecommendedActionTargetId();
+            if (targetId) {
+                const el = document.getElementById(targetId);
+                if (el) el.classList.add('recommended-glow');
+            }
+        }
+
         function updateDisplay() {
+            updateRecommendedActionHighlight();
             const scoreFormatted = formatMochi(score) + " もち";
             const scoreEl = document.getElementById('score-text');
             const fullText = isFever ? `🔥 5倍中 (${feverTimeLeft}s) ${scoreFormatted}` : scoreFormatted;
@@ -4780,7 +4862,7 @@
         }
 
         function grantMinigameReward(multiplier) {
-            const final = Math.floor(getMinigameBaseReward() * multiplier);
+            const final = Math.floor(getMinigameBaseReward() * multiplier * getMinigameRewardMultiplier());
             score += final;
             saveGame(); updateDisplay();
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
