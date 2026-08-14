@@ -45,7 +45,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
-    <link rel="apple-touch-icon" href="app_icon.webp">
+    <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
     <style>
         /* 全体スタイル - ズームやスクロールを完全禁止 */
         html {
@@ -351,23 +351,16 @@
             color: #ff5252;
             font-size: 1.25rem;
         }
-        .nav-menu { display: flex; width: 92%; justify-content: space-between; gap: 8px; }
+        .nav-menu { display: flex; width: 98%; justify-content: space-between; gap: 4px; }
         .nav-btn {
             flex: 1; padding: 0; font-size: 0.72rem; font-weight: bold;
-            border: none; border-radius: 16px; cursor: pointer; text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white;
+            border: none; cursor: pointer; text-align: center;
+            color: white;
             position: relative; transition: transform 0.1s, filter 0.2s;
-            aspect-ratio: 1 / 1; background-size: cover; background-position: center;
-            overflow: hidden;
+            aspect-ratio: 1 / 1; background-size: contain; background-position: center; background-repeat: no-repeat;
+            background-color: transparent;
         }
         .nav-btn:active { transform: scale(0.95); }
-        .btn-minigame { background-color: #26a69a; }
-        
-        .btn-warehouse { background-color: #ff769f; }
-        .btn-shop { background-color: #ff9800; }
-        .btn-map { background-color: #4caf50; }
-        .btn-diary { background-color: #2196f3; }
-        .btn-ranking { background-color: #9c27b0; }
         .badge-dot { position: absolute; top: 4px; right: 18px; width: 10px; height: 10px; background: #ff3d00; border-radius: 50%; border: 2px solid white; }
 
         /* モーダル共通 */
@@ -704,7 +697,7 @@
             transform: translateY(-50%);
             width: 26px;
             height: 26px;
-            background: url('mochi_particle.webp') center/contain no-repeat;
+            background: url('ui_images/mochi_particle.webp') center/contain no-repeat;
             pointer-events: none;
             z-index: 5;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
@@ -754,17 +747,18 @@
         
         /* スキルボタン基本スタイル */
         .skill-btn {
-            width: 56px; height: 56px; border-radius: 50%;
+            width: 56px; height: 56px;
             position: relative; display: flex; justify-content: center; align-items: center;
-            font-size: 0.62rem; font-weight: bold; color: white; border: 2px solid #fff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2); cursor: pointer;
-            background-color: #ff9800; background-size: cover; background-position: center;
+            font-size: 0.62rem; font-weight: bold; color: white;
+            cursor: pointer;
+            background-size: contain; background-position: center; background-repeat: no-repeat;
             text-align: center; line-height: 1.1;
-            overflow: hidden; transition: transform 0.1s;
+            transition: transform 0.1s, filter 0.2s;
             box-sizing: border-box;
         }
         .skill-btn:active { transform: scale(0.92); }
-        .skill-btn.locked { background: #9e9e9e !important; cursor: not-allowed; opacity: 0.7; }
+        .skill-btn.locked { filter: grayscale(0.85) brightness(0.6); opacity: 0.8; cursor: not-allowed; }
+        .skill-btn.on-cooldown { filter: brightness(0.55); }
         
         /* 円形クールタイム・発動中オーバーレイ */
         .cd-overlay {
@@ -922,14 +916,16 @@
         /* 中央必殺技ボタン */
         .hissatsu-btn {
             position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%);
-            background-color: #b100e8; background-size: cover; background-position: center;
+            background-size: contain; background-position: center; background-repeat: no-repeat;
             color: white;
-            padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 0.78rem;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 15;
-            white-space: nowrap; border: 2px solid #fff; overflow: hidden;
+            padding: 0; font-weight: bold; font-size: 0.78rem;
+            cursor: pointer; z-index: 15;
+            white-space: nowrap; overflow: hidden;
             box-sizing: border-box; display: none;
             width: 210px; height: 62px;
+            transition: filter 0.2s;
         }
+        .hissatsu-btn.on-cooldown { filter: brightness(0.55); }
         .hissatsu-btn .cd-overlay-rect {
             position: absolute; top: 0; left: 0; height: 100%;
             background: rgba(0,0,0,0.55); width: var(--cd-per, 0%);
@@ -983,7 +979,7 @@
         /* 金もちボタン */
         #fever-pop {
             position: absolute; width: 65px; height: 65px;
-            background: url('mochi_particle.webp') center/contain no-repeat;
+            background: url('ui_images/mochi_particle.webp') center/contain no-repeat;
             filter: hue-rotate(45deg) brightness(1.3) drop-shadow(0 0 8px #ffeb3b);
             cursor: pointer; z-index: 90; display: flex; justify-content: center; align-items: center;
             user-select: none; -webkit-user-select: none;
@@ -1163,7 +1159,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-03</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-04</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1202,11 +1198,11 @@
 
         <div id="mochisuke-area">
             <div class="skill-side-container">
-                <div id="btn-skill1" class="skill-btn locked" onclick="useSkill('skill1')" style="background-image: url('skill1.webp');">
+                <div id="btn-skill1" class="skill-btn locked" onclick="useSkill('skill1')" style="background-image: url('ui_images/skill1.png');">
                     <div class="cd-overlay"></div>
                     <span class="btn-illust-label" style="top:17.8%; left:25.4%; width:53.2%; height:61.5%; font-size:0.56rem;">クリック増加<span class="sk-lv" id="lv-skill1">Lv.0</span></span>
                 </div>
-                <div id="btn-skill2" class="skill-btn locked" onclick="useSkill('skill2')" style="background-image: url('skill2.webp');">
+                <div id="btn-skill2" class="skill-btn locked" onclick="useSkill('skill2')" style="background-image: url('ui_images/skill2.png');">
                     <div class="cd-overlay"></div>
                     <span class="btn-illust-label" style="top:15.1%; left:24.0%; width:53.1%; height:65.0%; font-size:0.56rem;">会心の術<span class="sk-lv" id="lv-skill2">Lv.0</span></span>
                 </div>
@@ -1215,22 +1211,22 @@
             <div id="mochisuke-wrapper">
                 <div id="combo-display">🔥 0 Combo!</div>
                 <div id="mochi-balloon">画面をタップして もち集めような！</div>
-                <img id="mochisuke-btn" class="breathe-idle" src="image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
+                <img id="mochisuke-btn" class="breathe-idle" src="ui_images/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
                 
                 <div id="bunshin-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
 
-                <div id="btn-hissatsu" class="hissatsu-btn" onclick="useSkill('hissatsu')" style="background-image: url('hissatsu.webp');">
+                <div id="btn-hissatsu" class="hissatsu-btn" onclick="useSkill('hissatsu')" style="background-image: url('ui_images/hissatsu.png');">
                     <div class="cd-overlay-rect"></div>
                     <span class="btn-illust-label" style="top:30.0%; left:18.3%; width:71.3%; height:40.6%; font-size:0.66rem;">もちもちビッグバン<span class="sk-lv" id="lv-hissatsu">Lv.1</span></span>
                 </div>
             </div>
 
             <div class="skill-side-container">
-                <div id="btn-skill3" class="skill-btn locked" onclick="useSkill('skill3')" style="background-image: url('skill3.webp');">
+                <div id="btn-skill3" class="skill-btn locked" onclick="useSkill('skill3')" style="background-image: url('ui_images/skill3.png');">
                     <div class="cd-overlay"></div>
                     <span class="btn-illust-label" style="top:16.8%; left:27.3%; width:51.3%; height:65.2%; font-size:0.56rem;">分身の術<span class="sk-lv" id="lv-skill3">Lv.0</span></span>
                 </div>
-                <div id="btn-skill4" class="skill-btn locked" onclick="useSkill('skill4')" style="background-image: url('skill4.webp');">
+                <div id="btn-skill4" class="skill-btn locked" onclick="useSkill('skill4')" style="background-image: url('ui_images/skill4.png');">
                     <div class="cd-overlay"></div>
                     <span class="btn-illust-label" style="top:15.8%; left:26.9%; width:52.6%; height:65.7%; font-size:0.56rem;">黄金の術<span class="sk-lv" id="lv-skill4">Lv.0</span></span>
                 </div>
@@ -1239,20 +1235,20 @@
 
         <div id="control-panel">
             <div class="nav-menu">
-                <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('souko.webp');">
+                <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.png');">
                     <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
                 </button>
-                <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('shop.webp');">
+                <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.png');">
                     <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
                     <span class="badge-dot"></span>
                 </button>
-                <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('enikki.webp');">
+                <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.png');">
                     <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
                 </button>
-                <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('minigame.webp');">
+                <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.png');">
                     <span class="btn-illust-label" style="top:73.5%; left:18.8%; width:62.0%; height:20.2%; font-size:0.68rem;">ミニゲーム</span>
                 </button>
-                <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('rank.webp');">
+                <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.png');">
                     <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
                 </button>
             </div>
@@ -1291,7 +1287,7 @@
             <div id="omiyage-shelf-view">
                 <div id="omiyage-shelf-container">
                     <div id="omiyage-image-frame">
-                        <img id="omiyage-shelf-img" data-src="omiyage_shop_bg.webp" alt="おみやげ屋さん" draggable="false">
+                        <img id="omiyage-shelf-img" data-src="ui_images/omiyage_shop_bg.webp" alt="おみやげ屋さん" draggable="false">
 
                         <!-- 🎁おみやげタブの中身 -->
                         <div id="omiyage-slots-layer"></div>
@@ -1334,7 +1330,7 @@
             <button class="modal-fullscreen-close" onclick="closeMapModal()">×</button>
             <div id="map-viewport">
                 <div id="map-canvas">
-                    <img id="map-illustration-img" data-src="map_illustration.webp" alt="日本地図" draggable="false">
+                    <img id="map-illustration-img" data-src="ui_images/map_illustration.webp" alt="日本地図" draggable="false">
                     <div id="map-pins-layer"></div>
                 </div>
             </div>
@@ -1357,7 +1353,7 @@
     </div>
 
     <div id="op-screen" onclick="startGameFromOpScreen()">
-        <img id="op-screen-img" src="op_screen.webp" alt="タップしてスタート">
+        <img id="op-screen-img" src="ui_images/op_screen.webp" alt="タップしてスタート">
         <div id="op-screen-hint">タップしてスタート</div>
     </div>
 
@@ -1545,7 +1541,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-03</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-04</div>
                 </div>
             </div>
         </div>
@@ -1908,7 +1904,7 @@
         // price    : ショップでの購入価格（もち）。0にすると最初から所持済み扱いになります
         // desc     : 倉庫・ショップに表示される説明文（能力の説明もここに書いてください）
         // img      : 【新規追加時はここに画像ファイル名を書くだけでOK】
-        //            例: "img: 'costume_ninja.webp'" のように書くと、その画像に着せ替わります。
+        //            例: "img: 'ui_images/costume_ninja.webp'" のように書くと、その画像に着せ替わります。
         //            画像を用意しない場合はこの行を省略すれば、filterで色味だけ変える従来方式になります。
         // filter   : imgを指定しない場合の色味加工（CSSのfilter）。imgがある場合は無視されます。
         // tapBonus : 装備中、タップ力に加算される値
@@ -1920,7 +1916,7 @@
             { id: "crown", name: "王様の冠", price: 3000, desc: "気品溢れる姿。自動増加 +12もち/秒", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1.2) sepia(0.5) saturate(2.5)", tapBonus: 0, mpsBonus: 12 },
             { id: "ninja", name: "忍びの服", price: 15000, desc: "影からもち増産。タップ力+10 / 自動+40", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(0.4) contrast(1.5)", tapBonus: 10, mpsBonus: 40 }
             // 👇 追加する時はこんな感じでコピペして書き換えてください（画像ありパターンの例）
-            // , { id: "yukata", name: "浴衣すがた", price: 30000, img: "costume_yukata.webp", desc: "夏祭り気分。タップ力+20 / 自動+80", tapBonus: 20, mpsBonus: 80 }
+            // , { id: "yukata", name: "浴衣すがた", price: 30000, img: "ui_images/costume_yukata.webp", desc: "夏祭り気分。タップ力+20 / 自動+80", tapBonus: 20, mpsBonus: 80 }
         ];
 
         // スキル総合コアシステムデータ
@@ -2102,7 +2098,7 @@
             if (ambientSparkles.length > 18) ambientSparkles.shift(); // 増えすぎ防止
         }
         setInterval(spawnAmbientSparkle, 900);
-        const particleImg = new Image(); particleImg.src = 'mochi_particle.webp';
+        const particleImg = new Image(); particleImg.src = 'ui_images/mochi_particle.webp';
         // ctx.filter (hue-rotate/drop-shadow) はスマホブラウザ(特にiOS Safari)で
         // 正しく適用されないことがあるため、金色版画像を事前に1回だけ焼き込んで使い回す
         let goldParticleImg = null;
@@ -2380,7 +2376,7 @@
         // 個別のAudio要素を大量に操作する必要が無くなり、軽量かつ確実になります。
         // また音声データは事前にデコードしてメモリ上に持つので、Service Workerのキャッシュ
         // （Rangeリクエストの不整合が起きやすい）を一切経由しません。
-        const SFX_FILES = ['tap.mp3', 'move.mp3', 'critical.mp3', 'gold_mochi.mp3', 'skill_tap.mp3', 'ready.mp3', 'levelup.mp3', 'page_turn.mp3', 'balloon_pop.mp3', 'mochi_eat.mp3', 'mochi_scream.mp3', 'mochi_stretch.mp3'];
+        const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochi_eat.mp3', 'audio/mochi_scream.mp3', 'audio/mochi_stretch.mp3'];
         let audioCtx = null;
         const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
         const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
@@ -2623,7 +2619,7 @@
             document.getElementById('offline-earnings-time').innerText = `${timeText}の間、もちすけがひとりで頑張ってくれてたで！`;
             document.getElementById('offline-earnings-amount').innerText = `+${formatMochi(earnings)} もち`;
             document.getElementById('offline-earnings-note').innerText = cappedNote;
-            playAudioFile('gold_mochi.mp3');
+            playAudioFile('audio/gold_mochi.mp3');
             openModal('offline-earnings-modal', true);
         }
 
@@ -2639,13 +2635,13 @@
 
         function debugLevelUpSkill(key) {
             skills[key].lv++;
-            playAudioFile('levelup.mp3');
+            playAudioFile('audio/levelup.mp3');
             updateSkillUI(); saveGame();
         }
 
         function debugLevelUpAllSkills() {
             Object.keys(skills).forEach(key => { skills[key].lv++; });
-            playAudioFile('levelup.mp3');
+            playAudioFile('audio/levelup.mp3');
             updateSkillUI(); saveGame();
             alert("⚡ すべてのスキル・必殺技を即時獲得＆Lv+1しました！");
         }
@@ -2719,7 +2715,7 @@
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
-            playBgmLoop('bgm.mp3');
+            playBgmLoop('audio/bgm.mp3');
         }
 
         // 🎬 OP画面をタップしてゲームへ。ブラウザの仕様上「一切操作なしで音を鳴らす」ことはiOSではできないが、
@@ -2907,7 +2903,7 @@
 
         function triggerAreaTransition(newBgUrl, callback) {
             const overlay = document.getElementById('fade-overlay');
-            playAudioFile('move.mp3');
+            playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 callback();
@@ -3196,7 +3192,7 @@
 
             // 新SE視覚演出（音を先に鳴らしてから見た目の処理をする＝DOM生成が音の発火を遅らせないようにする）
             if (isCrit) {
-                playAudioFile('critical.mp3');
+                playAudioFile('audio/critical.mp3');
                 vibrate(30);
                 screenShake('small');
                 screenFlash('#ff5722', 0.22);
@@ -3208,7 +3204,7 @@
                     if (myCritId === critTapId) resetMochiFilter(); // 自分より後の会心が発生していなければリセット
                 }, 180);
             } else if (isGold) {
-                playAudioFile('gold_mochi.mp3');
+                playAudioFile('audio/gold_mochi.mp3');
                 vibrate([20, 30, 20]);
                 screenShake('big');
                 screenFlash('#ffd700', 0.3);
@@ -3227,7 +3223,7 @@
             e.preventDefault();
             try { mochiBtnElement.setPointerCapture(e.pointerId); } catch (err) {}
             initAndPlayBGM();
-            playAudioFile('tap.mp3'); 
+            playAudioFile('audio/tap.mp3'); 
             totalTapsCount++;
             chargeHissatsuByTap();
             prefTaps[selectedStageIndex] = (prefTaps[selectedStageIndex] || 0) + 1;
@@ -3283,7 +3279,7 @@
                 }
                 // もちすけ本体以外をタップした時に5連打を発動
                 if (e.target.id !== 'mochisuke-btn') {
-                    playAudioFile('tap.mp3');
+                    playAudioFile('audio/tap.mp3');
                     createRippleEffect(e.clientX, e.clientY);
                     clearTimeout(critFilterTimeout);
                     resetMochiFilter();
@@ -3334,7 +3330,7 @@
             if (stretchSoundSource) return;
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-            const buffer = audioBuffers['mochi_stretch.mp3'];
+            const buffer = audioBuffers['audio/mochi_stretch.mp3'];
             if (!buffer) return;
             stretchSoundSource = ctx.createBufferSource();
             stretchSoundSource.buffer = buffer;
@@ -3453,7 +3449,7 @@
             }
             if (s.currentCd > 0 || s.activeTimer > 0) return; 
 
-            playAudioFile('skill_tap.mp3');
+            playAudioFile('audio/skill_tap.mp3');
             if (key === 'hissatsu') {
                 screenShake('big');
                 screenFlash('#ff9800', 0.4);
@@ -3492,7 +3488,7 @@
                 const xOffsets = [-130, 130];
                 for (let i = 0; i < 2; i++) {
                     const img = document.createElement('img');
-                    img.src = 'image_0.webp';
+                    img.src = 'ui_images/image_0.webp';
                     img.className = 'bunshin-clone-img';
                     img.style.position = 'absolute'; 
                     img.style.width = '190px'; 
@@ -3511,7 +3507,7 @@
             
             if (key === 'hissatsu') {
                 // 必殺技専用BGMの再生（通常BGMから切り替え）
-                playBgmLoop('hissatsu_bgm.mp3');
+                playBgmLoop('audio/hissatsu_bgm.mp3');
 
                 // 親方化して巨大に固定
                 mochiBtnElement.classList.remove('breathe-idle');
@@ -3527,7 +3523,7 @@
             if (key === 'skill3') { document.getElementById('bunshin-container').innerHTML = ''; bunshinCloneRects = []; bunshinCloneEls = []; }
             if (key === 'hissatsu') {
                 // 必殺技BGMを終了し通常BGMを再開
-                if (isBgmInitialized) playBgmLoop('bgm.mp3');
+                if (isBgmInitialized) playBgmLoop('audio/bgm.mp3');
 
                 mochiBtnElement.style.transform = 'scale(1)';
                 const clones = document.querySelectorAll('.bunshin-clone-img');
@@ -3541,7 +3537,7 @@
         let critTapId = 0;
         function resetMochiFilter() {
             const target = clothesData.find(c => c.id === equippedClotheId);
-            mochiBtnElement.src = (target && target.img) ? target.img : 'image_0.webp';
+            mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
             let baseFilter = target ? (target.filter || "drop-shadow(0 10px 10px rgba(0,0,0,0.15))") : "drop-shadow(0 10px 10px rgba(0,0,0,0.15))";
             // 必殺技が発動中なら、そちらの見た目(コントラスト強化)を消さずに保つ
             if (skills.hissatsu.activeTimer > 0) baseFilter += " contrast(1.4) brightness(1.05)";
@@ -3562,7 +3558,7 @@
                     if (s.currentCd <= 0) {
                         s.currentCd = 0;
                         if (s.lv > 0) {
-                            playAudioFile('ready.mp3', 0.4);
+                            playAudioFile('audio/ready.mp3', 0.4);
                         }
                     }
                 }
@@ -3577,7 +3573,7 @@
                 s.currentCd -= 1;
                 if (s.currentCd <= 0) {
                     s.currentCd = 0;
-                    playAudioFile('ready.mp3', 0.4);
+                    playAudioFile('audio/ready.mp3', 0.4);
                 }
                 updateSkillUI();
             }
@@ -3596,7 +3592,6 @@
                 // 解放ロック状態のデザイン分岐
                 if (s.lv === 0) {
                     btn.classList.add('locked');
-                    if (key !== 'hissatsu') btn.style.background = "#9e9e9e";
                 } else {
                     btn.classList.remove('locked');
                 }
@@ -3613,34 +3608,33 @@
                 const overlayRect = btn.querySelector('.cd-overlay-rect');
 
                 // ゲージ表示システムの分岐（発動中なら緑ゲージが減り、終了後は黒いクールダウンに遷移）
+                // ※ イラスト背景(background-image)を消さないよう、色は必ずbackgroundColorではなくoverlay側で表現する
                 if (s.activeTimer > 0) {
                     let percentage = (s.activeTimer / s.duration) * 100;
                     if (overlay) {
-                        overlay.style.background = `conic-gradient(#4caf50 ${percentage}%, transparent 0deg)`;
+                        overlay.style.background = `conic-gradient(rgba(76,175,80,0.55) ${percentage}%, transparent 0deg)`;
                     }
                     if (overlayRect) {
                         overlayRect.style.width = `${percentage}%`;
-                        overlayRect.style.background = "#4caf50";
+                        overlayRect.style.background = "rgba(76,175,80,0.55)";
                     }
-                    if (key !== 'hissatsu') btn.style.background = "#dcedc8"; // 発動中のベースボタン背景
-                    btn.style.opacity = "0.9";
+                    btn.classList.remove('on-cooldown');
+                    btn.classList.remove('ready');
                 } else if (s.currentCd > 0) {
                     let percentage = (s.currentCd / calculatedCd) * 100;
                     if (overlay) {
-                        overlay.style.background = `conic-gradient(rgba(0,0,0,0.65) ${percentage}%, transparent 0deg)`;
+                        overlay.style.background = `conic-gradient(rgba(0,0,0,0.45) ${percentage}%, transparent 0deg)`;
                     }
                     if (overlayRect) {
                         overlayRect.style.width = `${percentage}%`;
-                        overlayRect.style.background = "rgba(0,0,0,0.55)";
+                        overlayRect.style.background = "rgba(0,0,0,0.45)";
                     }
-                    if (key !== 'hissatsu') btn.style.background = "#ff9800";
-                    btn.style.opacity = "1";
+                    btn.classList.add('on-cooldown');
                     btn.classList.remove('ready');
                 } else {
                     if (overlay) overlay.style.background = "none";
                     if (overlayRect) overlayRect.style.width = "0%";
-                    if (key !== 'hissatsu') btn.style.background = "#ff9800";
-                    btn.style.opacity = "1";
+                    btn.classList.remove('on-cooldown');
                     if (s.lv > 0) btn.classList.add('ready');
                 }
             });
@@ -3651,7 +3645,7 @@
         }
 
         /* モーダル関連 */
-        function openModal(id, skipSound) { if (!skipSound) playAudioFile('skill_tap.mp3'); document.body.classList.add('modal-open'); document.getElementById(id).style.display = "flex"; }
+        function openModal(id, skipSound) { if (!skipSound) playAudioFile('audio/skill_tap.mp3'); document.body.classList.add('modal-open'); document.getElementById(id).style.display = "flex"; }
         function closeModal(id) { document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none"; }
 
         function openTrophyRoom() {
@@ -3712,7 +3706,7 @@
 
                 const row = document.createElement('div');
                 row.className = "list-item";
-                const thumbSrc = c.img || 'image_0.webp';
+                const thumbSrc = c.img || 'ui_images/image_0.webp';
                 const thumbFilter = c.img ? 'none' : (c.filter || 'none');
                 row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
                 listContainer.appendChild(row);
@@ -3783,7 +3777,7 @@
                     }
                     const row = document.createElement('div');
                     row.className = "list-item";
-                    const thumbSrc = c.img || 'image_0.webp';
+                    const thumbSrc = c.img || 'ui_images/image_0.webp';
                     const thumbFilter = c.img ? 'none' : (c.filter || 'none');
                     row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">👕 ${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
                     listContainer.appendChild(row);
@@ -3822,7 +3816,7 @@
             if (score < price) return;
             score -= price;
             s.lv += 1;
-            playAudioFile('levelup.mp3');
+            playAudioFile('audio/levelup.mp3');
             showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
             saveGame(); renderShopList(); updateSkillUI(); updateDisplay();
         }
@@ -3933,7 +3927,7 @@
         }
 
         function onOmiyageSlotTap(idx, el) {
-            playAudioFile('tap.mp3');
+            playAudioFile('audio/tap.mp3');
             el.classList.remove('mochitto'); void el.offsetWidth; el.classList.add('mochitto'); // もちっと演出
             omiyageSelectedIdx = idx;
             showOmiyageDetail(idx);
@@ -4032,7 +4026,7 @@
         function showFeedTeaseComment() {
             if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) {
                 // 我慢の限界：専用の叫び効果音＋専用イラスト＋周りに散る「あ゛」で叫んでる感を強化
-                playAudioFile('mochi_scream.mp3');
+                playAudioFile('audio/mochi_scream.mp3');
                 vibrate([60, 40, 60, 40, 80, 40, 100]);
                 screenShake('big');
                 screenFlash('#ff1744', 0.28);
@@ -4043,11 +4037,11 @@
                 mochiBtnElement.classList.add('mochi-scream');
 
                 // 叫び顔イラストに一時的に差し替えて、収まったら元の衣装に戻す
-                mochiBtnElement.src = 'image_scream.webp';
+                mochiBtnElement.src = 'ui_images/image_scream.webp';
                 clearTimeout(mochiScreamTimeout);
                 mochiScreamTimeout = setTimeout(() => {
                     const target = clothesData.find(c => c.id === equippedClotheId);
-                    mochiBtnElement.src = (target && target.img) ? target.img : 'image_0.webp';
+                    mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
                     mochiBtnElement.classList.remove('mochi-scream');
                     if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
                 }, 900);
@@ -4169,7 +4163,7 @@
             startFeedBuffIndicator();
 
             const mochiRect = mochiBtnElement.getBoundingClientRect();
-            playAudioFile('mochi_eat.mp3');
+            playAudioFile('audio/mochi_eat.mp3');
             vibrate([20, 40, 20]);
             screenFlash('#ff9800', 0.3);
             screenShake('small');
@@ -4233,7 +4227,7 @@
             const nextPrice = Math.floor(stage.price * Math.pow(1.5, currentLv));
             if (score >= nextPrice) {
                 score -= nextPrice; purchasedItems[idx] = currentLv + 1;
-                playAudioFile('levelup.mp3');
+                playAudioFile('audio/levelup.mp3');
                 showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
                 saveGame(); renderShopList(); updateDisplay();
             }
@@ -4275,7 +4269,7 @@
                 pinsLayer.appendChild(pin);
             });
             mapZoomReset();
-            playAudioFile('page_turn.mp3'); // 絵日記をめくる音を流用（ショップなどとは違う専用の音にする）
+            playAudioFile('audio/page_turn.mp3'); // 絵日記をめくる音を流用（ショップなどとは違う専用の音にする）
             openModal('map-modal', true);
         }
 
@@ -4456,7 +4450,7 @@
             const gameScreen = document.getElementById('game-screen');
             showMochiComment(pickRandom(dialogueData.eventComments.presentSpawn));
             const present = document.createElement('div'); present.id = 'lucky-present';
-            present.innerHTML = '<img src="present.webp" alt="プレゼント" class="present-floating-img" style="width:95px; height:95px; object-fit:contain; pointer-events:none;">';
+            present.innerHTML = '<img src="ui_images/present.webp" alt="プレゼント" class="present-floating-img" style="width:95px; height:95px; object-fit:contain; pointer-events:none;">';
             present.style.position = 'absolute'; present.style.cursor = 'pointer'; present.style.zIndex = '95'; present.style.transition = 'transform 11s linear';
             const rect = gameScreen.getBoundingClientRect();
             present.style.left = '-110px'; present.style.top = (Math.random() * (rect.height - 350) + 160) + 'px';
@@ -4472,13 +4466,13 @@
 
                 if (popTaps < PRESENT_TAPS_REQUIRED) {
                     // もちすけをタップした時と同じ「もちっ」演出＋効果音のみ（まだ割れない・もちは出さない）
-                    playAudioFile('tap.mp3');
+                    playAudioFile('audio/tap.mp3');
                     imgEl.classList.remove('present-mochitto'); void imgEl.offsetWidth; imgEl.classList.add('present-mochitto');
                     return;
                 }
 
                 // 10回目：破裂して白いもちが10個飛び出す＋福もちボーナス獲得
-                playAudioFile('balloon_pop.mp3');
+                playAudioFile('audio/balloon_pop.mp3');
                 vibrate([20, 30, 60]);
                 for (let i = 0; i < 10; i++) {
                     const angle = (Math.PI * 2 * i) / 10 + Math.random() * 0.3;
@@ -4581,7 +4575,7 @@
             hasSeenJapanClear = true;
             saveGame();
 
-            playAudioFile('levelup.mp3'); // 専用の祝賀SEを用意できたら差し替え推奨（例: 'japan_clear.mp3'）
+            playAudioFile('audio/levelup.mp3'); // 専用の祝賀SEを用意できたら差し替え推奨（例: 'japan_clear.mp3'）
             vibrate([40, 60, 40, 60, 120]);
 
             // 紙吹雪演出：金色パーティクルを画面上部からバラバラと降らせる（既存のパーティクルエンジンを流用）
@@ -4768,7 +4762,7 @@
 
         function showMinigameResult(title, detail, reward) {
             isMinigameActive = false; // 結果画面ではメイン画面のタップ判定を戻してもよい
-            playAudioFile('levelup.mp3');
+            playAudioFile('audio/levelup.mp3');
             const container = document.getElementById('minigame-play-view');
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
@@ -4847,7 +4841,7 @@
             const btn = document.getElementById(`quiz-choice-${choiceIdx}`);
             if (isCorrect) {
                 quizState.correct++;
-                playAudioFile('critical.mp3');
+                playAudioFile('audio/critical.mp3');
                 vibrate(20);
                 if (btn) {
                     btn.classList.add('quiz-correct-glow');
@@ -4855,7 +4849,7 @@
                     spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 6, '#4caf50');
                 }
             } else {
-                playAudioFile('tap.mp3');
+                playAudioFile('audio/tap.mp3');
                 if (btn) btn.classList.add('quiz-wrong-shake');
                 // 不正解の時は、正解の選択肢も光らせて教えてあげる
                 const q = quizState.questions[quizState.qIndex];
@@ -4934,7 +4928,7 @@
                     barInner.style.background = pct > 50 ? 'linear-gradient(90deg,#81c784,#4caf50)' : pct > 20 ? 'linear-gradient(90deg,#ffd54f,#ffc107)' : 'linear-gradient(90deg,#ef5350,#f44336)';
                 }
                 if (timeAttackState.timeLeft > 0 && timeAttackState.timeLeft <= 3) {
-                    playAudioFile('skill_tap.mp3', 0.35); // ラスト3秒のカウントダウン合図に流用
+                    playAudioFile('audio/skill_tap.mp3', 0.35); // ラスト3秒のカウントダウン合図に流用
                     vibrate(15);
                 }
                 if (timeAttackState.timeLeft <= 0) {
@@ -4977,7 +4971,7 @@
 
             // 叩けば叩くほど音がだんだん高くなっていく（連打の気持ちよさを強化）
             const rate = 1 + Math.min(0.6, timeAttackState.taps * 0.015);
-            playAudioFilePitched('tap.mp3', 0.5, rate);
+            playAudioFilePitched('audio/tap.mp3', 0.5, rate);
 
             if (timeAttackState.taps % 20 === 0) { vibrate(20); screenFlash('#26a69a', 0.12); }
         }
@@ -4990,7 +4984,7 @@
             const mult = found ? found[1] : 0.3;
             const reward = grantMinigameReward(mult);
             const isNewBest = taps > (minigameBests.timeattack || 0);
-            if (isNewBest) { minigameBests.timeattack = taps; playAudioFile('levelup.mp3'); saveGame(); screenFlash('#ffd700', 0.35); }
+            if (isNewBest) { minigameBests.timeattack = taps; playAudioFile('audio/levelup.mp3'); saveGame(); screenFlash('#ffd700', 0.35); }
             showMinigameResult(`⏱️ タイムアタック結果`, `${taps}回タップ！${isNewBest ? '🎉自己ベスト更新！' : `（自己ベスト: ${minigameBests.timeattack}回）`}`, reward);
         }
 
@@ -5061,7 +5055,7 @@
             if (st.flippedIndices.includes(i) || st.cards[i].matched) return;
             if (st.flippedIndices.length >= 2) return;
             st.flippedIndices.push(i);
-            playAudioFile('tap.mp3');
+            playAudioFile('audio/tap.mp3');
             updateConcentrationCardVisual(i);
 
             if (st.flippedIndices.length === 2) {
@@ -5072,7 +5066,7 @@
                 if (st.cards[a].pairId === st.cards[b].pairId) {
                     st.cards[a].matched = true; st.cards[b].matched = true;
                     st.matchedPairs++;
-                    playAudioFile('critical.mp3');
+                    playAudioFile('audio/critical.mp3');
                     updateConcentrationCardVisual(a);
                     updateConcentrationCardVisual(b);
                     st.flippedIndices = [];
@@ -5103,7 +5097,7 @@
             const mult = found ? found[1] : 0.3;
             const reward = grantMinigameReward(mult);
             const isNewBest = minigameBests.concentration == null || moves < minigameBests.concentration;
-            if (isNewBest) { minigameBests.concentration = moves; playAudioFile('levelup.mp3'); saveGame(); }
+            if (isNewBest) { minigameBests.concentration = moves; playAudioFile('audio/levelup.mp3'); saveGame(); }
             concentrationState = null;
             screenFlash('#4caf50', 0.25);
             vibrate([20, 30, 20, 30, 40]);
@@ -5220,13 +5214,13 @@
                 mochitsukiState.streak++;
                 mochitsukiState.bestStreak = Math.max(mochitsukiState.bestStreak, mochitsukiState.streak);
                 if (rank.name === 'PERFECT') {
-                    playAudioFile('critical.mp3'); vibrate(25);
+                    playAudioFile('audio/critical.mp3'); vibrate(25);
                     screenFlash('#ffd700', 0.28);
                     if (track) { track.classList.remove('mochi-track-glow'); void track.offsetWidth; track.classList.add('mochi-track-glow'); }
                 } else if (rank.name === 'GREAT') {
-                    playAudioFile('critical.mp3', 0.4); vibrate(15);
+                    playAudioFile('audio/critical.mp3', 0.4); vibrate(15);
                 } else {
-                    playAudioFile('tap.mp3');
+                    playAudioFile('audio/tap.mp3');
                 }
                 // 3連続以上決まったら節目としてもう一段派手にする
                 if (mochitsukiState.streak > 0 && mochitsukiState.streak % 5 === 0) {
@@ -5386,8 +5380,8 @@
             document.getElementById('prev-page-btn').disabled = (diaryPageIndex === 0);
             document.getElementById('next-page-btn').disabled = (diaryPageIndex === currentStageIndex || diaryPageIndex === stages.length - 1);
         }
-        function nextPage() { if (diaryPageIndex < currentStageIndex && diaryPageIndex < stages.length - 1) { diaryPageIndex++; playAudioFile('page_turn.mp3', 1.0); renderDiaryPage(); } }
-        function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; playAudioFile('page_turn.mp3', 1.0); renderDiaryPage(); } }
+        function nextPage() { if (diaryPageIndex < currentStageIndex && diaryPageIndex < stages.length - 1) { diaryPageIndex++; playAudioFile('audio/page_turn.mp3', 1.0); renderDiaryPage(); } }
+        function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; playAudioFile('audio/page_turn.mp3', 1.0); renderDiaryPage(); } }
     </script>
 </body>
 </html>
