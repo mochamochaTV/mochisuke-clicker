@@ -353,21 +353,21 @@
         }
         .nav-menu { display: flex; width: 92%; justify-content: space-between; gap: 8px; }
         .nav-btn {
-            flex: 1; padding: 10px 1px; font-size: 0.72rem; font-weight: bold;
+            flex: 1; padding: 0; font-size: 0.72rem; font-weight: bold;
             border: none; border-radius: 16px; cursor: pointer; text-align: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1); color: white;
-            display: flex; flex-direction: column; align-items: center; gap: 5px;
             position: relative; transition: transform 0.1s, filter 0.2s;
+            aspect-ratio: 1 / 1; background-size: cover; background-position: center;
+            overflow: hidden;
         }
         .nav-btn:active { transform: scale(0.95); }
-        .nav-btn span:first-child { font-size: 1.25rem; }
-        .btn-minigame { background: #26a69a; }
+        .btn-minigame { background-color: #26a69a; }
         
-        .btn-warehouse { background: #ff769f; }
-        .btn-shop { background: #ff9800; }
-        .btn-map { background: #4caf50; }
-        .btn-diary { background: #2196f3; }
-        .btn-ranking { background: #9c27b0; }
+        .btn-warehouse { background-color: #ff769f; }
+        .btn-shop { background-color: #ff9800; }
+        .btn-map { background-color: #4caf50; }
+        .btn-diary { background-color: #2196f3; }
+        .btn-ranking { background-color: #9c27b0; }
         .badge-dot { position: absolute; top: 4px; right: 18px; width: 10px; height: 10px; background: #ff3d00; border-radius: 50%; border: 2px solid white; }
 
         /* モーダル共通 */
@@ -758,7 +758,8 @@
             position: relative; display: flex; justify-content: center; align-items: center;
             font-size: 0.62rem; font-weight: bold; color: white; border: 2px solid #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2); cursor: pointer;
-            background: #ff9800; text-align: center; line-height: 1.1;
+            background-color: #ff9800; background-size: cover; background-position: center;
+            text-align: center; line-height: 1.1;
             overflow: hidden; transition: transform 0.1s;
             box-sizing: border-box;
         }
@@ -771,8 +772,15 @@
             background: conic-gradient(rgba(0,0,0,0.65) var(--cd-per, 0%), transparent 0deg);
             pointer-events: none; border-radius: 50%;
         }
-        .skill-label { z-index: 5; pointer-events: none; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
         .sk-lv { font-size: 0.55rem; color: #ffe082; display: block; margin-top: 1px; }
+
+        /* 🎨 イラスト差し替え後のボタン共通：座標ピッカーで測った位置に文字ラベルを重ねる */
+        .btn-illust-label {
+            position: absolute; z-index: 6; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; color: #fff; font-weight: bold; line-height: 1.15;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.65); overflow: hidden;
+        }
 
         /* 使用可能時のピカピカアニメーション */
         .skill-btn.ready {
@@ -914,18 +922,19 @@
         /* 中央必殺技ボタン */
         .hissatsu-btn {
             position: absolute; bottom: 0px; left: 50%; transform: translateX(-50%);
-            background: linear-gradient(135deg, #ff3d00, #b100e8); color: white;
+            background-color: #b100e8; background-size: cover; background-position: center;
+            color: white;
             padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 0.78rem;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 15;
             white-space: nowrap; border: 2px solid #fff; overflow: hidden;
             box-sizing: border-box; display: none;
+            width: 210px; height: 62px;
         }
         .hissatsu-btn .cd-overlay-rect {
             position: absolute; top: 0; left: 0; height: 100%;
             background: rgba(0,0,0,0.55); width: var(--cd-per, 0%);
             pointer-events: none; transition: width 0.1s linear;
         }
-        .hissatsu-text { position: relative; z-index: 5; text-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
         .hissatsu-btn.ready { animation: hissatsuGlow 0.8s infinite alternate; }
         @keyframes hissatsuGlow {
             0% { transform: translateX(-50%) scale(1); box-shadow: 0 0 8px #ff3d00; }
@@ -1154,7 +1163,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-02</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-03</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1193,13 +1202,13 @@
 
         <div id="mochisuke-area">
             <div class="skill-side-container">
-                <div id="btn-skill1" class="skill-btn locked" onclick="useSkill('skill1')">
+                <div id="btn-skill1" class="skill-btn locked" onclick="useSkill('skill1')" style="background-image: url('skill1.webp');">
                     <div class="cd-overlay"></div>
-                    <span class="skill-label">もち<br>ｸﾘｯｸ<br><span class="sk-lv" id="lv-skill1">Lv.0</span></span>
+                    <span class="btn-illust-label" style="top:17.8%; left:25.4%; width:53.2%; height:61.5%; font-size:0.56rem;">クリック増加<span class="sk-lv" id="lv-skill1">Lv.0</span></span>
                 </div>
-                <div id="btn-skill2" class="skill-btn locked" onclick="useSkill('skill2')">
+                <div id="btn-skill2" class="skill-btn locked" onclick="useSkill('skill2')" style="background-image: url('skill2.webp');">
                     <div class="cd-overlay"></div>
-                    <span class="skill-label">会心<br>もち肌<br><span class="sk-lv" id="lv-skill2">Lv.0</span></span>
+                    <span class="btn-illust-label" style="top:15.1%; left:24.0%; width:53.1%; height:65.0%; font-size:0.56rem;">会心の術<span class="sk-lv" id="lv-skill2">Lv.0</span></span>
                 </div>
             </div>
 
@@ -1210,31 +1219,42 @@
                 
                 <div id="bunshin-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
 
-                <div id="btn-hissatsu" class="hissatsu-btn" onclick="useSkill('hissatsu')">
+                <div id="btn-hissatsu" class="hissatsu-btn" onclick="useSkill('hissatsu')" style="background-image: url('hissatsu.webp');">
                     <div class="cd-overlay-rect"></div>
-                    <span class="hissatsu-text">💥 もちもちビッグバン <span id="lv-hissatsu">Lv.1</span></span>
+                    <span class="btn-illust-label" style="top:30.0%; left:18.3%; width:71.3%; height:40.6%; font-size:0.66rem;">もちもちビッグバン<span class="sk-lv" id="lv-hissatsu">Lv.1</span></span>
                 </div>
             </div>
 
             <div class="skill-side-container">
-                <div id="btn-skill3" class="skill-btn locked" onclick="useSkill('skill3')">
+                <div id="btn-skill3" class="skill-btn locked" onclick="useSkill('skill3')" style="background-image: url('skill3.webp');">
                     <div class="cd-overlay"></div>
-                    <span class="skill-label">分身<br>の術<br><span class="sk-lv" id="lv-skill3">Lv.0</span></span>
+                    <span class="btn-illust-label" style="top:16.8%; left:27.3%; width:51.3%; height:65.2%; font-size:0.56rem;">分身の術<span class="sk-lv" id="lv-skill3">Lv.0</span></span>
                 </div>
-                <div id="btn-skill4" class="skill-btn locked" onclick="useSkill('skill4')">
+                <div id="btn-skill4" class="skill-btn locked" onclick="useSkill('skill4')" style="background-image: url('skill4.webp');">
                     <div class="cd-overlay"></div>
-                    <span class="skill-label">黄金<br>もち福<br><span class="sk-lv" id="lv-skill4">Lv.0</span></span>
+                    <span class="btn-illust-label" style="top:15.8%; left:26.9%; width:52.6%; height:65.7%; font-size:0.56rem;">黄金の術<span class="sk-lv" id="lv-skill4">Lv.0</span></span>
                 </div>
             </div>
         </div>
 
         <div id="control-panel">
             <div class="nav-menu">
-                <button class="nav-btn btn-warehouse" onclick="openWarehouse()"><span>📦</span><span>倉庫</span></button>
-                <button class="nav-btn btn-shop" onclick="openShop()"><span>🛒</span><span>ショップ</span><span class="badge-dot"></span></button>
-                <button class="nav-btn btn-diary" onclick="openDiary()"><span>📖</span><span>絵日記</span></button>
-                <button class="nav-btn btn-minigame" onclick="openMinigameCenter()"><span>🎮</span><span>ミニゲーム</span></button>
-                <button class="nav-btn btn-ranking" onclick="openRanking()"><span>🏆</span><span>順位</span></button>
+                <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('souko.webp');">
+                    <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
+                </button>
+                <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('shop.webp');">
+                    <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
+                    <span class="badge-dot"></span>
+                </button>
+                <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('enikki.webp');">
+                    <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
+                </button>
+                <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('minigame.webp');">
+                    <span class="btn-illust-label" style="top:73.5%; left:18.8%; width:62.0%; height:20.2%; font-size:0.68rem;">ミニゲーム</span>
+                </button>
+                <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('rank.webp');">
+                    <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1525,7 +1545,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-02</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-03</div>
                 </div>
             </div>
         </div>
