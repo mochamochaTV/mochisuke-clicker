@@ -31,12 +31,8 @@ except ImportError:
     sys.exit(1)
 
 # 対象にするフォルダ・ファイル（プロジェクトの構成に合わせて調整してください）
-TARGET_DIRS = ["bg_images", "omiyage_images", "diary_images"]
-TARGET_FILES = [
-    "map_illustration.png", "omiyage_shop_bg.png",
-    "app_icon.png", "image_0.png", "image_scream.png",
-    "mochi_particle.png", "op_screen.png", "present.png",
-]
+TARGET_DIRS = ["bg_images", "omiyage_images", "diary_images", "ui_images"]
+TARGET_FILES = []
 
 
 def find_all_pngs():
