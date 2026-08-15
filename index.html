@@ -1224,7 +1224,7 @@
         <button id="feed-toggle-btn" type="button" onclick="openOmiyageCollection()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-29</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-30</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -3214,6 +3214,15 @@
             }
         }
 
+        // 節目ちょうどの瞬間だけ、スロットリングを無視して即座に専用セリフへ切り替える
+        function forceCheerLine(text, tierMarker) {
+            lastCheerTier = tierMarker;
+            lastCheerChangeTime = Date.now();
+            const balloon = document.getElementById('mochi-balloon');
+            balloon.innerText = text;
+            balloon.classList.add('balloon-show');
+        }
+
         let hasComboTitle1000 = false; // 1000コンボ到達の称号を、初回だけお祝いするためのフラグ
         const comboEndLines = ["ナイスタップ！", "おつかれやで！", "ええコンボやったな！", "また続けような！", "もちもち楽しかったわ！", "ようやったで！"];
         function handleCombo(times = 1) {
@@ -3240,8 +3249,9 @@
             else if (comboCount >= 50) comboEl.classList.add('combo-tier-50');
 
             // 節目のコンボ数で、画面にも一段大きなご褒美演出を出す（大きな節目ほど豪華に）
-            const bigMilestone = [50, 100, 500, 1000].find(m => prevCount < m && comboCount >= m);
-            if (comboCount === 10 || comboCount === 25 || bigMilestone || (comboCount > 50 && comboCount % 50 === 0)) {
+            const namedMilestones = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
+            const bigMilestone = namedMilestones.find(m => prevCount < m && comboCount >= m);
+            if (comboCount === 10 || comboCount === 25 || bigMilestone || (comboCount > 1000 && comboCount % 50 === 0)) {
                 comboEl.classList.remove('combo-milestone-pop');
                 void comboEl.offsetWidth;
                 comboEl.classList.add('combo-milestone-pop');
@@ -3254,9 +3264,9 @@
                         saveGame();
                         setTimeout(() => alert('🏆 称号「もちマスター」を獲得しました！\n1000コンボ、本当にお疲れさまでした！'), 300);
                     }
-                } else if (bigMilestone === 500) {
+                } else if (bigMilestone >= 500) {
                     screenShake('big'); screenFlash('#e0e0e0', 0.35);
-                } else if (bigMilestone === 100) {
+                } else if (bigMilestone >= 100) {
                     screenShake('small'); screenFlash('#ff5252', 0.28);
                 } else if (bigMilestone === 50) {
                     screenShake('small'); screenFlash('#fff176', 0.25);
@@ -3265,7 +3275,13 @@
                 }
             }
 
-            updateCheerBalloon(comboCount);
+            // 節目ちょうどの瞬間は、実際の数字入りの専用セリフを最優先で出す（「300コンボ中なのに100コンボ突破や」のようなズレを防ぐ）
+            if (bigMilestone) {
+                const exactLine = bigMilestone === 1000 ? '1000コンボ突破おめでとう！' : `${bigMilestone}コンボ突破や！`;
+                forceCheerLine(exactLine, getCheerTier(comboCount));
+            } else {
+                updateCheerBalloon(comboCount);
+            }
 
             clearTimeout(comboTimer);
             comboTimer = setTimeout(() => {
