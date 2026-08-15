@@ -1008,18 +1008,18 @@
         .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
 
         #combo-display {
-            position: absolute; top: 5px; font-size: 1.1rem; font-weight: 900;
-            background: #fff8ec; color: #ff5722;
-            padding: 6px 16px; border-radius: 20px;
-            border: 3px solid rgba(255, 183, 77, 0.55);
-            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-            opacity: 0; transform: scale(0.5); transition: all 0.15s cubic-bezier(0.3, 1.4, 0.5, 1); z-index: 80;
+            position: absolute; top: 5px; font-size: 0.82rem; font-weight: 700;
+            background: transparent; color: #ff9800;
+            padding: 2px 10px; border-radius: 14px;
+            border: none;
+            box-shadow: none;
+            opacity: 0; transform: scale(0.6); transition: all 0.15s cubic-bezier(0.3, 1.4, 0.5, 1); z-index: 80;
             pointer-events: none; white-space: nowrap;
             font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
         }
         #combo-display .combo-mult-part { opacity: 0.75; font-size: 0.85em; margin-left: 3px; }
-        .combo-bounce { opacity: 1 !important; transform: scale(1.1) !important; }
-        /* コンボが伸びるほど、縁と文字の色が暖色から順に変わり、もちっと弾む幅も大きくなる */
+        .combo-bounce { opacity: 0.9 !important; transform: scale(1) !important; }
+        /* コンボが伸びるほど、文字の色が暖色から順に変わる（普段は控えめ、カード風の背景は節目だけ） */
         .combo-bounce.combo-tier1 { transform: scale(1.2) !important; border-color: rgba(255, 112, 67, 0.6); color: #ff3d00; }
         .combo-bounce.combo-tier2 { transform: scale(1.32) !important; border-color: rgba(236, 64, 122, 0.6); color: #e91e63; background: #fff0f5; }
         .combo-bounce.combo-tier3 {
@@ -1027,6 +1027,9 @@
             animation: comboTier3Pulse 0.4s ease-in-out infinite alternate;
         }
         @keyframes comboTier3Pulse { from { transform: scale(1.45); } to { transform: scale(1.52); } }
+        /* 節目のコンボ数に到達した瞬間だけ、一段大きくポップさせる（持続するtierスタイルとは別の、一瞬の演出） */
+        @keyframes comboMilestonePop { 0% { transform: scale(1); } 45% { transform: scale(1.8); } 100% { transform: scale(1); } }
+        .combo-milestone-pop { animation: comboMilestonePop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
 
         /* 金もちボタン */
         #fever-pop {
@@ -1209,7 +1212,7 @@
         <button id="feed-toggle-btn" type="button" onclick="openOmiyageCollection()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-26</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-27</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -2063,8 +2066,11 @@
         let hasSeenTutorial = false; // 初回チュートリアルを見せたかどうか
 
         // 🍴 もちすけにお土産をあげる機能（回数制限なし）
-        const FEED_BUFF_DURATION_MS = 20000; // 効果の持続時間（20秒）
+        const FEED_BUFF_DURATION_MS = 10000; // 効果の持続時間（🍴ボタン追加で与えやすくなった分、20秒→10秒に短縮）
         let feedBuffActiveUntil = 0; // このタイムスタンプまで、タップ力が2倍になる
+        const FEED_DAILY_LIMIT = 5; // 1日にあげられる回数の上限
+        let feedLastResetDate = '';
+        let feedPlaysUsedToday = 0;
         let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
 
         // ===================================================================
@@ -2597,6 +2603,7 @@
                 skills: skills,
                 totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear, hasSeenTutorial: hasSeenTutorial,
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
+                feedLastResetDate: feedLastResetDate, feedPlaysUsedToday: feedPlaysUsedToday,
                 minigameSeenUnlocked: minigameSeenUnlocked,
                 prefTaps: prefTaps, lastActiveTimestamp: lastActiveTimestamp,
                 prestigeCount: prestigeCount, prestigePoints: prestigePoints, prestigeScoreHistory: prestigeScoreHistory,
@@ -2631,6 +2638,8 @@
                     hasSeenTutorial = state.hasSeenTutorial ?? false;
                     minigameLastResetDate = state.minigameLastResetDate ?? null;
                     minigamePlaysUsedToday = state.minigamePlaysUsedToday ?? { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
+                    feedLastResetDate = state.feedLastResetDate ?? '';
+                    feedPlaysUsedToday = state.feedPlaysUsedToday ?? 0;
                     if (state.minigameSeenUnlocked) {
                         minigameSeenUnlocked = state.minigameSeenUnlocked;
                     } else {
@@ -2962,6 +2971,7 @@
             });
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) mps += activeClothe.mpsBonus;
+            mps *= 1.5; // 🔧 自動増加の恩恵を全体的に強化（プレイヤーからの要望を受けて底上げ）
             mps *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
             if (Date.now() < feedBuffActiveUntil) mps *= 2; // もちすけにお土産をあげた効果（一時的）
             return mps;
@@ -3175,6 +3185,9 @@
             if (comboCount === 10 || comboCount === 25 || comboCount === 50 || (comboCount > 50 && comboCount % 50 === 0)) {
                 screenShake('small');
                 screenFlash('#ffab00', 0.2);
+                comboEl.classList.remove('combo-milestone-pop');
+                void comboEl.offsetWidth;
+                comboEl.classList.add('combo-milestone-pop');
             }
 
             clearTimeout(comboTimer);
@@ -3191,6 +3204,7 @@
             screenShake('big');
             screenFlash('#ffd700', 0.35);
 
+            isScreamActive = true;
             mochiBtnElement.classList.remove('breathe-idle');
             mochiBtnElement.classList.remove('mochi-scream');
             void mochiBtnElement.offsetWidth;
@@ -3199,11 +3213,12 @@
             mochiBtnElement.src = 'ui_images/image_scream.webp';
             clearTimeout(awakeningScreamTimeout);
             awakeningScreamTimeout = setTimeout(() => {
+                isScreamActive = false;
                 const target = clothesData.find(c => c.id === equippedClotheId);
                 mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
                 mochiBtnElement.classList.remove('mochi-scream');
                 if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
-            }, 900);
+            }, 2600); // 連打中でも「叫んでいる」とちゃんと分かるよう、数秒間キープする
 
             spawnScreamKanaBurst();
             showMochiComment('もちもちパワー全開やああああ！！');
@@ -3644,10 +3659,14 @@
 
         let critFilterTimeout = null;
         let critTapId = 0;
+        let isScreamActive = false; // 叫び演出中は、会心などの他の演出が画像を上書きしないようにするためのフラグ
         function resetMochiFilter() {
-            const target = clothesData.find(c => c.id === equippedClotheId);
-            mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
-            let baseFilter = target ? (target.filter || "drop-shadow(0 10px 10px rgba(0,0,0,0.15))") : "drop-shadow(0 10px 10px rgba(0,0,0,0.15))";
+            if (!isScreamActive) {
+                const target = clothesData.find(c => c.id === equippedClotheId);
+                mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
+            }
+            const target2 = clothesData.find(c => c.id === equippedClotheId);
+            let baseFilter = target2 ? (target2.filter || "drop-shadow(0 10px 10px rgba(0,0,0,0.15))") : "drop-shadow(0 10px 10px rgba(0,0,0,0.15))";
             // 必殺技が発動中なら、そちらの見た目(コントラスト強化)を消さずに保つ
             if (skills.hissatsu.activeTimer > 0) baseFilter += " contrast(1.4) brightness(1.05)";
             mochiBtnElement.style.filter = baseFilter;
@@ -4106,13 +4125,34 @@
             openModal('omiyage-collection-modal');
         }
 
+        function resetFeedCountIfNewDay() {
+            const today = getLocalDateString(new Date());
+            if (feedLastResetDate !== today) {
+                feedLastResetDate = today;
+                feedPlaysUsedToday = 0;
+                saveGame();
+            }
+        }
+
         function showOmiyageFeedConfirm(idx) {
+            resetFeedCountIfNewDay();
             const stage = stages[idx];
             const lv = purchasedItems[idx] || 0;
+            const remaining = FEED_DAILY_LIMIT - feedPlaysUsedToday;
             document.getElementById('feed-confirm-img').src = stage.itemImg;
             document.getElementById('feed-confirm-name').innerText = `${stage.item}（${lv}個持っている）`;
-            document.getElementById('feed-confirm-desc').innerText = `${stage.name}のお土産。もちすけにあげると喜んで食べてくれる。`;
-            document.getElementById('feed-confirm-btn').onclick = () => placeFeedIconNearMochisuke(idx);
+            const btn = document.getElementById('feed-confirm-btn');
+            if (remaining <= 0) {
+                document.getElementById('feed-confirm-desc').innerText = `${stage.name}のお土産。もちすけはお腹いっぱいみたい…本日はもうあげられません（明日また！）`;
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.onclick = null;
+            } else {
+                document.getElementById('feed-confirm-desc').innerText = `${stage.name}のお土産。もちすけにあげると喜んで食べてくれる。（本日あと${remaining}回）`;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.onclick = () => placeFeedIconNearMochisuke(idx);
+            }
             closeModal('omiyage-collection-modal');
             openModal('omiyage-feed-confirm-modal');
         }
@@ -4152,14 +4192,16 @@
                 mochiBtnElement.classList.add('mochi-scream');
 
                 // 叫び顔イラストに一時的に差し替えて、収まったら元の衣装に戻す
+                isScreamActive = true;
                 mochiBtnElement.src = 'ui_images/image_scream.webp';
                 clearTimeout(mochiScreamTimeout);
                 mochiScreamTimeout = setTimeout(() => {
+                    isScreamActive = false;
                     const target = clothesData.find(c => c.id === equippedClotheId);
                     mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
                     mochiBtnElement.classList.remove('mochi-scream');
                     if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
-                }, 900);
+                }, 2600); // 連打中でも「叫んでいる」とちゃんと分かるよう、数秒間キープする
 
                 spawnScreamKanaBurst();
                 showMochiComment('あ\u3099'.repeat(10) + '！！');
@@ -4274,6 +4316,7 @@
             if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
 
             feedBuffActiveUntil = Date.now() + FEED_BUFF_DURATION_MS;
+            feedPlaysUsedToday++;
             saveGame();
             startFeedBuffIndicator();
 
