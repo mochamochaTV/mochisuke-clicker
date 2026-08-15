@@ -1224,7 +1224,7 @@
         <button id="feed-toggle-btn" type="button" onclick="openOmiyageCollection()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-30</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-31</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -3187,8 +3187,19 @@
             0: ["もちもちやろ？", "その調子や！", "ええ感じやで！", "もちすけ嬉しいわ！", "いいペースやな！", "もっともっと！", "楽しなってきたな！"],
             50: ["50コンボ突破や！", "頑張れ！", "やるやないか！", "その勢いええで！", "もっといけるやろ！", "ノリノリやな！", "ええ調子やで！"],
             100: ["100コンボ達成や！", "目指せ500コンボ！", "もちすけ興奮してきたで！", "まだまだいけるで！", "止まるな、そのままや！", "すごい勢いやな！"],
-            500: ["500コンボや、すごいで！", "1000コンボで称号もらえるで！", "あと少しで伝説やな！", "もちすけ叫びそうや！", "限界突破していこか！", "ここまで来たら行くしかない！"],
-            1000: ["1000コンボや！！伝説やで！！", "もちすけ、感動しとるで！", "君はもちマスターや！", "ここまでよう頑張ったな！"]
+            500: [
+                "500コンボや、すごいで！", "1000コンボで称号もらえるで！", "あと少しで伝説やな！", "もちすけ叫びそうや！",
+                "限界突破していこか！", "ここまで来たら行くしかない！", "指、大丈夫か！？", "もう職人の域やで！",
+                "もちすけもついていくのやっとや！", "この勢い、誰にも止められへん！", "伝説まであと一歩やで！",
+                "もちすけの記録更新中や！", "腕、疲れてへんか！？", "見てるこっちも興奮するで！",
+                "もう化け物やん！", "もちすけびっくりしすぎて言葉出えへん！", "殿堂入り確定やな！"
+            ],
+            1000: [
+                "1000コンボや！！伝説やで！！", "もちすけ、感動しとるで！", "君はもちマスターや！", "ここまでよう頑張ったな！",
+                "もう人間の域超えてるやろ！", "もちすけ、一生ついていきます！", "これ以上の景色、見たことないで！",
+                "殿堂入りどころか神やで！", "もちすけ、涙出てきたわ…！", "この記録、誰にも破れへんやろ！",
+                "もちすけ界の伝説になったな！", "ありがとう、ここまで一緒に来てくれて！"
+            ]
         };
         function getCheerTier(count) {
             if (count >= 1000) return 1000;
@@ -3485,7 +3496,7 @@
             clearTimeout(critFilterTimeout);
             resetMochiFilter();
             let clickLoops = skills.hissatsu.activeTimer > 0 ? 5 : 1;
-            handleCombo(clickLoops); // コンボ更新は1タップにつき1回だけ（強制レイアウト計算を含むため、連打ループの中で毎回呼ぶと重くなる）
+            handleCombo(1); // コンボは何があっても「1タップ＝1コンボ」で固定（必殺技中でも増える量は変えない）
             for (let i = 0; i < clickLoops; i++) {
                 executeSingleTap(e.clientX, e.clientY);
             }
@@ -3506,7 +3517,7 @@
                     createRippleEffect(e.clientX, e.clientY);
                     clearTimeout(critFilterTimeout);
                     resetMochiFilter();
-                    handleCombo(5); // こちらも1タップにつき1回だけ
+                    handleCombo(1); // コンボは何があっても「1タップ＝1コンボ」で固定
                     for (let i = 0; i < 5; i++) {
                         executeSingleTap(e.clientX, e.clientY);
                     }
