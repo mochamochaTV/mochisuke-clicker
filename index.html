@@ -370,7 +370,6 @@
             background-color: transparent;
         }
         .nav-btn:active { transform: scale(0.95); }
-        .badge-dot { position: absolute; top: 4px; right: 18px; width: 10px; height: 10px; background: #ff3d00; border-radius: 50%; border: 2px solid white; }
 
         /* モーダル共通 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
@@ -1183,7 +1182,7 @@
         <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">☰</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-15</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-16</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1268,7 +1267,6 @@
                 </button>
                 <button id="nav-btn-shop" class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
                     <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
-                    <span class="badge-dot"></span>
                 </button>
                 <button id="nav-btn-diary" class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
                     <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
@@ -1569,7 +1567,7 @@
                         <button onclick="updateDiagnostics()" style="padding:4px 8px; font-size:0.65rem; background:#607d8b; color:#fff; border:none; border-radius:6px;">📊 実機の状態を計測</button>
                     </div>
                     <pre id="dev-diagnostics" style="font-size:0.6rem; color:#555; white-space:pre-wrap; margin-top:6px; max-height:160px; overflow-y:auto;"></pre>
-                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-15</div>
+                    <div style="font-size:0.58rem; color:#bbb; text-align:center; margin-top:4px;">build: 2026-08-05-16</div>
                 </div>
             </div>
         </div>
