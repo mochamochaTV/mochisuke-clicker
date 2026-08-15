@@ -990,7 +990,7 @@
 
         /* 吹き出し */
         #mochi-balloon {
-            position: absolute; top: 7px; background: white;
+            position: absolute; top: 14px; background: white;
             padding: 8px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;
             color: #4a3622; border: 3px solid #ff9800; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
             white-space: nowrap; z-index: 10; opacity: 0; transform: scale(0.8);
@@ -1007,29 +1007,39 @@
         /* 波紋・浮き文字はcanvas描画に統合したためCSSアニメーションは不要になった */
         .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
 
+        #combo-display-wrap {
+            width: 100%; min-height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none;
+        }
         #combo-display {
-            position: absolute; top: 5px; font-size: 0.82rem; font-weight: 700;
-            background: transparent; color: #ff9800;
-            padding: 2px 10px; border-radius: 14px;
-            border: none;
-            box-shadow: none;
-            opacity: 0; transform: scale(0.6); transition: all 0.15s cubic-bezier(0.3, 1.4, 0.5, 1); z-index: 80;
-            pointer-events: none; white-space: nowrap;
+            display: inline-flex; align-items: baseline;
+            opacity: 0; transform: scale(0.6);
+            transition: opacity 0.15s cubic-bezier(0.3, 1.4, 0.5, 1), transform 0.15s cubic-bezier(0.3, 1.4, 0.5, 1);
             font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+            font-weight: 900;
+            color: #fff;
+            -webkit-text-stroke: 2.5px #ff9800;
+            paint-order: stroke fill; /* 縁を先に描いてから塗りを乗せることで、縁取りがきれいに出る */
         }
-        #combo-display .combo-mult-part { opacity: 0.75; font-size: 0.85em; margin-left: 3px; }
-        .combo-bounce { opacity: 0.9 !important; transform: scale(1) !important; }
-        /* コンボが伸びるほど、文字の色が暖色から順に変わる（普段は控えめ、カード風の背景は節目だけ） */
-        .combo-bounce.combo-tier1 { transform: scale(1.2) !important; border-color: rgba(255, 112, 67, 0.6); color: #ff3d00; }
-        .combo-bounce.combo-tier2 { transform: scale(1.32) !important; border-color: rgba(236, 64, 122, 0.6); color: #e91e63; background: #fff0f5; }
-        .combo-bounce.combo-tier3 {
-            transform: scale(1.45) !important; border-color: rgba(171, 71, 188, 0.6); color: #8e24aa; background: #f8ecff;
-            animation: comboTier3Pulse 0.4s ease-in-out infinite alternate;
-        }
-        @keyframes comboTier3Pulse { from { transform: scale(1.45); } to { transform: scale(1.52); } }
-        /* 節目のコンボ数に到達した瞬間だけ、一段大きくポップさせる（持続するtierスタイルとは別の、一瞬の演出） */
-        @keyframes comboMilestonePop { 0% { transform: scale(1); } 45% { transform: scale(1.8); } 100% { transform: scale(1); } }
-        .combo-milestone-pop { animation: comboMilestonePop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1); }
+        #combo-num { font-size: 1.9rem; line-height: 1; }
+        #combo-label { font-size: 1rem; margin-left: 3px; }
+        #combo-display .combo-mult-part { opacity: 0.8; font-size: 0.7rem; margin-left: 4px; -webkit-text-stroke: 1.5px #ff9800; }
+        .combo-bounce { opacity: 1 !important; transform: scale(1) !important; }
+
+        /* コンボが伸びるほど塗りの色が変わる。縁のオレンジは常に固定 */
+        .combo-tier-50  #combo-num, .combo-tier-50  #combo-label { color: #fff176; }
+        .combo-tier-100 #combo-num, .combo-tier-100 #combo-label { color: #ff5252; }
+        .combo-tier-500 #combo-num, .combo-tier-500 #combo-label { color: #e0e0e0; text-shadow: 0 0 6px rgba(255,255,255,0.9); }
+        .combo-tier-1000 #combo-num, .combo-tier-1000 #combo-label { color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.9), 0 0 18px rgba(255,193,7,0.7); }
+        .combo-tier-500  { animation: comboTier500Pulse 0.5s ease-in-out infinite alternate; }
+        .combo-tier-1000 { animation: comboTier1000Pulse 0.4s ease-in-out infinite alternate; }
+        @keyframes comboTier500Pulse  { from { transform: scale(1); } to { transform: scale(1.06); } }
+        @keyframes comboTier1000Pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        /* 節目に到達した瞬間だけ、一段大きくポップさせる（持続するtierスタイルとは別の、一瞬の演出） */
+        @keyframes comboMilestonePop { 0% { transform: scale(1); } 45% { transform: scale(1.9); } 100% { transform: scale(1); } }
+        .combo-milestone-pop { animation: comboMilestonePop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
 
         /* 金もちボタン */
         #fever-pop {
@@ -1212,7 +1222,7 @@
         <button id="feed-toggle-btn" type="button" onclick="openOmiyageCollection()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-27</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-28</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1249,6 +1259,10 @@
             </div>
         </div>
 
+        <div id="combo-display-wrap">
+            <div id="combo-display"><span id="combo-num">0</span><span id="combo-label">コンボ！</span></div>
+        </div>
+
         <div id="mochisuke-area">
             <div class="skill-side-container">
                 <div id="btn-skill1" class="skill-btn locked" onclick="useSkill('skill1')" style="background-image: url('ui_images/skill1.webp');">
@@ -1262,7 +1276,6 @@
             </div>
 
             <div id="mochisuke-wrapper">
-                <div id="combo-display">🔥 0 Combo!</div>
                 <div id="mochi-balloon">画面をタップして もち集めような！</div>
                 <img id="mochisuke-btn" class="breathe-idle" src="ui_images/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
                 
@@ -2602,6 +2615,7 @@
                 purchasedClothes: purchasedClothes, equippedClotheId: equippedClotheId,
                 skills: skills,
                 totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear, hasSeenTutorial: hasSeenTutorial,
+                hasComboTitle1000: hasComboTitle1000,
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
                 feedLastResetDate: feedLastResetDate, feedPlaysUsedToday: feedPlaysUsedToday,
                 minigameSeenUnlocked: minigameSeenUnlocked,
@@ -2629,6 +2643,7 @@
                     totalTapsCount = state.totalTapsCount ?? 0;
                     firstPlayTimestamp = state.firstPlayTimestamp ?? null;
                     hasSeenJapanClear = state.hasSeenJapanClear ?? false;
+                    hasComboTitle1000 = state.hasComboTitle1000 ?? false;
                     // 🩹 自動修復：以前のバグで「実際は制覇していないのにフラグだけtrueのまま」になっているセーブデータを、
                     // 読み込むたびに実際の進行状況と照らし合わせて自動で正しい状態に戻す
                     const actuallyCleared = (state.currentStageIndex === stages.length - 1) && (state.currentStageProgress >= stages[stages.length - 1].distance);
@@ -3165,33 +3180,96 @@
             return Math.floor(comboCount / 10) * 2;
         }
 
+        // 🎉 応援セリフ（コンボ中、タップしても消えない専用のセリフ。段階ごとに複数用意し、確率でランダムに選ぶ）
+        const cheerLines = {
+            0: ["もちもちやろ？", "その調子や！", "ええ感じやで！", "もちすけ嬉しいわ！", "いいペースやな！", "もっともっと！", "楽しなってきたな！"],
+            50: ["50コンボ突破や！", "頑張れ！", "やるやないか！", "その勢いええで！", "もっといけるやろ！", "ノリノリやな！", "ええ調子やで！"],
+            100: ["100コンボ達成や！", "目指せ500コンボ！", "もちすけ興奮してきたで！", "まだまだいけるで！", "止まるな、そのままや！", "すごい勢いやな！"],
+            500: ["500コンボや、すごいで！", "1000コンボで称号もらえるで！", "あと少しで伝説やな！", "もちすけ叫びそうや！", "限界突破していこか！", "ここまで来たら行くしかない！"],
+            1000: ["1000コンボや！！伝説やで！！", "もちすけ、感動しとるで！", "君はもちマスターや！", "ここまでよう頑張ったな！"]
+        };
+        function getCheerTier(count) {
+            if (count >= 1000) return 1000;
+            if (count >= 500) return 500;
+            if (count >= 100) return 100;
+            if (count >= 50) return 50;
+            return 0;
+        }
+        let lastCheerTier = -1;
+        let lastCheerChangeTime = 0;
+        const CHEER_MIN_DISPLAY_MS = 1800; // これより短い間隔では、セリフを切り替えない（読めないほど頻繁に変わるのを防ぐ）
+        function updateCheerBalloon(count) {
+            if (count <= 0) return;
+            const tier = getCheerTier(count);
+            const now = Date.now();
+            const tierChanged = tier !== lastCheerTier;
+            if (tierChanged || (now - lastCheerChangeTime > CHEER_MIN_DISPLAY_MS)) {
+                lastCheerTier = tier;
+                lastCheerChangeTime = now;
+                const balloon = document.getElementById('mochi-balloon');
+                balloon.innerText = pickRandom(cheerLines[tier]);
+                balloon.classList.add('balloon-show');
+            }
+        }
+
+        let hasComboTitle1000 = false; // 1000コンボ到達の称号を、初回だけお祝いするためのフラグ
         function handleCombo(times = 1) {
+            const prevCount = comboCount;
             comboCount += times;
             const comboEl = document.getElementById('combo-display');
+            const numEl = document.getElementById('combo-num');
+            const labelEl = document.getElementById('combo-label');
+
+            numEl.textContent = comboCount;
             if (comboCount >= 10) {
                 const multiplier = (1 + getComboBonusPercent() / 100).toFixed(2);
-                comboEl.innerHTML = `${comboCount} Combo!<span class="combo-mult-part">×${multiplier}</span>`;
+                labelEl.innerHTML = `コンボ！<span class="combo-mult-part">×${multiplier}</span>`;
             } else {
-                comboEl.innerText = `${comboCount} Combo!`;
+                labelEl.textContent = 'コンボ！';
             }
-            comboEl.classList.remove('combo-bounce', 'combo-tier1', 'combo-tier2', 'combo-tier3');
+
+            comboEl.classList.remove('combo-bounce', 'combo-tier-50', 'combo-tier-100', 'combo-tier-500', 'combo-tier-1000');
             void comboEl.offsetWidth;
             comboEl.classList.add('combo-bounce');
-            if (comboCount >= 50) comboEl.classList.add('combo-tier3');
-            else if (comboCount >= 25) comboEl.classList.add('combo-tier2');
-            else if (comboCount >= 10) comboEl.classList.add('combo-tier1');
+            if (comboCount >= 1000) comboEl.classList.add('combo-tier-1000');
+            else if (comboCount >= 500) comboEl.classList.add('combo-tier-500');
+            else if (comboCount >= 100) comboEl.classList.add('combo-tier-100');
+            else if (comboCount >= 50) comboEl.classList.add('combo-tier-50');
 
-            // 節目のコンボ数で、画面にも一段大きなご褒美演出を出す
-            if (comboCount === 10 || comboCount === 25 || comboCount === 50 || (comboCount > 50 && comboCount % 50 === 0)) {
-                screenShake('small');
-                screenFlash('#ffab00', 0.2);
+            // 節目のコンボ数で、画面にも一段大きなご褒美演出を出す（大きな節目ほど豪華に）
+            const bigMilestone = [50, 100, 500, 1000].find(m => prevCount < m && comboCount >= m);
+            if (comboCount === 10 || comboCount === 25 || bigMilestone || (comboCount > 50 && comboCount % 50 === 0)) {
                 comboEl.classList.remove('combo-milestone-pop');
                 void comboEl.offsetWidth;
                 comboEl.classList.add('combo-milestone-pop');
+
+                if (bigMilestone === 1000) {
+                    screenShake('big'); screenFlash('#ffd700', 0.45);
+                    for (let i = 0; i < 30; i++) createParticle(window.innerWidth / 2 + (Math.random() - 0.5) * 200, window.innerHeight / 2 + (Math.random() - 0.5) * 300, true);
+                    if (!hasComboTitle1000) {
+                        hasComboTitle1000 = true;
+                        saveGame();
+                        setTimeout(() => alert('🏆 称号「もちマスター」を獲得しました！\n1000コンボ、本当にお疲れさまでした！'), 300);
+                    }
+                } else if (bigMilestone === 500) {
+                    screenShake('big'); screenFlash('#e0e0e0', 0.35);
+                } else if (bigMilestone === 100) {
+                    screenShake('small'); screenFlash('#ff5252', 0.28);
+                } else if (bigMilestone === 50) {
+                    screenShake('small'); screenFlash('#fff176', 0.25);
+                } else {
+                    screenShake('small'); screenFlash('#ffab00', 0.2);
+                }
             }
 
+            updateCheerBalloon(comboCount);
+
             clearTimeout(comboTimer);
-            comboTimer = setTimeout(() => { comboCount = 0; comboEl.classList.remove('combo-bounce', 'combo-tier1', 'combo-tier2', 'combo-tier3'); }, 1200);
+            comboTimer = setTimeout(() => {
+                comboCount = 0;
+                lastCheerTier = -1;
+                comboEl.classList.remove('combo-bounce', 'combo-tier-50', 'combo-tier-100', 'combo-tier-500', 'combo-tier-1000');
+            }, 1200);
         }
 
         // 単一タップの計算と個別エフェクト処理の分離
