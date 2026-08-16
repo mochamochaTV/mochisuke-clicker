@@ -1224,7 +1224,7 @@
         <button id="feed-toggle-btn" type="button" onclick="openOmiyageCollection()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-32</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-33</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1567,13 +1567,17 @@
     </div>
 
     <div id="japan-clear-modal" class="modal">
-        <div class="modal-content" style="text-align:center;">
-            <button class="modal-close-x" onclick="closeModal('japan-clear-modal')">×</button>
-            <h2>🎉 日本全国制覇！ 🎉</h2>
-            <p style="font-size:0.9rem; color:#5d4037; margin:10px 0;">もちすけと一緒に、鹿児島から沖縄まで<br>47都道府県をぜんぶ旅したで！</p>
-            <div id="japan-clear-stats" style="margin:14px 0; font-size:0.85rem; color:#5d4037; background:#fff8ec; border-radius:10px; padding:10px; line-height:1.8;"></div>
-            <p style="font-weight:bold; color:#ff9800; font-size:1.05rem;">🏅「日本もち王」の称号を獲得！</p>
-            <button class="btn-red" onclick="closeModal('japan-clear-modal')">もちすけとの旅を続ける</button>
+        <div class="modal-content modal-fullscreen" style="background-image: url('ui_images/japan_clear_bg.webp'); background-size: cover; background-position: center;">
+            <button class="modal-fullscreen-close" onclick="closeModal('japan-clear-modal')">×</button>
+            <div id="japan-clear-overlay" style="margin-top: auto; width: 100%; box-sizing: border-box; padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0) 100%); text-align: center;">
+                <div id="japan-clear-title" style="opacity:0; transform: scale(0.6); transition: all 0.5s cubic-bezier(0.3,1.5,0.5,1);">
+                    <h2 style="color:#fff; margin: 0 0 4px;">🎉 日本全国制覇！ 🎉</h2>
+                    <p style="font-weight:bold; color:#ffd54f; font-size:1.05rem; margin: 0 0 12px;">🏅「日本もち王」の称号を獲得！</p>
+                </div>
+                <div id="japan-clear-stats" style="opacity:0; transition: opacity 0.4s; margin:10px 0; font-size:0.85rem; color:#fff; background:rgba(255,255,255,0.15); border-radius:10px; padding:10px; line-height:1.8; backdrop-filter: blur(3px);"></div>
+                <p id="japan-clear-message" style="opacity:0; transition: opacity 0.5s; color:#fff; font-size:0.85rem; line-height:1.6; margin: 12px 0;"></p>
+                <button id="japan-clear-btn" class="btn-red" style="opacity:0; transition: opacity 0.4s;" onclick="closeModal('japan-clear-modal')">もちすけとの旅を続ける</button>
+            </div>
         </div>
     </div>
 
@@ -2471,7 +2475,7 @@
         // 個別のAudio要素を大量に操作する必要が無くなり、軽量かつ確実になります。
         // また音声データは事前にデコードしてメモリ上に持つので、Service Workerのキャッシュ
         // （Rangeリクエストの不整合が起きやすい）を一切経由しません。
-        const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochi_eat.mp3', 'audio/mochi_scream.mp3', 'audio/mochi_stretch.mp3'];
+        const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochi_eat.mp3', 'audio/mochi_scream.mp3', 'audio/mochi_stretch.mp3', 'audio/japan_clear.mp3'];
         let audioCtx = null;
         const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
         const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
@@ -4858,29 +4862,60 @@
             hasSeenJapanClear = true;
             saveGame();
 
-            playAudioFile('audio/levelup.mp3'); // 専用の祝賀SEを用意できたら差し替え推奨（例: 'japan_clear.mp3'）
-            vibrate([40, 60, 40, 60, 120]);
+            playAudioFile('audio/japan_clear.mp3'); // 専用の祝賀SE（無ければ用意してください。それまでは無音になります）
+            vibrate([40, 60, 40, 60, 40, 60, 160]);
 
-            // 紙吹雪演出：金色パーティクルを画面上部からバラバラと降らせる（既存のパーティクルエンジンを流用）
+            // 紙吹雪演出：色を増やし、量も時間も伸ばして、より豪華に
             const rect = getGameScreenRect();
-            for (let i = 0; i < 45; i++) {
+            for (let i = 0; i < 90; i++) {
                 setTimeout(() => {
                     const x = rect.left + Math.random() * rect.width;
-                    const y = rect.top + rect.height * 0.15;
-                    createParticle(x, y, true);
-                }, i * 40);
+                    const y = rect.top + rect.height * 0.1;
+                    createParticle(x, y, Math.random() < 0.6);
+                }, i * 35);
             }
 
             const days = firstPlayTimestamp ? Math.max(1, Math.ceil((Date.now() - firstPlayTimestamp) / 86400000)) : 1;
-            const statsEl = document.getElementById('japan-clear-stats');
-            if (statsEl) {
-                statsEl.innerHTML = `
-                    📍 総タップ数: ${formatMochi(totalTapsCount)} 回<br>
-                    🍡 現在の所持もち: ${formatMochi(score)}<br>
-                    📅 プレイ日数: ${days}日目
-                `;
-            }
+            const finalTaps = totalTapsCount, finalScore = score;
+
             openModal('japan-clear-modal');
+
+            // 🎬 段階的な演出：①称号がバウンドして現れる →②統計が0からカウントアップ →③もちすけのメッセージ →④ボタン
+            const titleEl = document.getElementById('japan-clear-title');
+            const statsEl = document.getElementById('japan-clear-stats');
+            const msgEl = document.getElementById('japan-clear-message');
+            const btnEl = document.getElementById('japan-clear-btn');
+
+            setTimeout(() => {
+                titleEl.style.opacity = '1';
+                titleEl.style.transform = 'scale(1)';
+            }, 300);
+
+            setTimeout(() => {
+                statsEl.style.opacity = '1';
+                const startTime = performance.now();
+                const duration = 1200;
+                function countUp(now) {
+                    const t = Math.min(1, (now - startTime) / duration);
+                    const eased = 1 - Math.pow(1 - t, 3);
+                    statsEl.innerHTML = `
+                        📍 総タップ数: ${formatMochi(Math.floor(finalTaps * eased))} 回<br>
+                        🍡 現在の所持もち: ${formatMochi(Math.floor(finalScore * eased))}<br>
+                        📅 プレイ日数: ${days}日目
+                    `;
+                    if (t < 1) requestAnimationFrame(countUp);
+                }
+                requestAnimationFrame(countUp);
+            }, 900);
+
+            setTimeout(() => {
+                msgEl.innerText = '「鹿児島から沖縄まで、ずっと一緒に旅してくれて、ほんまありがとうな。47都道府県、全部お前と一緒に見て回れて、もちすけ幸せやったで。」';
+                msgEl.style.opacity = '1';
+            }, 2300);
+
+            setTimeout(() => {
+                btnEl.style.opacity = '1';
+            }, 3000);
         }
 
         function checkStageProgress() {
