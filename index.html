@@ -1221,11 +1221,11 @@
         <div id="screen-flash-overlay"></div>
         <canvas id="mochi-rain-canvas"></canvas>
         <canvas id="particle-canvas"></canvas>
-        <button id="ui-toggle-btn" type="button" onclick="toggleUiDeclutter()" aria-label="UI表示切替">🖼️</button>
-        <button id="feed-toggle-btn" type="button" onclick="openOmiyageCollection()" aria-label="もちすけにお土産をあげる">🍴</button>
-        <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">⚙️</button>
-        <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-36</div>
+        <button id="ui-toggle-btn" type="button" onclick="onUiButtonTap()" aria-label="UI表示切替">🖼️</button>
+        <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
+        <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
+        <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-37</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -2423,7 +2423,7 @@
             { emoji: '🎁', title: 'おみやげでパワーアップ', text: '集めたもちで、ショップのおみやげを買おう。「タップ力アップ」と「放っておいても自動でもちが増える(自動増加)」の2種類があるから、両方バランス良く育てるのがコツやで！' },
             { emoji: '⚡', title: 'スキルも活用しよう', text: '左右のスキルボタンを使うと、もっと効率よくもちを稼げるようになるで。必殺技もあるから狙ってみてな！' },
             { emoji: '🗾', title: '日本全国を旅しよう', text: '🗺️ボタンから地図を開いて、好きな都道府県に飛べるで。ミニゲームやおみやげ集めも楽しみながら、日本全国制覇を目指そう！' },
-            { emoji: '🔘', title: '画面の丸いボタンたち', text: '🗺️は地図、⚙️は設定、🖼️は写真用にすっきり表示、🍴はもちすけにおみやげをあげられるで。困ったらここをチェックしてな！' }
+            { emoji: '🔘', title: '画面の丸いボタンたち', text: '他にもボタンがいくつかあるから、気になったら押してみてな！' }
         ];
         let tutorialStepIndex = 0;
 
@@ -2451,6 +2451,25 @@
             document.getElementById('tutorial-dots').innerHTML = dots;
         }
 
+        // 💬 4つの丸ボタン、初めて押した時だけ軽くヒントを出す（チュートリアルで長々説明する代わり）
+        let seenButtonHints = { map: false, menu: false, ui: false, feed: false };
+        function onMapButtonTap() {
+            if (!seenButtonHints.map) { seenButtonHints.map = true; saveGame(); showMochiComment('地図で好きな県に飛べるで！'); }
+            openMap();
+        }
+        function onMenuButtonTap() {
+            if (!seenButtonHints.menu) { seenButtonHints.menu = true; saveGame(); showMochiComment('設定はここから触れるで！'); }
+            openModal('menu-modal'); refreshCloudBackupStatus();
+        }
+        function onUiButtonTap() {
+            if (!seenButtonHints.ui) { seenButtonHints.ui = true; saveGame(); showMochiComment('写真撮る時とかに使こてな！'); }
+            toggleUiDeclutter();
+        }
+        function onFeedButtonTap() {
+            if (!seenButtonHints.feed) { seenButtonHints.feed = true; saveGame(); showMochiComment('ここからお土産あげられるんやで！'); }
+            openOmiyageCollection();
+        }
+
         function tutorialNext() {
             if (tutorialStepIndex < TUTORIAL_STEPS.length - 1) {
                 tutorialStepIndex++;
@@ -2459,7 +2478,21 @@
                 hasSeenTutorial = true;
                 saveGame();
                 closeModal('tutorial-modal');
+                glowIntroButtons();
             }
+        }
+
+        // チュートリアル終了時、文章で説明する代わりに、実際のボタンを順番にぽわっと光らせて気づいてもらう
+        function glowIntroButtons() {
+            const ids = ['map-toggle-btn', 'menu-toggle-btn', 'ui-toggle-btn', 'feed-toggle-btn'];
+            ids.forEach((id, i) => {
+                setTimeout(() => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.classList.add('recommended-glow');
+                    setTimeout(() => el.classList.remove('recommended-glow'), 1800);
+                }, i * 350);
+            });
         }
 
         function showOpeningGreeting() {
@@ -2647,6 +2680,7 @@
                 skills: skills,
                 totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear, hasSeenTutorial: hasSeenTutorial,
                 hasComboTitle1000: hasComboTitle1000,
+                seenButtonHints: seenButtonHints,
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
                 feedLastResetDate: feedLastResetDate, feedPlaysUsedToday: feedPlaysUsedToday,
                 minigameSeenUnlocked: minigameSeenUnlocked,
@@ -2675,6 +2709,7 @@
                     firstPlayTimestamp = state.firstPlayTimestamp ?? null;
                     hasSeenJapanClear = state.hasSeenJapanClear ?? false;
                     hasComboTitle1000 = state.hasComboTitle1000 ?? false;
+                    seenButtonHints = state.seenButtonHints ?? { map: false, menu: false, ui: false, feed: false };
                     // 🩹 自動修復：以前のバグで「実際は制覇していないのにフラグだけtrueのまま」になっているセーブデータを、
                     // 読み込むたびに実際の進行状況と照らし合わせて自動で正しい状態に戻す
                     const actuallyCleared = (state.currentStageIndex === stages.length - 1) && (state.currentStageProgress >= stages[stages.length - 1].distance);
