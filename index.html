@@ -1225,7 +1225,7 @@
         <button id="feed-toggle-btn" type="button" onclick="openOmiyageCollection()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="openModal('menu-modal'); refreshCloudBackupStatus();" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="openMap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-35</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-36</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1593,6 +1593,16 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="save-image-modal" class="modal">
+        <div class="modal-content" style="text-align:center;">
+            <button class="modal-close-x" onclick="closeModal('save-image-modal')">×</button>
+            <h2>📷 画像を保存</h2>
+            <p style="font-size:0.85rem; color:#5d4037; margin:8px 0 14px;">画像を長押しして、「写真に保存」を選んでください</p>
+            <img id="save-image-preview" src="" style="width:100%; border-radius:12px; border:1px solid #eee;">
+            <button class="btn-red" style="margin-top:14px;" onclick="closeModal('save-image-modal')">閉じる</button>
         </div>
     </div>
 
@@ -4994,16 +5004,10 @@
                 ctx.fillText(`🍡 所持もち: ${formatMochi(score)}`, cw / 2, ch - 220);
                 ctx.fillText(`📅 プレイ日数: ${days}日目`, cw / 2, ch - 170);
 
-                canvas.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'punicker_japan_clear.png';
-                    document.body.appendChild(a);
-                    a.click();
-                    a.remove();
-                    setTimeout(() => URL.revokeObjectURL(url), 3000);
-                }, 'image/png');
+                const dataUrl = canvas.toDataURL('image/png');
+                const imgEl = document.getElementById('save-image-preview');
+                if (imgEl) imgEl.src = dataUrl;
+                openModal('save-image-modal');
             };
             bg.onerror = () => {
                 alert('画像の生成に失敗しました。しばらくしてからもう一度お試しください。');
