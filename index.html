@@ -815,8 +815,19 @@
         }
 
         /* 💡「次のおすすめアクション」のハイライト（スキルの光り方=白/オレンジと区別するため、緑系に） */
-        .recommended-glow, .shop-recommend-glow, .minigame-recommend-glow {
+        .recommended-glow, .shop-recommend-glow, .minigame-recommend-glow, .tutorial-glow {
             animation: recommendedPulse 1s infinite alternate;
+        }
+
+        /* 📖 チュートリアル中は、誤操作防止のためもちすけ以外のボタンを一時的に無効化する */
+        body.tutorial-active .nav-btn,
+        body.tutorial-active #map-toggle-btn,
+        body.tutorial-active #menu-toggle-btn,
+        body.tutorial-active #ui-toggle-btn,
+        body.tutorial-active #feed-toggle-btn,
+        body.tutorial-active .skill-btn,
+        body.tutorial-active .hissatsu-btn {
+            pointer-events: none;
         }
         @keyframes recommendedPulse {
             0% { filter: drop-shadow(0 0 3px #8bc34a) drop-shadow(0 0 6px #4caf50); }
@@ -1225,7 +1236,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-37</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-38</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1547,13 +1558,12 @@
         </div>
     </div>
 
-    <div id="tutorial-modal" class="modal">
+    <div id="tutorial-name-modal" class="modal">
         <div class="modal-content" style="text-align:center;">
-            <div id="tutorial-dots" style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;"></div>
-            <div id="tutorial-emoji" style="font-size:2.6rem; margin-bottom:8px;"></div>
-            <h2 id="tutorial-title" style="margin-bottom:10px;"></h2>
-            <p id="tutorial-text" style="font-size:0.88rem; color:#5d4037; line-height:1.6; margin-bottom:20px;"></p>
-            <button id="tutorial-next-btn" class="btn-red" style="width:100%;" onclick="tutorialNext()"></button>
+            <h2>🍡 教えてほしいな</h2>
+            <p style="font-size:0.85rem; color:#5d4037; margin:8px 0 14px;">ランキングとかで使う名前、決めてな！</p>
+            <input type="text" id="tutorial-name-input" placeholder="なまえ" style="width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid #ddd; font-size:1rem; text-align:center; margin-bottom:14px;">
+            <button class="btn-red" style="width:100%;" onclick="saveTutorialPlayerName()">これでいく！</button>
         </div>
     </div>
 
@@ -2416,16 +2426,26 @@
         // 既に挨拶済みなら「おかえり」を出す。両方ともlocalStorageに記録して次回に引き継ぐ。
         const GREETING_STATE_KEY = 'punicker_last_greeting_bucket';
         let lastGreetingHourBucket = -1;
-        // 📖 初回チュートリアル
+        // 📖 初回チュートリアル：もちすけのセリフで進行し、該当ボタンを光らせながら説明する。
+        // 他のボタンは（もちすけ本体を除いて）誤操作防止のため一時的に押せなくする。
         const TUTORIAL_STEPS = [
-            { emoji: '🍡', title: 'ようこそ！', text: 'もちすけと一緒に、日本を鹿児島から沖縄まで縦断する旅に出よう！' },
-            { emoji: '👆', title: 'タップでもちを集めよう', text: '画面のもちすけをタップすると、もちが増えていくで。連打するとコンボも伸びていくで！' },
-            { emoji: '🎁', title: 'おみやげでパワーアップ', text: '集めたもちで、ショップのおみやげを買おう。「タップ力アップ」と「放っておいても自動でもちが増える(自動増加)」の2種類があるから、両方バランス良く育てるのがコツやで！' },
-            { emoji: '⚡', title: 'スキルも活用しよう', text: '左右のスキルボタンを使うと、もっと効率よくもちを稼げるようになるで。必殺技もあるから狙ってみてな！' },
-            { emoji: '🗾', title: '日本全国を旅しよう', text: '🗺️ボタンから地図を開いて、好きな都道府県に飛べるで。ミニゲームやおみやげ集めも楽しみながら、日本全国制覇を目指そう！' },
-            { emoji: '🔘', title: '画面の丸いボタンたち', text: '他にもボタンがいくつかあるから、気になったら押してみてな！' }
+            { text: 'もちすけと一緒に、日本を鹿児島から沖縄まで縦断する旅に出よう！', highlight: null, duration: 4500 },
+            { text: '画面のもちすけをタップすると、もちが増えていくで。連打するとコンボも伸びていくで！', highlight: null, duration: 4500 },
+            { text: 'タップ力や自動増加は、スキルを取得すると強化できるで。左右のボタンから使えるようになるで！', highlight: null, duration: 4500 },
+            { text: '倉庫では、集めたおみやげやスキルの一覧が見られるで。', highlight: 'nav-btn-warehouse', duration: 4000 },
+            { text: 'ショップで、おみやげを買おう。「タップ力アップ」と「自動増加」の2種類があるで！', highlight: 'nav-btn-shop', duration: 4800 },
+            { text: '絵日記には、旅の思い出が記録されていくで。', highlight: 'nav-btn-diary', duration: 4000 },
+            { text: 'ミニゲームでも、もちを稼げるで。息抜きにどうぞ！', highlight: 'nav-btn-minigame', duration: 4000 },
+            { text: 'ランキングで、みんなの記録と競い合えるで！', highlight: 'nav-btn-ranking', duration: 4000 },
+            { text: 'ここから地図を開いて、好きな都道府県に飛べるで。', highlight: 'map-toggle-btn', duration: 4500 },
+            { text: 'ここから設定やメニューを触れるで。', highlight: 'menu-toggle-btn', duration: 4000 },
+            { text: 'ここを押すと、写真を撮る時とかにすっきり表示できるで。', highlight: 'ui-toggle-btn', duration: 4000 },
+            { text: 'ここから、もちすけにお土産をあげられるで！', highlight: 'feed-toggle-btn', duration: 4500 },
+            { text: 'さあ、日本一周の旅に出発や！応援してるで！', highlight: null, duration: 3500 },
         ];
         let tutorialStepIndex = 0;
+        let tutorialTimer = null;
+        let isTutorialActive = false;
 
         function checkShowTutorial() {
             if (hasSeenTutorial) return;
@@ -2436,22 +2456,63 @@
 
         function openTutorial() {
             tutorialStepIndex = 0;
-            renderTutorialStep();
-            openModal('tutorial-modal', true);
+            isTutorialActive = true;
+            document.body.classList.add('tutorial-active');
+            runTutorialStep();
         }
 
-        function renderTutorialStep() {
+        function runTutorialStep() {
+            document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
+
+            if (tutorialStepIndex >= TUTORIAL_STEPS.length) {
+                endTutorial();
+                return;
+            }
             const step = TUTORIAL_STEPS[tutorialStepIndex];
-            document.getElementById('tutorial-emoji').innerText = step.emoji;
-            document.getElementById('tutorial-title').innerText = step.title;
-            document.getElementById('tutorial-text').innerText = step.text;
-            const isLast = tutorialStepIndex === TUTORIAL_STEPS.length - 1;
-            document.getElementById('tutorial-next-btn').innerText = isLast ? 'はじめる！' : 'つぎへ';
-            const dots = TUTORIAL_STEPS.map((_, i) => `<span style="width:8px; height:8px; border-radius:50%; background:${i === tutorialStepIndex ? '#ff9800' : '#e0d5c5'};"></span>`).join('');
-            document.getElementById('tutorial-dots').innerHTML = dots;
+
+            if (step.highlight) {
+                const el = document.getElementById(step.highlight);
+                if (el) el.classList.add('tutorial-glow');
+            }
+
+            const balloon = document.getElementById('mochi-balloon');
+            balloon.innerText = step.text;
+            balloon.classList.add('balloon-show');
+
+            clearTimeout(tutorialTimer);
+            tutorialTimer = setTimeout(() => {
+                tutorialStepIndex++;
+                runTutorialStep();
+            }, step.duration);
         }
 
-        // 💬 4つの丸ボタン、初めて押した時だけ軽くヒントを出す（チュートリアルで長々説明する代わり）
+        function endTutorial() {
+            isTutorialActive = false;
+            document.body.classList.remove('tutorial-active');
+            document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
+            hasSeenTutorial = true;
+            saveGame();
+            promptPlayerNameIfNeeded();
+        }
+
+        // 🍴 チュートリアルの最後に、まだ名前を決めていなければ聞いておく
+        function promptPlayerNameIfNeeded() {
+            if (localStorage.getItem('punicker_player_name')) return;
+            const input = document.getElementById('tutorial-name-input');
+            if (input) input.value = playerName;
+            openModal('tutorial-name-modal');
+        }
+        function saveTutorialPlayerName() {
+            const input = document.getElementById('tutorial-name-input');
+            const result = sanitizePlayerName(input.value);
+            if (!result.ok) { alert(result.reason); return; }
+            playerName = result.name;
+            localStorage.setItem('punicker_player_name', playerName);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
+            closeModal('tutorial-name-modal');
+        }
+
+        // 💬 4つの丸ボタン、初めて押した時だけ軽くヒントを出す（チュートリアル終了後の、2周目以降のフォロー用）
         let seenButtonHints = { map: false, menu: false, ui: false, feed: false };
         function onMapButtonTap() {
             if (!seenButtonHints.map) { seenButtonHints.map = true; saveGame(); showMochiComment('地図で好きな県に飛べるで！'); }
@@ -2468,31 +2529,6 @@
         function onFeedButtonTap() {
             if (!seenButtonHints.feed) { seenButtonHints.feed = true; saveGame(); showMochiComment('ここからお土産あげられるんやで！'); }
             openOmiyageCollection();
-        }
-
-        function tutorialNext() {
-            if (tutorialStepIndex < TUTORIAL_STEPS.length - 1) {
-                tutorialStepIndex++;
-                renderTutorialStep();
-            } else {
-                hasSeenTutorial = true;
-                saveGame();
-                closeModal('tutorial-modal');
-                glowIntroButtons();
-            }
-        }
-
-        // チュートリアル終了時、文章で説明する代わりに、実際のボタンを順番にぽわっと光らせて気づいてもらう
-        function glowIntroButtons() {
-            const ids = ['map-toggle-btn', 'menu-toggle-btn', 'ui-toggle-btn', 'feed-toggle-btn'];
-            ids.forEach((id, i) => {
-                setTimeout(() => {
-                    const el = document.getElementById(id);
-                    if (!el) return;
-                    el.classList.add('recommended-glow');
-                    setTimeout(() => el.classList.remove('recommended-glow'), 1800);
-                }, i * 350);
-            });
         }
 
         function showOpeningGreeting() {
@@ -3280,7 +3316,7 @@
         let lastCheerChangeTime = 0;
         const CHEER_MIN_DISPLAY_MS = 1800; // これより短い間隔では、セリフを切り替えない（読めないほど頻繁に変わるのを防ぐ）
         function updateCheerBalloon(count) {
-            if (count <= 0) return;
+            if (count <= 0 || isTutorialActive) return;
             const tier = getCheerTier(count);
             const now = Date.now();
             const tierChanged = tier !== lastCheerTier;
@@ -3376,7 +3412,7 @@
                 comboCount = 0;
                 lastCheerTier = -1;
                 comboEl.classList.remove('combo-bounce', 'combo-tier-50', 'combo-tier-100', 'combo-tier-500', 'combo-tier-1000');
-                if (finishedCombo >= 5) {
+                if (finishedCombo >= 5 && !isTutorialActive) {
                     showMochiComment(pickRandom(comboEndLines));
                     // 通常のセリフと同様、しばらく経ってもタップされなければ自然に引っ込める
                     const myEndCommentId = ++comboEndCommentId;
@@ -3466,7 +3502,7 @@
 
             // 🌟 覚醒判定：1/100の確率で、このタップだけもちが10倍になる
             let isAwakening = false;
-            if (Math.random() < 0.01) {
+            if (!isTutorialActive && Math.random() < 0.01) {
                 isAwakening = true;
                 power *= 10;
             }
@@ -4371,6 +4407,7 @@
 
         let mochiScreamTimeout = null;
         function showFeedTeaseComment() {
+            if (isTutorialActive) return;
             if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) {
                 // 我慢の限界：専用の叫び効果音＋専用イラスト＋周りに散る「あ゛」で叫んでる感を強化
                 playAudioFile('audio/mochi_scream.mp3');
@@ -4750,6 +4787,7 @@
 
         function startMochiLifeLoop() {
             setInterval(() => {
+                if (isTutorialActive) return;
                 const idleDuration = Date.now() - lastTappedTime;
                 const balloon = document.getElementById('mochi-balloon');
                 if (idleDuration > 5000 && !isFever) {
