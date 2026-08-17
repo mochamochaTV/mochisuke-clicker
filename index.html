@@ -68,6 +68,7 @@
             font-family: 'Zen Maru Gothic', 'Helvetica Neue', Arial, sans-serif;
             display: flex; flex-direction: column; align-items: center;
             overflow: hidden; user-select: none; -webkit-user-select: none;
+            -webkit-touch-callout: none; /* 長押しで画像保存メニュー/拡大プレビューが出るのを防ぐ（もちすけ以外の画像に対策が漏れていた） */
             background-color: #fcf8f2;
             background-size: cover;
             background-position: center bottom;
@@ -85,6 +86,15 @@
                ここではpadding-top/bottomを持たせない＝隙間に本体の背景色が見えてしまうのを防ぐ） */
             padding-left: env(safe-area-inset-left, 0px);
             padding-right: env(safe-area-inset-right, 0px);
+        }
+        img {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none; user-select: none;
+            -webkit-user-drag: none;
+        }
+        input, textarea {
+            -webkit-user-select: text; user-select: text;
+            -webkit-touch-callout: default;
         }
 
         #game-screen {
@@ -1295,7 +1305,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-47</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-48</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1352,9 +1362,11 @@
             <div id="mochisuke-wrapper">
                 <div id="mochi-balloon">画面をタップして もち集めような！</div>
                 <div id="mochisuke-img-frame" style="position:relative; display:inline-block;">
-                    <img id="mochisuke-btn" class="breathe-idle" src="ui_images/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
-                    <div id="mochisuke-mouth-anchor" style="position:absolute; top:37.785108%; left:48.447367%; width:16%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
-                        <img id="mochisuke-mouth-patch" src="ui_images/mouth_closed.webp" alt="" class="breathe-idle" style="width:100%; display:block; transform-origin:center bottom;">
+                    <div id="mochisuke-breathe-wrap" class="breathe-idle" style="position:relative; display:inline-block; transform-origin:center bottom;">
+                        <img id="mochisuke-btn" src="ui_images/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
+                        <div id="mochisuke-mouth-anchor" style="position:absolute; top:37.785108%; left:48.447367%; width:16%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
+                            <img id="mochisuke-mouth-patch" src="ui_images/mouth_closed.webp" alt="" style="width:100%; display:block;">
+                        </div>
                     </div>
                     <button id="tutorial-skip-btn" onclick="confirmSkipTutorial()">チュートリアルをスキップ</button>
                 </div>
@@ -2522,20 +2534,9 @@
             observer.observe(balloonEl, { attributes: true, attributeFilter: ['class'] });
         })();
 
-        // 🫁 口パーツが、もちすけ本体の呼吸（伸縮）に常について来るように同期させる
-        let mouthAdjustMode = false; // 調整モード中かどうか（先にここで宣言しておかないと、下の同期処理が参照する時点でまだ未定義になってしまう）
-        (function setupBreatheSyncObserver() {
-            const mochiEl = document.getElementById('mochisuke-btn');
-            const mouthImg = document.getElementById('mochisuke-mouth-patch');
-            if (!mochiEl || !mouthImg) return;
-            const sync = () => {
-                if (mouthAdjustMode) return; // 調整モード中は、基本の姿勢で止めたままにする
-                mouthImg.classList.toggle('breathe-idle', mochiEl.classList.contains('breathe-idle'));
-            };
-            sync();
-            const observer = new MutationObserver(sync);
-            observer.observe(mochiEl, { attributes: true, attributeFilter: ['class'] });
-        })();
+        // 🫁 口パーツの呼吸は、もちすけ画像と共通の親要素(#mochisuke-breathe-wrap)にアニメーションをかけることで、
+        // 追いかけて同期させるのではなく、そもそもズレようがない形で実現している（詳細はHTML側を参照）
+        let mouthAdjustMode = false; // 調整モード中かどうか
 
         // 時間帯の並び順（インデックスは他の場所でも共通して使う）
         const TIME_BUCKETS = ['morning', 'noon', 'evening', 'lateNight'];
@@ -3064,16 +3065,13 @@
         function toggleMouthAdjustMode() {
             mouthAdjustMode = !mouthAdjustMode;
             const anchor = document.getElementById('mochisuke-mouth-anchor');
-            const mouthImg = document.getElementById('mochisuke-mouth-patch');
-            const mochiEl = document.getElementById('mochisuke-btn');
+            const wrap = document.getElementById('mochisuke-breathe-wrap');
             const btn = document.getElementById('mouth-adjust-toggle-btn');
-            if (!anchor || !mouthImg || !mochiEl) return;
+            if (!anchor || !wrap) return;
             if (mouthAdjustMode) {
                 // 呼吸などの動きが付いたままだと位置合わせしづらいので、いったん基本の姿勢で止める
-                mochiEl.classList.remove('breathe-idle');
-                mochiEl.style.transform = 'scale(1, 1)';
-                mouthImg.classList.remove('breathe-idle');
-                mouthImg.style.transform = 'scale(1, 1)';
+                wrap.classList.remove('breathe-idle');
+                wrap.style.transform = 'scale(1, 1)';
                 hideMochiComment(); // セリフも消して、口を閉じた状態の見た目で正確に合わせられるようにする
                 anchor.style.display = 'block';
                 anchor.style.pointerEvents = 'auto';
@@ -3082,9 +3080,8 @@
                 setupMouthDrag(anchor);
                 updateMouthReadout();
             } else {
-                mochiEl.style.transform = '';
-                mochiEl.classList.add('breathe-idle');
-                mouthImg.style.transform = '';
+                wrap.style.transform = '';
+                wrap.classList.add('breathe-idle');
                 anchor.style.pointerEvents = 'none';
                 anchor.style.outline = '';
                 if (btn) btn.style.background = '#e91e63';
@@ -3670,7 +3667,7 @@
             screenFlash('#ffd700', 0.35);
 
             isScreamActive = true;
-            mochiBtnElement.classList.remove('breathe-idle');
+            mochiBreatheWrapEl.classList.remove('breathe-idle');
             mochiBtnElement.classList.remove('mochi-scream');
             void mochiBtnElement.offsetWidth;
             mochiBtnElement.classList.add('mochi-scream');
@@ -3682,7 +3679,7 @@
                 const target = clothesData.find(c => c.id === equippedClotheId);
                 mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
                 mochiBtnElement.classList.remove('mochi-scream');
-                if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
+                if (!isMochiPressed) mochiBreatheWrapEl.classList.add('breathe-idle');
             }, 2600); // 連打中でも「叫んでいる」とちゃんと分かるよう、数秒間キープする
 
             spawnScreamKanaBurst();
@@ -3798,6 +3795,7 @@
         }
 
         const mochiBtnElement = document.getElementById('mochisuke-btn');
+        const mochiBreatheWrapEl = document.getElementById('mochisuke-breathe-wrap'); // 呼吸アニメーションは、もちすけ画像と口パーツをまとめて包むこちらにかける
         mochiBtnElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
         // メインのもちすけタップ処理
@@ -3812,7 +3810,7 @@
             prefTaps[selectedStageIndex] = (prefTaps[selectedStageIndex] || 0) + 1;
             
             lastTappedTime = Date.now();
-            mochiBtnElement.classList.remove('breathe-idle');
+            mochiBreatheWrapEl.classList.remove('breathe-idle');
             clearTimeout(breatheTimer);
 
             isMochiPressed = true;
@@ -3835,7 +3833,7 @@
             // 長押し検知：一定時間押しっぱなしにすると「つぶれる〜」的なセリフを言う
             clearTimeout(mochiLongPressTimer);
             mochiLongPressTimer = setTimeout(() => {
-                showMochiComment(pickRandom(dialogueData.longPressComments));
+                if (!isTutorialActive) showMochiComment(pickRandom(dialogueData.longPressComments));
             }, MOCHI_LONGPRESS_MS);
 
             // 必殺技発動中なら1タップが5連打になる
@@ -4000,7 +3998,7 @@
 
             breatheTimer = setTimeout(() => {
                 if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
-                    mochiBtnElement.classList.add('breathe-idle');
+                    mochiBreatheWrapEl.classList.add('breathe-idle');
                 }
             }, 1200);
         }
@@ -4098,7 +4096,7 @@
                 playBgmLoop('audio/hissatsu_bgm.mp3');
 
                 // 親方化して巨大に固定
-                mochiBtnElement.classList.remove('breathe-idle');
+                mochiBreatheWrapEl.classList.remove('breathe-idle');
                 mochiBtnElement.style.transform = 'scale(1.5)';
                 const clones = document.querySelectorAll('.bunshin-clone-img');
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.5)');
@@ -4117,7 +4115,7 @@
                 const clones = document.querySelectorAll('.bunshin-clone-img');
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1)');
                 resetMochiFilter();
-                if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
+                if (!isMochiPressed) mochiBreatheWrapEl.classList.add('breathe-idle');
             }
         }
 
@@ -4658,7 +4656,7 @@
                 screenShake('big');
                 screenFlash('#ff1744', 0.28);
 
-                mochiBtnElement.classList.remove('breathe-idle'); // 常時アニメーションが叫ぶ演出を上書きしてしまうため、この間だけ止める
+                mochiBreatheWrapEl.classList.remove('breathe-idle'); // 常時アニメーションが叫ぶ演出を上書きしてしまうため、この間だけ止める
                 mochiBtnElement.classList.remove('mochi-scream');
                 void mochiBtnElement.offsetWidth;
                 mochiBtnElement.classList.add('mochi-scream');
@@ -4672,7 +4670,7 @@
                     const target = clothesData.find(c => c.id === equippedClotheId);
                     mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
                     mochiBtnElement.classList.remove('mochi-scream');
-                    if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
+                    if (!isMochiPressed) mochiBreatheWrapEl.classList.add('breathe-idle');
                 }, 2600); // 連打中でも「叫んでいる」とちゃんと分かるよう、数秒間キープする
 
                 spawnScreamKanaBurst();
@@ -4785,7 +4783,7 @@
             clearTimeout(mochiScreamTimeout);
             feedTeaseLevel = 0;
             mochiBtnElement.classList.remove('mochi-scream');
-            if (!isMochiPressed) mochiBtnElement.classList.add('breathe-idle');
+            if (!isMochiPressed) mochiBreatheWrapEl.classList.add('breathe-idle');
 
             feedBuffActiveUntil = Date.now() + FEED_BUFF_DURATION_MS;
             feedPlaysUsedToday++;
