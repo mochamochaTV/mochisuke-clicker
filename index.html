@@ -1295,7 +1295,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-45</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-46</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1353,7 +1353,9 @@
                 <div id="mochi-balloon">画面をタップして もち集めような！</div>
                 <div id="mochisuke-img-frame" style="position:relative; display:inline-block;">
                     <img id="mochisuke-btn" class="breathe-idle" src="ui_images/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
-                    <img id="mochisuke-mouth-patch" src="ui_images/mouth_closed.webp" alt="" style="position:absolute; top:29.7%; left:39.5%; width:18.0%; transform:translate(-50%,-50%); pointer-events:none; z-index:6; display:block;">
+                    <div id="mochisuke-mouth-anchor" style="position:absolute; top:29.7%; left:39.5%; width:18.0%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
+                        <img id="mochisuke-mouth-patch" src="ui_images/mouth_closed.webp" alt="" class="breathe-idle" style="width:100%; display:block; transform-origin:center bottom;">
+                    </div>
                     <button id="tutorial-skip-btn" onclick="confirmSkipTutorial()">チュートリアルをスキップ</button>
                 </div>
                 
@@ -2520,6 +2522,21 @@
             observer.observe(balloonEl, { attributes: true, attributeFilter: ['class'] });
         })();
 
+        // 🫁 口パーツが、もちすけ本体の呼吸（伸縮）に常について来るように同期させる
+        let mouthAdjustMode = false; // 調整モード中かどうか（先にここで宣言しておかないと、下の同期処理が参照する時点でまだ未定義になってしまう）
+        (function setupBreatheSyncObserver() {
+            const mochiEl = document.getElementById('mochisuke-btn');
+            const mouthImg = document.getElementById('mochisuke-mouth-patch');
+            if (!mochiEl || !mouthImg) return;
+            const sync = () => {
+                if (mouthAdjustMode) return; // 調整モード中は、基本の姿勢で止めたままにする
+                mouthImg.classList.toggle('breathe-idle', mochiEl.classList.contains('breathe-idle'));
+            };
+            sync();
+            const observer = new MutationObserver(sync);
+            observer.observe(mochiEl, { attributes: true, attributeFilter: ['class'] });
+        })();
+
         // 時間帯の並び順（インデックスは他の場所でも共通して使う）
         const TIME_BUCKETS = ['morning', 'noon', 'evening', 'lateNight'];
         function getTimeBucketIndex(h) {
@@ -3043,67 +3060,75 @@
         }
 
         // 👄 口パーツを、実際のゲーム画面上で直接ドラッグして位置調整するモード（デバイスによるズレを避けるため）
-        let mouthAdjustMode = false;
         let mouthDragState = null;
         function toggleMouthAdjustMode() {
             mouthAdjustMode = !mouthAdjustMode;
-            const patch = document.getElementById('mochisuke-mouth-patch');
+            const anchor = document.getElementById('mochisuke-mouth-anchor');
+            const mouthImg = document.getElementById('mochisuke-mouth-patch');
+            const mochiEl = document.getElementById('mochisuke-btn');
             const btn = document.getElementById('mouth-adjust-toggle-btn');
-            if (!patch) return;
+            if (!anchor || !mouthImg || !mochiEl) return;
             if (mouthAdjustMode) {
-                patch.style.display = 'block';
-                patch.style.pointerEvents = 'auto';
-                patch.style.opacity = '0.85';
-                patch.style.outline = '2px dashed #e91e63';
+                // 呼吸などの動きが付いたままだと位置合わせしづらいので、いったん基本の姿勢で止める
+                mochiEl.classList.remove('breathe-idle');
+                mochiEl.style.transform = 'scale(1, 1)';
+                mouthImg.classList.remove('breathe-idle');
+                mouthImg.style.transform = 'scale(1, 1)';
+                hideMochiComment(); // セリフも消して、口を閉じた状態の見た目で正確に合わせられるようにする
+                anchor.style.display = 'block';
+                anchor.style.pointerEvents = 'auto';
+                anchor.style.outline = '2px dashed #e91e63';
                 if (btn) btn.style.background = '#4caf50';
-                setupMouthDrag(patch);
+                setupMouthDrag(anchor);
                 updateMouthReadout();
             } else {
-                patch.style.pointerEvents = 'none';
-                patch.style.opacity = '';
-                patch.style.outline = '';
+                mochiEl.style.transform = '';
+                mochiEl.classList.add('breathe-idle');
+                mouthImg.style.transform = '';
+                anchor.style.pointerEvents = 'none';
+                anchor.style.outline = '';
                 if (btn) btn.style.background = '#e91e63';
             }
         }
-        function setupMouthDrag(patch) {
-            if (patch.dataset.dragSetup) return; // 二重登録防止
-            patch.dataset.dragSetup = '1';
-            patch.addEventListener('pointerdown', (e) => {
+        function setupMouthDrag(anchor) {
+            if (anchor.dataset.dragSetup) return; // 二重登録防止
+            anchor.dataset.dragSetup = '1';
+            anchor.addEventListener('pointerdown', (e) => {
                 if (!mouthAdjustMode) return;
                 e.stopPropagation(); e.preventDefault();
-                try { patch.setPointerCapture(e.pointerId); } catch (err) {}
+                try { anchor.setPointerCapture(e.pointerId); } catch (err) {}
                 mouthDragState = { startX: e.clientX, startY: e.clientY };
             });
-            patch.addEventListener('pointermove', (e) => {
+            anchor.addEventListener('pointermove', (e) => {
                 if (!mouthDragState || !mouthAdjustMode) return;
                 e.stopPropagation();
                 const frame = document.getElementById('mochisuke-img-frame');
                 const rect = frame.getBoundingClientRect();
                 const dxPct = ((e.clientX - mouthDragState.startX) / rect.width) * 100;
                 const dyPct = ((e.clientY - mouthDragState.startY) / rect.height) * 100;
-                const curLeft = parseFloat(patch.style.left) || 0;
-                const curTop = parseFloat(patch.style.top) || 0;
-                patch.style.left = (curLeft + dxPct) + '%';
-                patch.style.top = (curTop + dyPct) + '%';
+                const curLeft = parseFloat(anchor.style.left) || 0;
+                const curTop = parseFloat(anchor.style.top) || 0;
+                anchor.style.left = (curLeft + dxPct) + '%';
+                anchor.style.top = (curTop + dyPct) + '%';
                 mouthDragState.startX = e.clientX;
                 mouthDragState.startY = e.clientY;
                 updateMouthReadout();
             });
-            patch.addEventListener('pointerup', () => { mouthDragState = null; });
-            patch.addEventListener('pointercancel', () => { mouthDragState = null; });
+            anchor.addEventListener('pointerup', () => { mouthDragState = null; });
+            anchor.addEventListener('pointercancel', () => { mouthDragState = null; });
         }
         function adjustMouthSize(delta) {
-            const patch = document.getElementById('mochisuke-mouth-patch');
-            if (!patch) return;
-            const cur = parseFloat(patch.style.width) || 18;
-            patch.style.width = Math.max(3, cur + delta) + '%';
+            const anchor = document.getElementById('mochisuke-mouth-anchor');
+            if (!anchor) return;
+            const cur = parseFloat(anchor.style.width) || 18;
+            anchor.style.width = Math.max(3, cur + delta) + '%';
             updateMouthReadout();
         }
         function updateMouthReadout() {
-            const patch = document.getElementById('mochisuke-mouth-patch');
+            const anchor = document.getElementById('mochisuke-mouth-anchor');
             const el = document.getElementById('mouth-adjust-readout');
-            if (!patch || !el) return;
-            el.textContent = `top:${patch.style.top}; left:${patch.style.left}; width:${patch.style.width};`;
+            if (!anchor || !el) return;
+            el.textContent = `top:${anchor.style.top}; left:${anchor.style.left}; width:${anchor.style.width};`;
         }
 
         function initAndPlayBGM() {
@@ -5029,7 +5054,7 @@
                         showMochiComment(text);
                     }
                 }
-            }, 6000);
+            }, 12000);
         }
 
         // 🎁 プレゼント出現頻度・報酬の調整用定数（ここを変えるだけでバランス調整できます）
