@@ -447,9 +447,8 @@
 
         /* 絵日記 */
         .diary-paper { width: 90%; max-width: 360px; background: #fffbf0; border-radius: 16px; padding: 16px; box-sizing: border-box; box-shadow: 0 15px 30px rgba(0,0,0,0.4); border: 2px solid #d7ccc8; display: flex; flex-direction: column; gap: 12px; position: relative; }
-        .diary-img-area { width: 100%; background: #fafafa; border-radius: 10px; padding: 8px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; position: relative; flex-direction: column; }
-        .diary-img { max-width: 100%; height: 180px; object-fit: contain; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
-        .img-caption { font-size: 0.8rem; font-weight: bold; color: #795548; text-align: center; margin-top: 6px; }
+        .diary-img-area { width: 100%; background: #fafafa; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; position: relative; flex-direction: column; }
+        .diary-img { max-width: 100%; height: 196px; object-fit: contain; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
         /* 🎁 おみやげ屋さん（棚イラストUI・全画面表示。きせかえ／スキルもすべて同じイラストの上に重ねて表示する） */
         #omiyage-shelf-view {
             flex: 1; min-height: 0; display: flex; flex-direction: column;
@@ -635,12 +634,18 @@
             font-size: 1.05rem; line-height: 1.3; padding: 6px; box-sizing: border-box;
             opacity: 0.88;
         }
+        #diary-stamp-omiyage-divider {
+            width: 85%; margin: 4px auto 12px; border-top: 2px dashed #d7ccc8;
+        }
         .diary-item-thumb-back {
             display: block; width: 130px; height: 130px; object-fit: contain;
             margin: 0 auto 10px; border: 4px solid #fff;
             box-shadow: 0 4px 10px rgba(0,0,0,0.15); border-radius: 10px; background: #fafafa;
         }
-        #diary-text-element-back { height: 150px; }
+        #diary-item-name-back {
+            text-align: center; font-size: 0.95rem; font-weight: bold; color: #5d4037;
+            font-family: "Hiragino Mincho ProN", "MS Mincho", serif;
+        }
         .diary-text-area { width: 100%; height: 180px; display: flex; flex-direction: column; align-items: flex-start; padding: 8px; box-sizing: border-box; border-radius: 8px; border: 1px solid #efebe9; background-image: linear-gradient(90deg, rgba(224,208,192,0.3) 1px, transparent 1px); background-size: 24px 100%; }
         .diary-title { font-size: 1.1rem; font-weight: bold; color: #5d4037; border-bottom: 2px dashed #bcaaa4; width: 100%; padding-bottom: 4px; margin-bottom: 8px; }
         .diary-text { writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl; font-size: 1.05rem; line-height: 1.8; color: #3e2723; height: 100%; width: 100%; overflow-x: auto; white-space: pre-wrap; font-family: "Hiragino Mincho ProN", "MS Mincho", serif; padding-bottom: 4px; }
@@ -1031,6 +1036,10 @@
             white-space: nowrap; z-index: 10; opacity: 0; transform: scale(0.8);
             transition: all 0.2s ease-out; pointer-events: none;
         }
+        /* 📖 チュートリアル中は文章が長くなるため、画面幅からはみ出さないよう折り返す */
+        body.tutorial-active #mochi-balloon {
+            white-space: normal; max-width: 76vw; text-align: center; line-height: 1.5;
+        }
         #mochi-balloon::after {
             content: ''; position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%);
             border-width: 12px 8px 0; border-style: solid; border-color: white transparent; display: block; width: 0; z-index: 11;
@@ -1260,7 +1269,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-39</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-40</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1683,10 +1692,10 @@
             <div id="diary-front-content">
                 <div class="diary-img-area">
                     <img class="diary-img" id="diary-img-element" src="" alt="絵日記の画像">
-                    <div class="img-caption" id="diary-img-caption">思い出の写真</div>
                 </div>
                 <div class="diary-text-area">
                     <div class="diary-title" id="diary-title-element"></div>
+                    <div class="diary-text" id="diary-text-element"></div>
                 </div>
                 <button id="diary-flip-to-back-btn" onclick="flipDiaryPage(true)" style="width:100%; margin-top:8px; padding:8px 0; background:#a1887f; color:#fff; border:none; border-radius:10px; font-size:0.82rem; font-weight:bold;">🔴 スタンプ帳を見る ▶</button>
             </div>
@@ -1695,8 +1704,9 @@
                 <div id="diary-stamp-frame">
                     <div id="diary-stamp-mark"></div>
                 </div>
+                <div id="diary-stamp-omiyage-divider"></div>
                 <img id="diary-item-thumb-back" class="diary-item-thumb-back" src="" alt="おみやげ">
-                <div class="diary-text" id="diary-text-element-back"></div>
+                <div id="diary-item-name-back"></div>
                 <button onclick="flipDiaryPage(false)" style="width:100%; margin-top:8px; padding:8px 0; background:#a1887f; color:#fff; border:none; border-radius:10px; font-size:0.82rem; font-weight:bold;">◀ 絵日記にもどる</button>
             </div>
 
@@ -2466,18 +2476,21 @@
         // 📖 初回チュートリアル：もちすけのセリフで進行し、該当ボタンを光らせながら説明する。
         // 他のボタンは（もちすけ本体を除いて）誤操作防止のため一時的に押せなくする。
         const TUTORIAL_STEPS = [
-            { text: 'もちすけと一緒に、日本を鹿児島から沖縄まで縦断する旅に出よう！', highlight: null, duration: 4500 },
-            { text: '画面のもちすけをタップすると、もちが増えていくで。連打するとコンボも伸びていくで！', highlight: null, duration: 4500 },
-            { text: 'タップ力や自動増加は、スキルを取得すると強化できるで。左右のボタンから使えるようになるで！', highlight: null, duration: 4500 },
-            { text: '倉庫では、集めたおみやげやスキルの一覧が見られるで。', highlight: 'nav-btn-warehouse', duration: 4000 },
-            { text: 'ショップで、おみやげを買おう。「タップ力アップ」と「自動増加」の2種類があるで！', highlight: 'nav-btn-shop', duration: 4800 },
+            { text: 'ワイと一緒に、日本を鹿児島から沖縄まで縦断する旅に出よう！', highlight: null, duration: 4000 },
+            { text: '画面のワイをタップすると、もちが増えていくで。', highlight: null, duration: 3800 },
+            { text: '連打するとコンボも伸びていくで！', highlight: null, duration: 3500 },
+            { text: 'タップ力や自動増加は、スキルを取得すると強化できるで。', highlight: null, duration: 4000 },
+            { text: '左右のボタンから使えるようになるで！', highlight: null, duration: 3500 },
+            { text: '倉庫では、集めたおみやげやスキルの一覧が見られるで。', highlight: 'nav-btn-warehouse', duration: 4200 },
+            { text: 'ショップで、おみやげを買おう。', highlight: 'nav-btn-shop', duration: 3500 },
+            { text: '「タップ力アップ」と「自動増加」の2種類があるで！', highlight: 'nav-btn-shop', duration: 4200 },
             { text: '絵日記には、旅の思い出が記録されていくで。', highlight: 'nav-btn-diary', duration: 4000 },
-            { text: 'ミニゲームでも、もちを稼げるで。息抜きにどうぞ！', highlight: 'nav-btn-minigame', duration: 4000 },
+            { text: 'ミニゲームでも、もちを稼げるで。息抜きにどうぞ！', highlight: 'nav-btn-minigame', duration: 4200 },
             { text: 'ランキングで、みんなの記録と競い合えるで！', highlight: 'nav-btn-ranking', duration: 4000 },
             { text: 'ここから地図を開いて、好きな都道府県に飛べるで。', highlight: 'map-toggle-btn', duration: 4500 },
             { text: 'ここから設定やメニューを触れるで。', highlight: 'menu-toggle-btn', duration: 4000 },
-            { text: 'ここを押すと、写真を撮る時とかにすっきり表示できるで。', highlight: 'ui-toggle-btn', duration: 4000 },
-            { text: 'ここから、もちすけにお土産をあげられるで！', highlight: 'feed-toggle-btn', duration: 4500 },
+            { text: 'ここを押すと、写真を撮る時とかにすっきり表示できるで。', highlight: 'ui-toggle-btn', duration: 4200 },
+            { text: 'ここから、ワイにお土産をあげられるで！', highlight: 'feed-toggle-btn', duration: 4500 },
             { text: 'さあ、日本一周の旅に出発や！応援してるで！', highlight: null, duration: 3500 },
         ];
         let tutorialStepIndex = 0;
@@ -2495,6 +2508,7 @@
             tutorialStepIndex = 0;
             isTutorialActive = true;
             document.body.classList.add('tutorial-active');
+            document.querySelectorAll('.recommended-glow').forEach(el => el.classList.remove('recommended-glow'));
             runTutorialStep();
         }
 
@@ -2784,7 +2798,14 @@
                     hasSeenJapanClear = state.hasSeenJapanClear ?? false;
                     hasComboTitle1000 = state.hasComboTitle1000 ?? false;
                     seenButtonHints = state.seenButtonHints ?? { map: false, menu: false, ui: false, feed: false };
-                    collectedStamps = state.collectedStamps ?? {};
+                    if (state.collectedStamps) {
+                        collectedStamps = state.collectedStamps;
+                    } else {
+                        // 🩹 この機能が無かった頃からのセーブ：既に通過済みの県ぶん、スタンプを遡って押しておく
+                        collectedStamps = {};
+                        const passedIndex = state.currentStageIndex ?? 0;
+                        for (let i = 0; i < passedIndex; i++) collectedStamps[i] = true;
+                    }
                     // 🩹 自動修復：以前のバグで「実際は制覇していないのにフラグだけtrueのまま」になっているセーブデータを、
                     // 読み込むたびに実際の進行状況と照らし合わせて自動で正しい状態に戻す
                     const actuallyCleared = (state.currentStageIndex === stages.length - 1) && (state.currentStageProgress >= stages[stages.length - 1].distance);
@@ -5230,6 +5251,7 @@
             return null;
         }
         function updateRecommendedActionHighlight() {
+            if (isTutorialActive) return; // チュートリアル中は、こちらの自動ハイライトは出さない（チュートリアル自身のハイライトとぶつかるため）
             const now = Date.now();
             if (now - lastRecommendCheckTime < 1000) return; // 連打のたびに毎回判定しなくていいよう、1秒に1回だけ再計算
             lastRecommendCheckTime = now;
@@ -6001,12 +6023,12 @@
             paper.classList.remove('page-animate'); void paper.offsetWidth; paper.classList.add('page-animate');
             const isPurchased = (purchasedItems[diaryPageIndex] || 0) > 0;
 
-            // 表面：メインの絵日記イラストだけ（おみやげ・本文はすべて裏面へ）
+            // 表面：メインの絵日記イラストと、旅の本文
             document.getElementById('diary-img-element').src = stage.diaryImg;
-            document.getElementById('diary-img-caption').innerText = `【${stage.name}の思い出】`;
             document.getElementById('diary-title-element').innerText = `${stage.name}編`;
+            document.getElementById('diary-text-element').innerText = stage.diary;
 
-            // 裏面：スタンプ・おみやげイラスト・本文
+            // 裏面：スタンプと、おみやげイラスト＋名前
             const stampMark = document.getElementById('diary-stamp-mark');
             if (collectedStamps[diaryPageIndex]) {
                 stampMark.innerText = `${stage.name}\n到達記念`;
@@ -6020,8 +6042,9 @@
             const thumbBackEl = document.getElementById('diary-item-thumb-back');
             thumbBackEl.src = isPurchased && stage.itemImg ? stage.itemImg : 'ui_images/present.webp';
             thumbBackEl.style.opacity = isPurchased ? '1' : '0.35';
-            const hasItemText = isPurchased ? `🛍️ ${stage.item} (Lv.${purchasedItems[diaryPageIndex]})` : '🛍️ アイテム: 未購入';
-            document.getElementById('diary-text-element-back').innerText = `${hasItemText}\n\n${stage.diary}`;
+            document.getElementById('diary-item-name-back').innerText = isPurchased
+                ? `🛍️ ${stage.item} (Lv.${purchasedItems[diaryPageIndex]})`
+                : '🛍️ アイテム: 未購入';
 
             document.getElementById('diary-footer-element').innerText = `枚数: ${diaryPageIndex + 1} / ${currentStageIndex + 1}`;
             document.getElementById('prev-page-btn').disabled = (diaryPageIndex === 0);
