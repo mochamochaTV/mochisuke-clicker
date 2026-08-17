@@ -623,7 +623,7 @@
             border-radius: 50%; border: 3px dashed #d7ccc8;
             background: #fafafa;
             display: flex; align-items: center; justify-content: center;
-            box-sizing: border-box;
+            box-sizing: border-box; position: relative; cursor: pointer;
         }
         #diary-stamp-mark {
             width: 128px; height: 128px; border-radius: 50%;
@@ -1269,7 +1269,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-40</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-41</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1304,7 +1304,7 @@
                 </div>
                 <div id="progress-flag">🚩</div>
             </div>
-            <button id="stamp-press-btn" onclick="pressStamp()" style="display:none;">🔴 スタンプを押す</button>
+            <button id="stamp-press-btn" onclick="openDiaryForStamping()" style="display:none;">🔴 スタンプを押す</button>
         </div>
 
         <div id="combo-display-wrap">
@@ -1701,7 +1701,7 @@
             </div>
 
             <div id="diary-back-content" style="display:none;">
-                <div id="diary-stamp-frame">
+                <div id="diary-stamp-frame" onclick="tapStampFrame()">
                     <div id="diary-stamp-mark"></div>
                 </div>
                 <div id="diary-stamp-omiyage-divider"></div>
@@ -2798,13 +2798,17 @@
                     hasSeenJapanClear = state.hasSeenJapanClear ?? false;
                     hasComboTitle1000 = state.hasComboTitle1000 ?? false;
                     seenButtonHints = state.seenButtonHints ?? { map: false, menu: false, ui: false, feed: false };
-                    if (state.collectedStamps) {
+                    const hasAnyStamps = state.collectedStamps && Object.keys(state.collectedStamps).length > 0;
+                    if (hasAnyStamps) {
                         collectedStamps = state.collectedStamps;
                     } else {
-                        // 🩹 この機能が無かった頃からのセーブ：既に通過済みの県ぶん、スタンプを遡って押しておく
+                        // 🩹 まだ一度もスタンプが記録されていない場合（この機能が無かった頃のセーブ、
+                        // または移行処理を入れる前の版で空のまま保存されてしまったセーブ）、
+                        // 既に通過済みの県ぶん、スタンプを遡って押しておく
                         collectedStamps = {};
                         const passedIndex = state.currentStageIndex ?? 0;
-                        for (let i = 0; i < passedIndex; i++) collectedStamps[i] = true;
+                        const stampUpTo = (state.hasSeenJapanClear === true) ? stages.length : passedIndex; // 既に全制覇済みなら、最後の県ぶんも含める
+                        for (let i = 0; i < stampUpTo; i++) collectedStamps[i] = true;
                     }
                     // 🩹 自動修復：以前のバグで「実際は制覇していないのにフラグだけtrueのまま」になっているセーブデータを、
                     // 読み込むたびに実際の進行状況と照らし合わせて自動で正しい状態に戻す
@@ -4064,7 +4068,14 @@
 
         /* モーダル関連 */
         function openModal(id, skipSound) { if (!skipSound) playAudioFile('audio/skill_tap.mp3'); document.body.classList.add('modal-open'); document.getElementById(id).style.display = "flex"; }
-        function closeModal(id) { document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none"; }
+        function closeModal(id) {
+            document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none";
+            // 🔴 スタンプを押さずに絵日記を閉じた場合、進捗エリアのボタンを再表示して操作不能にならないようにする
+            if (id === 'diary-modal' && isPendingStampMoment) {
+                const btn = document.getElementById('stamp-press-btn');
+                if (btn) btn.style.display = 'flex';
+            }
+        }
 
         function openTrophyRoom() {
             const grid = document.getElementById('trophy-grid');
@@ -5004,6 +5015,7 @@
             currentStageProgress = 0;
             purchasedItems = {};
             hasSeenJapanClear = false; // 🐛修正：これが無いと、2回目以降は沖縄クリア無しで転生し放題になってしまっていた
+            collectedStamps = {}; // スタンプ帳も、絵日記の記録と同様に周回ごとリセットする
             Object.keys(skills).forEach(k => {
                 skills[k].lv = 0;
                 skills[k].activeTimer = 0;
@@ -5165,34 +5177,60 @@
         }
 
         // 🔴 スタンプを押す：効果音・演出のあと、少し間を置いてフェードして次のエリアへ
-        function pressStamp() {
-            const idx = currentStageIndex;
-            collectedStamps[idx] = true;
-            saveGame();
+        let isPendingStampMoment = false; // ゲージが溜まって「スタンプを押す」を待っている状態かどうか
 
+        // 🔴 進捗エリアのボタン：まだスタンプは押さず、絵日記の裏面を開いて「押してもらう」のを待つ
+        function openDiaryForStamping() {
             const btn = document.getElementById('stamp-press-btn');
             if (btn) btn.style.display = 'none';
+            isPendingStampMoment = true;
+            diaryPageIndex = currentStageIndex;
+            openDiary();
+            flipDiaryPage(true);
+        }
+
+        // 🔴 絵日記裏面のスタンプ枠をタップした時：待機中かつ未到達の県でだけ、実際にスタンプを押す
+        function tapStampFrame() {
+            if (!isPendingStampMoment) return; // 通常の閲覧中は何も起きない
+            if (diaryPageIndex !== currentStageIndex) return;
+            if (collectedStamps[currentStageIndex]) return;
+
+            const idx = currentStageIndex;
+            collectedStamps[idx] = true;
+            isPendingStampMoment = false;
+            saveGame();
 
             playAudioFile('audio/stamp.mp3'); // 専用のスタンプ音（無ければ用意してください。それまでは無音）
             vibrate([25, 20, 70]);
             screenShake('small');
-            screenFlash('#c62828', 0.3);
 
-            // スタンプがガツンと押されるような、簡易ポップ演出
-            const stampPop = document.createElement('div');
-            stampPop.textContent = '🔴 GET!';
-            stampPop.style.cssText = 'position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(2.4) rotate(-12deg); font-size:1.6rem; font-weight:900; color:#c62828; z-index:500; pointer-events:none; opacity:0; transition:opacity 0.15s, transform 0.15s;';
-            document.body.appendChild(stampPop);
-            requestAnimationFrame(() => {
-                stampPop.style.opacity = '1';
-                stampPop.style.transform = 'translate(-50%,-50%) scale(1) rotate(-12deg)';
-            });
-            setTimeout(() => {
-                stampPop.style.opacity = '0';
-                setTimeout(() => stampPop.remove(), 200);
-            }, 500);
+            // 🔴 ハンコがガツンと押されるような演出：上から勢いよく縮んできて、周りにインクが飛び散るような輪が広がる
+            const frame = document.getElementById('diary-stamp-frame');
+            const mark = document.getElementById('diary-stamp-mark');
+            mark.innerText = `${stages[idx].name}\n到達記念`;
+            mark.style.opacity = '0';
+            mark.style.transition = 'none';
+            mark.style.transform = 'rotate(-10deg) scale(2.6)';
+            void mark.offsetWidth;
+            mark.style.transition = 'transform 0.32s cubic-bezier(0.2,0.9,0.3,1.3), opacity 0.15s';
+            mark.style.opacity = '0.88';
+            mark.style.borderStyle = 'solid';
+            mark.style.transform = 'rotate(-10deg) scale(1)';
+
+            for (let i = 0; i < 3; i++) {
+                const ring = document.createElement('div');
+                ring.style.cssText = 'position:absolute; inset:0; margin:auto; width:150px; height:150px; border-radius:50%; border:3px solid #c62828; pointer-events:none; opacity:0.7;';
+                frame.appendChild(ring);
+                requestAnimationFrame(() => {
+                    ring.style.transition = `transform 0.5s ease-out ${i * 0.08}s, opacity 0.5s ease-out ${i * 0.08}s`;
+                    ring.style.transform = 'scale(1.6)';
+                    ring.style.opacity = '0';
+                });
+                setTimeout(() => ring.remove(), 700 + i * 80);
+            }
 
             setTimeout(() => {
+                closeModal('diary-modal');
                 currentStageIndex++; const nextIdx = currentStageIndex; currentStageProgress = 0;
                 triggerAreaTransition(stages[nextIdx].bg, () => {
                     selectedStageIndex = nextIdx; updateDisplay(); saveGame();
@@ -5200,7 +5238,7 @@
                     const prefPool = dialogueData.prefectureComments[name];
                     showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
                 });
-            }, 700);
+            }, 900);
         }
 
         let lastScoreFormatted = '';
