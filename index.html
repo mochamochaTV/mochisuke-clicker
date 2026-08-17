@@ -291,6 +291,7 @@
         body.ui-mode-3 #combo-display,
         body.ui-mode-3 #mochi-balloon,
         body.ui-mode-3 #mochisuke-btn,
+        body.ui-mode-3 #mochisuke-mouth-patch,
         body.ui-mode-3 #bunshin-container { display: none !important; }
 
         /* 上部UI（デバッグバーを廃止したので、常にheader-containerが一番上＝常にセーフエリア分を確保する） */
@@ -844,8 +845,25 @@
         }
 
         /* 💡「次のおすすめアクション」のハイライト（スキルの光り方=白/オレンジと区別するため、緑系に） */
-        .recommended-glow, .shop-recommend-glow, .minigame-recommend-glow, .tutorial-glow {
+        .recommended-glow, .shop-recommend-glow, .minigame-recommend-glow {
             animation: recommendedPulse 1s infinite alternate;
+        }
+
+        /* 📖 チュートリアルのハイライトは、通常の光らせ方よりもっと目立たせる：
+           画面全体を少し暗くして、説明中のボタンだけ通常のz-indexを飛び越えて浮き上がらせる（スポットライト演出） */
+        #tutorial-spotlight-overlay {
+            display: none;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+            z-index: 60; pointer-events: none;
+        }
+        body.tutorial-active #tutorial-spotlight-overlay { display: block; }
+        .tutorial-glow {
+            position: relative; z-index: 100 !important;
+            animation: tutorialGlowPulse 0.8s infinite alternate;
+        }
+        @keyframes tutorialGlowPulse {
+            0% { filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #4caf50); transform: scale(1); }
+            100% { filter: drop-shadow(0 0 16px #fff) drop-shadow(0 0 32px #8bc34a) drop-shadow(0 0 46px #4caf50); transform: scale(1.14); }
         }
 
         /* 📖 チュートリアル中は、誤操作防止のためもちすけ以外のボタンを一時的に無効化する */
@@ -1269,7 +1287,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-41</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-42</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1288,6 +1306,7 @@
             </div>
         </div>
 
+        <div id="tutorial-spotlight-overlay"></div>
         <div id="install-banner">
             <span id="install-banner-text">📲 ホーム画面に追加できます</span>
             <button id="install-banner-action" type="button">追加</button>
@@ -1326,6 +1345,7 @@
             <div id="mochisuke-wrapper">
                 <div id="mochi-balloon">画面をタップして もち集めような！</div>
                 <img id="mochisuke-btn" class="breathe-idle" src="ui_images/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
+                <img id="mochisuke-mouth-patch" src="ui_images/mouth_closed.webp" alt="" style="position:absolute; top:52%; left:50%; width:18%; transform:translate(-50%,-50%); pointer-events:none; z-index:6; display:block;">
                 
                 <div id="bunshin-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
 
@@ -2436,12 +2456,17 @@
         function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
         // もちすけの吹き出しにテキストを表示するヘルパー（イベント時にどこからでも呼べます）
+        let balloonAutoHideTimer = null;
         function showMochiComment(text) {
             const balloon = document.getElementById('mochi-balloon');
             if (!balloon) return;
             balloon.innerText = text;
             balloon.classList.add('balloon-show');
             lastTappedTime = Date.now(); // 表示直後にすぐ別のセリフへ切り替わらないようにリセット
+            clearTimeout(balloonAutoHideTimer);
+            if (!isTutorialActive) {
+                balloonAutoHideTimer = setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000);
+            }
         }
 
         // プレゼントや黄金もちが消えた時など、表示中のセリフを引っ込めるためのヘルパー
@@ -2449,6 +2474,23 @@
             const balloon = document.getElementById('mochi-balloon');
             if (balloon) balloon.classList.remove('balloon-show');
         }
+
+        // 🎙️ セリフの表示/非表示を一元的に検知して、口パーツの切り替えと効果音をまとめて処理する
+        // （showMochiComment/updateCheerBalloon/チュートリアルなど、色々な場所からセリフが更新されても、ここ1箇所で拾える）
+        (function setupBalloonObserver() {
+            const balloonEl = document.getElementById('mochi-balloon');
+            const mouthPatchEl = document.getElementById('mochisuke-mouth-patch');
+            if (!balloonEl) return;
+            let wasShowing = false;
+            const observer = new MutationObserver(() => {
+                const isShowing = balloonEl.classList.contains('balloon-show');
+                if (isShowing === wasShowing) return;
+                wasShowing = isShowing;
+                if (mouthPatchEl) mouthPatchEl.style.display = isShowing ? 'none' : 'block';
+                if (isShowing) playAudioFile('audio/talk_pop.mp3');
+            });
+            observer.observe(balloonEl, { attributes: true, attributeFilter: ['class'] });
+        })();
 
         // 時間帯の並び順（インデックスは他の場所でも共通して使う）
         const TIME_BUCKETS = ['morning', 'noon', 'evening', 'lateNight'];
@@ -2479,8 +2521,6 @@
             { text: 'ワイと一緒に、日本を鹿児島から沖縄まで縦断する旅に出よう！', highlight: null, duration: 4000 },
             { text: '画面のワイをタップすると、もちが増えていくで。', highlight: null, duration: 3800 },
             { text: '連打するとコンボも伸びていくで！', highlight: null, duration: 3500 },
-            { text: 'タップ力や自動増加は、スキルを取得すると強化できるで。', highlight: null, duration: 4000 },
-            { text: '左右のボタンから使えるようになるで！', highlight: null, duration: 3500 },
             { text: '倉庫では、集めたおみやげやスキルの一覧が見られるで。', highlight: 'nav-btn-warehouse', duration: 4200 },
             { text: 'ショップで、おみやげを買おう。', highlight: 'nav-btn-shop', duration: 3500 },
             { text: '「タップ力アップ」と「自動増加」の2種類があるで！', highlight: 'nav-btn-shop', duration: 4200 },
@@ -2527,6 +2567,7 @@
             }
 
             const balloon = document.getElementById('mochi-balloon');
+            clearTimeout(balloonAutoHideTimer);
             balloon.innerText = step.text;
             balloon.classList.add('balloon-show');
 
@@ -2620,7 +2661,7 @@
         // 個別のAudio要素を大量に操作する必要が無くなり、軽量かつ確実になります。
         // また音声データは事前にデコードしてメモリ上に持つので、Service Workerのキャッシュ
         // （Rangeリクエストの不整合が起きやすい）を一切経由しません。
-        const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochi_eat.mp3', 'audio/mochi_scream.mp3', 'audio/mochi_stretch.mp3', 'audio/japan_clear.mp3', 'audio/stamp.mp3'];
+        const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochi_eat.mp3', 'audio/mochi_scream.mp3', 'audio/mochi_stretch.mp3', 'audio/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3'];
         let audioCtx = null;
         const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
         const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
@@ -3388,6 +3429,7 @@
                 lastCheerTier = tier;
                 lastCheerChangeTime = now;
                 const balloon = document.getElementById('mochi-balloon');
+                clearTimeout(balloonAutoHideTimer);
                 balloon.innerText = pickRandom(cheerLines[tier]);
                 balloon.classList.add('balloon-show');
             }
@@ -3398,6 +3440,7 @@
             lastCheerTier = tierMarker;
             lastCheerChangeTime = Date.now();
             const balloon = document.getElementById('mochi-balloon');
+            clearTimeout(balloonAutoHideTimer);
             balloon.innerText = text;
             balloon.classList.add('balloon-show');
         }
@@ -4900,7 +4943,7 @@
         }
 
         function startPresentSpawningLoop() {
-            setInterval(() => { if (!document.getElementById('lucky-present') && Math.random() < PRESENT_SPAWN_CHANCE) spawnLuckyPresent(); }, PRESENT_SPAWN_INTERVAL_MS);
+            setInterval(() => { if (!isTutorialActive && !document.getElementById('lucky-present') && Math.random() < PRESENT_SPAWN_CHANCE) spawnLuckyPresent(); }, PRESENT_SPAWN_INTERVAL_MS);
         }
 
         const PRESENT_TAPS_REQUIRED = 10; // 風船(プレゼント)を割るのに必要なタップ数
@@ -4950,7 +4993,7 @@
         }
 
         function startFeverSpawningLoop() {
-            setInterval(() => { if (!isFever && !document.getElementById('fever-pop') && Math.random() < 0.08) spawnGoldMochi(); }, 25000);
+            setInterval(() => { if (!isTutorialActive && !isFever && !document.getElementById('fever-pop') && Math.random() < 0.08) spawnGoldMochi(); }, 25000);
         }
 
         function spawnGoldMochi() {
