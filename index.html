@@ -1305,7 +1305,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-51</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-53</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -5350,11 +5350,11 @@
                 currentStageProgress = stages[currentStageIndex].distance; // スタンプを押すまでの間、表示が100%を超えて増え続けないようにする
                 if (currentStageIndex < stages.length - 1) {
                     // 🔴 ゲージが溜まっても自動では進まず、スタンプを押すボタンを出して待つ
-                    // （自動増加が高いと、着いた瞬間に1ティックだけで埋まってしまうことがあるため、最低限の滞在時間を設ける）
+                    // （自動増加やタップで、閾値の低い序盤の県だと数秒で埋まってしまうことがあるため、最低限の滞在時間を設ける）
                     const elapsed = Date.now() - stageArrivalTime;
-                    if (elapsed < 1500) {
+                    if (elapsed < 3000) {
                         clearTimeout(stampGuardRecheckTimer);
-                        stampGuardRecheckTimer = setTimeout(checkStageProgress, 1500 - elapsed); // その後タップが無くても、確実にボタンが出るようにする保険
+                        stampGuardRecheckTimer = setTimeout(checkStageProgress, 3000 - elapsed); // その後タップが無くても、確実にボタンが出るようにする保険
                         return;
                     }
                     const btn = document.getElementById('stamp-press-btn');
@@ -5371,6 +5371,7 @@
 
         // 🔴 進捗エリアのボタン：まだスタンプは押さず、絵日記の裏面を開いて「押してもらう」のを待つ
         function openDiaryForStamping() {
+            if (currentStageProgress < stages[currentStageIndex].distance) return; // 念のため、本当にゲージが満タンか確認する
             const btn = document.getElementById('stamp-press-btn');
             if (btn) btn.style.display = 'none';
             isPendingStampMoment = true;
@@ -5384,6 +5385,7 @@
             if (!isPendingStampMoment) return; // 通常の閲覧中は何も起きない
             if (diaryPageIndex !== currentStageIndex) return;
             if (collectedStamps[currentStageIndex]) return;
+            if (currentStageProgress < stages[currentStageIndex].distance) { isPendingStampMoment = false; return; } // 念のため、本当にゲージが満タンか直接確認する
 
             const idx = currentStageIndex;
             collectedStamps[idx] = true;
