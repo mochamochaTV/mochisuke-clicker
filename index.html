@@ -1305,7 +1305,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-53</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-55</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1741,6 +1741,10 @@
                             <button onclick="adjustMouthSize(1)" style="padding:2px 8px; font-size:0.62rem;">拡大＋</button>
                         </div>
                         <div id="mouth-adjust-readout" style="font-size:0.6rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
+                    </div>
+                    <div style="text-align:center; margin-top:8px; border-top:1px dashed #ddd; padding-top:8px;">
+                        <button onclick="toggleStampDebug()" style="background:#607d8b; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">📊 スタンプ状態を常時表示</button>
+                        <div id="stamp-debug-readout" style="font-size:0.6rem; color:#555; margin-top:4px; white-space:pre-wrap; text-align:left; background:#fff; padding:4px; border-radius:4px;"></div>
                     </div>
                 </div>
             </div>
@@ -5345,6 +5349,37 @@
 
         let stageArrivalTime = Date.now(); // このエリアに着いた時刻（自動増加が高いと一瞬でゲージが埋まってしまう対策用）
         let stampGuardRecheckTimer = null;
+        // 📊 スタンプ関連の状態を、実機で直接確認するための診断パネル
+        let stampDebugMode = false;
+        let stampDebugInterval = null;
+        function toggleStampDebug() {
+            stampDebugMode = !stampDebugMode;
+            if (stampDebugMode) {
+                stampDebugInterval = setInterval(updateStampDebugReadout, 300);
+                updateStampDebugReadout();
+            } else {
+                clearInterval(stampDebugInterval);
+                document.getElementById('stamp-debug-readout').textContent = '';
+            }
+        }
+        function updateStampDebugReadout() {
+            const el = document.getElementById('stamp-debug-readout');
+            if (!el) return;
+            const stage = stages[currentStageIndex];
+            const btn = document.getElementById('stamp-press-btn');
+            el.textContent =
+`currentStageIndex: ${currentStageIndex} (${stage ? stage.name : '?'})
+selectedStageIndex: ${selectedStageIndex}
+currentStageProgress: ${currentStageProgress}
+distance(必要量): ${stage ? stage.distance : '?'}
+判定(進捗>=必要量): ${stage ? (currentStageProgress >= stage.distance) : '?'}
+stageArrivalTime経過: ${((Date.now() - stageArrivalTime) / 1000).toFixed(1)}秒
+isPendingStampMoment: ${isPendingStampMoment}
+diaryPageIndex: ${diaryPageIndex}
+collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
+ボタンdisplay: ${btn ? btn.style.display : '?'}`;
+        }
+
         function checkStageProgress() {
             if (currentStageProgress >= stages[currentStageIndex].distance) {
                 currentStageProgress = stages[currentStageIndex].distance; // スタンプを押すまでの間、表示が100%を超えて増え続けないようにする
@@ -5375,8 +5410,9 @@
             const btn = document.getElementById('stamp-press-btn');
             if (btn) btn.style.display = 'none';
             isPendingStampMoment = true;
-            diaryPageIndex = currentStageIndex;
             openDiary();
+            diaryPageIndex = currentStageIndex; // openDiary()内でselectedStageIndexに上書きされるため、必ずその後に設定する
+            renderDiaryPage();
             flipDiaryPage(true);
         }
 
