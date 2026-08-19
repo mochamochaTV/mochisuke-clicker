@@ -534,23 +534,38 @@
 
         /* 常時表示バー：タブ切り替え(左)＋ページ送り(右)。棚下の床の余白部分に配置 */
         #shop-bottom-bar {
-            position: absolute; left: 4%; right: 4%; bottom: 3%; height: 6.5%;
+            position: absolute; left: 4%; right: 4%; bottom: 3%; height: 9%;
             display: flex; align-items: center; justify-content: space-between;
         }
-        #shop-tab-buttons { display: flex; gap: 6px; }
+        #shop-tab-buttons { display: flex; gap: 5px; width: 100%; }
         .shop-tab-pill {
-            width: 20%; aspect-ratio: 1; min-width: 0;
-            border: none; border-radius: 50%; background: rgba(255,248,236,0.9);
-            font-size: 1.5rem; display: flex; align-items: center; justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer;
+            flex: 1; min-width: 0; height: 44px;
+            border: none; border-radius: 14px; background: rgba(255,248,236,0.9);
+            font-size: 1.15rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; padding: 2px 0; color: #4a3622;
         }
         .shop-tab-pill.tab-active { background: #ff9800; box-shadow: 0 2px 10px rgba(255,152,0,0.7); }
 
-        #omiyage-page-nav { display: flex; gap: 6px; }
-        #omiyage-page-nav button {
-            width: 34px; height: 34px; border: none; border-radius: 8px; background: #ff9800; color: #fff;
-            font-weight: 900; font-size: 0.9rem; cursor: pointer;
+        /* 🔴 棚の真ん中の段、左右外側に配置する矢印。常に控えめに左右へ揺れて、押せることを伝える */
+        .omiyage-shelf-arrow {
+            position: absolute; top: 44%; left: 1%;
+            width: 34px; height: 34px; border-radius: 50%;
+            border: none; background: rgba(255, 152, 0, 0.85); color: #fff;
+            font-weight: 900; font-size: 1.3rem; cursor: pointer; z-index: 35;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            animation: shelfArrowWiggleLeft 1.6s ease-in-out infinite;
         }
+        #omiyage-arrow-right { animation-name: shelfArrowWiggleRight; }
+        @keyframes shelfArrowWiggleLeft {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-4px); }
+        }
+        @keyframes shelfArrowWiggleRight {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(4px); }
+        }
+        .shop-tab-label { display: block; font-size: 0.5rem; margin-top: 1px; font-weight: bold; }
         #omiyage-page-indicator {
             position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); z-index: 40;
             font-size: 0.65rem; color: #8d6e63; background: rgba(255,248,236,0.85);
@@ -1305,7 +1320,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-56</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-57</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1466,16 +1481,16 @@
                             <div id="shop-overlay-list"></div>
                         </div>
 
+                        <button id="omiyage-arrow-left" class="omiyage-shelf-arrow" onclick="omiyagePageBy(-1)" aria-label="まえの棚">‹</button>
+                        <button id="omiyage-arrow-right" class="omiyage-shelf-arrow" onclick="omiyagePageBy(1)" aria-label="つぎの棚" style="right:1%;">›</button>
+
                         <!-- 常時表示：タブ切り替え＆ページ送り（棚下の床の余白部分に配置） -->
                         <div id="shop-bottom-bar">
                             <div id="shop-tab-buttons">
-                                <button id="shop-tab-omiyage" class="shop-tab-pill tab-active" onclick="switchShopTab('omiyage')">🎁</button>
-                                <button id="shop-tab-kisekae" class="shop-tab-pill" onclick="switchShopTab('kisekae')">👕</button>
-                                <button id="shop-tab-skills" class="shop-tab-pill" onclick="switchShopTab('skills')">✨</button>
-                            </div>
-                            <div id="omiyage-page-nav">
-                                <button onclick="omiyagePageBy(-1)">←</button>
-                                <button onclick="omiyagePageBy(1)">→</button>
+                                <button id="shop-tab-omiyage" class="shop-tab-pill tab-active" onclick="switchShopTab('omiyage')">🎁<span class="shop-tab-label">おみやげ</span></button>
+                                <button id="shop-tab-kisekae" class="shop-tab-pill" onclick="switchShopTab('kisekae')">👕<span class="shop-tab-label">きせかえ</span></button>
+                                <button id="shop-tab-skills" class="shop-tab-pill" onclick="switchShopTab('skills')">✨<span class="shop-tab-label">スキル</span></button>
+                                <button id="shop-tab-gacha" class="shop-tab-pill" onclick="onGachaTabTap()">🎰<span class="shop-tab-label">ガチャ</span></button>
                             </div>
                         </div>
                     </div>
@@ -4381,13 +4396,34 @@
             document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
             document.getElementById('shop-tab-kisekae').classList.toggle('tab-active', tab === 'kisekae');
             document.getElementById('shop-tab-skills').classList.toggle('tab-active', tab === 'skills');
+            document.getElementById('shop-tab-gacha').classList.toggle('tab-active', tab === 'gacha');
             // 棚イラスト自体は常に全画面表示のまま。おみやげ以外のタブでは、上に半透明パネルを重ねるだけ。
             document.getElementById('omiyage-slots-layer').style.display = (tab === 'omiyage') ? 'block' : 'none';
-            document.getElementById('omiyage-page-nav').style.display = (tab === 'omiyage') ? 'flex' : 'none';
+            document.getElementById('omiyage-arrow-left').style.display = (tab === 'omiyage') ? 'flex' : 'none';
+            document.getElementById('omiyage-arrow-right').style.display = (tab === 'omiyage') ? 'flex' : 'none';
             document.getElementById('omiyage-page-indicator').style.display = (tab === 'omiyage') ? 'block' : 'none';
             document.getElementById('shop-overlay-panel').classList.toggle('show', tab !== 'omiyage');
             if (tab !== 'omiyage') closeOmiyageDetail();
             renderShopList();
+        }
+
+        // 🎰 ガチャタブ：管理者用URL(?dev=...)からでないと、まだ「近日公開」の案内だけ表示する
+        // 🎰 ガチャ本体はまだ未設計。景品の中身が決まるまでの、仮の動作確認用
+        function spinGachaPlaceholder() {
+            const gain = Math.floor(Math.random() * 500) + 50;
+            score += gain;
+            playAudioFile('audio/levelup.mp3');
+            updateDisplay(); saveGame();
+            const resultEl = document.getElementById('gacha-result-text');
+            if (resultEl) resultEl.innerText = `（仮の結果）もち +${formatMochi(gain)}`;
+        }
+
+        function onGachaTabTap() {
+            if (!IS_DEV_MODE) {
+                alert('🎰 ガチャは近日公開予定です！\nお楽しみに！');
+                return;
+            }
+            switchShopTab('gacha');
         }
 
         function renderShopList() {
@@ -4398,6 +4434,18 @@
 
             const listContainer = document.getElementById('shop-overlay-list');
             listContainer.innerHTML = "";
+
+            if (currentShopTab === 'gacha') {
+                listContainer.innerHTML = `
+                    <div style="text-align:center; padding:10px;">
+                        <img src="ui_images/gacha_machine.webp" alt="ガチャガチャ" style="width:55%; max-width:180px; margin-bottom:12px;">
+                        <p style="font-size:0.75rem; color:#5d4037; margin-bottom:10px;">🚧 開発者テスト用（中身は未確定です）</p>
+                        <button class="item-action-btn btn-shop" style="width:80%; background:#e91e63; color:#fff;" onclick="spinGachaPlaceholder()">🎰 1回まわす（仮：ランダムでもち）</button>
+                        <p id="gacha-result-text" style="font-size:0.85rem; font-weight:bold; color:#e91e63; margin-top:10px;"></p>
+                    </div>
+                `;
+                return;
+            }
 
             if (currentShopTab === 'kisekae') {
                 clothesData.forEach(c => {
