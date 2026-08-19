@@ -483,11 +483,11 @@
             padding: 5px 14px;
         }
         #omiyage-money-flash {
-            position: absolute; top: calc(30px + env(safe-area-inset-top, 0px)); left: 14px; z-index: 41;
+            position: absolute; z-index: 41;
             font-weight: 900; color: #e53935; font-size: 1.05rem;
             opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateY(4px) scale(0.8);
             text-shadow: 0 1px 4px rgba(255,255,255,0.9), 0 1px 4px rgba(255,255,255,0.9);
-            pointer-events: none;
+            pointer-events: none; white-space: nowrap;
         }
         #omiyage-money-flash.show { opacity: 1; transform: translateY(0) scale(1.1); }
 
@@ -1322,7 +1322,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-59</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-60</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -4912,7 +4912,16 @@
 
         function flashOmiyageMoneySpent(price) {
             const el = document.getElementById('omiyage-money-flash');
+            const valueEl = document.getElementById('omiyage-money-value');
+            const container = document.getElementById('omiyage-shelf-container'); // #omiyage-money-displayと同じ絶対配置の基準
             el.innerText = `-${formatMochi(price)}もち`;
+
+            // 所持もち数の桁数によって表示幅が変わるため、その時点での右上位置を実測して合わせる
+            const valueRect = valueEl.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            el.style.left = (valueRect.right - containerRect.left + 4) + 'px';
+            el.style.top = (valueRect.top - containerRect.top - 14) + 'px';
+
             el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
             setTimeout(() => el.classList.remove('show'), 1600);
         }
