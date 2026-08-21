@@ -1322,7 +1322,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-60</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-61</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -2549,7 +2549,8 @@
             const balloonEl = document.getElementById('mochi-balloon');
             const isTalking = balloonEl && balloonEl.classList.contains('balloon-show');
             const isHissatsuActive = skills.hissatsu && skills.hissatsu.activeTimer > 0;
-            const shouldHide = isTalking || isScreamActive || isHissatsuActive;
+            // 伸ばしたり潰したりしている間・その後の揺れ戻りアニメーション中は、口パーツが元の位置に浮いて見えてしまうため非表示にする
+            const shouldHide = isTalking || isScreamActive || isHissatsuActive || isDraggingSqueeze || isSqueezeSettling;
             mouthPatchEl.style.display = shouldHide ? 'none' : 'block';
         }
 
@@ -2731,7 +2732,7 @@
 
         let breatheTimer = null; let isMochiPressed = false;
         // 🫧 スクイーズ機能：引っ張った方向にもちすけが伸び縮みする（回転はしない）
-        let squeezeStartX = 0, squeezeStartY = 0, isDraggingSqueeze = false;
+        let squeezeStartX = 0, squeezeStartY = 0, isDraggingSqueeze = false, isSqueezeSettling = false;
         let squeezeLastDx = 0, squeezeLastDy = 0;
         const SQUEEZE_MAX_DRAG = 70; // これ以上引っ張っても伸びが頭打ちになる距離(px)
         const SQUEEZE_MAX_STRETCH = 0.38; // 最大でどれだけ伸びるか（+38%）
@@ -3876,6 +3877,7 @@
                 // 🫧 スクイーズ：ここから指の動きを追いかけて、引っ張った方向に伸縮させる
                 squeezeStartX = e.clientX; squeezeStartY = e.clientY;
                 isDraggingSqueeze = true;
+                updateMouthPatchVisibility();
                 startStretchSound();
             }
 
@@ -4045,12 +4047,16 @@
                 });
             }
             isDraggingSqueeze = false;
+            isSqueezeSettling = true; // 揺れ戻りアニメーションが収まるまで、口パーツは出さない
+            updateMouthPatchVisibility();
             squeezeLastDx = 0; squeezeLastDy = 0;
 
             breatheTimer = setTimeout(() => {
                 if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
                     mochiBreatheWrapEl.classList.add('breathe-idle');
                 }
+                isSqueezeSettling = false;
+                updateMouthPatchVisibility();
             }, 1200);
         }
 
