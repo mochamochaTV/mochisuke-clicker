@@ -59,7 +59,7 @@
     <style>
         /* 全体スタイル - ズームやスクロールを完全禁止 */
         html {
-            height: 100%;
+            height: var(--app-height, 100%);
             overflow: hidden;
             overscroll-behavior: none;
         }
@@ -76,7 +76,10 @@
             touch-action: none;
             overscroll-behavior: none;
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0; left: 0; width: 100%; height: var(--app-height, 100%);
+            /* 🐛修正：--app-heightはJSで正確な高さを測って設定していたが、CSS側でこの値を一切参照していなかった。
+               height:100%のままだと、ブラウザのアドレスバー分の高さがそのまま画面に含まれてしまい、
+               特にショップなど全画面表示のモーダルで、実際より縮んで見える原因になっていた。 */
             /* 以前はinset:0を使っていたが、同じ「position:fixed;端に固定」でも
                inset:0だとiPhoneのPWAで下に隙間が残るのに対し、.modal（top/left/width/height指定）は
                隙間なく端まで表示できていることが実機で確認できたため、同じ書き方に統一した。
@@ -409,7 +412,7 @@
         .nav-btn:active { transform: scale(0.95); }
 
         /* モーダル共通 */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: var(--app-height, 100%); background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         .modal-content { background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 75vh; overflow-y: auto; box-sizing: border-box; position: relative; }
 
         /* ミニゲーム中は連打の勢いで画面がスクロールしてズレてしまわないよう固定する */
@@ -1322,7 +1325,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-70</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-71</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -4505,8 +4508,11 @@
 
             currentGachaRarity = pickGachaRarity(); // 🎨 この回で出るレア度を先に決めておく（カプセルの色に反映する）
 
-            // リセット（2回目以降のために）
-            document.getElementById('gacha-multi-grid').style.display = 'none';
+            // リセット（2回目以降のために）：前回のアニメーションが終了状態を保持し続けているため、まず打ち切る
+            [capsuleWrap, capsuleWhole, capsuleTop, capsuleBottom, prizeReveal].forEach(el => {
+                el.getAnimations().forEach(a => a.cancel());
+            });
+            document.getElementById('gacha-multi-panel').style.display = 'none';
             capsuleWrap.style.display = 'block';
             capsuleWrap.style.transform = 'translate(-50%, 0) scale(0)';
             capsuleWhole.style.display = 'block';
@@ -4619,8 +4625,11 @@
             if (spin10Btn.disabled) return;
             setGachaButtonsDisabled(true);
 
+            document.getElementById('gacha-capsule-wrap').getAnimations().forEach(a => a.cancel());
             document.getElementById('gacha-capsule-wrap').style.display = 'none';
+            document.getElementById('gacha-prize-reveal').getAnimations().forEach(a => a.cancel());
             document.getElementById('gacha-prize-reveal').style.opacity = '0';
+            document.getElementById('gacha-multi-panel').style.display = 'none';
 
             playGachaCrankSequence().then(() => {
                 dropGacha10Capsules();
@@ -4628,22 +4637,34 @@
         }
 
         function dropGacha10Capsules() {
+            const panel = document.getElementById('gacha-multi-panel');
             const grid = document.getElementById('gacha-multi-grid');
             grid.innerHTML = '';
-            grid.style.display = 'grid';
+            panel.style.display = 'block'; // 🔴 機体の絵と重なって見づらくならないよう、専用の背景パネルを敷いてから並べる
+
+            const CAPSULE_PX = 64; // 1連のカプセルとほぼ同じ大きさになるよう、固定サイズで揃える
 
             const rarities = [];
             const capsuleEls = [];
+            const iconEls = [];
             for (let i = 0; i < 10; i++) {
                 rarities.push(pickGachaRarity());
                 const cell = document.createElement('div');
-                cell.style.cssText = 'position:relative; aspect-ratio:1; display:flex; align-items:center; justify-content:center;';
+                cell.style.cssText = `position:relative; width:${CAPSULE_PX}px; height:${CAPSULE_PX}px; display:flex; align-items:center; justify-content:center;`;
+
                 const img = document.createElement('img');
                 img.src = 'ui_images/gacha_capsule.webp';
-                img.style.cssText = `width:72%; display:block; filter:${rarities[i].filter}; transform:scale(0);`;
+                img.style.cssText = `position:absolute; width:100%; display:block; filter:${rarities[i].filter}; transform:scale(0);`;
+
+                const icon = document.createElement('div');
+                icon.style.cssText = 'position:absolute; width:100%; text-align:center; opacity:0; transform:scale(0.5);';
+                icon.innerHTML = `<div style="font-size:1.6rem;">🍡</div><div style="font-size:0.5rem; font-weight:bold; color:${rarities[i].color}; text-shadow:0 1px 2px #fff;"></div>`;
+
                 cell.appendChild(img);
+                cell.appendChild(icon);
                 grid.appendChild(cell);
                 capsuleEls.push(img);
+                iconEls.push(icon);
             }
 
             playAudioFile('audio/gacha_drop.mp3');
@@ -4663,35 +4684,34 @@
 
             // 10個すべて落ち終わってから、順番にパカパカ自動で開けていく
             const allDroppedDelay = 10 * 130 + 350;
-            setTimeout(() => openGacha10CapsulesSequentially(capsuleEls, rarities, 0), allDroppedDelay);
+            setTimeout(() => openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, 0), allDroppedDelay);
         }
 
-        function openGacha10CapsulesSequentially(capsuleEls, rarities, index) {
+        function openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, index) {
             if (index >= capsuleEls.length) {
                 finishGachaSpin10();
                 return;
             }
             const img = capsuleEls[index];
+            const icon = iconEls[index];
             playAudioFile('audio/gacha_open.mp3');
             vibrate([10, 15]);
+
+            // 🚧 景品テーブルはまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
+            const gain = Math.floor(Math.random() * 500) + 50;
+            score += gain; updateDisplay();
+            icon.querySelector('div:last-child').innerText = `+${formatMochi(gain)}`;
+
+            // カプセルが弾けて縮み、中身が浮かび上がる
             img.animate(
-                [
-                    { transform: 'scale(1)' },
-                    { transform: 'scale(1.3)', offset: 0.45 },
-                    { transform: 'scale(0.92)' },
-                ],
-                { duration: 260, easing: 'ease-out', fill: 'forwards' }
+                [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.25)', opacity: 1, offset: 0.35 }, { transform: 'scale(0.2)', opacity: 0 }],
+                { duration: 350, easing: 'ease-in', fill: 'forwards' }
+            );
+            icon.animate(
+                [{ transform: 'scale(0.5)', opacity: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1 }],
+                { duration: 400, easing: 'ease-out', fill: 'forwards', delay: 120 }
             ).finished.then(() => {
-                // 🚧 景品テーブルはまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
-                const gain = Math.floor(Math.random() * 500) + 50;
-                score += gain; updateDisplay();
-
-                const label = document.createElement('div');
-                label.style.cssText = `position:absolute; top:-2px; left:50%; transform:translate(-50%,-100%); font-size:0.5rem; font-weight:bold; color:${rarities[index].color}; white-space:nowrap; text-shadow:0 1px 2px #fff;`;
-                label.innerText = `+${formatMochi(gain)}`;
-                img.parentElement.appendChild(label);
-
-                setTimeout(() => openGacha10CapsulesSequentially(capsuleEls, rarities, index + 1), 220);
+                setTimeout(() => openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, index + 1), 180);
             });
         }
 
@@ -4736,7 +4756,9 @@
                             <p id="gacha-prize-name" style="font-size:0.85rem; font-weight:bold; color:#e91e63; margin:4px 0 0; text-shadow:0 1px 3px #fff;"></p>
                         </div>
 
-                        <div id="gacha-multi-grid" style="display:none; position:absolute; inset:8% 6%; grid-template-columns: repeat(5, 1fr); gap:6px; z-index:6; align-content:center;"></div>
+                        <div id="gacha-multi-panel" style="display:none; position:absolute; inset:2% 4%; background:rgba(255,248,236,0.94); border:2px solid #e8dcc0; border-radius:16px; z-index:6; overflow-y:auto;">
+                            <div id="gacha-multi-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 10px; padding:12px; justify-items:center;"></div>
+                        </div>
                     </div>
                     <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 開発者テスト用（景品の中身は未確定です）</p>
                     <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#e91e63; color:#fff;" onclick="startGachaSpin()">🎰 1回まわす</button>
