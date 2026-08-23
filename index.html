@@ -469,7 +469,7 @@
             box-sizing: border-box; padding: 6px;
         }
         #omiyage-shelf-container {
-            position: relative; flex: 1; min-height: 0;
+            position: relative; flex: 1; min-height: 0; overflow: hidden;
             display: flex; align-items: center; justify-content: center;
             background: #b8813c; /* イラストの縁の色に合わせた背景。レターボックスの隙間があっても白く浮かない */
         }
@@ -1325,7 +1325,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-71</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-72</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -4852,18 +4852,31 @@
             const cw = container.clientWidth, ch = container.clientHeight;
             if (cw === 0 || ch === 0) return;
             const containerRatio = cw / ch;
-            let w, h;
+            let w, h, top;
             if (containerRatio > OMIYAGE_IMG_NATURAL_RATIO) {
-                // 横長すぎるコンテナ → 高さいっぱいに合わせて幅を計算（左右がレターボックス）
-                h = ch; w = ch * OMIYAGE_IMG_NATURAL_RATIO;
+                // 横長すぎるコンテナ：本来は左右がレターボックスされるが、メイン画面の背景と同じ考え方で、
+                // 下部のショップタブ・棚を絶対に隠さない範囲でだけ、看板寄りの上部を安全に切り詰めて幅優先にする
+                w = cw; h = cw / OMIYAGE_IMG_NATURAL_RATIO;
+                const MAX_SAFE_CROP_RATIO = 0.16; // 看板部分など、削っても実害が無い上部の目安（下のタブ等には絶対届かせない）
+                const overflowH = h - ch;
+                const cropTop = Math.max(0, Math.min(overflowH, h * MAX_SAFE_CROP_RATIO));
+                top = -cropTop;
+                const stillOverflowing = h - cropTop - ch;
+                if (stillOverflowing > 0) {
+                    // それでも収まりきらない分だけ、従来通り少し縮めてレターボックスに戻す（safeクロップの範囲は超えない）
+                    const scale = ch / (h - cropTop);
+                    w *= scale; h *= scale;
+                    top = -cropTop * scale;
+                }
             } else {
                 // 縦長すぎるコンテナ → 幅いっぱいに合わせて高さを計算（上下がレターボックス）
                 w = cw; h = cw / OMIYAGE_IMG_NATURAL_RATIO;
+                top = (ch - h) / 2;
             }
             frame.style.width = w + 'px';
             frame.style.height = h + 'px';
             frame.style.left = ((cw - w) / 2) + 'px';
-            frame.style.top = ((ch - h) / 2) + 'px';
+            frame.style.top = top + 'px';
         }
 
         window.addEventListener('resize', () => {
