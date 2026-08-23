@@ -1322,7 +1322,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-65</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-67</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -1759,15 +1759,6 @@
                             <button onclick="adjustMouthSize(1)" style="padding:2px 8px; font-size:0.62rem;">拡大＋</button>
                         </div>
                         <div id="mouth-adjust-readout" style="font-size:0.6rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
-                    </div>
-                    <div style="text-align:center; margin-top:8px; border-top:1px dashed #ddd; padding-top:8px;">
-                        <button id="gacha-crank-adjust-toggle-btn" onclick="toggleGachaCrankAdjustMode()" style="background:#e91e63; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">🎰 ガチャレバー調整モード</button>
-                        <p style="font-size:0.55rem; color:#999; margin:3px 0 0;">※先にショップ→ガチャタブを開いてから押してください</p>
-                        <div style="margin-top:4px;">
-                            <button onclick="adjustGachaCrankSize(-1)" style="padding:2px 8px; font-size:0.62rem;">縮小－</button>
-                            <button onclick="adjustGachaCrankSize(1)" style="padding:2px 8px; font-size:0.62rem;">拡大＋</button>
-                        </div>
-                        <div id="gacha-crank-adjust-readout" style="font-size:0.6rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
                     </div>
                     <div style="text-align:center; margin-top:8px; border-top:1px dashed #ddd; padding-top:8px;">
                         <button onclick="toggleStampDebug()" style="background:#607d8b; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">📊 スタンプ状態を常時表示</button>
@@ -3232,6 +3223,70 @@
             el.textContent = `top:${crank.style.top}; left:${crank.style.left}; width:${crank.style.width};`;
         }
 
+        // 💊 ガチャのカプセルも、同じ考え方で位置調整できるようにする
+        let gachaCapsuleAdjustMode = false;
+        let gachaCapsuleDragState = null;
+        function toggleGachaCapsuleAdjustMode() {
+            const wrap = document.getElementById('gacha-capsule-wrap');
+            if (!wrap) { alert('先にショップ→🎰ガチャタブを開いてから押してください'); return; }
+            gachaCapsuleAdjustMode = !gachaCapsuleAdjustMode;
+            const btn = document.getElementById('gacha-capsule-adjust-toggle-btn');
+            if (gachaCapsuleAdjustMode) {
+                // 通常は拡大率0（見えない状態）なので、調整中だけ強制的に見える状態にする
+                wrap.style.transform = 'translate(-50%, 0) scale(1)';
+                wrap.style.pointerEvents = 'auto';
+                wrap.style.outline = '2px dashed #e91e63';
+                if (btn) btn.style.background = '#4caf50';
+                setupGachaCapsuleDrag(wrap);
+                updateGachaCapsuleReadout();
+            } else {
+                wrap.style.transform = 'translate(-50%, 0) scale(0)';
+                wrap.style.pointerEvents = 'none';
+                wrap.style.outline = '';
+                if (btn) btn.style.background = '#e91e63';
+            }
+        }
+        function setupGachaCapsuleDrag(wrap) {
+            if (wrap.dataset.dragSetup) return; // 二重登録防止
+            wrap.dataset.dragSetup = '1';
+            wrap.addEventListener('pointerdown', (e) => {
+                if (!gachaCapsuleAdjustMode) return;
+                e.stopPropagation(); e.preventDefault();
+                try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+                gachaCapsuleDragState = { startX: e.clientX, startY: e.clientY };
+            });
+            wrap.addEventListener('pointermove', (e) => {
+                if (!gachaCapsuleDragState || !gachaCapsuleAdjustMode) return;
+                e.stopPropagation();
+                const stage = document.getElementById('gacha-stage');
+                const rect = stage.getBoundingClientRect();
+                const dxPct = ((e.clientX - gachaCapsuleDragState.startX) / rect.width) * 100;
+                const dyPct = ((e.clientY - gachaCapsuleDragState.startY) / rect.height) * 100;
+                const curLeft = parseFloat(wrap.style.left) || 0;
+                const curTop = parseFloat(wrap.style.top) || 0;
+                wrap.style.left = (curLeft + dxPct) + '%';
+                wrap.style.top = (curTop + dyPct) + '%';
+                gachaCapsuleDragState.startX = e.clientX;
+                gachaCapsuleDragState.startY = e.clientY;
+                updateGachaCapsuleReadout();
+            });
+            wrap.addEventListener('pointerup', () => { gachaCapsuleDragState = null; });
+            wrap.addEventListener('pointercancel', () => { gachaCapsuleDragState = null; });
+        }
+        function adjustGachaCapsuleSize(delta) {
+            const wrap = document.getElementById('gacha-capsule-wrap');
+            if (!wrap) return;
+            const cur = parseFloat(wrap.style.width) || 22;
+            wrap.style.width = Math.max(3, cur + delta) + '%';
+            updateGachaCapsuleReadout();
+        }
+        function updateGachaCapsuleReadout() {
+            const wrap = document.getElementById('gacha-capsule-wrap');
+            const el = document.getElementById('gacha-capsule-adjust-readout');
+            if (!wrap || !el) return;
+            el.textContent = `top:${wrap.style.top}; left:${wrap.style.left}; width:${wrap.style.width};`;
+        }
+
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
@@ -4679,6 +4734,23 @@
                     </div>
                     <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 開発者テスト用（景品の中身は未確定です）</p>
                     <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#e91e63; color:#fff;" onclick="startGachaSpin()">🎰 1回まわす</button>
+
+                    <div style="text-align:center; margin-top:10px; border-top:1px dashed #ddd; padding-top:8px;">
+                        <button id="gacha-crank-adjust-toggle-btn" onclick="toggleGachaCrankAdjustMode()" style="background:#e91e63; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">🎰 レバー調整モード</button>
+                        <div style="margin-top:4px;">
+                            <button onclick="adjustGachaCrankSize(-1)" style="padding:2px 8px; font-size:0.62rem;">縮小－</button>
+                            <button onclick="adjustGachaCrankSize(1)" style="padding:2px 8px; font-size:0.62rem;">拡大＋</button>
+                        </div>
+                        <div id="gacha-crank-adjust-readout" style="font-size:0.6rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
+                    </div>
+                    <div style="text-align:center; margin-top:8px; border-top:1px dashed #ddd; padding-top:8px;">
+                        <button id="gacha-capsule-adjust-toggle-btn" onclick="toggleGachaCapsuleAdjustMode()" style="background:#e91e63; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">💊 カプセル位置調整モード</button>
+                        <div style="margin-top:4px;">
+                            <button onclick="adjustGachaCapsuleSize(-1)" style="padding:2px 8px; font-size:0.62rem;">縮小－</button>
+                            <button onclick="adjustGachaCapsuleSize(1)" style="padding:2px 8px; font-size:0.62rem;">拡大＋</button>
+                        </div>
+                        <div id="gacha-capsule-adjust-readout" style="font-size:0.6rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
+                    </div>
                 `;
                 return;
             }
