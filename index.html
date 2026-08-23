@@ -1322,7 +1322,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-68</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-70</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -3162,70 +3162,6 @@
             el.textContent = `top:${anchor.style.top}; left:${anchor.style.left}; width:${anchor.style.width};`;
         }
 
-        // 💊 ガチャのカプセルも、同じ考え方で位置調整できるようにする
-        let gachaCapsuleAdjustMode = false;
-        let gachaCapsuleDragState = null;
-        function toggleGachaCapsuleAdjustMode() {
-            const wrap = document.getElementById('gacha-capsule-wrap');
-            if (!wrap) { alert('先にショップ→🎰ガチャタブを開いてから押してください'); return; }
-            gachaCapsuleAdjustMode = !gachaCapsuleAdjustMode;
-            const btn = document.getElementById('gacha-capsule-adjust-toggle-btn');
-            if (gachaCapsuleAdjustMode) {
-                // 通常は拡大率0（見えない状態）なので、調整中だけ強制的に見える状態にする
-                wrap.style.transform = 'translate(-50%, 0) scale(1)';
-                wrap.style.pointerEvents = 'auto';
-                wrap.style.outline = '2px dashed #e91e63';
-                if (btn) btn.style.background = '#4caf50';
-                setupGachaCapsuleDrag(wrap);
-                updateGachaCapsuleReadout();
-            } else {
-                wrap.style.transform = 'translate(-50%, 0) scale(0)';
-                wrap.style.pointerEvents = 'none';
-                wrap.style.outline = '';
-                if (btn) btn.style.background = '#e91e63';
-            }
-        }
-        function setupGachaCapsuleDrag(wrap) {
-            if (wrap.dataset.dragSetup) return; // 二重登録防止
-            wrap.dataset.dragSetup = '1';
-            wrap.addEventListener('pointerdown', (e) => {
-                if (!gachaCapsuleAdjustMode) return;
-                e.stopPropagation(); e.preventDefault();
-                try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
-                gachaCapsuleDragState = { startX: e.clientX, startY: e.clientY };
-            });
-            wrap.addEventListener('pointermove', (e) => {
-                if (!gachaCapsuleDragState || !gachaCapsuleAdjustMode) return;
-                e.stopPropagation();
-                const stage = document.getElementById('gacha-stage');
-                const rect = stage.getBoundingClientRect();
-                const dxPct = ((e.clientX - gachaCapsuleDragState.startX) / rect.width) * 100;
-                const dyPct = ((e.clientY - gachaCapsuleDragState.startY) / rect.height) * 100;
-                const curLeft = parseFloat(wrap.style.left) || 0;
-                const curTop = parseFloat(wrap.style.top) || 0;
-                wrap.style.left = (curLeft + dxPct) + '%';
-                wrap.style.top = (curTop + dyPct) + '%';
-                gachaCapsuleDragState.startX = e.clientX;
-                gachaCapsuleDragState.startY = e.clientY;
-                updateGachaCapsuleReadout();
-            });
-            wrap.addEventListener('pointerup', () => { gachaCapsuleDragState = null; });
-            wrap.addEventListener('pointercancel', () => { gachaCapsuleDragState = null; });
-        }
-        function adjustGachaCapsuleSize(delta) {
-            const wrap = document.getElementById('gacha-capsule-wrap');
-            if (!wrap) return;
-            const cur = parseFloat(wrap.style.width) || 22;
-            wrap.style.width = Math.max(3, cur + delta) + '%';
-            updateGachaCapsuleReadout();
-        }
-        function updateGachaCapsuleReadout() {
-            const wrap = document.getElementById('gacha-capsule-wrap');
-            const el = document.getElementById('gacha-capsule-adjust-readout');
-            if (!wrap || !el) return;
-            el.textContent = `top:${wrap.style.top}; left:${wrap.style.left}; width:${wrap.style.width};`;
-        }
-
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
@@ -4500,35 +4436,13 @@
             return GACHA_RARITIES[0];
         }
 
-        function startGachaSpin() {
-            const spinBtn = document.getElementById('gacha-spin-btn');
-            if (spinBtn.disabled) return;
-            spinBtn.disabled = true;
-            spinBtn.style.opacity = '0.5';
-
+        // 🎰 3段階の回転演出（1連・10連で共通）：Promiseを返し、終わったら呼び出し側が次の処理に進める
+        function playGachaCrankSequence() {
             const crank = document.getElementById('gacha-crank');
-            const capsuleWrap = document.getElementById('gacha-capsule-wrap');
-            const capsuleWhole = document.getElementById('gacha-capsule-whole');
-            const capsuleTop = document.getElementById('gacha-capsule-top');
-            const capsuleBottom = document.getElementById('gacha-capsule-bottom');
-            const prizeReveal = document.getElementById('gacha-prize-reveal');
-
-            currentGachaRarity = pickGachaRarity(); // 🎨 この回で出るレア度を先に決めておく（カプセルの色に反映する）
-
-            // リセット（2回目以降のために）
-            capsuleWrap.style.transform = 'translate(-50%, 0) scale(1)'; // 🚧位置調整中につき、一時的に常時表示にしています（終わったらscale(0)に戻す）
-            capsuleWhole.style.display = 'block';
-            capsuleWhole.style.filter = 'none';
-            capsuleTop.style.display = 'none';
-            capsuleBottom.style.display = 'none';
-            capsuleTop.style.opacity = '1'; capsuleBottom.style.opacity = '1';
-            prizeReveal.style.opacity = '0';
-            prizeReveal.style.transform = 'translate(-50%,-50%) scale(0)';
-
             playAudioFile('audio/gacha_crank.mp3');
 
             // ステージ①：ゆっくり1回転
-            crank.animate(
+            return crank.animate(
                 [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }],
                 { duration: 700, easing: 'ease-in' }
             ).finished.then(() => {
@@ -4565,7 +4479,45 @@
                     [{ transform: 'rotate(0deg)' }, { transform: 'rotate(1080deg)' }],
                     { duration: 450, easing: 'linear' }
                 ).finished;
-            }).then(() => {
+            });
+        }
+
+        function setGachaButtonsDisabled(disabled) {
+            ['gacha-spin-btn', 'gacha-spin10-btn'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.disabled = disabled;
+                btn.style.opacity = disabled ? '0.5' : '1';
+            });
+        }
+
+        // ===== 1連：カプセルが落ちてきて、タップすると開く =====
+        function startGachaSpin() {
+            const spinBtn = document.getElementById('gacha-spin-btn');
+            if (spinBtn.disabled) return;
+            setGachaButtonsDisabled(true);
+
+            const capsuleWrap = document.getElementById('gacha-capsule-wrap');
+            const capsuleWhole = document.getElementById('gacha-capsule-whole');
+            const capsuleTop = document.getElementById('gacha-capsule-top');
+            const capsuleBottom = document.getElementById('gacha-capsule-bottom');
+            const prizeReveal = document.getElementById('gacha-prize-reveal');
+
+            currentGachaRarity = pickGachaRarity(); // 🎨 この回で出るレア度を先に決めておく（カプセルの色に反映する）
+
+            // リセット（2回目以降のために）
+            document.getElementById('gacha-multi-grid').style.display = 'none';
+            capsuleWrap.style.display = 'block';
+            capsuleWrap.style.transform = 'translate(-50%, 0) scale(0)';
+            capsuleWhole.style.display = 'block';
+            capsuleWhole.style.filter = 'none';
+            capsuleTop.style.display = 'none';
+            capsuleBottom.style.display = 'none';
+            capsuleTop.style.opacity = '1'; capsuleBottom.style.opacity = '1';
+            prizeReveal.style.opacity = '0';
+            prizeReveal.style.transform = 'translate(-50%,-50%) scale(0)';
+
+            playGachaCrankSequence().then(() => {
                 dropGachaCapsule();
             });
         }
@@ -4591,8 +4543,25 @@
                 { duration: 500, easing: 'ease-out', fill: 'forwards' }
             ).finished.then(() => {
                 capsuleWrap.style.transform = 'translate(-50%, 0) scale(1)';
-                setTimeout(openGachaCapsule, 450);
+                enableGachaCapsuleTapToOpen();
             });
+        }
+
+        // 🫳 落ちたカプセルは自動で開かず、プレイヤーがタップした時に開く
+        function enableGachaCapsuleTapToOpen() {
+            const capsuleWhole = document.getElementById('gacha-capsule-whole');
+            capsuleWhole.style.pointerEvents = 'auto';
+            capsuleWhole.style.cursor = 'pointer';
+            const pulse = capsuleWhole.animate(
+                [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }],
+                { duration: 800, iterations: Infinity }
+            );
+            capsuleWhole.onclick = () => {
+                capsuleWhole.onclick = null;
+                capsuleWhole.style.pointerEvents = 'none';
+                pulse.cancel();
+                openGachaCapsule();
+            };
         }
 
         function openGachaCapsule() {
@@ -4641,9 +4610,96 @@
                 { duration: 420, easing: 'ease-out', fill: 'forwards' }
             );
 
-            const spinBtn = document.getElementById('gacha-spin-btn');
-            spinBtn.disabled = false;
-            spinBtn.style.opacity = '1';
+            setGachaButtonsDisabled(false);
+        }
+
+        // ===== 10連：レバーは1回、カプセル10個が続けて出て、全部落ちてから順番にパカパカ開いていく =====
+        function startGachaSpin10() {
+            const spin10Btn = document.getElementById('gacha-spin10-btn');
+            if (spin10Btn.disabled) return;
+            setGachaButtonsDisabled(true);
+
+            document.getElementById('gacha-capsule-wrap').style.display = 'none';
+            document.getElementById('gacha-prize-reveal').style.opacity = '0';
+
+            playGachaCrankSequence().then(() => {
+                dropGacha10Capsules();
+            });
+        }
+
+        function dropGacha10Capsules() {
+            const grid = document.getElementById('gacha-multi-grid');
+            grid.innerHTML = '';
+            grid.style.display = 'grid';
+
+            const rarities = [];
+            const capsuleEls = [];
+            for (let i = 0; i < 10; i++) {
+                rarities.push(pickGachaRarity());
+                const cell = document.createElement('div');
+                cell.style.cssText = 'position:relative; aspect-ratio:1; display:flex; align-items:center; justify-content:center;';
+                const img = document.createElement('img');
+                img.src = 'ui_images/gacha_capsule.webp';
+                img.style.cssText = `width:72%; display:block; filter:${rarities[i].filter}; transform:scale(0);`;
+                cell.appendChild(img);
+                grid.appendChild(cell);
+                capsuleEls.push(img);
+            }
+
+            playAudioFile('audio/gacha_drop.mp3');
+            capsuleEls.forEach((img, i) => {
+                setTimeout(() => {
+                    vibrate([10]);
+                    img.animate(
+                        [
+                            { transform: 'translateY(-16px) scale(0)', offset: 0 },
+                            { transform: 'translateY(4px) scale(1.15)', offset: 0.65 },
+                            { transform: 'translateY(0) scale(1)', offset: 1 },
+                        ],
+                        { duration: 300, easing: 'ease-out', fill: 'forwards' }
+                    );
+                }, i * 130);
+            });
+
+            // 10個すべて落ち終わってから、順番にパカパカ自動で開けていく
+            const allDroppedDelay = 10 * 130 + 350;
+            setTimeout(() => openGacha10CapsulesSequentially(capsuleEls, rarities, 0), allDroppedDelay);
+        }
+
+        function openGacha10CapsulesSequentially(capsuleEls, rarities, index) {
+            if (index >= capsuleEls.length) {
+                finishGachaSpin10();
+                return;
+            }
+            const img = capsuleEls[index];
+            playAudioFile('audio/gacha_open.mp3');
+            vibrate([10, 15]);
+            img.animate(
+                [
+                    { transform: 'scale(1)' },
+                    { transform: 'scale(1.3)', offset: 0.45 },
+                    { transform: 'scale(0.92)' },
+                ],
+                { duration: 260, easing: 'ease-out', fill: 'forwards' }
+            ).finished.then(() => {
+                // 🚧 景品テーブルはまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
+                const gain = Math.floor(Math.random() * 500) + 50;
+                score += gain; updateDisplay();
+
+                const label = document.createElement('div');
+                label.style.cssText = `position:absolute; top:-2px; left:50%; transform:translate(-50%,-100%); font-size:0.5rem; font-weight:bold; color:${rarities[index].color}; white-space:nowrap; text-shadow:0 1px 2px #fff;`;
+                label.innerText = `+${formatMochi(gain)}`;
+                img.parentElement.appendChild(label);
+
+                setTimeout(() => openGacha10CapsulesSequentially(capsuleEls, rarities, index + 1), 220);
+            });
+        }
+
+        function finishGachaSpin10() {
+            saveGame();
+            playAudioFile('audio/levelup.mp3');
+            screenFlash('#ffd700', 0.25);
+            setGachaButtonsDisabled(false);
         }
 
         function onGachaTabTap() {
@@ -4669,7 +4725,7 @@
                         <img id="gacha-machine-body" src="ui_images/gacha_machine_body.webp" alt="ガチャガチャ" style="width:70%; max-width:230px; position:relative; z-index:2;">
                         <img id="gacha-crank" src="ui_images/gacha_crank.webp" alt="" style="position:absolute; width:18%; top:62.402035%; left:40.544265%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
 
-                        <div id="gacha-capsule-wrap" style="position:absolute; top:58%; left:50%; transform:translate(-50%, 0) scale(1); width:22%; max-width:70px; z-index:4;">
+                        <div id="gacha-capsule-wrap" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
                             <img id="gacha-capsule-whole" src="ui_images/gacha_capsule.webp" alt="" style="width:100%; display:block;">
                             <img id="gacha-capsule-top" src="ui_images/gacha_capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
                             <img id="gacha-capsule-bottom" src="ui_images/gacha_capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
@@ -4679,18 +4735,13 @@
                             <img id="gacha-prize-img" src="" alt="" style="width:90px; height:90px; object-fit:contain;">
                             <p id="gacha-prize-name" style="font-size:0.85rem; font-weight:bold; color:#e91e63; margin:4px 0 0; text-shadow:0 1px 3px #fff;"></p>
                         </div>
+
+                        <div id="gacha-multi-grid" style="display:none; position:absolute; inset:8% 6%; grid-template-columns: repeat(5, 1fr); gap:6px; z-index:6; align-content:center;"></div>
                     </div>
                     <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 開発者テスト用（景品の中身は未確定です）</p>
                     <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#e91e63; color:#fff;" onclick="startGachaSpin()">🎰 1回まわす</button>
+                    <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:#9c27b0; color:#fff; margin-top:8px;" onclick="startGachaSpin10()">🎰 10連まとめて</button>
 
-                    <div style="text-align:center; margin-top:10px; border-top:1px dashed #ddd; padding-top:8px;">
-                        <button id="gacha-capsule-adjust-toggle-btn" onclick="toggleGachaCapsuleAdjustMode()" style="background:#e91e63; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">💊 カプセル位置調整モード</button>
-                        <div style="margin-top:4px;">
-                            <button onclick="adjustGachaCapsuleSize(-1)" style="padding:2px 8px; font-size:0.62rem;">縮小－</button>
-                            <button onclick="adjustGachaCapsuleSize(1)" style="padding:2px 8px; font-size:0.62rem;">拡大＋</button>
-                        </div>
-                        <div id="gacha-capsule-adjust-readout" style="font-size:0.6rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
-                    </div>
                 `;
                 return;
             }
