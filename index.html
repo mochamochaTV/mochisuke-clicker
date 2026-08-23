@@ -552,6 +552,12 @@
         .shop-tab-pill.tab-active { background: #ff9800; box-shadow: 0 2px 10px rgba(255,152,0,0.7); }
 
         /* 🔴 棚の真ん中の段、左右外側に配置する矢印。常に控えめに左右へ揺れて、押せることを伝える */
+        #gacha-multi-panel { cursor: pointer; }
+        @keyframes gachaTapHintPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.06); }
+        }
+
         .omiyage-shelf-arrow {
             position: absolute; top: 44%; left: 1%;
             width: 34px; height: 34px; border-radius: 50%;
@@ -1325,7 +1331,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-72</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-73</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -4625,66 +4631,101 @@
             if (spin10Btn.disabled) return;
             setGachaButtonsDisabled(true);
 
-            document.getElementById('gacha-capsule-wrap').getAnimations().forEach(a => a.cancel());
-            document.getElementById('gacha-capsule-wrap').style.display = 'none';
             document.getElementById('gacha-prize-reveal').getAnimations().forEach(a => a.cancel());
             document.getElementById('gacha-prize-reveal').style.opacity = '0';
+            document.getElementById('gacha-multi-grid').innerHTML = '';
             document.getElementById('gacha-multi-panel').style.display = 'none';
+            const oldPrompt = document.getElementById('gacha10-finish-prompt');
+            if (oldPrompt) oldPrompt.remove();
+            const oldHint = document.getElementById('gacha-tap-hint');
+            if (oldHint) oldHint.remove();
 
             playGachaCrankSequence().then(() => {
-                dropGacha10Capsules();
+                const rarities = [];
+                for (let i = 0; i < 10; i++) rarities.push(pickGachaRarity());
+                dropGachaCapsuleOneByOne(rarities, 0);
             });
         }
 
-        function dropGacha10Capsules() {
+        // 🔴 10連のカプセルは、1連と同じ場所に1個ずつ出す。前のカプセルが残っていると次と重なって邪魔になるため、
+        // バウンドして着地した後、少し間を置いてフェードアウトしてから次のカプセルに道を譲る。
+        function dropGachaCapsuleOneByOne(rarities, index) {
+            if (index >= rarities.length) {
+                showGacha10SummaryGrid(rarities);
+                return;
+            }
+            const capsuleWrap = document.getElementById('gacha-capsule-wrap');
+            const capsuleWhole = document.getElementById('gacha-capsule-whole');
+            capsuleWrap.getAnimations().forEach(a => a.cancel());
+            capsuleWhole.style.display = 'block';
+            capsuleWhole.style.pointerEvents = 'none';
+            capsuleWhole.style.filter = rarities[index].filter;
+            capsuleWrap.style.display = 'block';
+
+            playAudioFile('audio/gacha_drop.mp3');
+            vibrate([12]);
+            capsuleWrap.animate(
+                [
+                    { transform: 'translate(-50%, -40px) scale(0)', opacity: 1, offset: 0 },
+                    { transform: 'translate(-50%, 12px) scale(1.1)', opacity: 1, offset: 0.6 },
+                    { transform: 'translate(-50%, -6px) scale(0.95)', opacity: 1, offset: 0.82 },
+                    { transform: 'translate(-50%, 0px) scale(1)', opacity: 1, offset: 1 },
+                ],
+                { duration: 420, easing: 'ease-out', fill: 'forwards' }
+            ).finished.then(() => {
+                // 少し見せてから、次のカプセルに道を譲るためフェードアウト
+                setTimeout(() => {
+                    capsuleWrap.animate(
+                        [
+                            { transform: 'translate(-50%, 0px) scale(1)', opacity: 1 },
+                            { transform: 'translate(-50%, -14px) scale(0.7)', opacity: 0 },
+                        ],
+                        { duration: 260, easing: 'ease-in', fill: 'forwards' }
+                    ).finished.then(() => {
+                        dropGachaCapsuleOneByOne(rarities, index + 1);
+                    });
+                }, 220);
+            });
+        }
+
+        // 🔴 10個出し終わったら、まとめて表示。画面をタップすると、1個ずつ自動で開いていく
+        function showGacha10SummaryGrid(rarities) {
+            document.getElementById('gacha-capsule-wrap').getAnimations().forEach(a => a.cancel());
+            document.getElementById('gacha-capsule-wrap').style.display = 'none';
+
             const panel = document.getElementById('gacha-multi-panel');
             const grid = document.getElementById('gacha-multi-grid');
             grid.innerHTML = '';
-            panel.style.display = 'block'; // 🔴 機体の絵と重なって見づらくならないよう、専用の背景パネルを敷いてから並べる
+            panel.style.display = 'block';
 
-            const CAPSULE_PX = 64; // 1連のカプセルとほぼ同じ大きさになるよう、固定サイズで揃える
-
-            const rarities = [];
-            const capsuleEls = [];
-            const iconEls = [];
-            for (let i = 0; i < 10; i++) {
-                rarities.push(pickGachaRarity());
+            const CAPSULE_PX = 56;
+            const capsuleEls = [], iconEls = [];
+            rarities.forEach((r) => {
                 const cell = document.createElement('div');
                 cell.style.cssText = `position:relative; width:${CAPSULE_PX}px; height:${CAPSULE_PX}px; display:flex; align-items:center; justify-content:center;`;
-
                 const img = document.createElement('img');
                 img.src = 'ui_images/gacha_capsule.webp';
-                img.style.cssText = `position:absolute; width:100%; display:block; filter:${rarities[i].filter}; transform:scale(0);`;
-
+                img.style.cssText = `position:absolute; width:100%; display:block; filter:${r.filter};`;
                 const icon = document.createElement('div');
                 icon.style.cssText = 'position:absolute; width:100%; text-align:center; opacity:0; transform:scale(0.5);';
-                icon.innerHTML = `<div style="font-size:1.6rem;">🍡</div><div style="font-size:0.5rem; font-weight:bold; color:${rarities[i].color}; text-shadow:0 1px 2px #fff;"></div>`;
-
-                cell.appendChild(img);
-                cell.appendChild(icon);
+                icon.innerHTML = `<div style="font-size:1.4rem;">🍡</div><div style="font-size:0.5rem; font-weight:bold; color:${r.color}; text-shadow:0 1px 2px #fff;"></div>`;
+                cell.appendChild(img); cell.appendChild(icon);
                 grid.appendChild(cell);
-                capsuleEls.push(img);
-                iconEls.push(icon);
-            }
-
-            playAudioFile('audio/gacha_drop.mp3');
-            capsuleEls.forEach((img, i) => {
-                setTimeout(() => {
-                    vibrate([10]);
-                    img.animate(
-                        [
-                            { transform: 'translateY(-16px) scale(0)', offset: 0 },
-                            { transform: 'translateY(4px) scale(1.15)', offset: 0.65 },
-                            { transform: 'translateY(0) scale(1)', offset: 1 },
-                        ],
-                        { duration: 300, easing: 'ease-out', fill: 'forwards' }
-                    );
-                }, i * 130);
+                capsuleEls.push(img); iconEls.push(icon);
             });
 
-            // 10個すべて落ち終わってから、順番にパカパカ自動で開けていく
-            const allDroppedDelay = 10 * 130 + 350;
-            setTimeout(() => openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, 0), allDroppedDelay);
+            const tapHint = document.createElement('p');
+            tapHint.id = 'gacha-tap-hint';
+            tapHint.style.cssText = 'text-align:center; font-size:0.75rem; color:#e91e63; font-weight:bold; margin:2px 0 8px; animation: gachaTapHintPulse 1s ease-in-out infinite;';
+            tapHint.innerText = '👆 画面をタップして開封！';
+            panel.insertBefore(tapHint, grid);
+
+            const openHandler = () => {
+                panel.removeEventListener('click', openHandler);
+                tapHint.remove();
+                openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, 0);
+            };
+            panel.addEventListener('click', openHandler);
         }
 
         function openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, index) {
@@ -4715,11 +4756,32 @@
             });
         }
 
+        // 🔴 全部開き終わったら、結果のUIをそのまま残さず、「もう10連／やめる」の選択だけ出す
         function finishGachaSpin10() {
             saveGame();
             playAudioFile('audio/levelup.mp3');
             screenFlash('#ffd700', 0.25);
+
+            const panel = document.getElementById('gacha-multi-panel');
+            const promptDiv = document.createElement('div');
+            promptDiv.id = 'gacha10-finish-prompt';
+            promptDiv.style.cssText = 'position:absolute; bottom:10px; left:8px; right:8px; display:flex; gap:8px;';
+            promptDiv.innerHTML = `
+                <button class="item-action-btn btn-shop" style="flex:1; background:#9c27b0; color:#fff;" onclick="event.stopPropagation(); closeGacha10ResultsAnd(true);">🎰 もう10連</button>
+                <button class="item-action-btn" style="flex:1; background:#eee; color:#4a3622;" onclick="event.stopPropagation(); closeGacha10ResultsAnd(false);">やめる</button>
+            `;
+            panel.appendChild(promptDiv);
+        }
+
+        // 🔴 「もう10連」「やめる」どちらを押しても、結果表示はいったんすべて消してから次に進む
+        function closeGacha10ResultsAnd(spinAgain) {
+            const panel = document.getElementById('gacha-multi-panel');
+            panel.style.display = 'none';
+            document.getElementById('gacha-multi-grid').innerHTML = '';
+            const prompt = document.getElementById('gacha10-finish-prompt');
+            if (prompt) prompt.remove();
             setGachaButtonsDisabled(false);
+            if (spinAgain) startGachaSpin10();
         }
 
         function onGachaTabTap() {
