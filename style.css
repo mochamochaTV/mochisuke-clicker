@@ -1,0 +1,1119 @@
+/* 全体スタイル - ズームやスクロールを完全禁止 */
+        html {
+            height: var(--app-height, 100%);
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+        body {
+            margin: 0; padding: 0;
+            font-family: 'Zen Maru Gothic', 'Helvetica Neue', Arial, sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            overflow: hidden; user-select: none; -webkit-user-select: none;
+            -webkit-touch-callout: none; /* 長押しで画像保存メニュー/拡大プレビューが出るのを防ぐ（もちすけ以外の画像に対策が漏れていた） */
+            background-color: #fcf8f2;
+            background-size: cover;
+            background-position: center bottom;
+            background-repeat: no-repeat;
+            touch-action: none;
+            overscroll-behavior: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: var(--app-height, 100%);
+            /* 🐛修正：--app-heightはJSで正確な高さを測って設定していたが、CSS側でこの値を一切参照していなかった。
+               height:100%のままだと、ブラウザのアドレスバー分の高さがそのまま画面に含まれてしまい、
+               特にショップなど全画面表示のモーダルで、実際より縮んで見える原因になっていた。 */
+            /* 以前はinset:0を使っていたが、同じ「position:fixed;端に固定」でも
+               inset:0だとiPhoneのPWAで下に隙間が残るのに対し、.modal（top/left/width/height指定）は
+               隙間なく端まで表示できていることが実機で確認できたため、同じ書き方に統一した。
+               WebKitのinsetショートハンドの実装上のクセの可能性が高い。 */
+            box-sizing: border-box;
+            /* 左右のノッチ避けだけ body側で確保（上下は各バー自身の背景色で埋めるので、
+               ここではpadding-top/bottomを持たせない＝隙間に本体の背景色が見えてしまうのを防ぐ） */
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
+        }
+        img {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none; user-select: none;
+            -webkit-user-drag: none;
+        }
+        input, textarea {
+            -webkit-user-select: text; user-select: text;
+            -webkit-touch-callout: default;
+        }
+
+        #game-screen {
+            width: 100%; max-width: 480px;
+            flex: 1 1 auto; min-height: 0;
+            position: relative; display: flex; flex-direction: column; align-items: center;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            background-image: url('bg_images/kyushu_okinawa/oita.webp');
+            background-position: center;
+            background-size: cover;
+            background-repeat: no-repeat;
+            touch-action: none;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
+        /* 🎬 画面の「気持ちよさ」演出：シェイク（振動）＆フラッシュ（色の閃光） */
+        @keyframes screenShakeSmall {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(-3px, 2px); }
+            50% { transform: translate(3px, -2px); }
+            75% { transform: translate(-2px, -2px); }
+        }
+        @keyframes screenShakeBig {
+            0%, 100% { transform: translate(0, 0) rotate(0); }
+            20% { transform: translate(-7px, 5px) rotate(-0.6deg); }
+            40% { transform: translate(6px, -5px) rotate(0.6deg); }
+            60% { transform: translate(-5px, -4px) rotate(-0.4deg); }
+            80% { transform: translate(5px, 4px) rotate(0.4deg); }
+        }
+        #game-screen.shake-small { animation: screenShakeSmall 0.22s ease-in-out; }
+        #game-screen.shake-big { animation: screenShakeBig 0.35s ease-in-out; }
+
+        #screen-flash-overlay {
+            position: absolute; inset: 0; z-index: 200;
+            pointer-events: none; opacity: 0; background: #fff;
+            transition: opacity 0.08s ease-out;
+        }
+        #screen-flash-overlay.fade-out { transition: opacity 0.35s ease-out; }
+
+        /* 高速描画用キャンバス */
+        #particle-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 998;
+        }
+        /* もちの雨は専用キャンバスに分離し、もちすけ(z-index:5)より奥・背景より手前に描画する */
+        #mochi-rain-canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 2;
+        }
+
+        #fade-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: #111; opacity: 0; pointer-events: none; z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+        .fade-black { opacity: 1 !important; }
+
+        /* 画面写真モード切替ボタン（もちすけ/スキル/もち数だけ → もちすけ+背景だけ → 背景だけ → 元通り、の4段階） */
+        /* 🎬 OP（タイトル）画面：ゲームの一番上に全画面で重ねておき、タップで消える */
+        #op-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 99998;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        #op-screen.op-hide {
+            opacity: 0;
+            transform: scale(1.08);
+            pointer-events: none;
+        }
+        #op-screen-img {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            object-fit: cover;
+            margin: 0 auto;
+        }
+        #op-screen-hint {
+            position: absolute;
+            bottom: calc(48px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            color: #fff;
+            font-weight: bold;
+            font-size: 1rem;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+            background: rgba(0,0,0,0.35);
+            padding: 8px 20px;
+            border-radius: 30px;
+            animation: opHintPulse 1.4s ease-in-out infinite;
+        }
+        @keyframes opHintPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        #menu-toggle-btn {
+            position: fixed;
+            top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
+            right: 10px;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            border: none;
+            font-size: 1.05rem;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50;
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+            padding: 0;
+        }
+
+        #map-toggle-btn {
+            position: fixed;
+            top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
+            left: 10px;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            border: none;
+            font-size: 1.05rem;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50;
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+            padding: 0;
+        }
+        #menu-toggle-btn:active { transform: scale(0.9); }
+
+        #ui-toggle-btn {
+            position: fixed;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 88px);
+            left: 10px;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            border: none;
+            font-size: 1.05rem;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50;
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+            padding: 0;
+        }
+        #ui-toggle-btn:active { transform: scale(0.9); }
+
+        #feed-toggle-btn {
+            position: fixed;
+            bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 88px);
+            right: 10px;
+            width: 38px; height: 38px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            color: #fff;
+            border: none;
+            font-size: 1.05rem;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 50;
+            cursor: pointer;
+            -webkit-backdrop-filter: blur(3px);
+            backdrop-filter: blur(3px);
+            padding: 0;
+        }
+        #feed-toggle-btn:active { transform: scale(0.9); }
+
+        /* 段階1: もちすけ・スキル・必殺技・もち数だけ残す */
+        body.ui-mode-1 #progress-area,
+        body.ui-mode-1 .info-row,
+        body.ui-mode-1 #control-panel { display: none !important; }
+
+        body.ui-mode-1 #install-banner { display: none !important; }
+
+        /* 段階2: もちすけと背景だけ残す */
+        body.ui-mode-2 #progress-area,
+        body.ui-mode-2 .info-row,
+        body.ui-mode-2 #control-panel,
+        body.ui-mode-2 #install-banner,
+        body.ui-mode-2 #header-container,
+        body.ui-mode-2 .skill-side-container,
+        body.ui-mode-2 #btn-hissatsu,
+        body.ui-mode-2 #combo-display,
+        body.ui-mode-2 #mochi-balloon { display: none !important; }
+
+        /* 段階3: 背景だけ */
+        body.ui-mode-3 #progress-area,
+        body.ui-mode-3 .info-row,
+        body.ui-mode-3 #control-panel,
+        body.ui-mode-3 #install-banner,
+        body.ui-mode-3 #header-container,
+        body.ui-mode-3 .skill-side-container,
+        body.ui-mode-3 #btn-hissatsu,
+        body.ui-mode-3 #combo-display,
+        body.ui-mode-3 #mochi-balloon,
+        body.ui-mode-3 #mochisuke-btn,
+        body.ui-mode-3 #mochisuke-mouth-patch,
+        body.ui-mode-3 #bunshin-container { display: none !important; }
+
+        /* 上部UI（デバッグバーを廃止したので、常にheader-containerが一番上＝常にセーフエリア分を確保する） */
+        #header-container {
+            width: 94%;
+            background: rgba(255, 245, 230, 0.88);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 2px solid rgba(240, 213, 181, 0.8);
+            border-radius: 18px;
+            margin-top: calc(6px + env(safe-area-inset-top, 0px));
+            padding: 8px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            z-index: 10;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        
+        .score-row {
+            width: 100%;
+            text-align: center;
+            font-size: 1.35rem;
+            font-weight: bold;
+            color: #4a3622;
+            font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+            border-bottom: 1px dashed rgba(233, 204, 167, 0.6);
+            padding-bottom: 2px;
+        }
+        .score-row img {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+        }
+        #score-text { display: inline-block; }
+        .digit-pop { display: inline-block; animation: digitPop 0.22s ease-out; }
+
+        /* 🃏 ご当地神経衰弱：本物のカードめくり風3D回転アニメーション */
+        .concentration-card-outer { aspect-ratio: 1; perspective: 700px; cursor: pointer; }
+        .concentration-card-inner {
+            position: relative; width: 100%; height: 100%;
+            transform-style: preserve-3d; transition: transform 0.45s cubic-bezier(0.4, 0.2, 0.2, 1);
+        }
+        .concentration-card-inner.flipped { transform: rotateY(180deg); }
+        .concentration-card-face {
+            position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 8px; border: 2px solid #ffcc80; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            overflow: hidden; box-sizing: border-box;
+        }
+        .concentration-card-back { background: #ff9800; font-size: 1.6rem; }
+        .concentration-card-front { background: #fff; transform: rotateY(180deg); }
+        .concentration-card-front img { width: 100%; height: 100%; object-fit: cover; }
+        .concentration-card-inner.matched .concentration-card-face {
+            border-color: #4caf50; box-shadow: 0 0 10px rgba(76,175,80,0.7);
+        }
+        .concentration-card-inner.shake { animation: concentrationShake 0.4s ease; }
+        @keyframes concentrationShake {
+            0%, 100% { transform: rotateY(180deg) translateX(0); }
+            20% { transform: rotateY(180deg) translateX(-6px); }
+            40% { transform: rotateY(180deg) translateX(6px); }
+            60% { transform: rotateY(180deg) translateX(-4px); }
+            80% { transform: rotateY(180deg) translateX(4px); }
+        }
+        @keyframes digitPop {
+            0% { transform: scale(1); }
+            45% { transform: scale(1.35); }
+            100% { transform: scale(1); }
+        }
+
+        .info-row {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .location-display {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+        .location-display span.pin {
+            color: #ff5252;
+            font-size: 1.25rem;
+        }
+        .nav-menu {
+            display: flex; width: 96%; justify-content: space-between; gap: 2px;
+            background-color: rgba(255, 245, 230, 0.88);
+            -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+            border-radius: 18px; padding: 6px;
+        }
+        .nav-btn {
+            flex: 1; padding: 0; font-size: 0.72rem; font-weight: bold;
+            border: none; cursor: pointer; text-align: center;
+            color: white;
+            position: relative; transition: transform 0.1s, filter 0.2s;
+            aspect-ratio: 1 / 1; background-size: contain; background-position: center; background-repeat: no-repeat;
+            background-color: transparent;
+        }
+        .nav-btn:active { transform: scale(0.95); }
+
+        /* モーダル共通 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: var(--app-height, 100%); background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
+        .modal-content { background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 75vh; overflow-y: auto; box-sizing: border-box; position: relative; }
+
+        /* ミニゲーム中は連打の勢いで画面がスクロールしてズレてしまわないよう固定する */
+        #minigame-center-modal .modal-content { overflow: hidden; touch-action: none; overscroll-behavior: none; }
+        #minigame-play-view { touch-action: none; }
+
+        /* 全画面表示のモーダル（地図・ショップ用）：スマホ画面サイズで作ったイラストをそのまま端まで生かす */
+        .modal-content.modal-fullscreen {
+            width: 100%; height: 100%; max-width: 480px; max-height: none;
+            padding: 0; border-radius: 0; text-align: left; overflow: hidden;
+            display: flex; flex-direction: column; box-shadow: none;
+        }
+        .modal-fullscreen-close {
+            position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 60;
+            width: 34px; height: 34px; border-radius: 50%; border: none;
+            background: rgba(0,0,0,0.4); color: #fff; font-size: 1.2rem; font-weight: bold;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            padding-bottom: 2px;
+        }
+        .modal-content h2 { margin-top: 0; color: #333; font-size: 1.4rem; padding-right: 20px; }
+        .btn-red { background: #e53935; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .modal-close-x { position: absolute; top: 14px; right: 16px; font-size: 1.6rem; color: #aaa; cursor: pointer; border: none; background: none; padding: 4px; line-height: 1; font-weight: bold; z-index: 99; }
+
+        /* ショップ用タブ */
+        /* .shop-tabs（旧・白背景のタブバー）は廃止。タブ切り替えは#shop-tab-buttons（棚イラスト上のピル型ボタン）に統合 */
+
+        .rank-tab-btn {
+            flex: 1; padding: 9px 4px; font-size: 0.8rem; font-weight: bold;
+            background: #f0f0f0; color: #777; border: none; border-radius: 8px; cursor: pointer;
+        }
+        .rank-tab-btn.active { background: #ff9800; color: #fff; }
+
+        /* リストアイテム */
+        .list-container { display: flex; flex-direction: column; gap: 10px; margin: 15px 0; text-align: left; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f9f9f9; border-radius: 8px; border: 1px solid #eee; gap: 8px; }
+        .item-thumb { width: 48px; height: 48px; border-radius: 10px; object-fit: cover; background: #fff; border: 1px solid #eee; flex-shrink: 0; }
+        .item-info-row { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+        .item-info { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+        .item-title { font-weight: bold; color: #333; font-size: 0.95rem; overflow-wrap: break-word; }
+        .item-desc { font-size: 0.75rem; color: #777; overflow-wrap: break-word; }
+        .item-action-btn { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: none; min-width: 80px; text-align: center; font-weight: bold; cursor: pointer; }
+        .item-action-btn:disabled { background: #ddd; color: #999; cursor: default; }
+        .btn-blue { background: #2196f3; color: white; }
+        .btn-green { background: #4caf50; color: white; }
+        .status-box { background: #f3e5f5; padding: 12px; border-radius: 10px; text-align: left; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6; color: #4a148c; }
+
+        /* 絵日記 */
+        .diary-paper { width: 90%; max-width: 360px; background: #fffbf0; border-radius: 16px; padding: 16px; box-sizing: border-box; box-shadow: 0 15px 30px rgba(0,0,0,0.4); border: 2px solid #d7ccc8; display: flex; flex-direction: column; gap: 12px; position: relative; }
+        .diary-img-area { width: 100%; background: #fafafa; border-radius: 10px; padding: 10px; box-sizing: border-box; display: flex; justify-content: center; align-items: center; position: relative; flex-direction: column; }
+        .diary-img { max-width: 100%; height: 196px; object-fit: contain; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        /* 🎁 おみやげ屋さん（棚イラストUI・全画面表示。きせかえ／スキルもすべて同じイラストの上に重ねて表示する） */
+        #omiyage-shelf-view {
+            flex: 1; min-height: 0; display: flex; flex-direction: column;
+            box-sizing: border-box; padding: 6px;
+        }
+        #omiyage-shelf-container {
+            position: relative; flex: 1; min-height: 0; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            background: #b8813c; /* イラストの縁の色に合わせた背景。レターボックスの隙間があっても白く浮かない */
+        }
+        #shop-modal .modal-content.modal-fullscreen { background: #b8813c; padding: 0; }
+        /* #omiyage-image-frameはJSでイラストの実際の表示サイズ・位置にピッタリ合わせて配置される
+           （object-fitのレターボックス分を考慮しないと、中の%指定の商品位置がズレるため） */
+        #omiyage-image-frame { position: absolute; }
+        #omiyage-image-frame > img { width: 100%; height: 100%; display: block; }
+
+        #omiyage-money-display {
+            position: absolute; top: calc(48px + env(safe-area-inset-top, 0px)); left: 6px; z-index: 40;
+            font-weight: 900; font-size: 1.15rem; color: #5d4037;
+            background: rgba(255,248,236,0.92); border: 2px solid #e8dcc0; border-radius: 22px;
+            padding: 5px 14px;
+        }
+        #omiyage-money-flash {
+            position: absolute; z-index: 41;
+            font-weight: 900; color: #e53935; font-size: 1.05rem;
+            opacity: 0; transition: opacity 0.3s, transform 0.3s; transform: translateY(4px) scale(0.8);
+            text-shadow: 0 1px 4px rgba(255,255,255,0.9), 0 1px 4px rgba(255,255,255,0.9);
+            pointer-events: none; white-space: nowrap;
+        }
+        #omiyage-money-flash.show { opacity: 1; transform: translateY(0) scale(1.1); }
+
+        #omiyage-slots-layer { position: absolute; inset: 0; }
+        .omiyage-slot {
+            position: absolute; display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .omiyage-slot-img { width: 72%; height: 72%; object-fit: contain; transition: transform 0.15s ease; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.3)); }
+        .omiyage-slot-emoji { font-size: 2.2rem; }
+        .omiyage-slot.mochitto .omiyage-slot-img,
+        .omiyage-slot.mochitto .omiyage-slot-emoji { animation: omiyageMochitto 0.4s ease; }
+        @keyframes omiyageMochitto {
+            0% { transform: scale(1); }
+            35% { transform: scale(0.72, 1.25); }
+            60% { transform: scale(1.18, 0.85); }
+            100% { transform: scale(1); }
+        }
+        .present-mochitto { animation: omiyageMochitto 0.3s ease; }
+        .omiyage-nameplate {
+            position: absolute; display: flex; align-items: center; justify-content: center;
+            font-size: 0.56rem; font-weight: bold; color: #6d4c28; text-align: center;
+            padding: 0 3px; line-height: 1.1;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            pointer-events: none;
+        }
+        .omiyage-slot.locked .omiyage-slot-emoji { opacity: 0.4; filter: grayscale(1); }
+
+        #omiyage-detail-panel {
+            position: absolute; left: 4.2%; right: calc(100% - 95.1%); top: 74.1%; height: calc(87.3% - 74.1%);
+            display: none; align-items: center; gap: 3%;
+            box-sizing: border-box; padding: 0 3%; overflow: hidden;
+        }
+        #omiyage-detail-panel.show { display: flex; }
+        #omiyage-detail-img { width: 18%; height: 88%; object-fit: contain; flex-shrink: 0; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.35)); }
+        #omiyage-detail-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; overflow: hidden; }
+        #omiyage-detail-name {
+            font-size: 0.8rem; font-weight: 900; color: #5d4037; overflow-wrap: break-word; line-height: 1.15;
+            text-shadow: 0 0 5px #fff8ec, 0 0 5px #fff8ec, 0 0 8px #fff8ec, 0 0 8px #fff8ec;
+        }
+        #omiyage-detail-effect {
+            font-size: 0.6rem; color: #6d4c28; overflow-wrap: break-word; line-height: 1.2;
+            text-shadow: 0 0 5px #fff8ec, 0 0 5px #fff8ec, 0 0 8px #fff8ec, 0 0 8px #fff8ec;
+        }
+        #omiyage-detail-buy-btn { flex-shrink: 0; padding: 7px 12px; font-size: 0.66rem; border-radius: 10px; font-weight: bold; }
+
+        /* 常時表示バー：タブ切り替え(左)＋ページ送り(右)。棚下の床の余白部分に配置 */
+        #shop-bottom-bar {
+            position: absolute; left: 4%; right: 4%; bottom: 3%; height: 9%;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        #shop-tab-buttons { display: flex; gap: 5px; width: 100%; }
+        .shop-tab-pill {
+            flex: 1; min-width: 0; height: 44px;
+            border: none; border-radius: 14px; background: rgba(255,248,236,0.9);
+            font-size: 1.15rem; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3); cursor: pointer; padding: 2px 0; color: #4a3622;
+        }
+        .shop-tab-pill.tab-active { background: #ff9800; box-shadow: 0 2px 10px rgba(255,152,0,0.7); }
+
+        /* 🔴 棚の真ん中の段、左右外側に配置する矢印。常に控えめに左右へ揺れて、押せることを伝える */
+        #gacha-multi-panel { cursor: pointer; }
+        @keyframes gachaTapHintPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.06); }
+        }
+
+        .omiyage-shelf-arrow {
+            position: absolute; top: 44%; left: 1%;
+            width: 34px; height: 34px; border-radius: 50%;
+            border: none; background: rgba(255, 152, 0, 0.85); color: #fff;
+            font-weight: 900; font-size: 1.3rem; cursor: pointer; z-index: 35;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+            animation: shelfArrowWiggleLeft 1.6s ease-in-out infinite;
+        }
+        #omiyage-arrow-right { animation-name: shelfArrowWiggleRight; left: auto; right: 1%; }
+        @keyframes shelfArrowWiggleLeft {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-4px); }
+        }
+        @keyframes shelfArrowWiggleRight {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(4px); }
+        }
+        .shop-tab-label { display: block; font-size: 0.5rem; margin-top: 1px; font-weight: bold; }
+        #omiyage-page-indicator {
+            position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); z-index: 40;
+            font-size: 0.65rem; color: #8d6e63; background: rgba(255,248,236,0.85);
+            padding: 2px 10px; border-radius: 10px;
+        }
+
+        /* 👕きせかえ／✨スキル：同じ棚イラストの上に半透明カードで重ねて表示する（別画面に切り替えない） */
+        #shop-overlay-panel {
+            position: absolute; left: 6%; right: 6%; top: 17%; bottom: 12%;
+            display: none; flex-direction: column;
+            background: rgba(255,248,236,0.95); border-radius: 14px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.25); border: 2px solid rgba(232,220,192,0.9);
+            overflow: hidden;
+        }
+        #shop-overlay-panel.show { display: flex; }
+        #shop-overlay-list { flex: 1; min-height: 0; overflow-y: auto; padding: 3%; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; text-align: left; }
+        #shop-overlay-list .list-item { background: #fffaf0; }
+
+        /* きせかえ・スキルタブの時は既存のリストUIを使うのでこちらを隠す（JSでも制御するが保険として） */
+
+
+        #map-viewport {
+            width: 100%; flex: 1; min-height: 0;
+            overflow: hidden; position: relative;
+            background: #cfe8f0; touch-action: none;
+        }
+        #map-canvas {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: auto;
+            transform-origin: 0 0;
+            cursor: grab;
+        }
+        #map-canvas:active { cursor: grabbing; }
+        #map-illustration-img { width: 100%; display: block; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+        #map-pins-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .map-pin {
+            position: absolute; transform: translate(-50%, -100%);
+            display: flex; flex-direction: column; align-items: center;
+            cursor: pointer; touch-action: manipulation;
+        }
+        .map-pin-icon {
+            font-size: 10px; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4));
+            animation: mapPinBob 1.8s ease-in-out infinite;
+        }
+        .map-pin.map-pin-current .map-pin-icon { font-size: 14px; animation: mapPinBobStrong 1s ease-in-out infinite; }
+        .map-pin.map-pin-locked .map-pin-icon { font-size: 8px; opacity: 0.5; animation: none; filter: grayscale(1); }
+        @keyframes mapPinBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        @keyframes mapPinBobStrong { 0%,100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-4px) scale(1.1); } }
+
+        #map-zoom-controls {
+            position: absolute; right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 55;
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        #map-zoom-controls button {
+            width: 34px; height: 34px; border-radius: 50%; border: none;
+            background: rgba(255,248,236,0.9); color: #8d6e63; font-size: 1rem; font-weight: bold; cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+        }
+
+        /* 地図の移動確認ダイアログ（地図イラストの和紙っぽい雰囲気に合わせる） */
+        #map-confirm-overlay {
+            display: none; position: fixed; inset: 0; z-index: 30500;
+            background: rgba(60,40,20,0.35); align-items: center; justify-content: center;
+        }
+        #map-confirm-box {
+            width: 82%; max-width: 320px; background: #fdf6e3;
+            border: 3px solid #d8b978; border-radius: 16px; padding: 22px 18px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3); text-align: center;
+        }
+        #map-confirm-text { font-size: 1.05rem; font-weight: bold; color: #5d4037; margin-bottom: 18px; line-height: 1.5; }
+        #map-confirm-buttons { display: flex; gap: 10px; }
+        .map-confirm-btn {
+            flex: 1; padding: 12px 0; border-radius: 10px; border: none; font-weight: bold; font-size: 0.95rem; cursor: pointer;
+        }
+        .map-confirm-yes { background: #ff9800; color: #fff; }
+        .map-confirm-no { background: #eee; color: #777; }
+
+        /* 🔴 絵日記の裏面：スタンプ帳 */
+        #diary-stamp-frame {
+            width: 150px; height: 150px; margin: 6px auto 10px;
+            border-radius: 50%; border: 3px dashed #d7ccc8;
+            background: #fafafa;
+            display: flex; align-items: center; justify-content: center;
+            box-sizing: border-box; position: relative; cursor: pointer;
+        }
+        #diary-stamp-mark {
+            width: 128px; height: 128px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            text-align: center; font-weight: 900; color: #c62828;
+            border: 3px solid #c62828; transform: rotate(-10deg);
+            font-family: "Hiragino Mincho ProN", "MS Mincho", serif;
+            font-size: 1.05rem; line-height: 1.3; padding: 6px; box-sizing: border-box;
+            opacity: 0.88;
+        }
+        #diary-stamp-omiyage-divider {
+            width: 85%; margin: 4px auto 12px; border-top: 2px dashed #d7ccc8;
+        }
+        .diary-item-thumb-back {
+            display: block; width: 130px; height: 130px; object-fit: contain;
+            margin: 0 auto 10px; border: 4px solid #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15); border-radius: 10px; background: #fafafa;
+        }
+        #diary-item-name-back {
+            text-align: center; font-size: 0.95rem; font-weight: bold; color: #5d4037;
+            font-family: "Hiragino Mincho ProN", "MS Mincho", serif;
+        }
+        .diary-text-area { width: 100%; height: 180px; display: flex; flex-direction: column; align-items: flex-start; padding: 8px; box-sizing: border-box; border-radius: 8px; border: 1px solid #efebe9; background-image: linear-gradient(90deg, rgba(224,208,192,0.3) 1px, transparent 1px); background-size: 24px 100%; }
+        .diary-title { font-size: 1.1rem; font-weight: bold; color: #5d4037; border-bottom: 2px dashed #bcaaa4; width: 100%; padding-bottom: 4px; margin-bottom: 8px; }
+        .diary-text { writing-mode: vertical-rl; -webkit-writing-mode: vertical-rl; font-size: 1.05rem; line-height: 1.8; color: #3e2723; height: 100%; width: 100%; overflow-x: auto; white-space: pre-wrap; font-family: "Hiragino Mincho ProN", "MS Mincho", serif; padding-bottom: 4px; }
+        .diary-footer { width: 100%; text-align: right; font-size: 0.8rem; color: #8d6e63; font-weight: bold; }
+        .diary-controls { display: flex; gap: 15px; margin-top: 15px; }
+        .page-animate { animation: cardSwitch 0.25s ease-out; }
+        @keyframes cardSwitch { 0% { opacity: 0.5; transform: scale(0.95) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+        .status-display {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #6d543a;
+            font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+            gap: 1px;
+            text-align: right;
+        }
+
+        #install-banner {
+            display: none;
+            width: 90%;
+            max-width: 400px;
+            margin-top: 4px;
+            background: rgba(74, 54, 34, 0.92);
+            color: #fff;
+            border-radius: 14px;
+            padding: 8px 10px 8px 14px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 0.78rem;
+            font-weight: bold;
+            z-index: 30;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            animation: cardSwitch 0.25s ease-out;
+        }
+        #install-banner-text { flex: 1; text-align: left; line-height: 1.3; }
+        #install-banner-action {
+            background: #ff9800; color: #fff; border: none; border-radius: 10px;
+            padding: 6px 12px; font-size: 0.78rem; font-weight: bold; cursor: pointer; flex-shrink: 0;
+        }
+        #install-banner-close {
+            background: none; border: none; color: #ddd; font-size: 1.1rem; cursor: pointer;
+            padding: 2px 4px; line-height: 1; flex-shrink: 0;
+        }
+
+        /* もちメーター */
+        #progress-area {
+            width: 94%;
+            background: rgba(255, 245, 230, 0.88);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            border: 2px solid rgba(240, 213, 181, 0.8);
+            border-radius: 14px;
+            margin-top: 4px;
+            padding: 4px 12px;
+            box-sizing: border-box;
+            z-index: 10;
+            text-align: center;
+        }
+        #stamp-press-btn {
+            width: 100%; margin-top: 6px; padding: 8px 0;
+            background: #c62828; color: #fff; border: none; border-radius: 10px;
+            font-size: 0.85rem; font-weight: bold; font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+            cursor: pointer; align-items: center; justify-content: center; gap: 6px;
+            animation: stampBtnPulse 0.9s infinite alternate;
+        }
+        @keyframes stampBtnPulse { from { transform: scale(1); } to { transform: scale(1.035); } }
+        #journey-progress-text {
+            font-size: 0.58rem;
+            font-weight: bold;
+            line-height: 1.15;
+            color: #fff;
+            background: #ff9800;
+            padding: 1px 6px;
+            border-radius: 8px;
+            margin-left: 4px;
+            text-align: center;
+            font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+        }
+        #distance-text {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #4a3622;
+            margin-bottom: 4px;
+            font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+        }
+        #progress-flex {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #progress-container {
+            flex: 1;
+            height: 10px;
+            background: rgba(240, 228, 212, 0.6);
+            border-radius: 10px;
+            position: relative;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+            overflow: visible;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ffb74d, #ff9800);
+            border-radius: 10px;
+            position: relative;
+        }
+        
+        #progress-mover {
+            position: absolute;
+            right: -13px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 26px;
+            height: 26px;
+            background: url('ui_images/mochi_particle.webp') center/contain no-repeat;
+            pointer-events: none;
+            z-index: 5;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+        }
+        #progress-flag { font-size: 1.1rem; cursor: default; }
+
+        .fever-active {
+            background: linear-gradient(135deg, rgba(255,241,118,0.9), rgba(255,183,77,0.9)) !important;
+            box-shadow: 0 0 20px #ff9800 !important;
+            animation: feverPulse 1s infinite alternate;
+        }
+        @keyframes feverPulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.01); }
+        }
+
+        /* キャラクター＆スキルエリア */
+        #mochisuke-area {
+            /* flex:1をやめて絶対配置にした。以前はheader/control-panelを非表示にすると、その分の余白を
+               flex:1のmochisuke-areaが吸収して大きくなり、中の絵が再センタリングされて位置がズレていた。
+               UIの表示状態に関わらず常に同じ場所を確保するよう、header/control-panel分の余白を
+               表示・非表示に関係なく固定でpaddingとして常に取っておく方式にした。 */
+            position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+            padding: 0 8px;
+            padding-top: 285px; padding-bottom: 130px;
+            display: flex; justify-content: space-between; align-items: center; width: 100%;
+            box-sizing: border-box; z-index: 3; /* もちの雨(z-index:2)より手前にして、雨が背後に見えるようにする */
+        }
+        /* ブラウザのタブのまま遊んでいる時（ホーム画面追加していない時）は、
+           Safariの上下のUI(アドレスバー・共有ボタン等)ぶん実際に使える高さが減るため、
+           上下の余白を少し狭めて、必殺技ボタンやセリフが窮屈にならないようにする */
+        html.browser-mode #mochisuke-area {
+            padding-top: 225px; padding-bottom: 100px;
+        }
+
+        /* Safariのタブでそのまま開かれている場合（ホーム画面追加のスタンドアロンではない場合）は、
+           上下にURLバー・共有ボタン等のブラウザUIが常時表示され、その分ゲーム画面が縮む。
+           ↑ この調整は上のhtml.browser-modeのpadding-top:225pxに統一済み。
+           以前ここにあった body.browser-tab-mode の重複ルールは、同じ詳細度で後に書かれていたため
+           html.browser-mode側のpaddingを意図せず上書きしてしまい（15pxぶん余白が減っていた）、
+           もちすけの位置だけが上にズレて、セリフ吹き出しと鼻が重なる原因になっていた（重複を削除して解消）。 */
+        html.browser-mode #mochi-balloon { top: 4px; } /* Web版はブラウザのUIぶん上の余白が減るため、セリフがゲージと重ならないよう下げる（ただし、もちすけの顔に被らない範囲で） */
+        
+        /* 左右スキルコンテナ */
+        .skill-side-container {
+            display: flex; flex-direction: column; gap: 20px; z-index: 20;
+        }
+        
+        /* スキルボタン基本スタイル */
+        .skill-btn {
+            width: 56px; height: 56px;
+            position: relative; display: flex; justify-content: center; align-items: center;
+            font-size: 0.62rem; font-weight: bold; color: white;
+            cursor: pointer;
+            background-size: contain; background-position: center; background-repeat: no-repeat;
+            text-align: center; line-height: 1.1;
+            transition: transform 0.1s, filter 0.2s;
+            box-sizing: border-box;
+        }
+        .skill-btn:active { transform: scale(0.92); }
+        .skill-btn.locked { filter: grayscale(0.85) brightness(0.6); opacity: 0.8; cursor: not-allowed; }
+        .skill-btn.on-cooldown { filter: brightness(0.55); }
+        
+        /* 円形クールタイム・発動中オーバーレイ */
+        .cd-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: conic-gradient(rgba(0,0,0,0.65) var(--cd-per, 0%), transparent 0deg);
+            pointer-events: none; border-radius: 50%;
+        }
+        .sk-lv { font-size: 0.55rem; color: #ffe082; display: block; margin-top: 1px; }
+
+        /* 🎨 イラスト差し替え後のボタン共通：座標ピッカーで測った位置に文字ラベルを重ねる */
+        .btn-illust-label {
+            position: absolute; z-index: 6; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; color: #fff; font-weight: bold; line-height: 1.15;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.65); overflow: hidden;
+        }
+
+        /* 💡「次のおすすめアクション」のハイライト（スキルの光り方=白/オレンジと区別するため、緑系に） */
+        .recommended-glow, .shop-recommend-glow, .minigame-recommend-glow {
+            animation: recommendedPulse 1s infinite alternate;
+        }
+
+        /* 📖 チュートリアルのハイライトは、通常の光らせ方よりもっと目立たせる：
+           説明中のボタン以外を暗くする（z-indexの入れ子に依存しない、各ボタンへの直接フィルターで統一） */
+        body.tutorial-active .nav-btn,
+        body.tutorial-active #map-toggle-btn,
+        body.tutorial-active #menu-toggle-btn,
+        body.tutorial-active #ui-toggle-btn,
+        body.tutorial-active #feed-toggle-btn {
+            filter: brightness(0.4);
+            transition: filter 0.3s;
+        }
+        .tutorial-glow {
+            animation: tutorialGlowPulse 0.8s infinite alternate;
+        }
+        @keyframes tutorialGlowPulse {
+            0% { filter: brightness(1) drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #4caf50); transform: scale(1); }
+            100% { filter: brightness(1.15) drop-shadow(0 0 16px #fff) drop-shadow(0 0 32px #8bc34a) drop-shadow(0 0 46px #4caf50); transform: scale(1.14); }
+        }
+        #tutorial-skip-btn {
+            display: none;
+            position: absolute; bottom: -34px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.4); color: #fff; border: none; border-radius: 14px;
+            padding: 4px 12px; font-size: 0.68rem; z-index: 20; cursor: pointer;
+        }
+        body.tutorial-active #tutorial-skip-btn { display: block; }
+
+        /* 📖 チュートリアル中は、誤操作防止のためもちすけ以外のボタンを一時的に無効化する */
+        body.tutorial-active .nav-btn,
+        body.tutorial-active #map-toggle-btn,
+        body.tutorial-active #menu-toggle-btn,
+        body.tutorial-active #ui-toggle-btn,
+        body.tutorial-active #feed-toggle-btn,
+        body.tutorial-active .skill-btn,
+        body.tutorial-active .hissatsu-btn {
+            pointer-events: none;
+        }
+        @keyframes recommendedPulse {
+            0% { filter: drop-shadow(0 0 3px #8bc34a) drop-shadow(0 0 6px #4caf50); }
+            100% { filter: drop-shadow(0 0 9px #cddc39) drop-shadow(0 0 14px #4caf50); }
+        }
+
+        /* 使用可能時のピカピカアニメーション */
+        .skill-btn.ready {
+            animation: pulseGlow 0.8s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 6px #ff9800); transform: scale(1); }
+            100% { filter: drop-shadow(0 0 8px #fff) drop-shadow(0 0 13px #ffeb3b); transform: scale(1.04); }
+        }
+
+        /* 🗾 ご当地クイズ：正解/不正解のフィードバック、選択肢ボタン、プログレスドット */
+        .quiz-choice-btn {
+            width: 100%; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;
+            padding: 12px 14px; border-radius: 12px; text-align: left;
+            background: #fff; border: 2px solid #e0e0e0; box-shadow: 0 2px 5px rgba(0,0,0,0.08);
+            transition: transform 0.1s;
+        }
+        .quiz-choice-btn:active { transform: scale(0.97); }
+        .quiz-choice-letter {
+            flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+            background: #ff9800; color: #fff; font-weight: 900; font-size: 0.8rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .quiz-choice-label { font-weight: bold; font-size: 0.95rem; color: #5d4037; }
+        .quiz-dot { width: 9px; height: 9px; border-radius: 50%; background: #e0e0e0; }
+        .quiz-dot-current { background: #ff9800; box-shadow: 0 0 0 3px rgba(255,152,0,0.25); }
+        .quiz-dot-correct { background: #4caf50; }
+        .quiz-dot-wrong { background: #e57373; }
+
+        /* 🍴 もちすけにお土産をあげる：足元に置かれた時のポンと弾む出現演出 */
+        .feed-icon-drop-in { animation: feedDropIn 0.4s cubic-bezier(0.3, 1.6, 0.4, 1); }
+        @keyframes feedDropIn {
+            0% { transform: translate(-50%, -140%) scale(0.4); opacity: 0; }
+            60% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        /* ⚡ タップ力2倍中のバフ表示 */
+        #feed-buff-indicator {
+            position: absolute; top: calc(52px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+            z-index: 45; display: none; align-items: center; gap: 5px;
+            background: linear-gradient(135deg, #ff6f00, #ff9800); color: #fff; font-weight: 900; font-size: 0.78rem;
+            padding: 6px 14px; border-radius: 20px; box-shadow: 0 3px 10px rgba(255,152,0,0.5);
+            animation: feedBuffPulse 0.6s ease-in-out infinite alternate;
+        }
+        #feed-buff-indicator.show { display: flex; }
+
+        /* 😱 じらしすぎて叫ぶ演出（専用イラストが無いので、既存の絵を激しく震わせて表現） */
+        .mochi-scream { animation: mochiScreamShake 0.5s ease-in-out; transform: scale(1.3) !important; }
+        @keyframes mochiScreamShake {
+            0%, 100% { transform: translate(0, 0) rotate(0) scale(1.3); }
+            10% { transform: translate(-6px, -3px) rotate(-3deg) scale(1.3); }
+            25% { transform: translate(6px, 2px) rotate(3deg) scale(1.3); }
+            40% { transform: translate(-5px, -4px) rotate(-2deg) scale(1.3); }
+            55% { transform: translate(5px, 3px) rotate(2deg) scale(1.3); }
+            70% { transform: translate(-4px, -2px) rotate(-1deg) scale(1.3); }
+            85% { transform: translate(4px, 1px) rotate(1deg) scale(1.3); }
+        }
+        @keyframes feedBuffPulse {
+            from { box-shadow: 0 3px 10px rgba(255,152,0,0.5); }
+            to { box-shadow: 0 3px 16px rgba(255,193,7,0.85); }
+        }
+        .quiz-correct-glow { background: #4caf50 !important; color: #fff !important; animation: pulseGlow 0.4s ease-in-out 2; }
+        .quiz-wrong-shake { background: #e57373 !important; color: #fff !important; animation: quizWrongShake 0.4s ease; }
+        @keyframes quizWrongShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+
+        /* 🍡 もちつきリズム：判定文字のポップ、PERFECT時のトラック発光、MISS時のよろけ */
+        .mochi-judge-pop { animation: mochiJudgePop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1); }
+        @keyframes mochiJudgePop {
+            0% { transform: scale(0.3); opacity: 0; }
+            60% { transform: scale(1.25); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .mochi-track-glow { animation: mochiTrackGlow 0.4s ease; }
+        @keyframes mochiTrackGlow {
+            0% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.08); }
+            40% { box-shadow: 0 0 18px 4px rgba(255,215,0,0.7), inset 0 2px 6px rgba(0,0,0,0.08); }
+            100% { box-shadow: inset 0 2px 6px rgba(0,0,0,0.08); }
+        }
+        .mochi-track-miss { animation: mochiTrackMiss 0.35s ease; }
+        @keyframes mochiTrackMiss {
+            0%, 100% { transform: translateX(0) rotate(0); }
+            25% { transform: translateX(-5px) rotate(-1deg); }
+            50% { transform: translateX(4px) rotate(1deg); }
+            75% { transform: translateX(-3px) rotate(-0.5deg); }
+        }
+
+        /* ⏱️ タイムアタック：タップの度に広がるリップル、数字のポップ、残り時間わずかの脈動 */
+        .ta-ripple {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%;
+            border: 4px solid #26a69a; pointer-events: none; z-index: 1;
+            animation: taRipple 0.5s ease-out forwards;
+        }
+        @keyframes taRipple {
+            0% { transform: scale(0.4); opacity: 0.7; }
+            100% { transform: scale(1.7); opacity: 0; }
+        }
+        .ta-count-pop { animation: taCountPop 0.18s ease-out; }
+        @keyframes taCountPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.35); color: #ff9800; }
+            100% { transform: scale(1); }
+        }
+        .ta-timer-urgent { color: #f44336 !important; animation: taTimerPulse 0.5s infinite; }
+        @keyframes taTimerPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.18); }
+        }
+
+        #mochisuke-wrapper {
+            position: relative; display: flex; justify-content: center; align-items: center; flex: 1; height: 100%;
+        }
+
+        #mochisuke-btn {
+            width: 190px; height: auto; max-height: 230px;
+            object-fit: contain; cursor: pointer; z-index: 5;
+            transition: transform 0.1s ease; /* filterのtransitionは意図的に外した。会心の光がずっと残って見えるバグの原因がこれで、
+                                                 タップ間隔が200msより短いと前の光の変化が終わる前に次の変化が始まり、
+                                                 途中状態のまま次々と割り込まれて光ったように見え続けていた */
+            transform-origin: center bottom;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
+        @keyframes breathe {
+            0% { transform: scale(1, 1); }
+            50% { transform: scale(1.03, 0.97); }
+            100% { transform: scale(1, 1); }
+        }
+
+        /* 中央必殺技ボタン */
+        .hissatsu-btn {
+            position: relative;
+            background-size: contain; background-position: center; background-repeat: no-repeat;
+            color: white;
+            padding: 0; font-weight: bold; font-size: 0.78rem;
+            cursor: pointer;
+            white-space: nowrap;
+            box-sizing: border-box; display: none;
+            width: 240px; height: 78px;
+            transition: filter 0.2s;
+        }
+        .hissatsu-btn.on-cooldown { filter: brightness(0.55); }
+        .hissatsu-gauge-track {
+            width: 190px; height: 8px; border-radius: 4px; margin-top: 2px;
+            background: rgba(0,0,0,0.18); overflow: hidden; display: none;
+        }
+        .hissatsu-gauge-track.show { display: block; }
+        .hissatsu-gauge-fill {
+            height: 100%; width: 0%; border-radius: 4px;
+            background: rgba(0,0,0,0.5); transition: width 0.1s linear, background 0.2s;
+        }
+        .hissatsu-btn.ready { animation: hissatsuGlow 0.8s infinite alternate; }
+        @keyframes hissatsuGlow {
+            0% { transform: scale(1); filter: drop-shadow(0 0 5px #ff3d00); }
+            100% { transform: scale(1.05); filter: drop-shadow(0 0 12px #b100e8) drop-shadow(0 0 6px #ffeb3b); }
+        }
+
+        /* 吹き出し */
+        #mochi-balloon {
+            position: absolute; top: 14px; background: white;
+            padding: 8px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: bold;
+            color: #4a3622; border: 3px solid #ff9800; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            white-space: nowrap; z-index: 10; opacity: 0; transform: scale(0.8);
+            transition: all 0.2s ease-out; pointer-events: none;
+        }
+        /* 📖 チュートリアル中は文章が長くなるため、画面幅からはみ出さないよう折り返す */
+        body.tutorial-active #mochi-balloon {
+            white-space: normal; max-width: 76vw; text-align: center; line-height: 1.5;
+        }
+        #mochi-balloon::after {
+            content: ''; position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%);
+            border-width: 12px 8px 0; border-style: solid; border-color: white transparent; display: block; width: 0; z-index: 11;
+        }
+        #mochi-balloon::before {
+            content: ''; position: absolute; bottom: -16px; left: 50%; transform: translateX(-50%);
+            border-width: 13px 9px 0; border-style: solid; border-color: #ff9800 transparent; display: block; width: 0; z-index: 9;
+        }
+        /* 波紋・浮き文字はcanvas描画に統合したためCSSアニメーションは不要になった */
+        .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
+
+        #combo-display-wrap {
+            width: 100%; min-height: 34px;
+            display: flex; align-items: flex-start; justify-content: center;
+            padding-top: 6px;
+            pointer-events: none;
+        }
+        html:not(.browser-mode) #combo-display-wrap { padding-top: 14px; } /* ホーム画面版は、その分だけもう少し下げる */
+        #combo-display {
+            display: inline-flex; align-items: baseline;
+            opacity: 0; transform: scale(0.6);
+            transition: opacity 0.15s cubic-bezier(0.3, 1.4, 0.5, 1), transform 0.15s cubic-bezier(0.3, 1.4, 0.5, 1);
+            font-family: 'M PLUS Rounded 1c', 'Zen Maru Gothic', sans-serif;
+            font-weight: 900;
+            color: #fff;
+            -webkit-text-stroke: 2.5px #ff9800;
+            paint-order: stroke fill; /* 縁を先に描いてから塗りを乗せることで、縁取りがきれいに出る */
+        }
+        #combo-num { font-size: 1.9rem; line-height: 1; }
+        #combo-label { font-size: 1rem; margin-left: 3px; }
+        #combo-display .combo-mult-part { opacity: 0.8; font-size: 0.7rem; margin-left: 4px; -webkit-text-stroke: 1.5px #ff9800; }
+        .combo-bounce { opacity: 1 !important; transform: scale(1) !important; }
+
+        /* コンボが伸びるほど塗りの色が変わる。縁のオレンジは常に固定 */
+        .combo-tier-50  #combo-num, .combo-tier-50  #combo-label { color: #fff176; }
+        .combo-tier-100 #combo-num, .combo-tier-100 #combo-label { color: #ff5252; }
+        .combo-tier-500 #combo-num, .combo-tier-500 #combo-label { color: #e0e0e0; text-shadow: 0 0 6px rgba(255,255,255,0.9); }
+        .combo-tier-1000 #combo-num, .combo-tier-1000 #combo-label { color: #ffd700; text-shadow: 0 0 10px rgba(255,215,0,0.9), 0 0 18px rgba(255,193,7,0.7); }
+        .combo-tier-500  { animation: comboTier500Pulse 0.5s ease-in-out infinite alternate; }
+        .combo-tier-1000 { animation: comboTier1000Pulse 0.4s ease-in-out infinite alternate; }
+        @keyframes comboTier500Pulse  { from { transform: scale(1); } to { transform: scale(1.06); } }
+        @keyframes comboTier1000Pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        /* 節目に到達した瞬間だけ、一段大きくポップさせる（持続するtierスタイルとは別の、一瞬の演出） */
+        @keyframes comboMilestonePop { 0% { transform: scale(1); } 45% { transform: scale(1.9); } 100% { transform: scale(1); } }
+        .combo-milestone-pop { animation: comboMilestonePop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1); }
+
+        /* 金もちボタン */
+        #fever-pop {
+            position: absolute; width: 65px; height: 65px;
+            background: url('ui_images/mochi_particle.webp') center/contain no-repeat;
+            filter: hue-rotate(45deg) brightness(1.3) drop-shadow(0 0 8px #ffeb3b);
+            cursor: pointer; z-index: 90; display: flex; justify-content: center; align-items: center;
+            user-select: none; -webkit-user-select: none;
+            animation: goldMochiAppear 0.2s ease-out;
+        }
+        @keyframes goldMochiAppear {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* プレゼント */
+        @keyframes presentBob { 0% { transform: translateY(0px); } 50% { transform: translateY(-12px); } 100% { transform: translateY(0px); } }
+        .present-floating-img { animation: presentBob 2s infinite ease-in-out; }
+
+        /* フッターナビゲーション */
+        #control-panel {
+            width: 100%; background: transparent;
+            padding: 10px 0 6px 0;
+            display: flex; justify-content: center; z-index: 10;
+            box-sizing: border-box;
+            flex-shrink: 0;
+            margin-top: auto; /* mochisuke-areaがflexから抜けたので、これで自分だけ下端に押し出す */
+        }
