@@ -119,7 +119,21 @@
 
         function updateGachaCoinDisplay() {
             const el = document.getElementById('gacha-coin-value');
-            if (el) el.innerText = formatMochi(gachaCoins);
+            if (el) el.innerText = IS_DEV_MODE ? '∞' : formatMochi(gachaCoins);
+        }
+
+        function openGachaRatesModal() {
+            const listEl = document.getElementById('gacha-rates-list');
+            listEl.innerHTML = GACHA_RARITIES.map(r => `
+                <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;">
+                    <div style="width:14px; height:14px; border-radius:50%; background:${r.color}; flex-shrink:0; box-shadow:0 0 0 2px #fff, 0 0 0 3px ${r.color};"></div>
+                    <div style="flex:1;">
+                        <div style="font-weight:900; color:${r.color};">${r.label}　<span style="color:#5d4037;">${r.weight}%</span></div>
+                        <div style="font-size:0.72rem; color:#8d6e63;">${r.desc}</div>
+                    </div>
+                </div>
+            `).join('');
+            openModal('gacha-rates-modal');
         }
 
         // ===== 1連：カプセルが落ちてきて、タップすると開く =====
@@ -129,11 +143,11 @@
         function startGachaSpin() {
             const spinBtn = document.getElementById('gacha-spin-btn');
             if (spinBtn.disabled) return;
-            if (gachaCoins < GACHA_COST_SINGLE) {
+            if (!IS_DEV_MODE && gachaCoins < GACHA_COST_SINGLE) {
                 alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_SINGLE - gachaCoins}枚必要です）\n\nスタンプを押したり、日本制覇・転生をすると手に入ります！`);
                 return;
             }
-            gachaCoins -= GACHA_COST_SINGLE;
+            if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_SINGLE;
             saveGame();
             updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
@@ -261,11 +275,11 @@
         function startGachaSpin10() {
             const spin10Btn = document.getElementById('gacha-spin10-btn');
             if (spin10Btn.disabled) return;
-            if (gachaCoins < GACHA_COST_TEN) {
+            if (!IS_DEV_MODE && gachaCoins < GACHA_COST_TEN) {
                 alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_TEN - gachaCoins}枚必要です）\n\nスタンプを押したり、日本制覇・転生をすると手に入ります！`);
                 return;
             }
-            gachaCoins -= GACHA_COST_TEN;
+            if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_TEN;
             saveGame();
             updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
@@ -438,29 +452,33 @@
 
             if (currentShopTab === 'gacha') {
                 listContainer.innerHTML = `
-                    <div id="gacha-stage" style="position:relative; width:100%; height:340px; display:flex; align-items:center; justify-content:center;">
-                        <img id="gacha-machine-body" src="ui_images/gacha_machine_body.webp" alt="ガチャガチャ" style="width:70%; max-width:230px; position:relative; z-index:2;">
-                        <img id="gacha-crank" src="ui_images/gacha_crank.webp" alt="" style="position:absolute; width:18%; top:62.402035%; left:40.544265%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
+                    <div id="gacha-stage" style="position:relative; width:100%; height:360px;">
+                        <div id="gacha-illustration-wrap" style="position:absolute; top:24px; left:0; width:100%; height:340px;">
+                            <img id="gacha-machine-body" src="ui_images/gacha_machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
+                            <img id="gacha-crank" src="ui_images/gacha_crank.webp" alt="" style="position:absolute; width:18%; top:62.402035%; left:40.544265%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
 
-                        <div id="gacha-capsule-wrap" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
-                            <img id="gacha-capsule-whole" src="ui_images/gacha_capsule.webp" alt="" style="width:100%; display:block;">
-                            <img id="gacha-capsule-top" src="ui_images/gacha_capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
-                            <img id="gacha-capsule-bottom" src="ui_images/gacha_capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                            <div id="gacha-capsule-wrap" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
+                                <img id="gacha-capsule-whole" src="ui_images/gacha_capsule.webp" alt="" style="width:100%; display:block;">
+                                <img id="gacha-capsule-top" src="ui_images/gacha_capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                                <img id="gacha-capsule-bottom" src="ui_images/gacha_capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                            </div>
+
+                            <div id="gacha-prize-reveal" style="position:absolute; top:20%; left:50%; transform:translate(-50%,-50%) scale(0); text-align:center; z-index:5; opacity:0;">
+                                <img id="gacha-prize-img" src="" alt="" style="width:90px; height:90px; object-fit:contain;">
+                                <p id="gacha-prize-name" style="font-size:0.85rem; font-weight:bold; color:#e91e63; margin:4px 0 0; text-shadow:0 1px 3px #fff;"></p>
+                            </div>
+
+                            <div id="gacha-multi-panel" style="display:none; position:absolute; inset:2% 4%; background:rgba(255,248,236,0.94); border:2px solid #e8dcc0; border-radius:16px; z-index:6; overflow-y:auto;">
+                                <div id="gacha-multi-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 10px; padding:12px; justify-items:center;"></div>
+                            </div>
                         </div>
 
-                        <div id="gacha-prize-reveal" style="position:absolute; top:20%; left:50%; transform:translate(-50%,-50%) scale(0); text-align:center; z-index:5; opacity:0;">
-                            <img id="gacha-prize-img" src="" alt="" style="width:90px; height:90px; object-fit:contain;">
-                            <p id="gacha-prize-name" style="font-size:0.85rem; font-weight:bold; color:#e91e63; margin:4px 0 0; text-shadow:0 1px 3px #fff;"></p>
-                        </div>
-
-                        <div id="gacha-multi-panel" style="display:none; position:absolute; inset:2% 4%; background:rgba(255,248,236,0.94); border:2px solid #e8dcc0; border-radius:16px; z-index:6; overflow-y:auto;">
-                            <div id="gacha-multi-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 10px; padding:12px; justify-items:center;"></div>
-                        </div>
+                        <button onclick="openGachaRatesModal()" style="position:absolute; top:4px; right:4px; z-index:7; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
                     </div>
                     <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 ただいま準備中：景品の内容は近日調整予定です</p>
-                    <div id="gacha-coin-display" style="font-weight:900; color:#5d4037; margin-bottom:8px;">🪙 <span id="gacha-coin-value">0</span> コイン</div>
-                    <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#e91e63; color:#fff;" onclick="startGachaSpin()">🎰 1回まわす（${GACHA_COST_SINGLE}枚）</button>
-                    <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:#9c27b0; color:#fff; margin-top:8px;" onclick="startGachaSpin10()">🎰 10連まとめて（${GACHA_COST_TEN}枚）</button>
+                    <div id="gacha-coin-display" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#fff8ec,#ffe9c2); border:2px solid #e8c88a; border-radius:20px; padding:6px 16px; font-weight:900; color:#8d6e63; margin-bottom:10px; box-shadow:0 2px 4px rgba(0,0,0,0.08);">🪙 <span id="gacha-coin-value">0</span> コイン</div>
+                    <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#ff6fa5,#e91e63); color:#fff; border-radius:24px; box-shadow:0 3px 0 #b0184a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin()">🎰 1回まわす（${GACHA_COST_SINGLE}枚）</button>
+                    <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#c162e8,#9c27b0); color:#fff; margin-top:10px; border-radius:24px; box-shadow:0 3px 0 #6a1b7a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin10()">🎰 10連まとめて（${GACHA_COST_TEN}枚）</button>
 
                 `;
                 updateGachaCoinDisplay();

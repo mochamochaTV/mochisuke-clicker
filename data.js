@@ -241,10 +241,11 @@
         };
         const comboEndLines = ["ナイスタップ！", "おつかれやで！", "ええコンボやったな！", "また続けような！", "もちもち楽しかったわ！", "ようやったで！"];
         const GACHA_RARITIES = [
-            { id: 'normal',  label: 'ノーマル',   weight: 60, filter: 'sepia(0.6) saturate(1.8) hue-rotate(-10deg) brightness(0.85)', color: '#b87333' }, // 銅
-            { id: 'rare',    label: 'レア',       weight: 30, filter: 'grayscale(0.6) brightness(1.25) contrast(1.1)',                color: '#c0c0c0' }, // 銀
-            { id: 'sr',      label: 'スーパーレア', weight: 8,  filter: 'sepia(0.8) saturate(3) hue-rotate(-15deg) brightness(1.15)',    color: '#ffd700' }, // 金
-            { id: 'ur',      label: 'ウルトラレア', weight: 2,  filter: 'saturate(3) hue-rotate(0deg)',                                 color: '#ff6ec7' }, // 虹（後でグラデ演出に差し替え予定）
+            { id: 'normal',      label: 'ノーマル',     weight: 90,  filter: 'grayscale(0.7) brightness(0.95)',                              color: '#9e9e9e', desc: '消耗品（ミニゲーム追加券・スキルクールタイム短縮など）' }, // 灰
+            { id: 'normalRare',  label: 'ノーマルレア',  weight: 5.9, filter: 'sepia(0.4) saturate(2.5) hue-rotate(60deg) brightness(1.05)',   color: '#4caf50', desc: '上位の消耗品、または一時的な見た目エフェクト' }, // 緑
+            { id: 'rare',        label: 'レア',        weight: 3,   filter: 'sepia(0.4) saturate(3) hue-rotate(170deg) brightness(1.05)',    color: '#2196f3', desc: 'シンプルな服・帽子・アクセサリー' }, // 青
+            { id: 'sr',          label: 'スーパーレア',  weight: 1,   filter: 'sepia(0.6) saturate(3) hue-rotate(230deg) brightness(1.05)',    color: '#9c27b0', desc: '良い感じの服・帽子・アクセサリー' }, // 紫
+            { id: 'ur',          label: 'ウルトラレア',  weight: 0.1, filter: 'saturate(3) hue-rotate(0deg)',                                  color: '#ff6ec7', desc: '最上位ランクの服・帽子・アクセサリー' }, // 虹（後でグラデ演出に差し替え予定）
         ];
         const OMIYAGE_ROWS = [
             { itemTop: 20.2, itemBottom: 34.0, plateTop: 34.5, plateBottom: 37.7 },
