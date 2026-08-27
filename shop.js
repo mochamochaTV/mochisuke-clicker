@@ -38,6 +38,7 @@
             document.getElementById('shop-tab-kisekae').classList.toggle('tab-active', tab === 'kisekae');
             document.getElementById('shop-tab-skills').classList.toggle('tab-active', tab === 'skills');
             document.getElementById('shop-tab-gacha').classList.toggle('tab-active', tab === 'gacha');
+            document.getElementById('shop-tab-items').classList.toggle('tab-active', tab === 'items');
             // 棚イラスト自体は常に全画面表示のまま。おみやげ以外のタブでは、上に半透明パネルを重ねるだけ。
             document.getElementById('omiyage-slots-layer').style.display = (tab === 'omiyage') ? 'block' : 'none';
             document.getElementById('omiyage-arrow-left').style.display = (tab === 'omiyage') ? 'flex' : 'none';
@@ -120,19 +121,30 @@
         }
 
         // 🎁 ノーマル（灰）が出た時：3種類の消耗品からランダムに1つ選んで、その場で効果を発動する
+        let ticketInventory = { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 }; // 🎫 ガチャで手に入れたチケットの所持数（すぐ使わず倉庫にためておける）
+
         function grantRandomNormalConsumable() {
             const item = pickRandom(NORMAL_CONSUMABLE_ITEMS);
-            if (item.id === 'minigameTicket') {
+            ticketInventory[item.id] = (ticketInventory[item.id] || 0) + 1;
+            saveGame(); updateDisplay();
+            return item;
+        }
+
+        // 🎫 倉庫にためたチケットを、好きなタイミングで実際に使う
+        function useTicket(itemId) {
+            if ((ticketInventory[itemId] || 0) <= 0) return;
+            if (itemId === 'minigameTicket') {
                 Object.keys(minigamePlaysUsedToday).forEach(k => {
                     minigamePlaysUsedToday[k] = Math.max(0, (minigamePlaysUsedToday[k] || 0) - 1);
                 });
-            } else if (item.id === 'cooldownTicket') {
+            } else if (itemId === 'cooldownTicket') {
                 Object.keys(skills).forEach(k => { skills[k].currentCd = 0; });
-            } else if (item.id === 'mochi30minTicket') {
+            } else if (itemId === 'mochi30minTicket') {
                 score += getMps() * 1800; // 30分ぶんの自動増加を即座に付与
             }
+            ticketInventory[itemId]--;
             saveGame(); updateDisplay();
-            return item;
+            renderShopList(); // アイテムタブを開いている場合、個数表示を更新する
         }
 
         function updateGachaCoinDisplay() {
@@ -572,6 +584,14 @@
                     row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">👕 ${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
                     listContainer.appendChild(row);
                 });
+            } else if (currentShopTab === 'items') {
+                NORMAL_CONSUMABLE_ITEMS.forEach(item => {
+                    const count = ticketInventory[item.id] || 0;
+                    const row = document.createElement('div');
+                    row.className = "list-item";
+                    row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🎫 ${item.name}　<span style="color:#ff9800; font-weight:900;">×${count}</span></span><span class="item-desc">${item.desc}</span></div></div><button class="item-action-btn btn-shop" ${count > 0 ? '' : 'disabled'} onclick="useTicket('${item.id}')" style="background:#4caf50; color:white;">使う</button>`;
+                    listContainer.appendChild(row);
+                });
             } else {
                 // ✨ スキルタブ：ステージ進行に応じて段階的に解放される
                 Object.keys(skills).forEach(key => {
@@ -601,7 +621,6 @@
         }
 
         const OMIYAGE_PAGE_SIZE = 9;
-
         let omiyagePage = 0;
         let omiyageSelectedIdx = null;
         const OMIYAGE_IMG_NATURAL_RATIO = 851 / 1847; // 棚イラストの実寸比率（幅/高さ）

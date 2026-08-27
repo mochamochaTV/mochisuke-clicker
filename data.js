@@ -243,9 +243,9 @@
 
         // 🎁 ノーマル（灰）で出る消耗品アイテム一覧
         const NORMAL_CONSUMABLE_ITEMS = [
-            { id: 'minigameTicket', name: 'ミニゲーム追加券', img: 'ui_images/item_minigame_ticket.webp' },
-            { id: 'cooldownTicket', name: 'スキルクールタイム短縮チケット', img: 'ui_images/item_cooldown_ticket.webp' },
-            { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'ui_images/item_mochi30min_ticket.webp' },
+            { id: 'minigameTicket', name: 'ミニゲーム追加券', img: 'ui_images/item_minigame_ticket.webp', desc: '4種すべての今日の残り回数+1' },
+            { id: 'cooldownTicket', name: 'スキルクールタイム短縮チケット', img: 'ui_images/item_cooldown_ticket.webp', desc: '全スキルのクールタイムを即リセット' },
+            { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'ui_images/item_mochi30min_ticket.webp', desc: '今の自動増加×30分ぶんのもちを獲得' },
         ];
 
         const GACHA_RARITIES = [
