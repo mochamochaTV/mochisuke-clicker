@@ -84,11 +84,13 @@
                 playAudioFile('audio/gacha_crank.mp3');
                 screenShake('big');
                 vibrate([20, 20, 20, 20, 40]);
-                document.getElementById('gacha-machine-body').animate(
+                // 本体・レバー・カプセルをまとめている枠ごと揺らす（枠自体はtop/leftで位置決めしているため、
+                // transformで揺らしても中央寄せなどとぶつからず安全）
+                document.getElementById('gacha-illustration-wrap').animate(
                     [
-                        { transform: 'translate(-50%,-50%) translateX(0)' }, { transform: 'translate(-50%,-50%) translateX(-4px)' },
-                        { transform: 'translate(-50%,-50%) translateX(4px)' }, { transform: 'translate(-50%,-50%) translateX(-3px)' },
-                        { transform: 'translate(-50%,-50%) translateX(3px)' }, { transform: 'translate(-50%,-50%) translateX(0)' },
+                        { transform: 'translateX(0)' }, { transform: 'translateX(-4px)' },
+                        { transform: 'translateX(4px)' }, { transform: 'translateX(-3px)' },
+                        { transform: 'translateX(3px)' }, { transform: 'translateX(0)' },
                     ],
                     { duration: 200, iterations: 3 }
                 );
@@ -122,7 +124,12 @@
             if (el) el.innerText = IS_DEV_MODE ? '∞' : formatMochi(gachaCoins);
         }
 
-        function openGachaRatesModal() {
+        function toggleGachaRatesOverlay() {
+            const overlay = document.getElementById('gacha-rates-overlay');
+            if (!overlay) return;
+            const showing = overlay.style.display === 'block';
+            if (showing) { overlay.style.display = 'none'; return; }
+
             const listEl = document.getElementById('gacha-rates-list');
             listEl.innerHTML = GACHA_RARITIES.map(r => `
                 <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;">
@@ -133,7 +140,7 @@
                     </div>
                 </div>
             `).join('');
-            openModal('gacha-rates-modal');
+            overlay.style.display = 'block';
         }
 
         // ===== 1連：カプセルが落ちてきて、タップすると開く =====
@@ -352,19 +359,30 @@
             panel.style.display = 'block';
 
             const CAPSULE_PX = 56;
-            const capsuleEls = [], iconEls = [];
+            const capsuleSets = [], iconEls = [];
             rarities.forEach((r) => {
                 const cell = document.createElement('div');
                 cell.style.cssText = `position:relative; width:${CAPSULE_PX}px; height:${CAPSULE_PX}px; display:flex; align-items:center; justify-content:center;`;
-                const img = document.createElement('img');
-                img.src = 'ui_images/gacha_capsule.webp';
-                img.style.cssText = `position:absolute; width:100%; display:block; filter:${r.filter};`;
+
+                const whole = document.createElement('img');
+                whole.src = 'ui_images/gacha_capsule.webp';
+                whole.style.cssText = `position:absolute; width:100%; display:block; filter:${r.filter};`;
+
+                const top = document.createElement('img');
+                top.src = 'ui_images/gacha_capsule_top.webp';
+                top.style.cssText = `position:absolute; width:100%; display:none; filter:${r.filter};`;
+
+                const bottom = document.createElement('img');
+                bottom.src = 'ui_images/gacha_capsule_bottom.webp';
+                bottom.style.cssText = `position:absolute; width:100%; display:none; filter:${r.filter};`;
+
                 const icon = document.createElement('div');
                 icon.style.cssText = 'position:absolute; width:100%; text-align:center; opacity:0; transform:scale(0.5);';
                 icon.innerHTML = `<div style="font-size:1.4rem;">🍡</div><div style="font-size:0.5rem; font-weight:bold; color:${r.color}; text-shadow:0 1px 2px #fff;"></div>`;
-                cell.appendChild(img); cell.appendChild(icon);
+
+                cell.appendChild(whole); cell.appendChild(top); cell.appendChild(bottom); cell.appendChild(icon);
                 grid.appendChild(cell);
-                capsuleEls.push(img); iconEls.push(icon);
+                capsuleSets.push({ whole, top, bottom }); iconEls.push(icon);
             });
 
             panel.style.pointerEvents = 'auto'; // 念のため明示的に有効化（他の要素の影響でクリックが効かなくなる事故を防ぐ）
@@ -383,18 +401,18 @@
                 panel.removeEventListener('click', openHandler);
                 document.getElementById('gacha-stage').removeEventListener('click', openHandler);
                 tapHint.remove();
-                openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, 0);
+                openGacha10CapsulesSequentially(capsuleSets, iconEls, rarities, 0);
             };
             panel.addEventListener('click', openHandler);
             document.getElementById('gacha-stage').addEventListener('click', openHandler); // 保険として、ステージ全体でも拾う
         }
 
-        function openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, index) {
-            if (index >= capsuleEls.length) {
+        function openGacha10CapsulesSequentially(capsuleSets, iconEls, rarities, index) {
+            if (index >= capsuleSets.length) {
                 finishGachaSpin10();
                 return;
             }
-            const img = capsuleEls[index];
+            const { whole, top, bottom } = capsuleSets[index];
             const icon = iconEls[index];
             playAudioFile('audio/gacha_open.mp3');
             vibrate([10, 15]);
@@ -404,16 +422,23 @@
             score += gain; updateDisplay();
             icon.querySelector('div:last-child').innerText = `+${formatMochi(gain)}`;
 
-            // カプセルが弾けて縮み、中身が浮かび上がる
-            img.animate(
-                [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(1.25)', opacity: 1, offset: 0.35 }, { transform: 'scale(0.2)', opacity: 0 }],
-                { duration: 350, easing: 'ease-in', fill: 'forwards' }
+            // 1連と同じ「上下にパカッと割れて開く」演出
+            whole.style.display = 'none';
+            top.style.display = 'block';
+            bottom.style.display = 'block';
+            top.animate(
+                [{ transform: 'translateY(0) rotate(0deg)', opacity: 1 }, { transform: 'translateY(-16px) rotate(-25deg)', opacity: 0 }],
+                { duration: 350, easing: 'ease-out', fill: 'forwards' }
+            );
+            bottom.animate(
+                [{ transform: 'translateY(0) rotate(0deg)', opacity: 1 }, { transform: 'translateY(12px) rotate(20deg)', opacity: 0 }],
+                { duration: 350, easing: 'ease-out', fill: 'forwards' }
             );
             icon.animate(
                 [{ transform: 'scale(0.5)', opacity: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1 }],
                 { duration: 400, easing: 'ease-out', fill: 'forwards', delay: 120 }
             ).finished.then(() => {
-                setTimeout(() => openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, index + 1), 180);
+                setTimeout(() => openGacha10CapsulesSequentially(capsuleSets, iconEls, rarities, index + 1), 180);
             });
         }
 
@@ -481,7 +506,13 @@
                             </div>
                         </div>
 
-                        <button onclick="openGachaRatesModal()" style="position:absolute; top:4px; right:4px; z-index:7; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
+                        <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:4px; right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
+
+                        <div id="gacha-rates-overlay" style="display:none; position:absolute; inset:0; z-index:8; background:rgba(255,248,236,0.97); border-radius:12px; padding:14px; overflow-y:auto; box-sizing:border-box;">
+                            <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
+                            <h3 style="margin:0 0 10px; color:#5d4037;">🎰 排出率</h3>
+                            <div id="gacha-rates-list"></div>
+                        </div>
                     </div>
                     <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 ただいま準備中：景品の内容は近日調整予定です</p>
                     <div id="gacha-coin-display" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#fff8ec,#ffe9c2); border:2px solid #e8c88a; border-radius:20px; padding:6px 16px; font-weight:900; color:#8d6e63; margin-bottom:10px; box-shadow:0 2px 4px rgba(0,0,0,0.08);">🪙 <span id="gacha-coin-value">0</span> コイン</div>
