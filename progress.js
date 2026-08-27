@@ -6,6 +6,13 @@
             return 1 + prestigeCount * PRESTIGE_BONUS_PER_COUNT;
         }
 
+        // 🎰 ガチャコイン：もちとは別枠の通貨。もちは際限なく増え続けて価値が変わってしまうため、
+        // ガチャの対価としては、タップでは稼げない・増え方がゆるやかな別通貨を用意した
+        let gachaCoins = 0;
+        const GACHA_COIN_PER_STAMP = 2;      // 都道府県のスタンプを押すたびに
+        const GACHA_COIN_JAPAN_CLEAR = 50;   // 日本制覇の達成時に
+        const GACHA_COIN_PER_PRESTIGE = 30;  // 転生するたびに
+
         // 🛍️ 転生ポイントショップ（世界編を見据えて、パワーではなく利便性(QOL)中心。ただし今回、周回の土台になる部分もいくつか追加）
         let prestigeShopLv = {
             offlineCap: 0, minigamePlays: 0,
@@ -160,6 +167,7 @@
             prestigeScoreHistory.push({ prestigeNumber: prestigeCount + 1, score: Math.floor(score), timestamp: Date.now() });
             prestigeCount++;
             prestigePoints += PRESTIGE_POINTS_PER_RUN;
+            gachaCoins += GACHA_COIN_PER_PRESTIGE; // ガチャコインは転生しても引き継がれる（他の進行データと違い、リセットしない）
             score = 0;
             currentStageIndex = 0;
             selectedStageIndex = 0;
@@ -185,6 +193,7 @@
         function triggerJapanClearCelebration() {
             if (hasSeenJapanClear) return;
             hasSeenJapanClear = true;
+            gachaCoins += GACHA_COIN_JAPAN_CLEAR;
             saveGame();
 
             playAudioFile('audio/japan_clear.mp3'); // 専用の祝賀SE（無ければ用意してください。それまでは無音になります）
@@ -364,6 +373,7 @@
             const idx = currentStageIndex;
             collectedStamps[idx] = true;
             isPendingStampMoment = false;
+            gachaCoins += GACHA_COIN_PER_STAMP;
             saveGame();
 
             playAudioFile('audio/stamp.mp3'); // 専用のスタンプ音（無ければ用意してください。それまでは無音）

@@ -117,10 +117,25 @@
             });
         }
 
+        function updateGachaCoinDisplay() {
+            const el = document.getElementById('gacha-coin-value');
+            if (el) el.innerText = formatMochi(gachaCoins);
+        }
+
         // ===== 1連：カプセルが落ちてきて、タップすると開く =====
+        const GACHA_COST_SINGLE = 10;
+        const GACHA_COST_TEN = 90; // 1回x10より少しお得な価格設定
+
         function startGachaSpin() {
             const spinBtn = document.getElementById('gacha-spin-btn');
             if (spinBtn.disabled) return;
+            if (gachaCoins < GACHA_COST_SINGLE) {
+                alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_SINGLE - gachaCoins}枚必要です）\n\nスタンプを押したり、日本制覇・転生をすると手に入ります！`);
+                return;
+            }
+            gachaCoins -= GACHA_COST_SINGLE;
+            saveGame();
+            updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
 
             const capsuleWrap = document.getElementById('gacha-capsule-wrap');
@@ -246,6 +261,13 @@
         function startGachaSpin10() {
             const spin10Btn = document.getElementById('gacha-spin10-btn');
             if (spin10Btn.disabled) return;
+            if (gachaCoins < GACHA_COST_TEN) {
+                alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_TEN - gachaCoins}枚必要です）\n\nスタンプを押したり、日本制覇・転生をすると手に入ります！`);
+                return;
+            }
+            gachaCoins -= GACHA_COST_TEN;
+            saveGame();
+            updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
 
             document.getElementById('gacha-prize-reveal').getAnimations().forEach(a => a.cancel());
@@ -402,10 +424,6 @@
         }
 
         function onGachaTabTap() {
-            if (!IS_DEV_MODE) {
-                alert('🎰 ガチャは近日公開予定です！\nお楽しみに！');
-                return;
-            }
             switchShopTab('gacha');
         }
 
@@ -439,11 +457,13 @@
                             <div id="gacha-multi-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 10px; padding:12px; justify-items:center;"></div>
                         </div>
                     </div>
-                    <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 開発者テスト用（景品の中身は未確定です）</p>
-                    <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#e91e63; color:#fff;" onclick="startGachaSpin()">🎰 1回まわす</button>
-                    <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:#9c27b0; color:#fff; margin-top:8px;" onclick="startGachaSpin10()">🎰 10連まとめて</button>
+                    <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 ただいま準備中：景品の内容は近日調整予定です</p>
+                    <div id="gacha-coin-display" style="font-weight:900; color:#5d4037; margin-bottom:8px;">🪙 <span id="gacha-coin-value">0</span> コイン</div>
+                    <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#e91e63; color:#fff;" onclick="startGachaSpin()">🎰 1回まわす（${GACHA_COST_SINGLE}枚）</button>
+                    <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:#9c27b0; color:#fff; margin-top:8px;" onclick="startGachaSpin10()">🎰 10連まとめて（${GACHA_COST_TEN}枚）</button>
 
                 `;
+                updateGachaCoinDisplay();
                 return;
             }
 
