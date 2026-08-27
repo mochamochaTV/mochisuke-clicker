@@ -1,4 +1,4 @@
-function menuSaveGame() {
+        function menuSaveGame() {
             saveGame();
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
             alert("💾 セーブしました！");
@@ -67,6 +67,23 @@ function menuSaveGame() {
                 el.innerText = `最終バックアップ: ${new Date(backup.updatedAt).toLocaleString('ja-JP')}`;
             } else {
                 el.innerText = '最終バックアップ: まだありません（もう少しプレイすると作られます）';
+            }
+        }
+
+        // ☁️ 今この瞬間の状態を、自分の意思で確実にクラウドへ残す（自動バックアップの安全装置を無視してでも上書きする）
+        async function manualCloudBackup() {
+            if (!window.backupSaveData) { alert('クラウド機能の準備ができていません。少し待ってからもう一度試してください'); return; }
+            saveGame(); // 念のため、まずローカルの保存内容を最新にしておく
+            const raw = localStorage.getItem('mochisuke_save_data');
+            if (!raw) { alert('保存するデータが見つかりませんでした'); return; }
+            const el = document.getElementById('cloud-backup-status');
+            if (el) el.innerText = '最終バックアップ: 保存中…';
+            try {
+                await window.backupSaveData(raw, true); // 手動保存は、自分の意思での上書きなので force で安全装置をスキップする
+                alert('☁️ 今の状態をクラウドに保存しました！');
+                refreshCloudBackupStatus();
+            } catch (e) {
+                alert('保存に失敗しました。通信環境を確認して、もう一度試してください');
             }
         }
 

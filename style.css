@@ -1,4 +1,4 @@
-/* 全体スタイル - ズームやスクロールを完全禁止 */
+        /* 全体スタイル - ズームやスクロールを完全禁止 */
         html {
             height: var(--app-height, 100%);
             overflow: hidden;

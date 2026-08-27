@@ -1,4 +1,4 @@
-function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
+        function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
         function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
         function getOmiyagePrice(stage, currentLv) {
             return Math.floor(stage.price * Math.pow(getOmiyagePriceCurveBase(), currentLv) * getOmiyagePriceMultiplier());
@@ -691,3 +691,4 @@ function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDis
             const omiyageTab = document.getElementById('shop-tab-omiyage');
             if (omiyageTab) omiyageTab.classList.toggle('shop-recommend-glow', hasNewlyPurchasableOmiyage());
         }
+

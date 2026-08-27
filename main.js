@@ -1,4 +1,10 @@
-// 画面の実測高さ(--app-height)は<head>内で先に設定済み。ここでは重複させない。
+        // 🚧🚧🚧 メンテナンスモード 🚧🚧🚧
+        // 大きな更新をする直前に true にしてから公開すると、プレイヤーには「メンテナンス中」画面だけが表示され、
+        // ゲーム本体・セーブ/ロード・クラウドバックアップは一切動かなくなる（壊れた状態が保存されてしまう事故を防ぐ）。
+        // 手元で動作確認が終わったら、false に戻して公開し直す。
+        const MAINTENANCE_MODE = false;
+
+        // 画面の実測高さ(--app-height)は<head>内で先に設定済み。ここでは重複させない。
 
         // 📲 ホーム画面に追加まわり
         // PWA化(manifest+ServiceWorker)しただけでは自動でホーム画面に追加はされない。
@@ -444,6 +450,17 @@
         });
 
         window.onload = function() {
+            if (MAINTENANCE_MODE) {
+                document.body.innerHTML = `
+                    <div style="position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+                                background:#fcf8f2; text-align:center; padding:24px; box-sizing:border-box; font-family:sans-serif;">
+                        <div style="font-size:3rem; margin-bottom:12px;">🔧</div>
+                        <h2 style="color:#5d4037; margin:0 0 10px;">ただいまメンテナンス中です</h2>
+                        <p style="color:#8d6e63; font-size:0.9rem; margin:0;">アップデート作業を行っています。<br>もうしばらくしてから、もう一度開いてみてください。</p>
+                    </div>
+                `;
+                return; // これ以降の初期化（セーブ・ロード・クラウド送信を含む）は一切実行しない
+            }
             initDevMode();
             // Safariのタブでそのまま開かれている場合（ホーム画面追加のスタンドアロンではない場合）は、
             // 上下のブラウザUI(URLバー・共有ボタン等)ぶん表示領域が狭くなるので、レイアウトの余白を少し詰める
@@ -842,3 +859,4 @@
                 if (raw) window.backupSaveData(raw);
             }
         }, 10000); // 10秒毎オートセーブ＋ランキング送信＋クラウドバックアップ
+

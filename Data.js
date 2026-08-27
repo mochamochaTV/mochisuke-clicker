@@ -1,4 +1,4 @@
-const stages = [
+        const stages = [
             { name: "鹿児島", pinX: 17.1, pinY: 76.5, distance: 500, item: "スイートポテト", itemImg: "omiyage_images/kyushu_okinawa/kagoshima_item.webp", price: 12, diary: "旅の始まりは鹿児島から！桜島がとっても雄大で、パワーをもらった気分やで。ここから日本中をもちでいっぱいにしに行くで！", bg: "bg_images/kyushu_okinawa/kagoshima.webp", diaryImg: "diary_images/kyushu_okinawa/kagoshima_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", pinX: 21.0, pinY: 73.3, distance: 900, item: "完熟マンゴー", itemImg: "omiyage_images/kyushu_okinawa/miyazaki_item.webp", price: 25, diary: "宮崎にやってきたで！ヤシの木が並んで南国気分満点やなあ。お日様を浴びたマンゴーは甘くて最高や！", bg: "bg_images/kyushu_okinawa/miyazaki.webp", diaryImg: "diary_images/kyushu_okinawa/miyazaki_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
             { name: "大分", pinX: 21.5, pinY: 69.4, distance: 1600, item: "ジャズ羊羹", itemImg: "omiyage_images/kyushu_okinawa/oita_item.webp", price: 50, diary: "大分といえば温泉やで！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだわ。", bg: "bg_images/kyushu_okinawa/oita.webp", diaryImg: "diary_images/kyushu_okinawa/oita_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },

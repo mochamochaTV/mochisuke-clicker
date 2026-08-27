@@ -1,4 +1,4 @@
-let skills = {
+        let skills = {
             skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 0, unlockPrice: 300, lvPriceMult: 1.9, desc: "発動中はタップでパーティクルが3倍出る" },
             skill2: { id: "skill2", name: "会心のもち肌", lv: 0, cd: 40, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 1, unlockPrice: 1200, lvPriceMult: 1.9, desc: "発動中は一定確率でタップが会心(×2)になる" },
             skill3: { id: "skill3", name: "もちすけ分身の術", lv: 0, cd: 50, currentCd: 0, duration: 12, activeTimer: 0, unlockStage: 4, unlockPrice: 6000, lvPriceMult: 2.0, desc: "発動中は分身が出現し打撃力が3倍になる" },
@@ -1037,3 +1037,4 @@ let skills = {
                 }
             }
         }, 100);
+

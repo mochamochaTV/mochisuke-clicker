@@ -1,4 +1,4 @@
-function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
+        function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
 
         const minigames = {
             quiz:          { id: "quiz",          name: "ご当地クイズ",         icon: "🗾", unlockStage: 0 },
@@ -630,3 +630,4 @@ function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameRewar
             const summary = MOCHITSUKI_RANKS.map(r => `${r.name}:${st.counts[r.name]}`).join(' ') + (st.bestStreak >= 3 ? ` ／ 最大${st.bestStreak}連続！` : '');
             showMinigameResult(`🍡 もちつきリズム結果`, summary, reward);
         }
+

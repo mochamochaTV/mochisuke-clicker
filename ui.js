@@ -1,4 +1,4 @@
-function onBgmVolumeChange(val) {
+        function onBgmVolumeChange(val) {
             bgmVolumeMult = val / 100;
             document.getElementById('bgm-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_bgm_volume', bgmVolumeMult);
