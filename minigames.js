@@ -61,24 +61,30 @@
 
         function renderMinigameTiles() {
             const container = document.getElementById('minigame-tile-view');
-            container.innerHTML = '';
+            container.innerHTML = '<div id="minigame-button-grid" style="position:absolute; inset:0; display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; align-content:center; justify-items:center; padding:24px; box-sizing:border-box;"></div>';
+            const grid = document.getElementById('minigame-button-grid');
             Object.values(minigames).forEach(g => {
-                const row = document.createElement('div');
-                row.className = 'list-item';
                 const locked = currentStageIndex < g.unlockStage;
                 const usedToday = minigamePlaysUsedToday[g.id] || 0;
                 const remaining = getMinigameDailyLimit() - usedToday;
+                const btn = document.createElement('button');
+                btn.style.cssText = 'width:100%; aspect-ratio:1; border-radius:20px; border:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; box-shadow:0 3px 8px rgba(0,0,0,0.25);';
                 if (locked) {
                     const reqName = stages[g.unlockStage] ? stages[g.unlockStage].name : "???";
-                    row.style.opacity = "0.55";
-                    row.innerHTML = `<div class="item-info"><span class="item-title">🔒 ${g.icon} ${g.name}</span><span class="item-desc">「${reqName}」到達で解放</span></div><button class="item-action-btn" disabled>ロック中</button>`;
+                    btn.style.background = 'rgba(120,120,120,0.75)'; btn.style.color = '#fff';
+                    btn.disabled = true;
+                    btn.innerHTML = `<div style="font-size:1.8rem;">🔒</div><div style="font-size:0.7rem; font-weight:bold;">${g.name}</div><div style="font-size:0.55rem;">「${reqName}」到達で解放</div>`;
                 } else if (remaining <= 0) {
-                    row.innerHTML = `<div class="item-info"><span class="item-title">${g.icon} ${g.name}</span><span class="item-desc">本日は終了！また明日挑戦してね</span></div><button class="item-action-btn" disabled>終了</button>`;
+                    btn.style.background = 'rgba(120,120,120,0.75)'; btn.style.color = '#fff';
+                    btn.disabled = true;
+                    btn.innerHTML = `<div style="font-size:1.8rem;">${g.icon}</div><div style="font-size:0.7rem; font-weight:bold;">${g.name}</div><div style="font-size:0.55rem;">本日は終了！</div>`;
                 } else {
-                    if (!minigameSeenUnlocked[g.id]) row.classList.add('minigame-recommend-glow');
-                    row.innerHTML = `<div class="item-info"><span class="item-title">${g.icon} ${g.name}</span><span class="item-desc">本日 ${usedToday}/${getMinigameDailyLimit()}回</span></div><button class="item-action-btn btn-shop" style="background:#26a69a; color:#fff;" onclick="startMinigame('${g.id}')">あそぶ</button>`;
+                    btn.style.background = 'rgba(255,248,236,0.92)'; btn.style.color = '#5d4037';
+                    if (!minigameSeenUnlocked[g.id]) btn.classList.add('minigame-recommend-glow');
+                    btn.onclick = () => startMinigame(g.id);
+                    btn.innerHTML = `<div style="font-size:1.8rem;">${g.icon}</div><div style="font-size:0.72rem; font-weight:bold;">${g.name}</div><div style="font-size:0.58rem; color:#26a69a;">本日 ${usedToday}/${getMinigameDailyLimit()}回</div>`;
                 }
-                container.appendChild(row);
+                grid.appendChild(btn);
             });
         }
 

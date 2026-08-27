@@ -211,7 +211,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-86</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-87</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -331,6 +331,7 @@
             <button class="item-action-btn btn-shop" style="width:100%; background:#3f51b5; color:#fff; margin-bottom:10px;" onclick="openPrestigeConfirm()">🔄 転生する（日本制覇後に解放）</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#009688; color:#fff; margin-bottom:10px;" onclick="openPrestigeShop()">🛍️ 転生ポイントショップ</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#e91e63; color:#fff; margin-bottom:10px;" onclick="openOmiyageCollection()">🍡 お土産一覧（もちすけにあげる）</button>
+            <button class="item-action-btn btn-shop" style="width:100%; background:#4caf50; color:#fff; margin-bottom:10px;" onclick="openTicketInventory()">🎫 アイテム一覧（チケットを使う）</button>
             <h3>👕 衣装をきがえる</h3>
             <div class="list-container" id="warehouse-clothes-list"></div>
             <button class="btn-red" onclick="closeModal('warehouse-modal')">閉じる</button>
@@ -382,7 +383,6 @@
                                 <button id="shop-tab-kisekae" class="shop-tab-pill" onclick="switchShopTab('kisekae')">👕<span class="shop-tab-label">きせかえ</span></button>
                                 <button id="shop-tab-skills" class="shop-tab-pill" onclick="switchShopTab('skills')">✨<span class="shop-tab-label">スキル</span></button>
                                 <button id="shop-tab-gacha" class="shop-tab-pill" onclick="onGachaTabTap()">🎰<span class="shop-tab-label">ガチャ</span></button>
-                                <button id="shop-tab-items" class="shop-tab-pill" onclick="switchShopTab('items')">🎫<span class="shop-tab-label">アイテム</span></button>
                             </div>
                         </div>
                     </div>
@@ -458,11 +458,29 @@
     </div>
 
     <div id="minigame-center-modal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close-x" onclick="closeMinigameCenter()">×</button>
-            <h2>🎮 ミニゲームセンター</h2>
-            <div id="minigame-tile-view" class="list-container"></div>
-            <div id="minigame-play-view" style="display:none;"></div>
+        <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/minigame_center_bg.webp'); background-size:cover; background-position:center;">
+            <button class="modal-fullscreen-close" onclick="closeMinigameCenter()">×</button>
+            <div id="minigame-tile-view" style="position:relative; flex:1; min-height:0;"></div>
+            <div id="minigame-play-view" style="display:none; flex:1; min-height:0; overflow-y:auto; background:rgba(255,248,236,0.95); padding:14px; box-sizing:border-box;"></div>
+            <div id="minigame-center-bottom-nav" style="width:100%; padding:10px 0 calc(6px + env(safe-area-inset-bottom, 0px)) 0; box-sizing:border-box; display:flex; justify-content:center; flex-shrink:0;">
+                <div class="nav-menu">
+                    <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.webp');">
+                        <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
+                    </button>
+                    <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
+                        <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
+                    </button>
+                    <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
+                        <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
+                    </button>
+                    <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.webp');">
+                        <span class="btn-illust-label" style="top:73.5%; left:9%; width:82%; height:20.2%; font-size:0.68rem; white-space:nowrap;">ミニゲーム</span>
+                    </button>
+                    <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');">
+                        <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -521,6 +539,16 @@
             <p style="font-size:0.72rem; color:#8d6e63; margin-bottom:10px;">タップすると、もちすけにあげられます</p>
             <div id="omiyage-collection-grid" style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px; max-height:50vh; overflow-y:auto; overflow-x:hidden; margin-bottom:10px;"></div>
             <button class="btn-red" onclick="closeModal('omiyage-collection-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="ticket-inventory-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('ticket-inventory-modal')">×</button>
+            <h2>🎫 アイテム一覧</h2>
+            <p style="font-size:0.72rem; color:#8d6e63; margin-bottom:10px;">ガチャで手に入れたチケットです。好きなタイミングで使えます</p>
+            <div id="ticket-inventory-list" class="list-container" style="max-height:55vh; overflow-y:auto; margin-bottom:10px;"></div>
+            <button class="btn-red" onclick="closeModal('ticket-inventory-modal')">閉じる</button>
         </div>
     </div>
 

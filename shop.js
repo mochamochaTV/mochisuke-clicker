@@ -38,7 +38,6 @@
             document.getElementById('shop-tab-kisekae').classList.toggle('tab-active', tab === 'kisekae');
             document.getElementById('shop-tab-skills').classList.toggle('tab-active', tab === 'skills');
             document.getElementById('shop-tab-gacha').classList.toggle('tab-active', tab === 'gacha');
-            document.getElementById('shop-tab-items').classList.toggle('tab-active', tab === 'items');
             // 棚イラスト自体は常に全画面表示のまま。おみやげ以外のタブでは、上に半透明パネルを重ねるだけ。
             document.getElementById('omiyage-slots-layer').style.display = (tab === 'omiyage') ? 'block' : 'none';
             document.getElementById('omiyage-arrow-left').style.display = (tab === 'omiyage') ? 'flex' : 'none';
@@ -144,7 +143,7 @@
             }
             ticketInventory[itemId]--;
             saveGame(); updateDisplay();
-            renderShopList(); // アイテムタブを開いている場合、個数表示を更新する
+            openTicketInventory(); // 一覧を開いている場合、個数表示を更新する
         }
 
         function updateGachaCoinDisplay() {
@@ -582,14 +581,6 @@
                     const thumbSrc = c.img || 'ui_images/image_0.webp';
                     const thumbFilter = c.img ? 'none' : (c.filter || 'none');
                     row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">👕 ${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
-                    listContainer.appendChild(row);
-                });
-            } else if (currentShopTab === 'items') {
-                NORMAL_CONSUMABLE_ITEMS.forEach(item => {
-                    const count = ticketInventory[item.id] || 0;
-                    const row = document.createElement('div');
-                    row.className = "list-item";
-                    row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🎫 ${item.name}　<span style="color:#ff9800; font-weight:900;">×${count}</span></span><span class="item-desc">${item.desc}</span></div></div><button class="item-action-btn btn-shop" ${count > 0 ? '' : 'disabled'} onclick="useTicket('${item.id}')" style="background:#4caf50; color:white;">使う</button>`;
                     listContainer.appendChild(row);
                 });
             } else {

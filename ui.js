@@ -368,6 +368,20 @@
             openModal('warehouse-modal');
         }
 
+        // 🎫 ガチャで手に入れたチケットの一覧。個数を確認しながら、好きなタイミングで使える
+        function openTicketInventory() {
+            const list = document.getElementById('ticket-inventory-list');
+            list.innerHTML = '';
+            NORMAL_CONSUMABLE_ITEMS.forEach(item => {
+                const count = ticketInventory[item.id] || 0;
+                const row = document.createElement('div');
+                row.className = 'list-item';
+                row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🎫 ${item.name}　<span style="color:#ff9800; font-weight:900;">×${count}</span></span><span class="item-desc">${item.desc}</span></div></div><button class="item-action-btn btn-shop" ${count > 0 ? '' : 'disabled'} onclick="useTicket('${item.id}')" style="background:#4caf50; color:white;">使う</button>`;
+                list.appendChild(row);
+            });
+            openModal('ticket-inventory-modal');
+        }
+
         function openOmiyageCollection() {
             const grid = document.getElementById('omiyage-collection-grid');
             grid.innerHTML = '';
