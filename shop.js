@@ -86,9 +86,9 @@
                 vibrate([20, 20, 20, 20, 40]);
                 document.getElementById('gacha-machine-body').animate(
                     [
-                        { transform: 'translateX(0)' }, { transform: 'translateX(-4px)' },
-                        { transform: 'translateX(4px)' }, { transform: 'translateX(-3px)' },
-                        { transform: 'translateX(3px)' }, { transform: 'translateX(0)' },
+                        { transform: 'translate(-50%,-50%) translateX(0)' }, { transform: 'translate(-50%,-50%) translateX(-4px)' },
+                        { transform: 'translate(-50%,-50%) translateX(4px)' }, { transform: 'translate(-50%,-50%) translateX(-3px)' },
+                        { transform: 'translate(-50%,-50%) translateX(3px)' }, { transform: 'translate(-50%,-50%) translateX(0)' },
                     ],
                     { duration: 200, iterations: 3 }
                 );
@@ -367,18 +367,26 @@
                 capsuleEls.push(img); iconEls.push(icon);
             });
 
+            panel.style.pointerEvents = 'auto'; // 念のため明示的に有効化（他の要素の影響でクリックが効かなくなる事故を防ぐ）
+
             const tapHint = document.createElement('p');
             tapHint.id = 'gacha-tap-hint';
             tapHint.style.cssText = 'text-align:center; font-size:0.75rem; color:#e91e63; font-weight:bold; margin:2px 0 8px; animation: gachaTapHintPulse 1s ease-in-out infinite;';
             tapHint.innerText = '👆 画面をタップして開封！';
             panel.insertBefore(tapHint, grid);
 
-            const openHandler = () => {
+            let hasOpened = false; // 二重発火防止（パネルとステージ両方にリスナーを付けるため）
+            const openHandler = (e) => {
+                if (hasOpened) return;
+                if (e && e.target && e.target.closest && e.target.closest('button')) return; // 「？」ボタンなどのタップは対象外
+                hasOpened = true;
                 panel.removeEventListener('click', openHandler);
+                document.getElementById('gacha-stage').removeEventListener('click', openHandler);
                 tapHint.remove();
                 openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, 0);
             };
             panel.addEventListener('click', openHandler);
+            document.getElementById('gacha-stage').addEventListener('click', openHandler); // 保険として、ステージ全体でも拾う
         }
 
         function openGacha10CapsulesSequentially(capsuleEls, iconEls, rarities, index) {
