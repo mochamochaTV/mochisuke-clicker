@@ -111,17 +111,14 @@
         // 🎮 ミニゲームコイン：もちとは別に、ミニゲーム専用の景品交換に使う予定の通貨（ガチャコインと同じく価値が目減りしない）
         let minigameCoins = 0;
         function getMinigameCoinGain(multiplier) {
-            return Math.max(1, Math.round(multiplier * 5)); // 出来が良いほど多くもらえるが、最低1枚は必ずもらえる
+            return Math.max(1, Math.round(multiplier * 5 * getMinigameRewardMultiplier())); // 出来が良いほど多くもらえるが、最低1枚は必ずもらえる。転生ショップの「ミニゲーム報酬」強化もここに乗る
         }
 
         function grantMinigameReward(multiplier) {
-            const final = Math.floor(getMinigameBaseReward() * multiplier * getMinigameRewardMultiplier());
-            score += final;
             const coinGain = getMinigameCoinGain(multiplier);
             minigameCoins += coinGain;
             saveGame(); updateDisplay();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
-            return { mochi: final, coins: coinGain };
+            return { coins: coinGain };
         }
 
         function showMinigameResult(title, detail, reward) {
@@ -133,8 +130,7 @@
                     <div style="font-size:1.8rem; margin-bottom:8px;">🎉</div>
                     <div style="font-weight:bold; font-size:1.05rem; margin-bottom:6px;">${title}</div>
                     <div style="color:#5d4037; margin-bottom:10px; font-size:0.9rem;">${detail}</div>
-                    <div style="font-weight:bold; color:#ff9800; font-size:1.2rem;">+${formatMochi(reward.mochi)} もち獲得！</div>
-                    <div style="font-weight:bold; color:#7b1fa2; font-size:1rem; margin-bottom:16px;">🎮 +${reward.coins} ミニゲームコイン獲得！</div>
+                    <div style="font-weight:bold; color:#7b1fa2; font-size:1.2rem; margin-bottom:16px;">🎮 +${reward.coins} ミニゲームコイン獲得！</div>
                     <button class="item-action-btn btn-red" style="width:100%;" onclick="endMinigameToTiles()">もどる</button>
                 </div>`;
         }

@@ -240,8 +240,16 @@
             ]
         };
         const comboEndLines = ["ナイスタップ！", "おつかれやで！", "ええコンボやったな！", "また続けような！", "もちもち楽しかったわ！", "ようやったで！"];
+
+        // 🎁 ノーマル（灰）で出る消耗品アイテム一覧
+        const NORMAL_CONSUMABLE_ITEMS = [
+            { id: 'minigameTicket', name: 'ミニゲーム追加券', img: 'ui_images/item_minigame_ticket.webp' },
+            { id: 'cooldownTicket', name: 'スキルクールタイム短縮チケット', img: 'ui_images/item_cooldown_ticket.webp' },
+            { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'ui_images/item_mochi30min_ticket.webp' },
+        ];
+
         const GACHA_RARITIES = [
-            { id: 'normal',      label: 'ノーマル',     weight: 90,  filter: 'grayscale(0.7) brightness(0.95)',                              color: '#9e9e9e', desc: '消耗品（ミニゲーム追加券・スキルクールタイム短縮など）' }, // 灰
+            { id: 'normal',      label: 'ノーマル',     weight: 90,  filter: 'grayscale(0.7) brightness(0.95)',                              color: '#9e9e9e', desc: '消耗品（ミニゲーム追加券・スキルクールタイム短縮チケット・もち30分ぶんチケット）' }, // 灰
             { id: 'normalRare',  label: 'ノーマルレア',  weight: 5.9, filter: 'sepia(0.4) saturate(2.5) hue-rotate(60deg) brightness(1.05)',   color: '#4caf50', desc: '上位の消耗品、または一時的な見た目エフェクト' }, // 緑
             { id: 'rare',        label: 'レア',        weight: 3,   filter: 'sepia(0.4) saturate(3) hue-rotate(170deg) brightness(1.05)',    color: '#2196f3', desc: 'シンプルな服・帽子・アクセサリー' }, // 青
             { id: 'sr',          label: 'スーパーレア',  weight: 1,   filter: 'sepia(0.6) saturate(3) hue-rotate(230deg) brightness(1.05)',    color: '#9c27b0', desc: '良い感じの服・帽子・アクセサリー' }, // 紫

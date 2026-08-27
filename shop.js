@@ -119,6 +119,22 @@
             });
         }
 
+        // 🎁 ノーマル（灰）が出た時：3種類の消耗品からランダムに1つ選んで、その場で効果を発動する
+        function grantRandomNormalConsumable() {
+            const item = pickRandom(NORMAL_CONSUMABLE_ITEMS);
+            if (item.id === 'minigameTicket') {
+                Object.keys(minigamePlaysUsedToday).forEach(k => {
+                    minigamePlaysUsedToday[k] = Math.max(0, (minigamePlaysUsedToday[k] || 0) - 1);
+                });
+            } else if (item.id === 'cooldownTicket') {
+                Object.keys(skills).forEach(k => { skills[k].currentCd = 0; });
+            } else if (item.id === 'mochi30minTicket') {
+                score += getMps() * 1800; // 30分ぶんの自動増加を即座に付与
+            }
+            saveGame(); updateDisplay();
+            return item;
+        }
+
         function updateGachaCoinDisplay() {
             const el = document.getElementById('gacha-coin-value');
             if (el) el.innerText = IS_DEV_MODE ? '∞' : formatMochi(gachaCoins);
@@ -242,11 +258,11 @@
             capsuleBottom.style.display = 'block';
 
             capsuleTop.animate(
-                [{ transform: 'translateY(0) rotate(0deg)', opacity: 1 }, { transform: 'translateY(-42px) rotate(-30deg)', opacity: 0 }],
+                [{ transform: 'translateY(-3px) rotate(0deg)', opacity: 1 }, { transform: 'translateY(-42px) rotate(-30deg)', opacity: 0 }],
                 { duration: 450, easing: 'ease-out', fill: 'forwards' }
             );
             capsuleBottom.animate(
-                [{ transform: 'translateY(0) rotate(0deg)', opacity: 1 }, { transform: 'translateY(32px) rotate(24deg)', opacity: 0 }],
+                [{ transform: 'translateY(3px) rotate(0deg)', opacity: 1 }, { transform: 'translateY(32px) rotate(24deg)', opacity: 0 }],
                 { duration: 450, easing: 'ease-out', fill: 'forwards' }
             );
 
@@ -254,14 +270,24 @@
         }
 
         function revealGachaPrize() {
-            // 🚧 景品テーブルはまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
-            const gain = Math.floor(Math.random() * 500) + 50;
-            score += gain;
-            updateDisplay(); saveGame();
-
             const prizeReveal = document.getElementById('gacha-prize-reveal');
+            const prizeImg = document.getElementById('gacha-prize-img');
             const prizeName = document.getElementById('gacha-prize-name');
-            prizeName.innerHTML = `<span style="color:${currentGachaRarity.color}; text-shadow:0 1px 2px rgba(0,0,0,0.4);">【${currentGachaRarity.label}】</span><br>（仮の景品）もち +${formatMochi(gain)}`;
+            const rarityTag = `<span style="color:${currentGachaRarity.color}; text-shadow:0 1px 2px rgba(0,0,0,0.4);">【${currentGachaRarity.label}】</span><br>`;
+
+            if (currentGachaRarity.id === 'normal') {
+                const item = grantRandomNormalConsumable();
+                prizeImg.src = item.img;
+                prizeImg.style.display = 'block';
+                prizeName.innerHTML = `${rarityTag}${item.name}`;
+            } else {
+                // 🚧 このレア度の景品はまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
+                const gain = Math.floor(Math.random() * 500) + 50;
+                score += gain;
+                updateDisplay(); saveGame();
+                prizeImg.style.display = 'none';
+                prizeName.innerHTML = `${rarityTag}（仮の景品）もち +${formatMochi(gain)}`;
+            }
 
             playAudioFile('audio/levelup.mp3');
             screenFlash('#ffd700', 0.3);
@@ -417,21 +443,26 @@
             playAudioFile('audio/gacha_open.mp3');
             vibrate([10, 15]);
 
-            // 🚧 景品テーブルはまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
-            const gain = Math.floor(Math.random() * 500) + 50;
-            score += gain; updateDisplay();
-            icon.querySelector('div:last-child').innerText = `+${formatMochi(gain)}`;
+            if (rarities[index].id === 'normal') {
+                const item = grantRandomNormalConsumable();
+                icon.innerHTML = `<img src="${item.img}" style="width:60%; display:block; margin:0 auto;"><div style="font-size:0.42rem; font-weight:bold; color:${rarities[index].color}; text-shadow:0 1px 2px #fff; line-height:1.2;">${item.name}</div>`;
+            } else {
+                // 🚧 このレア度の景品はまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
+                const gain = Math.floor(Math.random() * 500) + 50;
+                score += gain; updateDisplay();
+                icon.querySelector('div:last-child').innerText = `+${formatMochi(gain)}`;
+            }
 
             // 1連と同じ「上下にパカッと割れて開く」演出
             whole.style.display = 'none';
             top.style.display = 'block';
             bottom.style.display = 'block';
             top.animate(
-                [{ transform: 'translateY(0) rotate(0deg)', opacity: 1 }, { transform: 'translateY(-16px) rotate(-25deg)', opacity: 0 }],
+                [{ transform: 'translateY(-2px) rotate(0deg)', opacity: 1 }, { transform: 'translateY(-16px) rotate(-25deg)', opacity: 0 }],
                 { duration: 350, easing: 'ease-out', fill: 'forwards' }
             );
             bottom.animate(
-                [{ transform: 'translateY(0) rotate(0deg)', opacity: 1 }, { transform: 'translateY(12px) rotate(20deg)', opacity: 0 }],
+                [{ transform: 'translateY(2px) rotate(0deg)', opacity: 1 }, { transform: 'translateY(12px) rotate(20deg)', opacity: 0 }],
                 { duration: 350, easing: 'ease-out', fill: 'forwards' }
             );
             icon.animate(
@@ -508,7 +539,7 @@
 
                         <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:4px; right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
 
-                        <div id="gacha-rates-overlay" style="display:none; position:absolute; inset:0; z-index:8; background:rgba(255,248,236,0.97); border-radius:12px; padding:14px; overflow-y:auto; box-sizing:border-box;">
+                        <div id="gacha-rates-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:20px; overflow-y:auto; box-sizing:border-box;">
                             <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
                             <h3 style="margin:0 0 10px; color:#5d4037;">🎰 排出率</h3>
                             <div id="gacha-rates-list"></div>
