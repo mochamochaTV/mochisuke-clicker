@@ -200,7 +200,7 @@
             });
             document.getElementById('gacha-multi-panel').style.display = 'none';
             capsuleWrap.style.display = 'block';
-            capsuleWrap.style.transform = 'translate(-50%, 0) scale(0)';
+            capsuleWrap.style.transform = 'translate(-50%, -50%) scale(0)';
             capsuleWhole.style.display = 'block';
             capsuleWhole.style.filter = 'none';
             capsuleTop.style.display = 'none';
@@ -210,6 +210,8 @@
             prizeReveal.style.transform = 'translate(-50%,-50%) scale(0)';
 
             playGachaCrankSequence().then(() => {
+                document.getElementById('gacha-reveal-fullscreen').style.display = 'flex';
+                document.getElementById('gacha-reveal-single').style.display = 'flex';
                 dropGachaCapsule();
             });
         }
@@ -227,14 +229,14 @@
             vibrate([15, 30, 60]);
             capsuleWrap.animate(
                 [
-                    { transform: 'translate(-50%, -40px) scale(0)', offset: 0 },
-                    { transform: 'translate(-50%, 12px) scale(1.1)', offset: 0.6 },
-                    { transform: 'translate(-50%, -6px) scale(0.95)', offset: 0.82 },
-                    { transform: 'translate(-50%, 0px) scale(1)', offset: 1 },
+                    { transform: 'translate(-50%, calc(-50% - 60px)) scale(0)', offset: 0 },
+                    { transform: 'translate(-50%, calc(-50% + 16px)) scale(1.1)', offset: 0.6 },
+                    { transform: 'translate(-50%, calc(-50% - 8px)) scale(0.95)', offset: 0.82 },
+                    { transform: 'translate(-50%, -50%) scale(1)', offset: 1 },
                 ],
                 { duration: 500, easing: 'ease-out', fill: 'forwards' }
             ).finished.then(() => {
-                capsuleWrap.style.transform = 'translate(-50%, 0) scale(1)';
+                capsuleWrap.style.transform = 'translate(-50%, -50%) scale(1)';
                 enableGachaCapsuleTapToOpen();
             });
         }
@@ -313,6 +315,15 @@
             );
 
             setGachaButtonsDisabled(false);
+
+            // タップで結果画面を閉じて、通常のガチャ画面に戻る
+            const fullscreen = document.getElementById('gacha-reveal-fullscreen');
+            const closeOnTap = () => {
+                fullscreen.removeEventListener('click', closeOnTap);
+                fullscreen.style.display = 'none';
+                document.getElementById('gacha-reveal-single').style.display = 'none';
+            };
+            setTimeout(() => fullscreen.addEventListener('click', closeOnTap), 400); // 出た瞬間の誤タップで即閉じないよう少し待つ
         }
 
         // ===== 10連：レバーは1回、カプセル10個が続けて出て、全部落ちてから順番にパカパカ開いていく =====
@@ -338,6 +349,7 @@
             if (oldHint) oldHint.remove();
 
             playGachaCrankSequence().then(() => {
+                document.getElementById('gacha-reveal-fullscreen').style.display = 'flex';
                 const rarities = [];
                 for (let i = 0; i < 10; i++) rarities.push(pickGachaRarity());
                 dropGachaCapsuleOneByOne(rarities, 0);
@@ -363,10 +375,10 @@
             vibrate([12]);
             capsuleWrap.animate(
                 [
-                    { transform: 'translate(-50%, -40px) scale(0)', opacity: 1, offset: 0 },
-                    { transform: 'translate(-50%, 12px) scale(1.1)', opacity: 1, offset: 0.6 },
-                    { transform: 'translate(-50%, -6px) scale(0.95)', opacity: 1, offset: 0.82 },
-                    { transform: 'translate(-50%, 0px) scale(1)', opacity: 1, offset: 1 },
+                    { transform: 'translate(-50%, calc(-50% - 40px)) scale(0)', opacity: 1, offset: 0 },
+                    { transform: 'translate(-50%, calc(-50% + 12px)) scale(1.1)', opacity: 1, offset: 0.6 },
+                    { transform: 'translate(-50%, calc(-50% - 6px)) scale(0.95)', opacity: 1, offset: 0.82 },
+                    { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 1 },
                 ],
                 { duration: 420, easing: 'ease-out', fill: 'forwards' }
             ).finished.then(() => {
@@ -374,8 +386,8 @@
                 setTimeout(() => {
                     capsuleWrap.animate(
                         [
-                            { transform: 'translate(-50%, 0px) scale(1)', opacity: 1 },
-                            { transform: 'translate(-50%, -14px) scale(0.7)', opacity: 0 },
+                            { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+                            { transform: 'translate(-50%, calc(-50% - 14px)) scale(0.7)', opacity: 0 },
                         ],
                         { duration: 260, easing: 'ease-in', fill: 'forwards' }
                     ).finished.then(() => {
@@ -395,7 +407,7 @@
             grid.innerHTML = '';
             panel.style.display = 'block';
 
-            const CAPSULE_PX = 56;
+            const CAPSULE_PX = 95;
             const capsuleSets = [], iconEls = [];
             rarities.forEach((r) => {
                 const cell = document.createElement('div');
@@ -403,7 +415,7 @@
 
                 const whole = document.createElement('img');
                 whole.src = 'ui_images/gacha_capsule.webp';
-                whole.style.cssText = `position:absolute; width:100%; display:block; filter:${r.filter};`;
+                whole.style.cssText = `position:absolute; width:100%; display:block; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35)) ${r.filter};`;
 
                 const top = document.createElement('img');
                 top.src = 'ui_images/gacha_capsule_top.webp';
@@ -415,7 +427,7 @@
 
                 const icon = document.createElement('div');
                 icon.style.cssText = 'position:absolute; width:100%; text-align:center; opacity:0; transform:scale(0.5);';
-                icon.innerHTML = `<div style="font-size:1.4rem;">🍡</div><div style="font-size:0.5rem; font-weight:bold; color:${r.color}; text-shadow:0 1px 2px #fff;"></div>`;
+                icon.innerHTML = `<div style="font-size:2.4rem;">🍡</div><div style="font-size:0.62rem; font-weight:bold; color:${r.color}; text-shadow:0 1px 3px #fff, 0 1px 3px #fff;"></div>`;
 
                 cell.appendChild(whole); cell.appendChild(top); cell.appendChild(bottom); cell.appendChild(icon);
                 grid.appendChild(cell);
@@ -426,7 +438,7 @@
 
             const tapHint = document.createElement('p');
             tapHint.id = 'gacha-tap-hint';
-            tapHint.style.cssText = 'text-align:center; font-size:0.75rem; color:#e91e63; font-weight:bold; margin:2px 0 8px; animation: gachaTapHintPulse 1s ease-in-out infinite;';
+            tapHint.style.cssText = 'text-align:center; font-size:0.9rem; color:#fff; font-weight:bold; margin:2px 0 10px; text-shadow:0 2px 4px rgba(0,0,0,0.5); animation: gachaTapHintPulse 1s ease-in-out infinite;';
             tapHint.innerText = '👆 画面をタップして開封！';
             panel.insertBefore(tapHint, grid);
 
@@ -456,7 +468,7 @@
 
             if (rarities[index].id === 'normal') {
                 const item = grantRandomNormalConsumable();
-                icon.innerHTML = `<img src="${item.img}" style="width:60%; display:block; margin:0 auto;"><div style="font-size:0.42rem; font-weight:bold; color:${rarities[index].color}; text-shadow:0 1px 2px #fff; line-height:1.2;">${item.name}</div>`;
+                icon.innerHTML = `<img src="${item.img}" style="width:65%; display:block; margin:0 auto; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));"><div style="font-size:0.5rem; font-weight:bold; color:${rarities[index].color}; text-shadow:0 1px 3px #fff, 0 1px 3px #fff; line-height:1.2;">${item.name}</div>`;
             } else {
                 // 🚧 このレア度の景品はまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
                 const gain = Math.floor(Math.random() * 500) + 50;
@@ -506,6 +518,7 @@
             const panel = document.getElementById('gacha-multi-panel');
             panel.style.display = 'none';
             document.getElementById('gacha-multi-grid').innerHTML = '';
+            document.getElementById('gacha-reveal-fullscreen').style.display = 'none';
             const prompt = document.getElementById('gacha10-finish-prompt');
             if (prompt) prompt.remove();
             setGachaButtonsDisabled(false);
@@ -531,21 +544,6 @@
                         <div id="gacha-illustration-wrap" style="position:absolute; top:24px; left:0; width:100%; height:340px;">
                             <img id="gacha-machine-body" src="ui_images/gacha_machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
                             <img id="gacha-crank" src="ui_images/gacha_crank.webp" alt="" style="position:absolute; width:18%; top:62.402035%; left:40.544265%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
-
-                            <div id="gacha-capsule-wrap" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
-                                <img id="gacha-capsule-whole" src="ui_images/gacha_capsule.webp" alt="" style="width:100%; display:block;">
-                                <img id="gacha-capsule-top" src="ui_images/gacha_capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
-                                <img id="gacha-capsule-bottom" src="ui_images/gacha_capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
-                            </div>
-
-                            <div id="gacha-prize-reveal" style="position:absolute; top:20%; left:50%; transform:translate(-50%,-50%) scale(0); text-align:center; z-index:5; opacity:0;">
-                                <img id="gacha-prize-img" src="" alt="" style="width:90px; height:90px; object-fit:contain;">
-                                <p id="gacha-prize-name" style="font-size:0.85rem; font-weight:bold; color:#e91e63; margin:4px 0 0; text-shadow:0 1px 3px #fff;"></p>
-                            </div>
-
-                            <div id="gacha-multi-panel" style="display:none; position:absolute; inset:2% 4%; background:rgba(255,248,236,0.94); border:2px solid #e8dcc0; border-radius:16px; z-index:6; overflow-y:auto;">
-                                <div id="gacha-multi-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 10px; padding:12px; justify-items:center;"></div>
-                            </div>
                         </div>
 
                         <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:4px; right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
@@ -561,6 +559,24 @@
                     <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#ff6fa5,#e91e63); color:#fff; border-radius:24px; box-shadow:0 3px 0 #b0184a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin()">🎰 1回まわす（${GACHA_COST_SINGLE}枚）</button>
                     <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#c162e8,#9c27b0); color:#fff; margin-top:10px; border-radius:24px; box-shadow:0 3px 0 #6a1b7a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin10()">🎰 10連まとめて（${GACHA_COST_TEN}枚）</button>
 
+                    <div id="gacha-reveal-fullscreen" style="display:none; position:fixed; inset:0; max-width:480px; margin:0 auto; z-index:1500; background:radial-gradient(ellipse at center, #5a4330 0%, #1a0f08 100%); align-items:center; justify-content:center;">
+                        <div id="gacha-reveal-single" style="display:none; position:relative; width:100%; height:100%; align-items:center; justify-content:center;">
+                            <div id="gacha-capsule-wrap" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); width:45%; max-width:220px; z-index:4;">
+                                <img id="gacha-capsule-whole" src="ui_images/gacha_capsule.webp" alt="" style="width:100%; display:block;">
+                                <img id="gacha-capsule-top" src="ui_images/gacha_capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                                <img id="gacha-capsule-bottom" src="ui_images/gacha_capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                            </div>
+
+                            <div id="gacha-prize-reveal" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); text-align:center; z-index:5; opacity:0;">
+                                <img id="gacha-prize-img" src="" alt="" style="width:170px; height:170px; object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4));">
+                                <p id="gacha-prize-name" style="font-size:1.15rem; font-weight:bold; color:#fff; margin:8px 0 0; text-shadow:0 2px 6px rgba(0,0,0,0.6);"></p>
+                            </div>
+                        </div>
+
+                        <div id="gacha-multi-panel" style="display:none; position:absolute; inset:6% 4%; overflow-y:auto;">
+                            <div id="gacha-multi-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:16px 14px; padding:10px; justify-items:center;"></div>
+                        </div>
+                    </div>
                 `;
                 updateGachaCoinDisplay();
                 return;
