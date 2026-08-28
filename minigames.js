@@ -4,11 +4,21 @@
             quiz:          { id: "quiz",          name: "ご当地クイズ",         icon: "🗾", unlockStage: 0 },
             timeattack:    { id: "timeattack",    name: "タップタイムアタック", icon: "⏱️", unlockStage: 0 },
             concentration: { id: "concentration", name: "ご当地神経衰弱",       icon: "🃏", unlockStage: 5 },
-            mochitsuki:    { id: "mochitsuki",    name: "もちつきリズム",       icon: "🍡", unlockStage: 7 }
+            mochitsuki:    { id: "mochitsuki",    name: "もちつきリズム",       icon: "🍡", unlockStage: 7 },
+            slot:          { id: "slot",          name: "スロット",            icon: "🎰", unlockStage: 3, isCoinGame: true }
         };
+        // 🎰 スロットの絵柄と配当（3つ揃った時の倍率）。同じ絵柄の並び順で、揃いにくいほど高配当にしてある
+        const SLOT_SYMBOLS = [
+            { id: 'mochi',  icon: '🍡', payout: 2 },
+            { id: 'ticket', icon: '🎫', payout: 3 },
+            { id: 'coin',   icon: '🪙', payout: 5 },
+            { id: 'clover', icon: '🍀', payout: 10 },
+            { id: 'seven',  icon: '7️⃣', payout: 20 },
+        ];
+        const SLOT_SPIN_COST = 5; // 1回まわすのに必要なミニゲームコイン
         let minigameLastResetDate = null;
-        let minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
-        let minigameSeenUnlocked = { quiz: false, timeattack: false, concentration: false, mochitsuki: false }; // 「新しく解放された」ハイライトを、一度見たら消すためのフラグ
+        let minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0, slot: 0 };
+        let minigameSeenUnlocked = { quiz: false, timeattack: false, concentration: false, mochitsuki: false, slot: false }; // 「新しく解放された」ハイライトを、一度見たら消すためのフラグ
         let minigameBests = { timeattack: 0, concentration: null }; // concentration=最少手数(小さいほど良い)
 
         // ===================================================================
@@ -30,7 +40,7 @@
             const today = getLocalDateString(new Date());
             if (minigameLastResetDate !== today) {
                 minigameLastResetDate = today;
-                minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
+                minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0, slot: 0 };
                 saveGame();
             }
         }
@@ -57,6 +67,7 @@
             if (typeof mochitsukiState !== 'undefined' && mochitsukiState && mochitsukiState.animId) {
                 cancelAnimationFrame(mochitsukiState.animId); mochitsukiState = null;
             }
+            slotIsSpinning = false; // 回転中に離脱しても、次に開いた時にボタンが押せなくなったままにならないようにする
         }
 
         function renderMinigameTiles() {
@@ -74,6 +85,12 @@
                     btn.style.background = 'rgba(120,120,120,0.75)'; btn.style.color = '#fff';
                     btn.disabled = true;
                     btn.innerHTML = `<div style="font-size:1.8rem;">🔒</div><div style="font-size:0.7rem; font-weight:bold;">${g.name}</div><div style="font-size:0.55rem;">「${reqName}」到達で解放</div>`;
+                } else if (g.isCoinGame) {
+                    // 🎰 コインを賭けて遊ぶゲームは、1日の回数制限とは別枠（コインが続く限り何度でも遊べる）
+                    btn.style.background = 'rgba(255,248,236,0.92)'; btn.style.color = '#5d4037';
+                    if (!minigameSeenUnlocked[g.id]) btn.classList.add('minigame-recommend-glow');
+                    btn.onclick = () => startMinigame(g.id);
+                    btn.innerHTML = `<div style="font-size:1.8rem;">${g.icon}</div><div style="font-size:0.72rem; font-weight:bold;">${g.name}</div><div style="font-size:0.58rem; color:#7b1fa2;">🪙 ${minigameCoins} 所持</div>`;
                 } else if (remaining <= 0) {
                     btn.style.background = 'rgba(120,120,120,0.75)'; btn.style.color = '#fff';
                     btn.disabled = true;
@@ -89,7 +106,8 @@
         }
 
         function startMinigame(id) {
-            if ((minigamePlaysUsedToday[id] || 0) >= getMinigameDailyLimit()) return;
+            const g = minigames[id];
+            if (!g.isCoinGame && (minigamePlaysUsedToday[id] || 0) >= getMinigameDailyLimit()) return;
             if (!minigameSeenUnlocked[id]) { minigameSeenUnlocked[id] = true; saveGame(); }
             document.getElementById('minigame-tile-view').style.display = 'none';
             const playView = document.getElementById('minigame-play-view');
@@ -99,6 +117,7 @@
             else if (id === 'timeattack') startTimeAttackGame(playView);
             else if (id === 'concentration') startConcentrationGame(playView);
             else if (id === 'mochitsuki') startMochitsukiGame(playView);
+            else if (id === 'slot') startSlotGame(playView);
         }
 
         function endMinigameToTiles() {
@@ -642,3 +661,114 @@
             showMinigameResult(`🍡 もちつきリズム結果`, summary, reward);
         }
 
+        // ===================================================================
+        // 🎰 スロット（コインを賭けて遊ぶ、1日の回数制限が無いゲーム）
+        // ===================================================================
+        const SLOT_SYMBOL_HEIGHT = 80; // 1コマぶんの高さ(px)。窓の高さ・帯の1コマ分と必ず一致させる
+        const SLOT_STRIP_REPEATS = 8;  // 絵柄5種類を、この回数ぶん繰り返して1本の帯を作る（長く回っているように見せるため）
+        let slotIsSpinning = false;
+
+        function buildSlotReelStripHtml() {
+            let html = '';
+            for (let rep = 0; rep < SLOT_STRIP_REPEATS; rep++) {
+                SLOT_SYMBOLS.forEach(s => {
+                    html += `<div style="height:${SLOT_SYMBOL_HEIGHT}px; display:flex; align-items:center; justify-content:center; font-size:2.2rem;">${s.icon}</div>`;
+                });
+            }
+            return html;
+        }
+
+        function startSlotGame(container) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:10px;">
+                    <h3 style="margin:0 0 4px; color:#5d4037;">🎰 スロット</h3>
+                    <p style="font-size:0.7rem; color:#8d6e63; margin:0 0 12px;">3つ絵柄が揃うと、賭けたコインが増えて返ってくる！</p>
+
+                    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:14px;">
+                        ${[0, 1, 2].map(i => `
+                            <div style="width:72px; height:${SLOT_SYMBOL_HEIGHT}px; overflow:hidden; border:3px solid #5d4037; border-radius:10px; background:#fff8ec; box-shadow:inset 0 3px 8px rgba(0,0,0,0.2);">
+                                <div id="slot-reel-strip-${i}" style="transform:translateY(0);">${buildSlotReelStripHtml()}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div style="margin-bottom:10px; font-weight:900; color:#7b1fa2;">🪙 <span id="slot-coin-value">${minigameCoins}</span> 所持</div>
+                    <button id="slot-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#26a69a; color:#fff;" onclick="spinSlot()">🎰 まわす（${SLOT_SPIN_COST}枚）</button>
+                    <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin-top:12px; min-height:1.4em;"></p>
+
+                    <div style="margin-top:10px; font-size:0.62rem; color:#aaa;">
+                        ${SLOT_SYMBOLS.map(s => `${s.icon}×3 → ${s.payout}倍`).join('　')}
+                    </div>
+
+                    <button class="item-action-btn btn-red" style="width:100%; margin-top:14px;" onclick="endMinigameToTiles()">やめる</button>
+                </div>
+            `;
+        }
+
+        function spinSlot() {
+            if (slotIsSpinning) return;
+            if (minigameCoins < SLOT_SPIN_COST) {
+                document.getElementById('slot-result-text').innerText = `コインが足りません（あと${SLOT_SPIN_COST - minigameCoins}枚）`;
+                return;
+            }
+            slotIsSpinning = true;
+            minigameCoins -= SLOT_SPIN_COST;
+            saveGame(); updateDisplay();
+            document.getElementById('slot-coin-value').innerText = minigameCoins;
+            document.getElementById('slot-spin-btn').disabled = true;
+            document.getElementById('slot-result-text').innerText = '';
+
+            // この回で、それぞれのリールが最終的にどの絵柄で止まるかを先に決めておく
+            const resultIndexes = [0, 1, 2].map(() => Math.floor(Math.random() * SLOT_SYMBOLS.length));
+            const durations = [1600, 2100, 2600]; // 1列目→2列目→3列目の順に、だんだん長く回してから止める
+
+            playAudioFile('audio/gacha_crank.mp3');
+            vibrate([15]);
+
+            resultIndexes.forEach((symbolIndex, reelIndex) => {
+                const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
+                // 帯の後ろの方（最後から2周目）に着地させることで、長く回っているように見せつつ、帯の端が見えないようにする
+                const landingRep = SLOT_STRIP_REPEATS - 2;
+                const targetRow = landingRep * SLOT_SYMBOLS.length + symbolIndex;
+                const targetY = -(targetRow * SLOT_SYMBOL_HEIGHT);
+
+                strip.style.transition = 'none';
+                strip.style.transform = 'translateY(0)';
+                void strip.offsetWidth; // 強制リフローで、リセットを確実に反映させてからアニメーションを開始する
+
+                strip.style.transition = `transform ${durations[reelIndex]}ms cubic-bezier(0.12, 0.85, 0.32, 1)`;
+                strip.style.transform = `translateY(${targetY}px)`;
+
+                setTimeout(() => {
+                    playAudioFile('audio/tap.mp3');
+                    vibrate([10]);
+                }, durations[reelIndex]);
+            });
+
+            setTimeout(() => finishSlotSpin(resultIndexes), Math.max(...durations) + 100);
+        }
+
+        function finishSlotSpin(resultIndexes) {
+            slotIsSpinning = false;
+            const resultText = document.getElementById('slot-result-text');
+            if (!resultText) return; // 回転中に画面を離れていたら、何もしない
+            document.getElementById('slot-spin-btn').disabled = false;
+
+            const isWin = resultIndexes[0] === resultIndexes[1] && resultIndexes[1] === resultIndexes[2];
+
+            if (isWin) {
+                const symbol = SLOT_SYMBOLS[resultIndexes[0]];
+                const payout = SLOT_SPIN_COST * symbol.payout;
+                minigameCoins += payout;
+                saveGame(); updateDisplay();
+                document.getElementById('slot-coin-value').innerText = minigameCoins;
+                resultText.style.color = '#e91e63';
+                resultText.innerText = `${symbol.icon}${symbol.icon}${symbol.icon} 揃った！ +${payout}枚！`;
+                playAudioFile('audio/levelup.mp3');
+                screenFlash('#ffd700', symbol.payout >= 20 ? 0.6 : 0.3);
+                vibrate(symbol.payout >= 20 ? [30, 40, 30, 40, 50] : [20, 30, 20]);
+            } else {
+                resultText.style.color = '#8d6e63';
+                resultText.innerText = 'また挑戦してね！';
+            }
+        }
