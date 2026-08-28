@@ -90,7 +90,7 @@
                     btn.style.background = 'rgba(255,248,236,0.92)'; btn.style.color = '#5d4037';
                     if (!minigameSeenUnlocked[g.id]) btn.classList.add('minigame-recommend-glow');
                     btn.onclick = () => startMinigame(g.id);
-                    btn.innerHTML = `<div style="font-size:1.8rem;">${g.icon}</div><div style="font-size:0.72rem; font-weight:bold;">${g.name}</div><div style="font-size:0.58rem; color:#7b1fa2;">🪙 ${minigameCoins} 所持</div>`;
+                    btn.innerHTML = `<div style="font-size:1.8rem;">${g.icon}</div><div style="font-size:0.72rem; font-weight:bold;">${g.name}</div><div style="font-size:0.58rem; color:#7b1fa2;">🪙 ${IS_DEV_MODE ? '∞' : minigameCoins} 所持</div>`;
                 } else if (remaining <= 0) {
                     btn.style.background = 'rgba(120,120,120,0.75)'; btn.style.color = '#fff';
                     btn.disabled = true;
@@ -692,7 +692,7 @@
                         `).join('')}
                     </div>
 
-                    <div style="margin-bottom:10px; font-weight:900; color:#7b1fa2;">🪙 <span id="slot-coin-value">${minigameCoins}</span> 所持</div>
+                    <div style="margin-bottom:10px; font-weight:900; color:#7b1fa2;">🪙 <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持</div>
                     <button id="slot-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#26a69a; color:#fff;" onclick="spinSlot()">🎰 まわす（${SLOT_SPIN_COST}枚）</button>
                     <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin-top:12px; min-height:1.4em;"></p>
 
@@ -707,14 +707,14 @@
 
         function spinSlot() {
             if (slotIsSpinning) return;
-            if (minigameCoins < SLOT_SPIN_COST) {
+            if (!IS_DEV_MODE && minigameCoins < SLOT_SPIN_COST) {
                 document.getElementById('slot-result-text').innerText = `コインが足りません（あと${SLOT_SPIN_COST - minigameCoins}枚）`;
                 return;
             }
             slotIsSpinning = true;
-            minigameCoins -= SLOT_SPIN_COST;
+            if (!IS_DEV_MODE) minigameCoins -= SLOT_SPIN_COST;
             saveGame(); updateDisplay();
-            document.getElementById('slot-coin-value').innerText = minigameCoins;
+            document.getElementById('slot-coin-value').innerText = IS_DEV_MODE ? '∞' : minigameCoins;
             document.getElementById('slot-spin-btn').disabled = true;
             document.getElementById('slot-result-text').innerText = '';
 
@@ -761,7 +761,7 @@
                 const payout = SLOT_SPIN_COST * symbol.payout;
                 minigameCoins += payout;
                 saveGame(); updateDisplay();
-                document.getElementById('slot-coin-value').innerText = minigameCoins;
+                document.getElementById('slot-coin-value').innerText = IS_DEV_MODE ? '∞' : minigameCoins;
                 resultText.style.color = '#e91e63';
                 resultText.innerText = `${symbol.icon}${symbol.icon}${symbol.icon} 揃った！ +${payout}枚！`;
                 playAudioFile('audio/levelup.mp3');

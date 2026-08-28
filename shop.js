@@ -449,7 +449,7 @@
 
                 cell.appendChild(whole); cell.appendChild(top); cell.appendChild(bottom); cell.appendChild(icon);
                 grid.appendChild(cell);
-                capsuleSets.push({ whole, top, bottom }); iconEls.push(icon);
+                capsuleSets.push({ whole, top, bottom, cell }); iconEls.push(icon);
             });
 
             panel.style.pointerEvents = 'auto'; // 念のため明示的に有効化（他の要素の影響でクリックが効かなくなる事故を防ぐ）
@@ -479,9 +479,10 @@
                 finishGachaSpin10();
                 return;
             }
-            const { whole, top, bottom } = capsuleSets[index];
+            const { whole, top, bottom, cell } = capsuleSets[index];
             const icon = iconEls[index];
             const flair = rarities[index].flair;
+            cell.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 入りきらない分は、開く場所に合わせて自動でスクロール
             playAudioFile('audio/gacha_open.mp3');
             vibrate(flair.vibrate);
             if (flair.glow > 0) screenFlash(rarities[index].color, flair.flash * 0.6); // 10連は連続で光ると煩わしいので、1連より控えめに
@@ -525,12 +526,13 @@
             const panel = document.getElementById('gacha-multi-panel');
             const promptDiv = document.createElement('div');
             promptDiv.id = 'gacha10-finish-prompt';
-            promptDiv.style.cssText = 'position:absolute; bottom:10px; left:8px; right:8px; display:flex; gap:8px;';
+            promptDiv.style.cssText = 'display:flex; gap:8px; padding:16px 12px 20px;';
             promptDiv.innerHTML = `
                 <button class="item-action-btn btn-shop" style="flex:1; background:#9c27b0; color:#fff;" onclick="event.stopPropagation(); closeGacha10ResultsAnd(true);">🎰 もう10連</button>
                 <button class="item-action-btn" style="flex:1; background:#eee; color:#4a3622;" onclick="event.stopPropagation(); closeGacha10ResultsAnd(false);">やめる</button>
             `;
             panel.appendChild(promptDiv);
+            promptDiv.scrollIntoView({ behavior: 'smooth', block: 'end' }); // 最後のカプセルより下に、続けて見えるようにする
         }
 
         // 🔴 「もう10連」「やめる」どちらを押しても、結果表示はいったんすべて消してから次に進む
