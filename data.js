@@ -249,11 +249,16 @@
         ];
 
         const GACHA_RARITIES = [
-            { id: 'normal',      label: 'ノーマル',     weight: 90,  filter: 'grayscale(0.7) brightness(0.95)',                              color: '#9e9e9e', desc: '消耗品（ミニゲーム追加券・スキルクールタイム短縮チケット・もち30分ぶんチケット）' }, // 灰
-            { id: 'normalRare',  label: 'ノーマルレア',  weight: 5.9, filter: 'sepia(0.4) saturate(2.5) hue-rotate(60deg) brightness(1.05)',   color: '#4caf50', desc: '上位の消耗品、または一時的な見た目エフェクト' }, // 緑
-            { id: 'rare',        label: 'レア',        weight: 3,   filter: 'sepia(0.4) saturate(3) hue-rotate(170deg) brightness(1.05)',    color: '#2196f3', desc: 'シンプルな服・帽子・アクセサリー' }, // 青
-            { id: 'sr',          label: 'スーパーレア',  weight: 1,   filter: 'sepia(0.6) saturate(3) hue-rotate(230deg) brightness(1.05)',    color: '#9c27b0', desc: '良い感じの服・帽子・アクセサリー' }, // 紫
-            { id: 'ur',          label: 'ウルトラレア',  weight: 0.1, filter: 'saturate(3) hue-rotate(0deg)',                                  color: '#ff6ec7', desc: '最上位ランクの服・帽子・アクセサリー' }, // 虹（後でグラデ演出に差し替え予定）
+            { id: 'normal',      label: 'ノーマル',     weight: 90,  filter: 'grayscale(0.7) brightness(0.95)',                              color: '#9e9e9e', desc: '消耗品（ミニゲーム追加券・スキルクールタイム短縮チケット・もち30分ぶんチケット）',
+              flair: { flash: 0.2, glow: 0, vibrate: [10, 15], nameScale: 1.0, rays: false } }, // 灰
+            { id: 'normalRare',  label: 'ノーマルレア',  weight: 5.9, filter: 'sepia(0.4) saturate(2.5) hue-rotate(60deg) brightness(1.05)',   color: '#4caf50', desc: '上位の消耗品、または一時的な見た目エフェクト',
+              flair: { flash: 0.3, glow: 25, vibrate: [10, 15, 10, 15], nameScale: 1.1, rays: false } }, // 緑
+            { id: 'rare',        label: 'レア',        weight: 3,   filter: 'sepia(0.4) saturate(3) hue-rotate(170deg) brightness(1.05)',    color: '#2196f3', desc: 'シンプルな服・帽子・アクセサリー',
+              flair: { flash: 0.4, glow: 40, vibrate: [15, 20, 15, 20], nameScale: 1.2, rays: true } }, // 青
+            { id: 'sr',          label: 'スーパーレア',  weight: 1,   filter: 'sepia(0.6) saturate(3) hue-rotate(230deg) brightness(1.05)',    color: '#9c27b0', desc: '良い感じの服・帽子・アクセサリー',
+              flair: { flash: 0.55, glow: 60, vibrate: [20, 25, 20, 25, 20], nameScale: 1.35, rays: true } }, // 紫
+            { id: 'ur',          label: 'ウルトラレア',  weight: 0.1, filter: 'saturate(3) hue-rotate(0deg)',                                  color: '#ff6ec7', desc: '最上位ランクの服・帽子・アクセサリー',
+              flair: { flash: 0.7, glow: 90, vibrate: [25, 30, 25, 30, 25, 40], nameScale: 1.55, rays: true } }, // 虹（後でグラデ演出に差し替え予定）
         ];
         const OMIYAGE_ROWS = [
             { itemTop: 20.2, itemBottom: 34.0, plateTop: 34.5, plateBottom: 37.7 },

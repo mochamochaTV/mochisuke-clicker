@@ -498,6 +498,10 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.6; transform: scale(1.06); }
         }
+        @keyframes gachaRaysSpin {
+            from { transform: translate(-50%,-50%) rotate(0deg); }
+            to { transform: translate(-50%,-50%) rotate(360deg); }
+        }
 
         .omiyage-shelf-arrow {
             position: absolute; top: 44%; left: 1%;
