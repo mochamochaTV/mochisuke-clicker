@@ -155,7 +155,7 @@
                 minigameSeenUnlocked: minigameSeenUnlocked,
                 prefTaps: prefTaps, lastActiveTimestamp: lastActiveTimestamp,
                 prestigeCount: prestigeCount, prestigePoints: prestigePoints, prestigeScoreHistory: prestigeScoreHistory,
-                prestigeShopLv: prestigeShopLv, gachaCoins: gachaCoins, minigameCoins: minigameCoins, ticketInventory: ticketInventory
+                prestigeShopLv: prestigeShopLv, gachaCoins: gachaCoins, minigameCoins: minigameCoins, ticketInventory: ticketInventory, slotPlaysRemaining: slotPlaysRemaining
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -220,6 +220,7 @@
                     gachaCoins = state.gachaCoins ?? 0;
                     minigameCoins = state.minigameCoins ?? 0;
                     ticketInventory = state.ticketInventory ?? { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 };
+                    slotPlaysRemaining = state.slotPlaysRemaining ?? 0;
                     // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
                     prestigeShopLv = state.prestigeShopLv ?? {
                         offlineCap: state.offlineCapBonusHours ?? 0,
