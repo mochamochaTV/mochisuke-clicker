@@ -1079,7 +1079,7 @@
                 ],
                 { duration: 380, easing: 'ease-in', fill: 'forwards' }
             );
-            playAudioFile('audio/tap.mp3');
+            playAudioFile('audio/slot_coin_insert.mp3');
         }
 
         function pullSlotLever() {
@@ -1173,7 +1173,7 @@
         }
 
         // 🪙 払い出し口から、コインが実際に出てくる演出。countが多いほど「あふれ出す」感じになる
-        function spawnSlotPayoutCoins(count) {
+        function spawnSlotPayoutCoins(count, pitchRate = 1) {
             const stage = document.getElementById('slot-machine-stage');
             const slotOut = document.getElementById('slot-coin-slot-out');
             if (!stage || !slotOut) return;
@@ -1200,7 +1200,8 @@
                         ],
                         { duration: 650 + Math.random() * 200, easing: 'ease-in' }
                     ).finished.then(() => coin.remove());
-                    playAudioFile('audio/tap.mp3');
+                    // 当たりが大きいほど、ピッチを少し上げて景気良く聞こえるようにする
+                    playAudioFilePitched('audio/tap.mp3', 0.6, pitchRate + (Math.random() - 0.5) * 0.1);
                 }, i * 45);
             }
         }
@@ -1244,7 +1245,7 @@
                 slotNextSpinFree = true;
                 resultText.style.color = '#4caf50';
                 resultText.innerText = `🍡 リプレイ！(${replayLines.length}ライン) コイン消費なしでもう一度！`;
-                playAudioFile('audio/balloon_pop.mp3');
+                playAudioFile('audio/slot_replay.mp3');
                 vibrate([15, 15, 15]);
                 return;
             }
@@ -1260,20 +1261,24 @@
             const bestSymbol = bestLine[0];
             const lineWord = payoutLines.length > 1 ? `${payoutLines.length}ライン` : '';
 
-            // 出てくるコインの枚数は、一番高い当たりの価値に応じて段階的に増やす（7・マーモットはあふれ出す量に）
+            // 出てくるコインの枚数・音の高さは、一番高い当たりの価値に応じて段階的に増やす（7・マーモットはあふれ出す量に）
             const coinCount = bestSymbol.payout >= 60 ? 18 : bestSymbol.payout >= 25 ? 10 : bestSymbol.payout >= 10 ? 6 : 3;
-            spawnSlotPayoutCoins(coinCount + (payoutLines.length - 1) * 3); // 複数ライン揃った時は、その分コインも増える
+            const coinPitch = bestSymbol.payout >= 60 ? 1.35 : bestSymbol.payout >= 25 ? 1.2 : bestSymbol.payout >= 10 ? 1.1 : 1.0;
+            spawnSlotPayoutCoins(coinCount + (payoutLines.length - 1) * 3, coinPitch); // 複数ライン揃った時は、その分コインも増える
 
             if (bestSymbol.isJackpot) {
-                // 🐹 マーモット：最上位の大当たり演出
-                resultText.innerHTML = `<span style="font-size:1.3rem;">🎉✨ ${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 大当たり！！ ✨🎉</span><br>マーモット揃い！${lineWord} +${totalPayout}枚！！`;
+                // 🐹 マーモット：最上位の大当たり演出。コインだけでは物足りないので、ガチャコインも一緒に付与する
+                const bonusGachaCoins = 30;
+                gachaCoins += bonusGachaCoins;
+                saveGame();
+                resultText.innerHTML = `<span style="font-size:1.3rem;">🎉✨ ${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 大当たり！！ ✨🎉</span><br>マーモット揃い！${lineWord} +${totalPayout}枚！！<br>🎰 ガチャコイン+${bonusGachaCoins}枚もおまけ！`;
                 playAudioFile('audio/japan_clear.mp3');
                 screenFlash('#ff6ec7', 0.75);
                 vibrate([40, 50, 40, 50, 40, 50, 80]);
-                setTimeout(() => showSlotMarmotCelebration(totalPayout), 500);
+                setTimeout(() => showSlotMarmotCelebration(totalPayout, bonusGachaCoins), 500);
             } else {
                 resultText.innerText = `${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 揃った！${lineWord} +${totalPayout}枚！`;
-                playAudioFile('audio/levelup.mp3');
+                playAudioFile(bestSymbol.payout >= 60 ? 'audio/slot_win_seven.mp3' : bestSymbol.payout >= 10 ? 'audio/slot_win_bar.mp3' : 'audio/slot_win_small.mp3');
                 screenFlash('#ffd700', bestSymbol.payout >= 25 ? 0.55 : 0.3);
                 vibrate(bestSymbol.payout >= 25 ? [30, 40, 30, 40, 50] : [20, 30, 20]);
             }
@@ -1281,13 +1286,14 @@
 
 
         // 🐹 マーモット揃いの、専用の豪華演出（画面暗転→大きなマーモット→もちすけの専用セリフ）
-        function showSlotMarmotCelebration(payout) {
+        function showSlotMarmotCelebration(payout, bonusGachaCoins) {
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:background 0.4s;';
             overlay.innerHTML = `
                 <img src="ui_images/slot_symbol_marmot.webp" alt="マーモット" style="width:0; transition:width 0.5s cubic-bezier(0.2,0.8,0.3,1.2); filter:drop-shadow(0 0 30px #ff6ec7);">
                 <p style="color:#fff; font-weight:900; font-size:1.3rem; margin-top:16px; text-align:center; text-shadow:0 2px 8px rgba(0,0,0,0.6); opacity:0; transition:opacity 0.4s;">マーモットや！！<br>こんなん初めて見たで！！</p>
                 <p style="color:#ffd700; font-weight:900; font-size:1.1rem; margin-top:10px; opacity:0; transition:opacity 0.4s;">+${payout}枚 獲得！</p>
+                <p style="color:#e91e63; font-weight:900; font-size:1rem; margin-top:4px; opacity:0; transition:opacity 0.4s;">🎰 ガチャコイン +${bonusGachaCoins}枚もおまけ！</p>
             `;
             document.body.appendChild(overlay);
             requestAnimationFrame(() => {

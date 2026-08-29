@@ -458,13 +458,7 @@
         function squeezeTransformFor(dx, dy, d) {
             const angleRad = Math.atan2(dy, dx);
             const angleDeg = angleRad * (180 / Math.PI);
-            const isDownward = dy > 0 && dy > Math.abs(dx);
 
-            if (isDownward) {
-                const vert = 1 - d * SQUEEZE_MAX_SQUASH;
-                const horiz = 1 + d * (SQUEEZE_MAX_SQUASH * 0.55);
-                return `scale(${horiz}, ${vert})`;
-            }
             const along = 1 + d * SQUEEZE_MAX_STRETCH;
             const perp = 1 - d * SQUEEZE_MAX_SQUASH;
             const growthPx = SQUEEZE_ELEMENT_RADIUS * 2 * (along - 1);
