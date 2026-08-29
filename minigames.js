@@ -912,14 +912,21 @@
             lever.style.transform = `rotate(${next}deg)`;
             updateSlotAdjustReadout();
         }
+        // 高さを、そのパーツの実際の描画結果(getBoundingClientRect)から%で計算する。
+        // style.heightが「auto」のままの場合でも、必ず具体的な数値を返す
+        function getSlotPartHeightPct(el) {
+            const stage = document.getElementById('slot-machine-stage');
+            const stageRect = stage.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+            return (elRect.height / stageRect.height * 100).toFixed(4) + '%';
+        }
         function updateSlotAdjustReadout() {
             const partId = document.getElementById('slot-adjust-target').value;
             const part = SLOT_ADJUSTABLE_PARTS.find(p => p.id === partId);
             const target = document.getElementById(partId);
             const el = document.getElementById('slot-adjust-readout');
             if (!target || !el) return;
-            let text = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
-            if (part && part.isBox) text += ` height:${target.style.height};`;
+            let text = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${getSlotPartHeightPct(target)};`;
             if (part && part.hasRotation) text += `\ntransform-origin:${target.style.transformOrigin}; 初期角度:${target.dataset.rotation || 0}deg;`;
             el.textContent = text;
         }
@@ -928,8 +935,7 @@
             const lines = SLOT_ADJUSTABLE_PARTS.map(p => {
                 const el = document.getElementById(p.id);
                 if (!el) return `${p.label}(${p.id}): 要素が見つかりません`;
-                let line = `${p.label}(${p.id}): top:${el.style.top}; left:${el.style.left}; width:${el.style.width};`;
-                if (p.isBox) line += ` height:${el.style.height};`;
+                let line = `${p.label}(${p.id}): top:${el.style.top}; left:${el.style.left}; width:${el.style.width}; height:${getSlotPartHeightPct(el)};`;
                 if (p.hasRotation) line += ` transform-origin:${el.style.transformOrigin}; 初期角度:${el.dataset.rotation || 0}deg;`;
                 return line;
             });
@@ -996,7 +1002,7 @@
 
                     <div id="slot-machine-stage" style="position:relative; width:100%; max-width:280px; height:280px; margin:0 auto;">
                         ${[0, 1, 2].map(i => `
-                            <div id="slot-reel-window-${i}" style="position:absolute; top:${[40.857147, 40.857144, 41.928575][i]}%; left:${[6.78571, 37.142854, 67.857144][i]}%; width:22%; height:${[46.785723, 47.500008, 46.071433][i]}%; overflow:hidden; background:#fff; z-index:1;">
+                            <div id="slot-reel-window-${i}" style="position:absolute; box-sizing:border-box; top:${[40.857147, 40.857144, 41.928575][i]}%; left:${[6.78571, 37.142854, 67.857144][i]}%; width:22%; height:${[46.785723, 47.500008, 46.071433][i]}%; overflow:hidden; background:#fff; z-index:1;">
                                 <div id="slot-reel-strip-${i}" style="transform:translateY(0);">${buildSlotReelStripHtml()}</div>
                             </div>
                         `).join('')}
