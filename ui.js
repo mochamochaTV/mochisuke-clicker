@@ -41,9 +41,23 @@
         }
 
         // PWA: Service Workerを登録（対応ブラウザのみ、失敗しても通常プレイに影響なし）
+        // 🐛修正：GitHub Pagesは自分でHTTPヘッダーを設定できないため、ブラウザがsw.js自体を
+        // 予想より長くキャッシュしてしまい、通常モードだと更新が反映されないことがあった。
+        // register()直後にupdate()を明示的に呼んで、sw.js自体の再チェックを強制する。
+        // さらに、新しいSWが実際に有効になった瞬間を検知して、1回だけ自動でページを再読み込みする。
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(() => {});
+                navigator.serviceWorker.register('sw.js').then((reg) => {
+                    reg.update().catch(() => {});
+                    setInterval(() => reg.update().catch(() => {}), 5 * 60 * 1000); // 開いたままの人のためのフォローアップ
+                }).catch(() => {});
+
+                let hasReloadedForUpdate = false;
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (hasReloadedForUpdate) return; // 無限リロードを避ける
+                    hasReloadedForUpdate = true;
+                    location.reload();
+                });
             });
         }
 

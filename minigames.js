@@ -707,8 +707,46 @@
         function bringSlotTargetToFront(targetId) {
             SLOT_ADJUSTABLE_PARTS.forEach(p => {
                 const el = document.getElementById(p.id);
-                if (el) el.style.zIndex = (p.id === targetId) ? '999' : '';
+                if (el) el.style.zIndex = (p.id === targetId) ? '997' : '';
             });
+        }
+        // ハンドル（縁・角の丸）と回転軸マーカーを、今選ばれているパーツの実際の位置に合わせて配置し直す
+        function positionSlotHandles() {
+            if (!slotAdjustMode) return;
+            const stage = document.getElementById('slot-machine-stage');
+            const partId = document.getElementById('slot-adjust-target').value;
+            const part = SLOT_ADJUSTABLE_PARTS.find(p => p.id === partId);
+            const target = document.getElementById(partId);
+            const handleR = document.getElementById('slot-resize-handle-r');
+            const handleB = document.getElementById('slot-resize-handle-b');
+            const handleBr = document.getElementById('slot-resize-handle-br');
+            if (!stage || !target) return;
+            const stageRect = stage.getBoundingClientRect();
+            const tRect = target.getBoundingClientRect();
+            const rightPct = ((tRect.right - stageRect.left) / stageRect.width) * 100;
+            const bottomPct = ((tRect.bottom - stageRect.top) / stageRect.height) * 100;
+            const midYPct = ((tRect.top + tRect.height / 2 - stageRect.top) / stageRect.height) * 100;
+            const midXPct = ((tRect.left + tRect.width / 2 - stageRect.left) / stageRect.width) * 100;
+
+            [handleR, handleB, handleBr].forEach(h => h.style.display = 'block');
+            handleR.style.left = rightPct + '%'; handleR.style.top = midYPct + '%';
+            handleB.style.left = midXPct + '%'; handleB.style.top = bottomPct + '%';
+            handleBr.style.left = rightPct + '%'; handleBr.style.top = bottomPct + '%';
+
+            const pivotMarker = document.getElementById('slot-pivot-marker');
+            const rotationControls = document.getElementById('slot-rotation-controls');
+            if (part && part.hasRotation) {
+                rotationControls.style.display = 'block';
+                pivotMarker.style.display = 'block';
+                // transform-originの%指定(パーツ自身の箱の中の位置)を、ステージ全体に対する%へ変換して置く
+                const originStr = getComputedStyle(target).transformOrigin; // 例: "40px 8px" のようなpx値で返ってくる
+                const [ox, oy] = originStr.split(' ').map(parseFloat);
+                pivotMarker.style.left = (((tRect.left + ox) - stageRect.left) / stageRect.width * 100) + '%';
+                pivotMarker.style.top = (((tRect.top + oy) - stageRect.top) / stageRect.height * 100) + '%';
+            } else {
+                rotationControls.style.display = 'none';
+                pivotMarker.style.display = 'none';
+            }
         }
         function toggleSlotAdjustMode() {
             slotAdjustMode = !slotAdjustMode;
@@ -721,11 +759,15 @@
                 bringSlotTargetToFront(targetId);
                 if (btn) btn.style.background = '#4caf50';
                 setupSlotAdjustDrag();
+                positionSlotHandles();
                 updateSlotAdjustReadout();
             } else {
                 SLOT_ADJUSTABLE_PARTS.forEach(p => {
                     const el = document.getElementById(p.id);
                     if (el) { el.style.outline = ''; el.style.zIndex = ''; }
+                });
+                ['slot-resize-handle-r', 'slot-resize-handle-b', 'slot-resize-handle-br', 'slot-pivot-marker'].forEach(id => {
+                    document.getElementById(id).style.display = 'none';
                 });
                 if (btn) btn.style.background = '#e91e63';
             }
@@ -741,6 +783,7 @@
                 const target = document.getElementById(targetId);
                 if (target) target.style.outline = '2px dashed #e91e63';
                 bringSlotTargetToFront(targetId);
+                positionSlotHandles();
             }
             updateSlotAdjustReadout();
         }
@@ -748,15 +791,28 @@
             const stage = document.getElementById('slot-machine-stage');
             if (stage.dataset.dragSetup) return;
             stage.dataset.dragSetup = '1';
+
+            const startDrag = (e, mode) => {
+                if (!slotAdjustMode) return;
+                e.stopPropagation(); e.preventDefault();
+                const targetId = document.getElementById('slot-adjust-target').value;
+                const target = document.getElementById(targetId);
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                slotAdjustDragState = { startX: e.clientX, startY: e.clientY, target, mode };
+            };
+
             stage.addEventListener('pointerdown', (e) => {
                 if (!slotAdjustMode) return;
+                if (e.target.id === 'slot-resize-handle-r') return startDrag(e, 'width');
+                if (e.target.id === 'slot-resize-handle-b') return startDrag(e, 'height');
+                if (e.target.id === 'slot-resize-handle-br') return startDrag(e, 'both');
+                if (e.target.id === 'slot-pivot-marker') return startDrag(e, 'pivot');
                 const targetId = document.getElementById('slot-adjust-target').value;
                 const target = document.getElementById(targetId);
                 if (!target.contains(e.target) && e.target !== target) return;
-                e.stopPropagation(); e.preventDefault();
-                try { target.setPointerCapture(e.pointerId); } catch (err) {}
-                slotAdjustDragState = { startX: e.clientX, startY: e.clientY, target };
+                startDrag(e, 'move');
             });
+
             stage.addEventListener('pointermove', (e) => {
                 if (!slotAdjustDragState || !slotAdjustMode) return;
                 e.stopPropagation();
@@ -764,22 +820,42 @@
                 const dxPct = ((e.clientX - slotAdjustDragState.startX) / rect.width) * 100;
                 const dyPct = ((e.clientY - slotAdjustDragState.startY) / rect.height) * 100;
                 const t = slotAdjustDragState.target;
-                const curLeft = parseFloat(t.style.left) || 0;
-                const curTop = parseFloat(t.style.top) || 0;
-                t.style.left = (curLeft + dxPct) + '%';
-                t.style.top = (curTop + dyPct) + '%';
+                const mode = slotAdjustDragState.mode;
+
+                if (mode === 'move') {
+                    const curLeft = parseFloat(t.style.left) || 0;
+                    const curTop = parseFloat(t.style.top) || 0;
+                    t.style.left = (curLeft + dxPct) + '%';
+                    t.style.top = (curTop + dyPct) + '%';
+                } else if (mode === 'pivot') {
+                    // 回転軸は「パーツ自身の箱の中の位置」なので、パーツ自身の大きさに対する割合で動かす
+                    const tRect = t.getBoundingClientRect();
+                    const [curOx, curOy] = getComputedStyle(t).transformOrigin.split(' ').map(parseFloat);
+                    const newOx = Math.min(tRect.width, Math.max(0, curOx + (e.clientX - slotAdjustDragState.startX)));
+                    const newOy = Math.min(tRect.height, Math.max(0, curOy + (e.clientY - slotAdjustDragState.startY)));
+                    t.style.transformOrigin = `${(newOx / tRect.width * 100).toFixed(1)}% ${(newOy / tRect.height * 100).toFixed(1)}%`;
+                } else {
+                    const curWidth = parseFloat(t.style.width) || 16;
+                    if (mode === 'width' || mode === 'both') t.style.width = Math.max(2, curWidth + dxPct) + '%';
+                    if (mode === 'height' || mode === 'both') {
+                        const curHeight = parseFloat(t.style.height) || (t.getBoundingClientRect().height / rect.height * 100);
+                        t.style.height = Math.max(2, curHeight + dyPct) + '%';
+                    }
+                }
                 slotAdjustDragState.startX = e.clientX;
                 slotAdjustDragState.startY = e.clientY;
+                positionSlotHandles();
                 updateSlotAdjustReadout();
             });
             stage.addEventListener('pointerup', () => { slotAdjustDragState = null; });
             stage.addEventListener('pointercancel', () => { slotAdjustDragState = null; });
         }
-        function adjustSlotPartSize(prop, delta) {
-            const target = document.getElementById(document.getElementById('slot-adjust-target').value);
-            if (!target) return;
-            const cur = parseFloat(target.style[prop]) || (prop === 'width' ? 16 : 10);
-            target.style[prop] = Math.max(2, cur + delta) + '%';
+        function adjustSlotLeverRotation(delta) {
+            const lever = document.getElementById('slot-lever');
+            const cur = parseFloat(lever.dataset.rotation || '0');
+            const next = cur + delta;
+            lever.dataset.rotation = next;
+            lever.style.transform = `rotate(${next}deg)`;
             updateSlotAdjustReadout();
         }
         function updateSlotAdjustReadout() {
@@ -788,10 +864,28 @@
             const target = document.getElementById(partId);
             const el = document.getElementById('slot-adjust-readout');
             if (!target || !el) return;
-            if (part && part.isBox) {
-                el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${target.style.height};`;
-            } else {
-                el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
+            let text = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
+            if (part && part.isBox) text += ` height:${target.style.height};`;
+            if (part && part.hasRotation) text += `\ntransform-origin:${target.style.transformOrigin}; 初期角度:${target.dataset.rotation || 0}deg;`;
+            el.textContent = text;
+        }
+        // 全パーツぶんの座標を、名前つきでまとめてテキスト化する
+        function copyAllSlotCoords() {
+            const lines = SLOT_ADJUSTABLE_PARTS.map(p => {
+                const el = document.getElementById(p.id);
+                if (!el) return `${p.label}(${p.id}): 要素が見つかりません`;
+                let line = `${p.label}(${p.id}): top:${el.style.top}; left:${el.style.left}; width:${el.style.width};`;
+                if (p.isBox) line += ` height:${el.style.height};`;
+                if (p.hasRotation) line += ` transform-origin:${el.style.transformOrigin}; 初期角度:${el.dataset.rotation || 0}deg;`;
+                return line;
+            });
+            const text = lines.join('\n');
+            const textarea = document.getElementById('slot-copy-all-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(() => {});
             }
         }
 
@@ -823,7 +917,8 @@
         // 🛠️ 調整対象のパーツ一覧（位置調整ツールがこのリストを見て動く）
         const SLOT_ADJUSTABLE_PARTS = [
             { id: 'slot-machine-body', label: '本体' },
-            { id: 'slot-lever', label: 'レバー' },
+            { id: 'slot-lever-mount', label: 'レバー取り付け部品' },
+            { id: 'slot-lever', label: 'レバー', hasRotation: true },
             { id: 'slot-stop-btn-0', label: 'ボタン①' },
             { id: 'slot-stop-btn-1', label: 'ボタン②' },
             { id: 'slot-stop-btn-2', label: 'ボタン③' },
@@ -855,7 +950,9 @@
                         `).join('')}
 
                         <img id="slot-lever" src="ui_images/slot_lever.webp" alt="レバー" onclick="pullSlotLever()"
-                             style="position:absolute; top:15%; left:82%; width:16%; height:auto; transform-origin:top center; cursor:pointer;">
+                             style="position:absolute; top:15%; left:82%; width:16%; height:auto; transform-origin:50% 10%; z-index:5; cursor:pointer;">
+                        <img id="slot-lever-mount" src="ui_images/slot_lever_mount.webp" alt="レバー取り付け部品"
+                             style="position:absolute; top:13%; left:81%; width:18%; height:auto; z-index:15; pointer-events:none;">
 
                         <img id="slot-stop-btn-0" src="ui_images/slot_button_1.webp" alt="① 止める" onclick="stopSlotReel(0)" style="position:absolute; top:62%; left:32%; width:16%; height:auto; opacity:0.4; cursor:pointer;">
                         <img id="slot-stop-btn-1" src="ui_images/slot_button_2.webp" alt="② 止める" onclick="stopSlotReel(1)" style="position:absolute; top:62%; left:52%; width:16%; height:auto; opacity:0.4; cursor:pointer;">
@@ -864,6 +961,11 @@
                         <div id="slot-coin-slot-in" style="position:absolute; top:5%; left:45%; width:10%; height:6%;"></div>
                         <div id="slot-coin-slot-out" style="position:absolute; top:85%; left:40%; width:20%; height:8%;"></div>
                         <img id="slot-coin-insert-img" src="ui_images/slot_coin_side.webp" alt="" style="display:none; position:absolute; top:5%; left:45%; width:10%; height:auto; z-index:20; pointer-events:none;">
+
+                        <div id="slot-pivot-marker" style="display:none; position:absolute; width:10px; height:10px; margin:-5px; border-radius:50%; background:#00e5ff; border:2px solid #fff; z-index:998; pointer-events:none;"></div>
+                        <div id="slot-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
+                        <div id="slot-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
+                        <div id="slot-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
                     </div>
 
                     <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin:10px 0 6px; min-height:1.4em; text-shadow:0 1px 3px rgba(255,255,255,0.8);"></p>
@@ -884,13 +986,14 @@
                                 ${SLOT_ADJUSTABLE_PARTS.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}
                             </select>
                             <button onclick="toggleSlotAdjustMode()" id="slot-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:0.65rem; margin-left:4px;">位置調整</button>
-                            <div style="margin-top:4px;">
-                                <button onclick="adjustSlotPartSize('width', -1)" style="padding:2px 6px; font-size:0.6rem;">幅－</button>
-                                <button onclick="adjustSlotPartSize('width', 1)" style="padding:2px 6px; font-size:0.6rem;">幅＋</button>
-                                <button onclick="adjustSlotPartSize('height', -1)" style="padding:2px 6px; font-size:0.6rem;">高さ－</button>
-                                <button onclick="adjustSlotPartSize('height', 1)" style="padding:2px 6px; font-size:0.6rem;">高さ＋</button>
+                            <p style="font-size:0.58rem; color:#999; margin:4px 0 0;">緑（縁・角）をドラッグで大きさ調整、水色（レバーのみ）をドラッグで回転軸を移動</p>
+                            <div id="slot-rotation-controls" style="display:none; margin-top:6px;">
+                                <button onclick="adjustSlotLeverRotation(-5)" style="padding:2px 6px; font-size:0.6rem;">回転－</button>
+                                <button onclick="adjustSlotLeverRotation(5)" style="padding:2px 6px; font-size:0.6rem;">回転＋</button>
                             </div>
                             <div id="slot-adjust-readout" style="font-size:0.58rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
+                            <button onclick="copyAllSlotCoords()" style="background:#2196f3; color:#fff; border:none; padding:5px 10px; border-radius:6px; font-size:0.65rem; margin-top:8px;">📋 全パーツの座標をまとめてコピー</button>
+                            <textarea id="slot-copy-all-textarea" readonly style="display:none; width:100%; height:120px; font-size:0.6rem; margin-top:6px; box-sizing:border-box;"></textarea>
                         </div>
                         ` : ''}
                     </div>
@@ -948,8 +1051,9 @@
 
             // レバー自体を、押し込む→戻る、という演出で動かす
             const lever = document.getElementById('slot-lever');
+            const baseRotation = parseFloat(lever.dataset.rotation || '0');
             lever.animate(
-                [{ transform: 'translateY(0) rotate(0deg)' }, { transform: 'translateY(10px) rotate(15deg)' }, { transform: 'translateY(0) rotate(0deg)' }],
+                [{ transform: `rotate(${baseRotation}deg)` }, { transform: `rotate(${baseRotation + 25}deg)` }, { transform: `rotate(${baseRotation}deg)` }],
                 { duration: 350, easing: 'ease-in-out' }
             );
             lever.style.pointerEvents = 'none';
