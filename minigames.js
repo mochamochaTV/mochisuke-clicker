@@ -123,6 +123,7 @@
             document.getElementById('minigame-tile-view').style.display = 'none';
             const playView = document.getElementById('minigame-play-view');
             playView.style.display = 'block';
+            playView.style.background = 'rgba(255,248,236,0.95)'; // slotが透明にするので、他のゲームに移る時は毎回既定値へ戻す
             isMinigameActive = true;
             if (id === 'quiz') startQuizGame(playView);
             else if (id === 'timeattack') startTimeAttackGame(playView);
@@ -836,10 +837,11 @@
 
         function startSlotGame(container) {
             slotIsSpinning = false; slotStoppedCount = 0; slotNextSpinFree = false;
+            container.style.background = 'transparent'; // 機体イラストの後ろに白い箱が見えないよう、この画面だけ背景を消す
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
                     <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
-                        <div style="font-weight:900; color:#7b1fa2;"><img src="ui_images/slot_coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持</div>
+                        <div style="font-weight:900; color:#7b1fa2; text-shadow:0 1px 3px rgba(255,255,255,0.8);"><img src="ui_images/slot_coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持</div>
                         <button onclick="toggleSlotHelpOverlay()" style="width:24px; height:24px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900; font-size:0.75rem;">？</button>
                     </div>
 
@@ -864,25 +866,7 @@
                         <img id="slot-coin-insert-img" src="ui_images/slot_coin_side.webp" alt="" style="display:none; position:absolute; top:5%; left:45%; width:10%; height:auto; z-index:20; pointer-events:none;">
                     </div>
 
-                    ${IS_DEV_MODE ? `
-                    <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #ddd;">
-                        <select id="slot-adjust-target" style="font-size:0.68rem;" onchange="onSlotAdjustTargetChange()">
-                            ${SLOT_ADJUSTABLE_PARTS.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}
-                        </select>
-                        <button onclick="toggleSlotAdjustMode()" id="slot-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:0.65rem; margin-left:4px;">位置調整</button>
-                        <div style="margin-top:4px;">
-                            <button onclick="adjustSlotPartSize('width', -1)" style="padding:2px 6px; font-size:0.6rem;">幅－</button>
-                            <button onclick="adjustSlotPartSize('width', 1)" style="padding:2px 6px; font-size:0.6rem;">幅＋</button>
-                            <button onclick="adjustSlotPartSize('height', -1)" style="padding:2px 6px; font-size:0.6rem;">高さ－</button>
-                            <button onclick="adjustSlotPartSize('height', 1)" style="padding:2px 6px; font-size:0.6rem;">高さ＋</button>
-                        </div>
-                        <div id="slot-adjust-readout" style="font-size:0.58rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
-                    </div>
-                    ` : ''}
-
-                    <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin:10px 0 6px; min-height:1.4em;"></p>
-
-                    <button class="item-action-btn btn-red" style="width:100%; margin-top:8px;" onclick="endMinigameToTiles()">やめる</button>
+                    <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin:10px 0 6px; min-height:1.4em; text-shadow:0 1px 3px rgba(255,255,255,0.8);"></p>
 
                     <div id="slot-help-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:20px; overflow-y:auto; box-sizing:border-box; text-align:left;">
                         <button onclick="toggleSlotHelpOverlay()" style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
@@ -892,6 +876,23 @@
                             ${SLOT_SYMBOLS.slice().reverse().map(s => `<div>${s.label}×3 → ${s.payout}倍</div>`).join('')}
                             <div style="margin-top:8px; color:#4caf50;">🍡リプレイ×3 → コイン消費なしでもう一度！</div>
                         </div>
+
+                        ${IS_DEV_MODE ? `
+                        <div style="margin-top:16px; padding-top:10px; border-top:1px dashed #ddd; text-align:center;">
+                            <div style="font-size:0.68rem; color:#bbb; margin-bottom:4px;">🛠️ 位置調整（開発者用）</div>
+                            <select id="slot-adjust-target" style="font-size:0.68rem;" onchange="onSlotAdjustTargetChange()">
+                                ${SLOT_ADJUSTABLE_PARTS.map(p => `<option value="${p.id}">${p.label}</option>`).join('')}
+                            </select>
+                            <button onclick="toggleSlotAdjustMode()" id="slot-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:0.65rem; margin-left:4px;">位置調整</button>
+                            <div style="margin-top:4px;">
+                                <button onclick="adjustSlotPartSize('width', -1)" style="padding:2px 6px; font-size:0.6rem;">幅－</button>
+                                <button onclick="adjustSlotPartSize('width', 1)" style="padding:2px 6px; font-size:0.6rem;">幅＋</button>
+                                <button onclick="adjustSlotPartSize('height', -1)" style="padding:2px 6px; font-size:0.6rem;">高さ－</button>
+                                <button onclick="adjustSlotPartSize('height', 1)" style="padding:2px 6px; font-size:0.6rem;">高さ＋</button>
+                            </div>
+                            <div id="slot-adjust-readout" style="font-size:0.58rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
