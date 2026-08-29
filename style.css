@@ -502,6 +502,18 @@
             from { transform: translate(-50%,-50%) rotate(0deg); }
             to { transform: translate(-50%,-50%) rotate(360deg); }
         }
+        /* 🎰 スロット：次に押すべきパーツを光らせて誘導する（コイン投入口→レバー→ボタン、の順で使う） */
+        @keyframes slotInviteGlow {
+            0%, 100% { filter: drop-shadow(0 0 4px #ffe066) drop-shadow(0 0 2px #ffe066); }
+            50% { filter: drop-shadow(0 0 16px #fff176) drop-shadow(0 0 10px #ffe066); }
+        }
+        .slot-invite-glow { animation: slotInviteGlow 1s ease-in-out infinite; }
+        /* 揃った絵柄を、次にレバーを引くまで光らせながら拡大縮小し続ける */
+        @keyframes slotWinPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px #ffd700); }
+            50% { transform: scale(1.18); filter: drop-shadow(0 0 16px #ff6ec7); }
+        }
+        .slot-win-pulse { animation: slotWinPulse 0.7s ease-in-out infinite; position: relative; z-index: 3; }
 
         .omiyage-shelf-arrow {
             position: absolute; top: 44%; left: 1%;
