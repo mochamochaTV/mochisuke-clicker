@@ -918,6 +918,10 @@
             const stage = document.getElementById('slot-machine-stage');
             const stageRect = stage.getBoundingClientRect();
             const elRect = el.getBoundingClientRect();
+            if (elRect.height === 0 && getComputedStyle(el).display === 'none') {
+                // 非表示中(display:none)は正しく測れないので、生のstyle.heightをそのまま返す（未設定ならauto）
+                return el.style.height || 'auto';
+            }
             return (elRect.height / stageRect.height * 100).toFixed(4) + '%';
         }
         function updateSlotAdjustReadout() {
@@ -1002,25 +1006,25 @@
 
                     <div id="slot-machine-stage" style="position:relative; width:100%; max-width:280px; height:280px; margin:0 auto;">
                         ${[0, 1, 2].map(i => `
-                            <div id="slot-reel-window-${i}" style="position:absolute; box-sizing:border-box; top:${[40.857147, 40.857144, 41.928575][i]}%; left:${[6.78571, 37.142854, 67.857144][i]}%; width:22%; height:${[46.785723, 47.500008, 46.071433][i]}%; overflow:hidden; background:#fff; z-index:1;">
+                            <div id="slot-reel-window-${i}" style="position:absolute; box-sizing:border-box; top:${[42.285715, 42.285715, 41.928575][i]}%; left:${[7.499995, 37.857139, 68.571429][i]}%; width:${[24.142858, 23.785714, 23.428572][i]}%; height:${[47.8571, 47.8571, 48.5714][i]}%; overflow:hidden; background:#fff; z-index:1;">
                                 <div id="slot-reel-strip-${i}" style="transform:translateY(0);">${buildSlotReelStripHtml()}</div>
                             </div>
                         `).join('')}
 
                         <img id="slot-lever" src="ui_images/slot_lever.webp" alt="レバー" onclick="pullSlotLever()"
-                             style="position:absolute; top:52.142868%; left:101.642867%; width:13.14286%; height:auto; transform-origin:50% 88%; z-index:5; cursor:pointer;" data-rotation="10">
+                             style="position:absolute; top:52.142868%; left:101.642867%; width:13.14286%; height:27.8125%; transform-origin:50% 88%; z-index:5; cursor:pointer;" data-rotation="10">
 
-                        <img id="slot-machine-body" src="ui_images/slot_machine_body.webp" alt="スロットマシン" style="position:absolute; top:5.714281%; left:-8.928571%; width:116.071433%; height:auto; display:block; z-index:10; pointer-events:none;">
+                        <img id="slot-machine-body" src="ui_images/slot_machine_body.webp" alt="スロットマシン" style="position:absolute; top:5.714281%; left:-8.928571%; width:116.428577%; height:158.2031%; display:block; z-index:10; pointer-events:none;">
 
                         <img id="slot-lever-mount" src="ui_images/slot_lever_mount.webp" alt="レバー取り付け部品"
-                             style="position:absolute; top:65.142855%; left:104.214279%; width:7.642855%; height:auto; z-index:15; pointer-events:none;">
+                             style="position:absolute; top:65.142855%; left:104.214279%; width:7.642855%; height:28.1585%; z-index:15; pointer-events:none;">
 
-                        <img id="slot-stop-btn-0" src="ui_images/slot_button_1.webp" alt="① 止める" onclick="stopSlotReel(0)" style="position:absolute; top:93.428576%; left:13.071423%; width:16%; height:auto; opacity:0.4; cursor:pointer; z-index:16;">
-                        <img id="slot-stop-btn-1" src="ui_images/slot_button_2.webp" alt="② 止める" onclick="stopSlotReel(1)" style="position:absolute; top:93.428581%; left:41.642851%; width:16%; height:auto; opacity:0.4; cursor:pointer; z-index:16;">
-                        <img id="slot-stop-btn-2" src="ui_images/slot_button_3.webp" alt="③ 止める" onclick="stopSlotReel(2)" style="position:absolute; top:93.428582%; left:70.214287%; width:16%; height:auto; opacity:0.4; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-0" src="ui_images/slot_button_1.webp" alt="① 止める" onclick="stopSlotReel(0)" style="position:absolute; top:93.428576%; left:13.071423%; width:16%; height:11.8750%; opacity:0.4; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-1" src="ui_images/slot_button_2.webp" alt="② 止める" onclick="stopSlotReel(1)" style="position:absolute; top:93.428581%; left:41.642851%; width:16%; height:11.3672%; opacity:0.4; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-2" src="ui_images/slot_button_3.webp" alt="③ 止める" onclick="stopSlotReel(2)" style="position:absolute; top:93.428582%; left:70.214287%; width:16%; height:11.5625%; opacity:0.4; cursor:pointer; z-index:16;">
 
-                        <div id="slot-coin-slot-in" style="position:absolute; top:137.142856%; left:7.857135%; width:6.642859%; height:2.714286%;"></div>
-                        <div id="slot-coin-slot-out" style="position:absolute; top:137.500007%; left:72.500008%; width:20%; height:15.499999%;"></div>
+                        <div id="slot-coin-slot-in" style="position:absolute; top:137.142856%; left:7.857135%; width:6.642859%; height:2.7121%;"></div>
+                        <div id="slot-coin-slot-out" style="position:absolute; top:137.500007%; left:72.500008%; width:20%; height:15.4967%;"></div>
                         <img id="slot-coin-insert-img" src="ui_images/slot_coin_side.webp" alt="" style="display:none; position:absolute; top:138.214276%; left:7.142852%; width:9.642859%; height:auto; z-index:20; pointer-events:none;">
 
                         <div id="slot-pivot-marker" style="display:none; position:absolute; width:10px; height:10px; margin:-5px; border-radius:50%; background:#00e5ff; border:2px solid #fff; z-index:998; pointer-events:none;"></div>
