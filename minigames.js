@@ -703,11 +703,23 @@
                 el.style.border = show ? '2px dashed #e91e63' : '';
             });
         }
-        // 選ばれたパーツを一時的に最前面に出し、他のパーツと重なっていてもドラッグで確実につかめるようにする
+        // 選ばれたパーツを一時的に最前面に出し、他のパーツと重なっていてもドラッグで確実につかめるようにする。
+        // 普段はpointer-events:noneのパーツ（レバー取り付け部品・投入コインなど）も、調整中だけ掴めるようにする
         function bringSlotTargetToFront(targetId) {
             SLOT_ADJUSTABLE_PARTS.forEach(p => {
                 const el = document.getElementById(p.id);
-                if (el) el.style.zIndex = (p.id === targetId) ? '997' : '';
+                if (!el) return;
+                if (p.id === targetId) {
+                    el.style.zIndex = '997';
+                    if (!el.dataset.origPointerEvents) el.dataset.origPointerEvents = el.style.pointerEvents || '';
+                    el.style.pointerEvents = 'auto';
+                } else {
+                    el.style.zIndex = '';
+                    if (el.dataset.origPointerEvents !== undefined) {
+                        el.style.pointerEvents = el.dataset.origPointerEvents;
+                        delete el.dataset.origPointerEvents;
+                    }
+                }
             });
         }
         // ハンドル（縁・角の丸）と回転軸マーカーを、今選ばれているパーツの実際の位置に合わせて配置し直す
@@ -764,7 +776,12 @@
             } else {
                 SLOT_ADJUSTABLE_PARTS.forEach(p => {
                     const el = document.getElementById(p.id);
-                    if (el) { el.style.outline = ''; el.style.zIndex = ''; }
+                    if (!el) return;
+                    el.style.outline = ''; el.style.zIndex = '';
+                    if (el.dataset.origPointerEvents !== undefined) {
+                        el.style.pointerEvents = el.dataset.origPointerEvents;
+                        delete el.dataset.origPointerEvents;
+                    }
                 });
                 ['slot-resize-handle-r', 'slot-resize-handle-b', 'slot-resize-handle-br', 'slot-pivot-marker'].forEach(id => {
                     document.getElementById(id).style.display = 'none';

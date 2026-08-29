@@ -4,7 +4,7 @@
 // 画像や音声などの静的アセットは今まで通り「stale-while-revalidate」：
 // キャッシュを即返しつつ裏で更新するので、通信が遅くても表示は速いまま。
 
-const CACHE_NAME = 'punicker-cache-v188';
+const CACHE_NAME = 'punicker-cache-v189';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -39,7 +39,7 @@ self.addEventListener('fetch', (event) => {
   const isDocument = req.mode === 'navigate' || req.destination === 'document';
   if (isDocument) {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-store' }) // ブラウザ自身のHTTPキャッシュも迂回し、必ずサーバーまで見に行く
         .then((res) => {
           if (res && res.status === 200) {
             caches.open(CACHE_NAME).then((cache) => cache.put(req, res.clone()));
