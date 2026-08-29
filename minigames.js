@@ -8,13 +8,23 @@
             slot:          { id: "slot",          name: "スロット",            icon: "🎰", unlockStage: 3, isCoinGame: true }
         };
         // 🎰 スロットの絵柄と配当（3つ揃った時の倍率）。同じ絵柄の並び順で、揃いにくいほど高配当にしてある
+        // 🎰 絵柄一覧（価値が低い順）。weightが大きいほど出やすい（＝価値が高いほどレア）
         const SLOT_SYMBOLS = [
-            { id: 'mochi',  icon: '🍡', payout: 2 },
-            { id: 'ticket', icon: '🎫', payout: 3 },
-            { id: 'coin',   icon: '🪙', payout: 5 },
-            { id: 'clover', icon: '🍀', payout: 10 },
-            { id: 'seven',  icon: '7️⃣', payout: 20 },
+            { id: 'cherry',      icon: '🍒', img: 'ui_images/slot_symbol_cherry.webp',      label: 'チェリー',   payout: 2,   weight: 32 },
+            { id: 'carrot',      icon: '🥕', img: 'ui_images/slot_symbol_carrot.webp',      label: '人参',      payout: 3,   weight: 26 },
+            { id: 'bell',        icon: '🔔', img: 'ui_images/slot_symbol_bell.webp',        label: 'ベル',      payout: 4,   weight: 22 },
+            { id: 'sweetpotato', icon: '🍠', img: 'ui_images/slot_symbol_sweetpotato.webp', label: 'さつまいも', payout: 5,   weight: 16 },
+            { id: 'banana',      icon: '🍌', img: 'ui_images/slot_symbol_banana.webp',      label: 'バナナ',    payout: 6,   weight: 12 },
+            { id: 'apple',       icon: '🍎', img: 'ui_images/slot_symbol_apple.webp',       label: 'リンゴ',    payout: 8,   weight: 9 },
+            { id: 'bar1',        icon: '➖',  img: 'ui_images/slot_symbol_bar1.webp',        label: 'BAR',       payout: 10,  weight: 6 },
+            { id: 'bar2',        icon: '➖➖', img: 'ui_images/slot_symbol_bar2.webp',        label: 'ダブルBAR',  payout: 15,  weight: 3.5 },
+            { id: 'bar3',        icon: '➖➖➖', img: 'ui_images/slot_symbol_bar3.webp',       label: 'トリプルBAR', payout: 25,  weight: 1.8 },
+            { id: 'seven',       icon: '7️⃣', img: 'ui_images/slot_symbol_seven.webp',       label: '7',         payout: 60,  weight: 0.5 },
+            { id: 'marmot',      icon: '🐹', img: 'ui_images/slot_symbol_marmot.webp',      label: 'マーモット', payout: 150, weight: 0.15, isJackpot: true },
         ];
+        // リプレイ：揃うとコインを消費せず、もう一度レバーを引ける（配当表には含めない特殊絵柄）
+        const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'ui_images/slot_symbol_replay.webp', label: 'リプレイ', weight: 14 };
+        const SLOT_ALL_SYMBOLS = [...SLOT_SYMBOLS, SLOT_REPLAY_SYMBOL]; // リールの帯を作る時に使う、全絵柄（リプレイ含む）
         const SLOT_SPIN_COST = 5; // 1回まわすのに必要なミニゲームコイン
         let minigameLastResetDate = null;
         let minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0, slot: 0 };
@@ -68,6 +78,7 @@
                 cancelAnimationFrame(mochitsukiState.animId); mochitsukiState = null;
             }
             slotIsSpinning = false; // 回転中に離脱しても、次に開いた時にボタンが押せなくなったままにならないようにする
+            slotReelAnimations.forEach(a => { if (a) { try { a.cancel(); } catch (e) {} } });
         }
 
         function renderMinigameTiles() {
@@ -662,42 +673,138 @@
         }
 
         // ===================================================================
-        // 🎰 スロット（コインを賭けて遊ぶ、1日の回数制限が無いゲーム）
         // ===================================================================
-        const SLOT_SYMBOL_HEIGHT = 80; // 1コマぶんの高さ(px)。窓の高さ・帯の1コマ分と必ず一致させる
-        const SLOT_STRIP_REPEATS = 8;  // 絵柄5種類を、この回数ぶん繰り返して1本の帯を作る（長く回っているように見せるため）
-        let slotIsSpinning = false;
+        // 🎰 スロット（コインを賭けて遊ぶ、1日の回数制限が無いゲーム）
+        // レバーを引く→3つのリールが回る→3つのボタンで1つずつ自分で止める、という本格仕様
+        // ===================================================================
+        const SLOT_SYMBOL_HEIGHT = 70; // 1コマぶんの高さ(px)。窓の高さ・帯の1コマ分と必ず一致させる
+        const SLOT_STRIP_REPEATS = 6;  // 全絵柄を、この回数ぶん繰り返して1本の帯を作る（長く回っているように見せるため）
+        let slotIsSpinning = false;      // レバーを引いてから、3つとも止まり終えるまでtrue
+        let slotStoppedCount = 0;
+        let slotReelResults = [null, null, null];   // この回で、各リールが最終的にどの絵柄で止まるか（レバーを引いた瞬間に内部で先に決める）
+        let slotReelAnimations = [null, null, null]; // 各リールの「回り続ける」アニメーションを、止める時にcancelできるよう保持
+        let slotNextSpinFree = false; // リプレイが揃った直後は、次の1回はコイン消費なし
+
+        // 🛠️ スロットの各パーツ位置を、実際のイラストに合わせて調整するための開発者用ツール
+        let slotAdjustMode = false;
+        let slotAdjustDragState = null;
+        function toggleSlotAdjustMode() {
+            slotAdjustMode = !slotAdjustMode;
+            const btn = document.getElementById('slot-adjust-toggle-btn');
+            const target = document.getElementById(document.getElementById('slot-adjust-target').value);
+            if (slotAdjustMode) {
+                target.style.outline = '2px dashed #e91e63';
+                if (btn) btn.style.background = '#4caf50';
+                setupSlotAdjustDrag();
+                updateSlotAdjustReadout();
+            } else {
+                document.querySelectorAll('#slot-reel-group, #slot-lever, #slot-button-group').forEach(el => el.style.outline = '');
+                if (btn) btn.style.background = '#e91e63';
+            }
+        }
+        function setupSlotAdjustDrag() {
+            const stage = document.getElementById('slot-machine-stage');
+            if (stage.dataset.dragSetup) return;
+            stage.dataset.dragSetup = '1';
+            stage.addEventListener('pointerdown', (e) => {
+                if (!slotAdjustMode) return;
+                const targetId = document.getElementById('slot-adjust-target').value;
+                const target = document.getElementById(targetId);
+                if (!target.contains(e.target) && e.target !== target) return;
+                e.stopPropagation(); e.preventDefault();
+                try { target.setPointerCapture(e.pointerId); } catch (err) {}
+                slotAdjustDragState = { startX: e.clientX, startY: e.clientY, target };
+            });
+            stage.addEventListener('pointermove', (e) => {
+                if (!slotAdjustDragState || !slotAdjustMode) return;
+                e.stopPropagation();
+                const rect = stage.getBoundingClientRect();
+                const dxPct = ((e.clientX - slotAdjustDragState.startX) / rect.width) * 100;
+                const dyPct = ((e.clientY - slotAdjustDragState.startY) / rect.height) * 100;
+                const t = slotAdjustDragState.target;
+                const curLeft = parseFloat(t.style.left) || 0;
+                const curTop = parseFloat(t.style.top) || 0;
+                if (t.style.left) t.style.left = (curLeft + dxPct) + '%';
+                if (t.style.right) t.style.right = (parseFloat(t.style.right) - dxPct) + '%';
+                t.style.top = (curTop + dyPct) + '%';
+                slotAdjustDragState.startX = e.clientX;
+                slotAdjustDragState.startY = e.clientY;
+                updateSlotAdjustReadout();
+            });
+            stage.addEventListener('pointerup', () => { slotAdjustDragState = null; });
+            stage.addEventListener('pointercancel', () => { slotAdjustDragState = null; });
+        }
+        function updateSlotAdjustReadout() {
+            const target = document.getElementById(document.getElementById('slot-adjust-target').value);
+            const el = document.getElementById('slot-adjust-readout');
+            if (!target || !el) return;
+            el.textContent = `top:${target.style.top}; left:${target.style.left || '(未設定)'}; right:${target.style.right || '(未設定)'}; width:${target.style.width || '(未設定)'};`;
+        }
+
+        function pickWeightedSlotSymbol() {
+            const total = SLOT_ALL_SYMBOLS.reduce((s, sym) => s + sym.weight, 0);
+            let roll = Math.random() * total;
+            for (const sym of SLOT_ALL_SYMBOLS) {
+                if (roll < sym.weight) return sym;
+                roll -= sym.weight;
+            }
+            return SLOT_ALL_SYMBOLS[0];
+        }
 
         function buildSlotReelStripHtml() {
             let html = '';
             for (let rep = 0; rep < SLOT_STRIP_REPEATS; rep++) {
-                SLOT_SYMBOLS.forEach(s => {
-                    html += `<div style="height:${SLOT_SYMBOL_HEIGHT}px; display:flex; align-items:center; justify-content:center; font-size:2.2rem;">${s.icon}</div>`;
+                SLOT_ALL_SYMBOLS.forEach(s => {
+                    html += `<div style="height:${SLOT_SYMBOL_HEIGHT}px; display:flex; align-items:center; justify-content:center;"><img src="${s.img}" alt="${s.label}" style="max-width:80%; max-height:80%;"></div>`;
                 });
             }
             return html;
         }
 
         function startSlotGame(container) {
+            slotIsSpinning = false; slotStoppedCount = 0; slotNextSpinFree = false;
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
-                    <h3 style="margin:0 0 4px; color:#5d4037;">🎰 スロット</h3>
-                    <p style="font-size:0.7rem; color:#8d6e63; margin:0 0 12px;">3つ絵柄が揃うと、賭けたコインが増えて返ってくる！</p>
+                    <p style="font-size:0.7rem; color:#8d6e63; margin:0 0 10px;">レバーを引いて、3つのボタンでリールを1つずつ止めよう！3つ絵柄が揃うと、賭けたコインが増えて返ってくる！</p>
 
-                    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:14px;">
-                        ${[0, 1, 2].map(i => `
-                            <div style="width:72px; height:${SLOT_SYMBOL_HEIGHT}px; overflow:hidden; border:3px solid #5d4037; border-radius:10px; background:#fff8ec; box-shadow:inset 0 3px 8px rgba(0,0,0,0.2);">
-                                <div id="slot-reel-strip-${i}" style="transform:translateY(0);">${buildSlotReelStripHtml()}</div>
-                            </div>
-                        `).join('')}
+                    <div id="slot-machine-stage" style="position:relative; width:100%; max-width:280px; margin:0 auto;">
+                        <img src="ui_images/slot_machine_body.webp" alt="スロットマシン" style="width:100%; display:block;">
+
+                        <div id="slot-reel-group" style="position:absolute; top:28%; left:50%; transform:translateX(-50%); display:flex; gap:6px;">
+                            ${[0, 1, 2].map(i => `
+                                <div style="width:64px; height:${SLOT_SYMBOL_HEIGHT}px; overflow:hidden; border:3px solid #5d4037; border-radius:6px; background:#fff8ec; box-shadow:inset 0 3px 8px rgba(0,0,0,0.2);">
+                                    <div id="slot-reel-strip-${i}" style="transform:translateY(0);">${buildSlotReelStripHtml()}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <img id="slot-lever" src="ui_images/slot_lever.webp" alt="レバー" onclick="pullSlotLever()"
+                             style="position:absolute; top:15%; right:2%; width:16%; transform-origin:top center; cursor:pointer;">
+
+                        <div id="slot-button-group" style="position:absolute; top:62%; left:50%; transform:translateX(-50%); display:flex; gap:10px;">
+                            <img id="slot-stop-btn-0" src="ui_images/slot_button_1.webp" alt="① 止める" onclick="stopSlotReel(0)" style="width:44px; opacity:0.4; cursor:pointer;">
+                            <img id="slot-stop-btn-1" src="ui_images/slot_button_2.webp" alt="② 止める" onclick="stopSlotReel(1)" style="width:44px; opacity:0.4; cursor:pointer;">
+                            <img id="slot-stop-btn-2" src="ui_images/slot_button_3.webp" alt="③ 止める" onclick="stopSlotReel(2)" style="width:44px; opacity:0.4; cursor:pointer;">
+                        </div>
                     </div>
 
-                    <div style="margin-bottom:10px; font-weight:900; color:#7b1fa2;">🪙 <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持</div>
-                    <button id="slot-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:#26a69a; color:#fff;" onclick="spinSlot()">🎰 まわす（${SLOT_SPIN_COST}枚）</button>
-                    <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin-top:12px; min-height:1.4em;"></p>
+                    ${IS_DEV_MODE ? `
+                    <div style="margin-top:10px; padding-top:8px; border-top:1px dashed #ddd;">
+                        <select id="slot-adjust-target" style="font-size:0.68rem;" onchange="updateSlotAdjustReadout()">
+                            <option value="slot-reel-group">リール窓グループ</option>
+                            <option value="slot-lever">レバー</option>
+                            <option value="slot-button-group">ボタングループ</option>
+                        </select>
+                        <button onclick="toggleSlotAdjustMode()" id="slot-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:4px 8px; border-radius:6px; font-size:0.65rem; margin-left:4px;">位置調整</button>
+                        <div id="slot-adjust-readout" style="font-size:0.58rem; color:#555; margin-top:4px; white-space:pre-wrap;"></div>
+                    </div>
+                    ` : ''}
 
-                    <div style="margin-top:10px; font-size:0.62rem; color:#aaa;">
-                        ${SLOT_SYMBOLS.map(s => `${s.icon}×3 → ${s.payout}倍`).join('　')}
+                    <div style="margin:12px 0 6px; font-weight:900; color:#7b1fa2;"><img src="ui_images/slot_coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持</div>
+                    <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin:6px 0; min-height:1.4em;"></p>
+
+                    <div style="margin-top:6px; font-size:0.58rem; color:#aaa; line-height:1.6;">
+                        ${SLOT_SYMBOLS.map(s => `${s.label}×3→${s.payout}倍`).join('　')}　／　🍡×3→コイン消費なしでもう一度
                     </div>
 
                     <button class="item-action-btn btn-red" style="width:100%; margin-top:14px;" onclick="endMinigameToTiles()">やめる</button>
@@ -705,68 +812,118 @@
             `;
         }
 
-        function spinSlot() {
+        function pullSlotLever() {
             if (slotIsSpinning) return;
-            if (!IS_DEV_MODE && minigameCoins < SLOT_SPIN_COST) {
+            if (!slotNextSpinFree && !IS_DEV_MODE && minigameCoins < SLOT_SPIN_COST) {
                 document.getElementById('slot-result-text').innerText = `コインが足りません（あと${SLOT_SPIN_COST - minigameCoins}枚）`;
                 return;
             }
             slotIsSpinning = true;
-            if (!IS_DEV_MODE) minigameCoins -= SLOT_SPIN_COST;
+            slotStoppedCount = 0;
+            if (slotNextSpinFree) {
+                slotNextSpinFree = false;
+            } else if (!IS_DEV_MODE) {
+                minigameCoins -= SLOT_SPIN_COST;
+            }
             saveGame(); updateDisplay();
             document.getElementById('slot-coin-value').innerText = IS_DEV_MODE ? '∞' : minigameCoins;
-            document.getElementById('slot-spin-btn').disabled = true;
             document.getElementById('slot-result-text').innerText = '';
 
-            // この回で、それぞれのリールが最終的にどの絵柄で止まるかを先に決めておく
-            const resultIndexes = [0, 1, 2].map(() => Math.floor(Math.random() * SLOT_SYMBOLS.length));
-            const durations = [1600, 2100, 2600]; // 1列目→2列目→3列目の順に、だんだん長く回してから止める
+            // レバーを引いた瞬間に、3つとも最終的な絵柄を内部で先に決めてしまう（本物のスロットと同じ考え方）
+            slotReelResults = [pickWeightedSlotSymbol(), pickWeightedSlotSymbol(), pickWeightedSlotSymbol()];
 
+            // レバー自体を、押し込む→戻る、という演出で動かす
+            const lever = document.getElementById('slot-lever');
+            lever.animate(
+                [{ transform: 'translateY(0) rotate(0deg)' }, { transform: 'translateY(10px) rotate(15deg)' }, { transform: 'translateY(0) rotate(0deg)' }],
+                { duration: 350, easing: 'ease-in-out' }
+            );
+            lever.style.pointerEvents = 'none';
             playAudioFile('audio/gacha_crank.mp3');
             vibrate([15]);
 
-            resultIndexes.forEach((symbolIndex, reelIndex) => {
-                const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
-                // 帯の後ろの方（最後から2周目）に着地させることで、長く回っているように見せつつ、帯の端が見えないようにする
-                const landingRep = SLOT_STRIP_REPEATS - 2;
-                const targetRow = landingRep * SLOT_SYMBOLS.length + symbolIndex;
-                const targetY = -(targetRow * SLOT_SYMBOL_HEIGHT);
-
-                strip.style.transition = 'none';
-                strip.style.transform = 'translateY(0)';
-                void strip.offsetWidth; // 強制リフローで、リセットを確実に反映させてからアニメーションを開始する
-
-                strip.style.transition = `transform ${durations[reelIndex]}ms cubic-bezier(0.12, 0.85, 0.32, 1)`;
-                strip.style.transform = `translateY(${targetY}px)`;
-
-                setTimeout(() => {
-                    playAudioFile('audio/tap.mp3');
-                    vibrate([10]);
-                }, durations[reelIndex]);
+            // 3つのリールを、それぞれ止まるまでずっと回し続ける
+            [0, 1, 2].forEach(i => {
+                const strip = document.getElementById(`slot-reel-strip-${i}`);
+                const loopHeight = SLOT_ALL_SYMBOLS.length * SLOT_SYMBOL_HEIGHT;
+                slotReelAnimations[i] = strip.animate(
+                    [{ transform: 'translateY(0)' }, { transform: `translateY(-${loopHeight}px)` }],
+                    { duration: 550, easing: 'linear', iterations: Infinity }
+                );
+                const btn = document.getElementById(`slot-stop-btn-${i}`);
+                btn.style.opacity = '1';
+                btn.dataset.stoppable = '1';
             });
-
-            setTimeout(() => finishSlotSpin(resultIndexes), Math.max(...durations) + 100);
         }
 
-        function finishSlotSpin(resultIndexes) {
+        function stopSlotReel(reelIndex) {
+            const btn = document.getElementById(`slot-stop-btn-${reelIndex}`);
+            if (!btn || btn.dataset.stoppable !== '1') return; // 回っていない・すでに止めた列は無視
+            btn.dataset.stoppable = '0';
+            btn.style.opacity = '0.4';
+
+            const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
+            const symbol = slotReelResults[reelIndex];
+            const symbolIndex = SLOT_ALL_SYMBOLS.findIndex(s => s.id === symbol.id);
+
+            // 今の回転位置を保持したまま、決められた絵柄の位置へなめらかにスナップさせる
+            const currentTransform = getComputedStyle(strip).transform;
+            slotReelAnimations[reelIndex].cancel();
+            strip.style.transform = currentTransform;
+            void strip.offsetWidth;
+
+            // 帯の後ろの方（最後から2周目）に着地させることで、帯の端が見えないようにする
+            const landingRep = SLOT_STRIP_REPEATS - 2;
+            const targetRow = landingRep * SLOT_ALL_SYMBOLS.length + symbolIndex;
+            const targetY = -(targetRow * SLOT_SYMBOL_HEIGHT);
+
+            strip.style.transition = 'transform 220ms cubic-bezier(0.2, 0.8, 0.4, 1)';
+            strip.style.transform = `translateY(${targetY}px)`;
+
+            playAudioFile('audio/tap.mp3');
+            vibrate([10]);
+
+            slotStoppedCount++;
+            if (slotStoppedCount >= 3) {
+                setTimeout(evaluateSlotResult, 300);
+            }
+        }
+
+        function evaluateSlotResult() {
             slotIsSpinning = false;
             const resultText = document.getElementById('slot-result-text');
             if (!resultText) return; // 回転中に画面を離れていたら、何もしない
-            document.getElementById('slot-spin-btn').disabled = false;
+            const lever = document.getElementById('slot-lever');
+            if (lever) lever.style.pointerEvents = 'auto';
 
-            const isWin = resultIndexes[0] === resultIndexes[1] && resultIndexes[1] === resultIndexes[2];
+            const [a, b, c] = slotReelResults;
+            const isWin = a.id === b.id && b.id === c.id;
 
-            if (isWin) {
-                const symbol = SLOT_SYMBOLS[resultIndexes[0]];
-                const payout = SLOT_SPIN_COST * symbol.payout;
+            if (isWin && a.id === 'replay') {
+                slotNextSpinFree = true;
+                resultText.style.color = '#4caf50';
+                resultText.innerText = `${a.icon}${a.icon}${a.icon} リプレイ！コイン消費なしでもう一度！`;
+                playAudioFile('audio/balloon_pop.mp3');
+                vibrate([15, 15, 15]);
+            } else if (isWin) {
+                const payout = SLOT_SPIN_COST * a.payout;
                 minigameCoins += payout;
                 saveGame(); updateDisplay();
                 document.getElementById('slot-coin-value').innerText = IS_DEV_MODE ? '∞' : minigameCoins;
                 resultText.style.color = '#e91e63';
-                resultText.innerText = `${symbol.icon}${symbol.icon}${symbol.icon} 揃った！ +${payout}枚！`;
-                playAudioFile('audio/levelup.mp3');
-                screenFlash('#ffd700', symbol.payout >= 20 ? 0.6 : 0.3);
-                vibrate(symbol.payout >= 20 ? [30, 40, 30, 40, 50] : [20, 30, 20]);
+
+                if (a.isJackpot) {
+                    // 🐹 マーモット：最上位の大当たり演出
+                    resultText.innerHTML = `<span style="font-size:1.3rem;">🎉✨ ${a.icon}${a.icon}${a.icon} 大当たり！！ ✨🎉</span><br>マーモット揃い！ +${payout}枚！！`;
+                    playAudioFile('audio/japan_clear.mp3');
+                    screenFlash('#ff6ec7', 0.75);
+                    vibrate([40, 50, 40, 50, 40, 50, 80]);
+                } else {
+                    resultText.innerText = `${a.icon}${a.icon}${a.icon} 揃った！ +${payout}枚！`;
+                    playAudioFile('audio/levelup.mp3');
+                    screenFlash('#ffd700', a.payout >= 25 ? 0.55 : 0.3);
+                    vibrate(a.payout >= 25 ? [30, 40, 30, 40, 50] : [20, 30, 20]);
+                }
             } else {
                 resultText.style.color = '#8d6e63';
                 resultText.innerText = 'また挑戦してね！';
