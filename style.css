@@ -504,10 +504,16 @@
         }
         /* 🎰 スロット：次に押すべきパーツを光らせて誘導する（コイン投入口→レバー→ボタン、の順で使う） */
         @keyframes slotInviteGlow {
-            0%, 100% { filter: drop-shadow(0 0 4px #ffe066) drop-shadow(0 0 2px #ffe066); }
-            50% { filter: drop-shadow(0 0 16px #fff176) drop-shadow(0 0 10px #ffe066); }
+            0%, 100% { filter: drop-shadow(0 0 6px #ffe066) drop-shadow(0 0 3px #ffe066) brightness(1); transform: scale(1); }
+            50% { filter: drop-shadow(0 0 26px #fff176) drop-shadow(0 0 16px #ffca28) brightness(1.35); transform: scale(1.1); }
         }
-        .slot-invite-glow { animation: slotInviteGlow 1s ease-in-out infinite; }
+        .slot-invite-glow { animation: slotInviteGlow 0.9s ease-in-out infinite; }
+        /* コイン投入口のような、見た目の形がない透明な当たり判定用に、リング状の光で誘導する */
+        @keyframes slotInviteGlowRing {
+            0%, 100% { box-shadow: 0 0 6px 2px #ffe066, inset 0 0 6px 2px #ffe066; transform: scale(1); }
+            50% { box-shadow: 0 0 22px 8px #fff176, inset 0 0 10px 4px #ffca28; transform: scale(1.15); }
+        }
+        .slot-invite-glow-ring { animation: slotInviteGlowRing 0.9s ease-in-out infinite; border-radius: 50%; }
         /* 揃った絵柄を、次にレバーを引くまで光らせながら拡大縮小し続ける */
         @keyframes slotWinPulse {
             0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px #ffd700); }
