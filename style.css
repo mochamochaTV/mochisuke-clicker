@@ -358,6 +358,8 @@
 
         /* ミニゲーム中は連打の勢いで画面がスクロールしてズレてしまわないよう固定する */
         #minigame-center-modal .modal-content { overflow: hidden; touch-action: none; overscroll-behavior: none; }
+        /* ホーム画面追加版だけ、ゲームセンターの背景以外のUI・イラストを少し下にずらす（背景とズレて見える問題の対策） */
+        body.is-standalone #minigame-center-modal .modal-content > * { transform: translateY(2cm); }
         #minigame-play-view { touch-action: none; }
 
         /* 全画面表示のモーダル（地図・ショップ用）：スマホ画面サイズで作ったイラストをそのまま端まで生かす */

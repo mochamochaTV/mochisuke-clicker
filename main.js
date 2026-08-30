@@ -462,6 +462,7 @@
                 return; // これ以降の初期化（セーブ・ロード・クラウド送信を含む）は一切実行しない
             }
             initDevMode();
+            if (isRunningStandalone()) document.body.classList.add('is-standalone'); // ホーム画面追加版だけの見た目調整に使う
             // Safariのタブでそのまま開かれている場合（ホーム画面追加のスタンドアロンではない場合）は、
             // 上下のブラウザUI(URLバー・共有ボタン等)ぶん表示領域が狭くなるので、レイアウトの余白を少し詰める
             if (!isRunningStandalone()) document.body.classList.add('browser-tab-mode');

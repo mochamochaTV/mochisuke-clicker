@@ -1306,29 +1306,37 @@
             const cols = {};
             slotStoppedReels.forEach(i => { cols[i] = getSlotReelColumn(slotReelResults[i]); });
 
-            let bestReachSymbol = null;
-            SLOT_LINE_ROW_OFFSETS.forEach((offsets) => {
+            // 実際に一致しているラインだけを集める（斜めは、真ん中を含む場合は真ん中の段のみ、
+            // 含まない場合は左右2列の対角の角どうしが一致した時だけ対象になる）
+            const matchingLines = [];
+            SLOT_LINE_ROW_OFFSETS.forEach((offsets, lineIdx) => {
                 const a = cols[slotStoppedReels[0]][offsets[slotStoppedReels[0]]];
                 const b = cols[slotStoppedReels[1]][offsets[slotStoppedReels[1]]];
-                if (a.id !== b.id) return;
-                const value = a.id === 'replay' ? 1 : a.payout;
-                if (!bestReachSymbol || value > (bestReachSymbol.id === 'replay' ? 1 : bestReachSymbol.payout)) bestReachSymbol = a;
+                if (a.id === b.id) matchingLines.push({ lineIdx, symbol: a });
             });
-            if (bestReachSymbol) triggerSlotReachEffect(bestReachSymbol);
+            if (matchingLines.length === 0) return;
+
+            const bestReach = matchingLines.reduce((best, m) => {
+                const val = m.symbol.id === 'replay' ? 1 : m.symbol.payout;
+                const bestVal = best.symbol.id === 'replay' ? 1 : best.symbol.payout;
+                return val > bestVal ? m : best;
+            }, matchingLines[0]);
+            triggerSlotReachEffect(bestReach.symbol, matchingLines);
         }
 
         // 🎰 リーチ演出：効果音・絵柄の強調・大きな当たりの時だけカットイン
-        function triggerSlotReachEffect(symbol) {
+        function triggerSlotReachEffect(symbol, matchingLines) {
             playAudioFile('audio/slot_reach.mp3');
             vibrate([20, 30, 20]);
             document.getElementById('slot-result-text').style.color = '#ff3d00';
             document.getElementById('slot-result-text').innerText = 'リーチ！！';
 
-            // 揃っている2つの絵柄を、3つ目が止まるまで強調して光らせる
-            slotStoppedReels.forEach((reelIndex) => {
-                const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
-                const landingRow = slotReelLandingRow[reelIndex];
-                SLOT_LINE_ROW_OFFSETS.forEach((offsets) => {
+            // 実際に一致しているラインの位置「だけ」を、3つ目が止まるまで強調して光らせる
+            matchingLines.forEach(({ lineIdx }) => {
+                const offsets = SLOT_LINE_ROW_OFFSETS[lineIdx];
+                slotStoppedReels.forEach((reelIndex) => {
+                    const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
+                    const landingRow = slotReelLandingRow[reelIndex];
                     const el = strip.children[landingRow + offsets[reelIndex]];
                     if (el) el.classList.add('slot-reach-pulse');
                 });
