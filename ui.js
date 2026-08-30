@@ -513,25 +513,40 @@
         // 🛠️ 開発者用：帽子・顔パーツの位置・大きさ調整ツール（服はフルボディ画像なので調整不要）
         let kisekaeAdjustMode = false;
         let kisekaeAdjustDragState = null;
+        // 対象が「もちすけ本体」か、帽子/顔パーツの個別アイテムかを判定して、実際のDOM要素を返す
+        function getKisekaeAdjustTargetEl() {
+            const val = document.getElementById('kisekae-adjust-target').value;
+            if (val === '__mochisuke__') return document.getElementById('kisekae-mochisuke-wrap');
+            return document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+        }
+        // 「もちすけ本体」はステージ全体が基準、帽子/顔パーツはもちすけ本体が基準（重ねる位置なので）
+        function getKisekaeAdjustRefEl() {
+            const val = document.getElementById('kisekae-adjust-target').value;
+            return val === '__mochisuke__' ? document.getElementById('kisekae-stage') : document.getElementById('kisekae-mochisuke-wrap');
+        }
         function renderKisekaeAdjustPanel(cat) {
             const panel = document.getElementById('kisekae-adjust-panel');
-            if (cat === 'clothes') { panel.style.display = 'none'; return; }
             panel.style.display = 'block';
             const select = document.getElementById('kisekae-adjust-target');
-            select.innerHTML = KISEKAE_ITEMS[cat].map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+            let html = `<option value="__mochisuke__">もちすけ本体（位置・大きさ）</option>`;
+            if (cat !== 'clothes') html += KISEKAE_ITEMS[cat].map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+            select.innerHTML = html;
             updateKisekaeAdjustReadout();
         }
         function toggleKisekaeAdjustMode() {
             kisekaeAdjustMode = !kisekaeAdjustMode;
             const btn = document.getElementById('kisekae-adjust-toggle-btn');
-            const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+            const target = getKisekaeAdjustTargetEl();
+            const val = document.getElementById('kisekae-adjust-target').value;
             if (kisekaeAdjustMode) {
-                target.style.display = 'block'; // プレビューが無い状態でも調整できるよう、選択中のIDの画像を仮表示する
-                const item = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === document.getElementById('kisekae-adjust-target').value);
-                if (item) {
-                    target.src = item.img;
-                    target.style.top = item.top + '%'; target.style.left = item.left + '%';
-                    target.style.width = item.width + '%'; target.style.height = item.height + '%';
+                if (val !== '__mochisuke__') {
+                    target.style.display = 'block'; // プレビューが無い状態でも調整できるよう、選択中のIDの画像を仮表示する
+                    const item = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === val);
+                    if (item) {
+                        target.src = item.img;
+                        target.style.top = item.top + '%'; target.style.left = item.left + '%';
+                        target.style.width = item.width + '%'; target.style.height = item.height + '%';
+                    }
                 }
                 target.style.outline = '2px dashed #e91e63';
                 btn.style.background = '#4caf50';
@@ -545,21 +560,27 @@
             }
         }
         function onKisekaeAdjustTargetChange() {
+            document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`).style.outline = '';
+            document.getElementById('kisekae-mochisuke-wrap').style.outline = '';
             if (!kisekaeAdjustMode) { updateKisekaeAdjustReadout(); return; }
-            const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
-            const item = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === document.getElementById('kisekae-adjust-target').value);
-            if (item) {
-                target.src = item.img;
-                target.style.top = item.top + '%'; target.style.left = item.left + '%';
-                target.style.width = item.width + '%'; target.style.height = item.height + '%';
+            const val = document.getElementById('kisekae-adjust-target').value;
+            const target = getKisekaeAdjustTargetEl();
+            if (val !== '__mochisuke__') {
+                const item = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === val);
+                if (item) {
+                    target.src = item.img;
+                    target.style.top = item.top + '%'; target.style.left = item.left + '%';
+                    target.style.width = item.width + '%'; target.style.height = item.height + '%';
+                }
             }
+            target.style.outline = '2px dashed #e91e63';
             positionKisekaeHandles();
             updateKisekaeAdjustReadout();
         }
         function positionKisekaeHandles() {
             if (!kisekaeAdjustMode) return;
             const stage = document.getElementById('kisekae-stage');
-            const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+            const target = getKisekaeAdjustTargetEl();
             const stageRect = stage.getBoundingClientRect();
             const tRect = target.getBoundingClientRect();
             const rightPct = ((tRect.right - stageRect.left) / stageRect.width) * 100;
@@ -579,7 +600,7 @@
             const startDrag = (e, mode) => {
                 if (!kisekaeAdjustMode) return;
                 e.stopPropagation(); e.preventDefault();
-                const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+                const target = getKisekaeAdjustTargetEl();
                 try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
                 kisekaeAdjustDragState = { startX: e.clientX, startY: e.clientY, target, mode };
             };
@@ -588,17 +609,16 @@
                 if (e.target.id === 'kisekae-resize-handle-r') return startDrag(e, 'width');
                 if (e.target.id === 'kisekae-resize-handle-b') return startDrag(e, 'height');
                 if (e.target.id === 'kisekae-resize-handle-br') return startDrag(e, 'both');
-                const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+                const target = getKisekaeAdjustTargetEl();
                 if (e.target !== target) return;
                 startDrag(e, 'move');
             });
             stage.addEventListener('pointermove', (e) => {
                 if (!kisekaeAdjustDragState || !kisekaeAdjustMode) return;
                 e.stopPropagation();
-                const wrap = document.getElementById('kisekae-mochisuke-wrap');
-                const wrapRect = wrap.getBoundingClientRect();
-                const dxPct = ((e.clientX - kisekaeAdjustDragState.startX) / wrapRect.width) * 100;
-                const dyPct = ((e.clientY - kisekaeAdjustDragState.startY) / wrapRect.height) * 100;
+                const refRect = getKisekaeAdjustRefEl().getBoundingClientRect();
+                const dxPct = ((e.clientX - kisekaeAdjustDragState.startX) / refRect.width) * 100;
+                const dyPct = ((e.clientY - kisekaeAdjustDragState.startY) / refRect.height) * 100;
                 const t = kisekaeAdjustDragState.target, mode = kisekaeAdjustDragState.mode;
                 if (mode === 'move') {
                     t.style.top = (parseFloat(t.style.top) + dyPct) + '%';
@@ -609,12 +629,15 @@
                 }
                 kisekaeAdjustDragState.startX = e.clientX; kisekaeAdjustDragState.startY = e.clientY;
                 // ドラッグした内容を、元データにもその場で反映しておく（アイテムを切り替えても・コピーしても消えないように）
-                const editingItem = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === document.getElementById('kisekae-adjust-target').value);
-                if (editingItem) {
-                    editingItem.top = parseFloat(t.style.top);
-                    editingItem.left = parseFloat(t.style.left);
-                    editingItem.width = parseFloat(t.style.width);
-                    editingItem.height = parseFloat(t.style.height);
+                const val = document.getElementById('kisekae-adjust-target').value;
+                if (val !== '__mochisuke__') {
+                    const editingItem = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === val);
+                    if (editingItem) {
+                        editingItem.top = parseFloat(t.style.top);
+                        editingItem.left = parseFloat(t.style.left);
+                        editingItem.width = parseFloat(t.style.width);
+                        editingItem.height = parseFloat(t.style.height);
+                    }
                 }
                 positionKisekaeHandles();
                 updateKisekaeAdjustReadout();
@@ -623,13 +646,14 @@
             stage.addEventListener('pointercancel', () => { kisekaeAdjustDragState = null; });
         }
         function updateKisekaeAdjustReadout() {
-            const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+            const target = getKisekaeAdjustTargetEl();
             const el = document.getElementById('kisekae-adjust-readout');
             if (!target || !el) return;
             el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${target.style.height};`;
         }
         function copyAllKisekaeCoords() {
-            const lines = [];
+            const wrap = document.getElementById('kisekae-mochisuke-wrap');
+            const lines = [`【もちすけ本体】\ntop:${wrap.style.top}; left:${wrap.style.left}; width:${wrap.style.width}; height:${wrap.style.height || '(自動)'};`];
             ['hat', 'face'].forEach(cat => {
                 lines.push(`【${KISEKAE_CATEGORY_LABELS[cat]}】`);
                 KISEKAE_ITEMS[cat].forEach(item => {

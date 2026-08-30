@@ -362,12 +362,6 @@
             window.IS_DEV_MODE = true; // Firebase送信は別のtype="module"スクリプトにあるため、windowを通して橋渡しする
             const section = document.getElementById('dev-tools-section');
             if (section) section.style.display = 'block';
-            // 🎫 着せ替えアイテムは、まだガチャ実装前なので、開発者URLの人だけ全部持っている状態にする
-            Object.keys(KISEKAE_ITEMS).forEach(cat => {
-                KISEKAE_ITEMS[cat].forEach(item => {
-                    if (!ownedKisekaeItems[cat].includes(item.id)) ownedKisekaeItems[cat].push(item.id);
-                });
-            });
         }
 
         function debugAddMochi() {
@@ -485,6 +479,15 @@
             preloadAllSfx(); // 会心・黄金など出現頻度の低い効果音も先に読み込んでおき、初回再生の遅延を防ぐ
 
             loadGame();
+            // 🎫 着せ替えアイテムは、まだガチャ実装前なので、開発者URLの人だけ全部持っている状態にする
+            // 🐛修正：loadGame()より前にやると、セーブデータの読み込みで上書きされて消えてしまっていた
+            if (IS_DEV_MODE) {
+                Object.keys(KISEKAE_ITEMS).forEach(cat => {
+                    KISEKAE_ITEMS[cat].forEach(item => {
+                        if (!ownedKisekaeItems[cat].includes(item.id)) ownedKisekaeItems[cat].push(item.id);
+                    });
+                });
+            }
             checkForCloudRestoreOnLoad();
             checkOfflineEarnings();
             setTimeout(checkShowTutorial, 1200);
