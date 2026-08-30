@@ -406,6 +406,7 @@
             setTimeout(() => {
                 closeModal('warehouse-modal');
                 openModal('kisekae-room-modal');
+                previewKisekae = { ...equippedKisekae }; // 確定済みの状態から、試着用のコピーを作る
                 renderKisekaeMochisuke();
                 openKisekaeCategory('clothes');
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
@@ -423,14 +424,14 @@
 
         // 着せ替え部屋のもちすけと、通常のタップ画面のもちすけ、両方に今の装着状態を反映する
         function renderKisekaeMochisuke() {
-            const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
+            const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === previewKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
             const roomClothes = document.getElementById('kisekae-mochisuke-clothes');
             if (roomClothes) roomClothes.src = clothesItem.img;
 
             ['hat', 'face'].forEach(cat => {
                 const roomImg = document.getElementById(`kisekae-mochisuke-${cat}`);
                 if (!roomImg) return;
-                const itemId = equippedKisekae[cat];
+                const itemId = previewKisekae[cat];
                 if (itemId) {
                     const item = KISEKAE_ITEMS[cat].find(i => i.id === itemId);
                     roomImg.src = item.img;
@@ -443,7 +444,7 @@
                     roomImg.style.display = 'none';
                 }
             });
-            applyKisekaeToMainScreen();
+            // 🎯「決定」を押すまでは試着中なので、ここではタップ画面には反映しない（applyKisekaeToMainScreenはconfirmKisekaeOutfitからだけ呼ぶ）
         }
 
         // 🚧 通常のタップ画面にも反映する。服については、既存の「衣装（きせかえタブ）」システムと
@@ -484,7 +485,7 @@
 
             items.forEach((item, i) => {
                 const isOwned = owned.includes(item.id);
-                const isEquipped = equippedKisekae[cat] === item.id;
+                const isEquipped = previewKisekae[cat] === item.id;
                 const cell = document.createElement('div');
                 cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
                 cell.innerHTML = `<img src="${item.img}" alt="${item.name}" style="width:80%; height:80%; object-fit:contain; ${isOwned ? '' : 'filter:grayscale(1); opacity:0.5;'}">`;
@@ -504,10 +505,22 @@
         }
 
         function equipKisekaeItem(cat, id) {
-            equippedKisekae[cat] = id;
-            saveGame();
+            previewKisekae[cat] = id; // 「決定」を押すまでは、試着中の状態を更新するだけ
             renderKisekaeMochisuke();
             openKisekaeCategory(cat);
+        }
+
+        // 🎯「決定」ボタン：試着中の服装を、実際に確定して保存・タップ画面にも反映する
+        function confirmKisekaeOutfit() {
+            equippedKisekae = { ...previewKisekae };
+            saveGame();
+            applyKisekaeToMainScreen();
+            const btn = document.getElementById('kisekae-confirm-btn');
+            if (btn) {
+                const original = btn.innerText;
+                btn.innerText = '✅ 決定しました！';
+                setTimeout(() => { btn.innerText = original; }, 1200);
+            }
         }
 
         // 🛠️ 開発者用：帽子・顔パーツの位置・大きさ調整ツール（服はフルボディ画像なので調整不要）
@@ -616,7 +629,7 @@
                 if (e.target.id === 'kisekae-resize-handle-b') return startDrag(e, 'height');
                 if (e.target.id === 'kisekae-resize-handle-br') return startDrag(e, 'both');
                 const target = getKisekaeAdjustTargetEl();
-                if (e.target !== target) return;
+                if (!target.contains(e.target) && e.target !== target) return; // もちすけ本体は中に画像を含むので、子要素のクリックも拾う
                 startDrag(e, 'move');
             });
             stage.addEventListener('pointermove', (e) => {

@@ -3,6 +3,7 @@
         // 👗 着せ替え部屋：所持アイテムと、今装着中のアイテム（カテゴリごとに1つだけ）
         let ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'] };
         let equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' };
+        let previewKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' }; // 「決定」を押すまでの試着中の状態
         let prestigeScoreHistory = []; // 各転生の直前に持っていたもち数の記録（将来使う可能性があるので記録だけしておく）
         let prestigePoints = 0;     // 転生ポイント（所持数、将来のショップで消費する予定）
         const PRESTIGE_BONUS_PER_COUNT = 0.02; // 転生1回につき、タップ力・自動増加が恒久的に+2%（控えめ・線形。世界編を見据えてここは急激に伸ばさない）
