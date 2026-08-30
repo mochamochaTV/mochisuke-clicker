@@ -1028,7 +1028,7 @@
         }
 
         #mochisuke-btn {
-            width: 190px; height: auto; max-height: 230px;
+            width: 185px; height: auto; max-height: 224px;
             object-fit: contain; cursor: pointer; z-index: 5;
             transition: transform 0.1s ease; /* filterのtransitionは意図的に外した。会心の光がずっと残って見えるバグの原因がこれで、
                                                  タップ間隔が200msより短いと前の光の変化が終わる前に次の変化が始まり、
