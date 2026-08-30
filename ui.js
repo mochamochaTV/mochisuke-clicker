@@ -315,6 +315,41 @@
             if (!anchor || !el) return;
             el.textContent = `top:${anchor.style.top}; left:${anchor.style.left}; width:${anchor.style.width};`;
         }
+        function copyMouthCoords() {
+            const anchor = document.getElementById('mochisuke-mouth-anchor');
+            const text = `口パーツ: top:${anchor.style.top}; left:${anchor.style.left}; width:${anchor.style.width};`;
+            const textarea = document.getElementById('mouth-copy-textarea');
+            textarea.value = text; textarea.style.display = 'block'; textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
+
+        // 🛠️ もちすけ本体の大きさ調整。着せ替え部屋も全く同じ大きさに揃える約束なので、
+        // ここで変えた値は、着せ替え部屋のもちすけ本体にもその場で同期する
+        function adjustMochisukeBodySize(deltaWidth, deltaMaxHeight) {
+            const btn = document.getElementById('mochisuke-btn');
+            const curWidth = parseFloat(btn.style.width) || 190;
+            const curMaxH = parseFloat(btn.style.maxHeight) || 230;
+            const newWidth = Math.max(60, curWidth + deltaWidth);
+            const newMaxH = Math.max(60, curMaxH + deltaMaxHeight);
+            btn.style.width = newWidth + 'px';
+            btn.style.maxHeight = newMaxH + 'px';
+            const roomWrap = document.getElementById('kisekae-mochisuke-wrap');
+            if (roomWrap) { roomWrap.style.width = newWidth + 'px'; roomWrap.style.maxHeight = newMaxH + 'px'; }
+            updateMochisukeBodyReadout();
+        }
+        function updateMochisukeBodyReadout() {
+            const btn = document.getElementById('mochisuke-btn');
+            const el = document.getElementById('mochisuke-body-readout');
+            if (!btn || !el) return;
+            el.textContent = `width:${btn.style.width || '190px'}; max-height:${btn.style.maxHeight || '230px'};（着せ替え部屋にも自動で同期済み）`;
+        }
+        function copyMochisukeBodyCoords() {
+            const btn = document.getElementById('mochisuke-btn');
+            const text = `もちすけ本体: width:${btn.style.width || '190px'}; max-height:${btn.style.maxHeight || '230px'};`;
+            const textarea = document.getElementById('mochisuke-body-copy-textarea');
+            textarea.value = text; textarea.style.display = 'block'; textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
 
         function openModal(id, skipSound) { if (!skipSound) playAudioFile('audio/skill_tap.mp3'); document.body.classList.add('modal-open'); document.getElementById(id).style.display = "flex"; }
         function closeModal(id) {
