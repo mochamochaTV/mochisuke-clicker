@@ -486,7 +486,7 @@
                 const isOwned = owned.includes(item.id);
                 const isEquipped = equippedKisekae[cat] === item.id;
                 const cell = document.createElement('div');
-                cell.style.cssText = `width:100%; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
+                cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
                 cell.innerHTML = `<img src="${item.img}" alt="${item.name}" style="width:80%; height:80%; object-fit:contain; ${isOwned ? '' : 'filter:grayscale(1); opacity:0.5;'}">`;
                 if (!isOwned) {
                     cell.insertAdjacentHTML('beforeend', `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">🔒</div>`);
@@ -579,6 +579,13 @@
         }
         function positionKisekaeHandles() {
             if (!kisekaeAdjustMode) return;
+            const val = document.getElementById('kisekae-adjust-target').value;
+            const hR = document.getElementById('kisekae-resize-handle-r'), hB = document.getElementById('kisekae-resize-handle-b'), hBr = document.getElementById('kisekae-resize-handle-br');
+            if (val === '__mochisuke__') {
+                // もちすけ本体は、タップ画面と大きさを完全に一致させるため、大きさの調整はできない（上下位置だけ）
+                [hR, hB, hBr].forEach(h => h.style.display = 'none');
+                return;
+            }
             const stage = document.getElementById('kisekae-stage');
             const target = getKisekaeAdjustTargetEl();
             const stageRect = stage.getBoundingClientRect();
@@ -587,7 +594,6 @@
             const bottomPct = ((tRect.bottom - stageRect.top) / stageRect.height) * 100;
             const midYPct = ((tRect.top + tRect.height / 2 - stageRect.top) / stageRect.height) * 100;
             const midXPct = ((tRect.left + tRect.width / 2 - stageRect.left) / stageRect.width) * 100;
-            const hR = document.getElementById('kisekae-resize-handle-r'), hB = document.getElementById('kisekae-resize-handle-b'), hBr = document.getElementById('kisekae-resize-handle-br');
             [hR, hB, hBr].forEach(h => h.style.display = 'block');
             hR.style.left = rightPct + '%'; hR.style.top = midYPct + '%';
             hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
@@ -622,7 +628,10 @@
                 const t = kisekaeAdjustDragState.target, mode = kisekaeAdjustDragState.mode;
                 if (mode === 'move') {
                     t.style.top = (parseFloat(t.style.top) + dyPct) + '%';
-                    t.style.left = (parseFloat(t.style.left) + dxPct) + '%';
+                    // もちすけ本体は、左右中央固定のまま上下だけ動かす（横方向のleftは調整しない）
+                    if (document.getElementById('kisekae-adjust-target').value !== '__mochisuke__') {
+                        t.style.left = (parseFloat(t.style.left) + dxPct) + '%';
+                    }
                 } else {
                     if (mode === 'width' || mode === 'both') t.style.width = Math.max(2, parseFloat(t.style.width) + dxPct) + '%';
                     if (mode === 'height' || mode === 'both') t.style.height = Math.max(2, parseFloat(t.style.height) + dyPct) + '%';
@@ -649,11 +658,16 @@
             const target = getKisekaeAdjustTargetEl();
             const el = document.getElementById('kisekae-adjust-readout');
             if (!target || !el) return;
-            el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${target.style.height};`;
+            const val = document.getElementById('kisekae-adjust-target').value;
+            if (val === '__mochisuke__') {
+                el.textContent = `top:${target.style.top};（大きさ・左右はタップ画面と共通なので固定）`;
+            } else {
+                el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${target.style.height};`;
+            }
         }
         function copyAllKisekaeCoords() {
             const wrap = document.getElementById('kisekae-mochisuke-wrap');
-            const lines = [`【もちすけ本体】\ntop:${wrap.style.top}; left:${wrap.style.left}; width:${wrap.style.width}; height:${wrap.style.height || '(自動)'};`];
+            const lines = [`【もちすけ本体】\ntop:${wrap.style.top};（大きさ・左右はタップ画面と共通なので固定）`];
             ['hat', 'face'].forEach(cat => {
                 lines.push(`【${KISEKAE_CATEGORY_LABELS[cat]}】`);
                 KISEKAE_ITEMS[cat].forEach(item => {
