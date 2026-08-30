@@ -3,9 +3,9 @@
         const minigames = {
             quiz:          { id: "quiz",          name: "ご当地クイズ",         icon: "🗾", unlockStage: 0 },
             timeattack:    { id: "timeattack",    name: "タップタイムアタック", icon: "⏱️", unlockStage: 0 },
-            concentration: { id: "concentration", name: "ご当地神経衰弱",       icon: "🃏", unlockStage: 5 },
-            mochitsuki:    { id: "mochitsuki",    name: "もちつきリズム",       icon: "🍡", unlockStage: 7 },
-            slot:          { id: "slot",          name: "スロット",            icon: "🎰", unlockStage: 3, isCoinGame: true }
+            concentration: { id: "concentration", name: "ご当地神経衰弱",       icon: "🃏", unlockStage: 0 },
+            mochitsuki:    { id: "mochitsuki",    name: "もちつきリズム",       icon: "🍡", unlockStage: 0 },
+            slot:          { id: "slot",          name: "スロット",            icon: "🎰", unlockStage: 0, isCoinGame: true }
         };
         // 🎰 スロットの絵柄と配当（3つ揃った時の倍率）。同じ絵柄の並び順で、揃いにくいほど高配当にしてある
         // 🎰 絵柄一覧（価値が低い順）。weightが大きいほど出やすい（＝価値が高いほどレア）

@@ -548,6 +548,10 @@
         }
 
         function onGachaTabTap() {
+            if (!IS_DEV_MODE) {
+                alert('🎰 ガチャは近日公開予定です！\nお楽しみに！');
+                return;
+            }
             switchShopTab('gacha');
         }
 
