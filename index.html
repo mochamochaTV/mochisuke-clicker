@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-110">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-111">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -211,7 +211,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-110</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-111</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -270,9 +270,11 @@
                 <div id="mochisuke-img-frame" style="position:relative; display:inline-block;">
                     <div id="mochisuke-breathe-wrap" class="breathe-idle" style="position:relative; display:inline-block; transform-origin:center bottom;">
                         <img id="mochisuke-btn" src="ui_images/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15));">
+                        <img id="mochisuke-kisekae-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:6;">
                         <div id="mochisuke-mouth-anchor" style="position:absolute; top:37.785108%; left:48.447367%; width:16%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
                             <img id="mochisuke-mouth-patch" src="ui_images/mouth_closed.webp" alt="" style="width:100%; display:block;">
                         </div>
+                        <img id="mochisuke-kisekae-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
                     </div>
                     <button id="tutorial-skip-btn" onclick="confirmSkipTutorial()">チュートリアルをスキップ</button>
                 </div>
@@ -332,6 +334,7 @@
             <button class="item-action-btn btn-shop" style="width:100%; background:#009688; color:#fff; margin-bottom:10px;" onclick="openPrestigeShop()">🛍️ 転生ポイントショップ</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#e91e63; color:#fff; margin-bottom:10px;" onclick="openOmiyageCollection()">🍡 お土産一覧（もちすけにあげる）</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#4caf50; color:#fff; margin-bottom:10px;" onclick="openTicketInventory()">🎫 アイテム一覧（チケットを使う）</button>
+            <button class="item-action-btn btn-shop" style="width:100%; background:#ff6fa5; color:#fff; margin-bottom:10px;" onclick="openKisekaeRoom()">👗 着せ替え部屋</button>
             <h3>👕 衣装をきがえる</h3>
             <div class="list-container" id="warehouse-clothes-list"></div>
             <button class="btn-red" onclick="closeModal('warehouse-modal')">閉じる</button>
@@ -454,6 +457,61 @@
             <p style="font-size:0.72rem; color:#a1887f; margin-top:8px;">※ 垓より先は、このゲームではまだ表示されることはほぼありません（豆知識として載せています）</p>
             <p style="font-size:0.78rem; color:#a1887f; margin-top:12px;">例：「12.34億」＝1,234,000,000（約12億3400万）</p>
             <button class="btn-red" onclick="closeModal('unit-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <div id="kisekae-room-modal" class="modal">
+        <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/kisekae_room_bg.webp'); background-size:cover; background-position:center;">
+            <button class="modal-fullscreen-close" onclick="closeKisekaeRoom()">×</button>
+
+            <div id="kisekae-stage" style="position:relative; flex:1; min-height:0;">
+                <div id="kisekae-mochisuke-wrap" style="position:absolute; top:38%; left:50%; transform:translate(-50%,-50%); width:38%; z-index:5;">
+                    <img id="kisekae-mochisuke-clothes" src="ui_images/image_0.webp" alt="もちすけ" style="width:100%; display:block;">
+                    <img id="kisekae-mochisuke-hat" src="" alt="" style="display:none; position:absolute;">
+                    <img id="kisekae-mochisuke-face" src="" alt="" style="display:none; position:absolute;">
+                </div>
+
+                <div style="position:absolute; top:6%; left:50%; transform:translateX(-50%); display:flex; gap:14px; z-index:10;">
+                    <button id="kisekae-cat-btn-hat" onclick="openKisekaeCategory('hat')" style="width:52px; height:52px; border-radius:50%; border:3px solid #fff; background:#ff6fa5; font-size:1.5rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">🧢</button>
+                    <button id="kisekae-cat-btn-face" onclick="openKisekaeCategory('face')" style="width:52px; height:52px; border-radius:50%; border:3px solid #fff; background:#42a5f5; font-size:1.5rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">👓</button>
+                    <button id="kisekae-cat-btn-clothes" onclick="openKisekaeCategory('clothes')" style="width:52px; height:52px; border-radius:50%; border:3px solid #fff; background:#66bb6a; font-size:1.5rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">👗</button>
+                </div>
+
+                <div id="kisekae-item-list-left" style="position:absolute; left:2%; top:20%; bottom:4%; width:21%; overflow-y:auto; display:flex; flex-direction:column; gap:8px; z-index:8;"></div>
+                <div id="kisekae-item-list-right" style="position:absolute; right:2%; top:20%; bottom:4%; width:21%; overflow-y:auto; display:flex; flex-direction:column; gap:8px; z-index:8;"></div>
+
+                <div id="kisekae-adjust-panel" style="display:none; position:absolute; top:4px; right:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:170px; font-size:0.6rem;">
+                    <select id="kisekae-adjust-target" style="font-size:0.6rem; width:100%;" onchange="onKisekaeAdjustTargetChange()"></select>
+                    <button onclick="toggleKisekaeAdjustMode()" id="kisekae-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">位置調整ON/OFF</button>
+                    <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
+                    <div id="kisekae-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
+                    <button onclick="copyAllKisekaeCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
+                    <textarea id="kisekae-copy-all-textarea" readonly style="display:none; width:100%; height:90px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
+                </div>
+                <div id="kisekae-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
+                <div id="kisekae-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
+                <div id="kisekae-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
+            </div>
+
+            <div style="width:100%; padding:10px 0 calc(6px + env(safe-area-inset-bottom, 0px)) 0; box-sizing:border-box; display:flex; justify-content:center; flex-shrink:0;">
+                <div class="nav-menu">
+                    <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.webp');">
+                        <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
+                    </button>
+                    <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
+                        <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
+                    </button>
+                    <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
+                        <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
+                    </button>
+                    <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.webp');">
+                        <span class="btn-illust-label" style="top:73.5%; left:9%; width:82%; height:20.2%; font-size:0.68rem; white-space:nowrap;">ミニゲーム</span>
+                    </button>
+                    <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');">
+                        <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -722,13 +780,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-110"></script>
-    <script src="state.js?v=2026-08-05-110"></script>
-    <script src="tap.js?v=2026-08-05-110"></script>
-    <script src="shop.js?v=2026-08-05-110"></script>
-    <script src="progress.js?v=2026-08-05-110"></script>
-    <script src="minigames.js?v=2026-08-05-110"></script>
-    <script src="ui.js?v=2026-08-05-110"></script>
-    <script src="main.js?v=2026-08-05-110"></script>
+    <script src="data.js?v=2026-08-05-111"></script>
+    <script src="state.js?v=2026-08-05-111"></script>
+    <script src="tap.js?v=2026-08-05-111"></script>
+    <script src="shop.js?v=2026-08-05-111"></script>
+    <script src="progress.js?v=2026-08-05-111"></script>
+    <script src="minigames.js?v=2026-08-05-111"></script>
+    <script src="ui.js?v=2026-08-05-111"></script>
+    <script src="main.js?v=2026-08-05-111"></script>
 </body>
 </html>

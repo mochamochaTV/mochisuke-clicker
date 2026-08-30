@@ -362,6 +362,12 @@
             window.IS_DEV_MODE = true; // Firebase送信は別のtype="module"スクリプトにあるため、windowを通して橋渡しする
             const section = document.getElementById('dev-tools-section');
             if (section) section.style.display = 'block';
+            // 🎫 着せ替えアイテムは、まだガチャ実装前なので、開発者URLの人だけ全部持っている状態にする
+            Object.keys(KISEKAE_ITEMS).forEach(cat => {
+                KISEKAE_ITEMS[cat].forEach(item => {
+                    if (!ownedKisekaeItems[cat].includes(item.id)) ownedKisekaeItems[cat].push(item.id);
+                });
+            });
         }
 
         function debugAddMochi() {

@@ -396,6 +396,254 @@
             openModal('ticket-inventory-modal');
         }
 
+        // ===================================================================
+        // 👗 着せ替え部屋
+        // ===================================================================
+        function openKisekaeRoom() {
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                closeModal('warehouse-modal');
+                openModal('kisekae-room-modal');
+                renderKisekaeMochisuke();
+                openKisekaeCategory('clothes');
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
+        }
+        function closeKisekaeRoom() {
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                closeModal('kisekae-room-modal');
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
+        }
+
+        // 着せ替え部屋のもちすけと、通常のタップ画面のもちすけ、両方に今の装着状態を反映する
+        function renderKisekaeMochisuke() {
+            const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
+            const roomClothes = document.getElementById('kisekae-mochisuke-clothes');
+            if (roomClothes) roomClothes.src = clothesItem.img;
+
+            ['hat', 'face'].forEach(cat => {
+                const roomImg = document.getElementById(`kisekae-mochisuke-${cat}`);
+                if (!roomImg) return;
+                const itemId = equippedKisekae[cat];
+                if (itemId) {
+                    const item = KISEKAE_ITEMS[cat].find(i => i.id === itemId);
+                    roomImg.src = item.img;
+                    roomImg.style.display = 'block';
+                    roomImg.style.top = item.top + '%';
+                    roomImg.style.left = item.left + '%';
+                    roomImg.style.width = item.width + '%';
+                    roomImg.style.height = item.height + '%';
+                } else {
+                    roomImg.style.display = 'none';
+                }
+            });
+            applyKisekaeToMainScreen();
+        }
+
+        // 🚧 通常のタップ画面にも反映する。服については、既存の「衣装（きせかえタブ）」システムと
+        // 見た目の適用先が重なるため、しばらくは「後から呼ばれた方が勝つ」形で共存させている
+        function applyKisekaeToMainScreen() {
+            const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
+            const mainBtn = document.getElementById('mochisuke-btn');
+            if (mainBtn) mainBtn.src = clothesItem.img;
+
+            ['hat', 'face'].forEach(cat => {
+                const mainImg = document.getElementById(`mochisuke-kisekae-${cat}`);
+                if (!mainImg) return;
+                const itemId = equippedKisekae[cat];
+                if (itemId) {
+                    const item = KISEKAE_ITEMS[cat].find(i => i.id === itemId);
+                    mainImg.src = item.img;
+                    mainImg.style.display = 'block';
+                    mainImg.style.top = item.top + '%';
+                    mainImg.style.left = item.left + '%';
+                    mainImg.style.width = item.width + '%';
+                    mainImg.style.height = item.height + '%';
+                } else {
+                    mainImg.style.display = 'none';
+                }
+            });
+        }
+
+        let kisekaeCurrentCategory = 'clothes';
+        // カテゴリを開いて、名前順・Zの字並びで左右にアイテムを並べる
+        function openKisekaeCategory(cat) {
+            kisekaeCurrentCategory = cat;
+            const items = [...KISEKAE_ITEMS[cat]].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+            const owned = ownedKisekaeItems[cat] || [];
+
+            const leftList = document.getElementById('kisekae-item-list-left');
+            const rightList = document.getElementById('kisekae-item-list-right');
+            leftList.innerHTML = ''; rightList.innerHTML = '';
+
+            items.forEach((item, i) => {
+                const isOwned = owned.includes(item.id);
+                const isEquipped = equippedKisekae[cat] === item.id;
+                const cell = document.createElement('div');
+                cell.style.cssText = `width:100%; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
+                cell.innerHTML = `<img src="${item.img}" alt="${item.name}" style="width:80%; height:80%; object-fit:contain; ${isOwned ? '' : 'filter:grayscale(1); opacity:0.5;'}">`;
+                if (!isOwned) {
+                    cell.insertAdjacentHTML('beforeend', `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">🔒</div>`);
+                } else {
+                    cell.onclick = () => equipKisekaeItem(cat, item.id);
+                }
+                (i % 2 === 0 ? leftList : rightList).appendChild(cell);
+            });
+
+            ['hat', 'face', 'clothes'].forEach(c => {
+                document.getElementById(`kisekae-cat-btn-${c}`).style.boxShadow = (c === cat) ? '0 0 0 3px #ffd700, 0 3px 8px rgba(0,0,0,0.25)' : '0 3px 8px rgba(0,0,0,0.25)';
+            });
+
+            if (IS_DEV_MODE) renderKisekaeAdjustPanel(cat);
+        }
+
+        function equipKisekaeItem(cat, id) {
+            equippedKisekae[cat] = id;
+            saveGame();
+            renderKisekaeMochisuke();
+            openKisekaeCategory(cat);
+        }
+
+        // 🛠️ 開発者用：帽子・顔パーツの位置・大きさ調整ツール（服はフルボディ画像なので調整不要）
+        let kisekaeAdjustMode = false;
+        let kisekaeAdjustDragState = null;
+        function renderKisekaeAdjustPanel(cat) {
+            const panel = document.getElementById('kisekae-adjust-panel');
+            if (cat === 'clothes') { panel.style.display = 'none'; return; }
+            panel.style.display = 'block';
+            const select = document.getElementById('kisekae-adjust-target');
+            select.innerHTML = KISEKAE_ITEMS[cat].map(i => `<option value="${i.id}">${i.name}</option>`).join('');
+            updateKisekaeAdjustReadout();
+        }
+        function toggleKisekaeAdjustMode() {
+            kisekaeAdjustMode = !kisekaeAdjustMode;
+            const btn = document.getElementById('kisekae-adjust-toggle-btn');
+            const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+            if (kisekaeAdjustMode) {
+                target.style.display = 'block'; // プレビューが無い状態でも調整できるよう、選択中のIDの画像を仮表示する
+                const item = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === document.getElementById('kisekae-adjust-target').value);
+                if (item) {
+                    target.src = item.img;
+                    target.style.top = item.top + '%'; target.style.left = item.left + '%';
+                    target.style.width = item.width + '%'; target.style.height = item.height + '%';
+                }
+                target.style.outline = '2px dashed #e91e63';
+                btn.style.background = '#4caf50';
+                setupKisekaeAdjustDrag();
+                positionKisekaeHandles();
+            } else {
+                target.style.outline = '';
+                ['kisekae-resize-handle-r', 'kisekae-resize-handle-b', 'kisekae-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
+                btn.style.background = '#e91e63';
+                renderKisekaeMochisuke(); // 実際に装着中のものへ表示を戻す
+            }
+        }
+        function onKisekaeAdjustTargetChange() {
+            if (!kisekaeAdjustMode) { updateKisekaeAdjustReadout(); return; }
+            const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+            const item = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === document.getElementById('kisekae-adjust-target').value);
+            if (item) {
+                target.src = item.img;
+                target.style.top = item.top + '%'; target.style.left = item.left + '%';
+                target.style.width = item.width + '%'; target.style.height = item.height + '%';
+            }
+            positionKisekaeHandles();
+            updateKisekaeAdjustReadout();
+        }
+        function positionKisekaeHandles() {
+            if (!kisekaeAdjustMode) return;
+            const stage = document.getElementById('kisekae-stage');
+            const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+            const stageRect = stage.getBoundingClientRect();
+            const tRect = target.getBoundingClientRect();
+            const rightPct = ((tRect.right - stageRect.left) / stageRect.width) * 100;
+            const bottomPct = ((tRect.bottom - stageRect.top) / stageRect.height) * 100;
+            const midYPct = ((tRect.top + tRect.height / 2 - stageRect.top) / stageRect.height) * 100;
+            const midXPct = ((tRect.left + tRect.width / 2 - stageRect.left) / stageRect.width) * 100;
+            const hR = document.getElementById('kisekae-resize-handle-r'), hB = document.getElementById('kisekae-resize-handle-b'), hBr = document.getElementById('kisekae-resize-handle-br');
+            [hR, hB, hBr].forEach(h => h.style.display = 'block');
+            hR.style.left = rightPct + '%'; hR.style.top = midYPct + '%';
+            hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
+            hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
+        }
+        function setupKisekaeAdjustDrag() {
+            const stage = document.getElementById('kisekae-stage');
+            if (stage.dataset.dragSetup) return;
+            stage.dataset.dragSetup = '1';
+            const startDrag = (e, mode) => {
+                if (!kisekaeAdjustMode) return;
+                e.stopPropagation(); e.preventDefault();
+                const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                kisekaeAdjustDragState = { startX: e.clientX, startY: e.clientY, target, mode };
+            };
+            stage.addEventListener('pointerdown', (e) => {
+                if (!kisekaeAdjustMode) return;
+                if (e.target.id === 'kisekae-resize-handle-r') return startDrag(e, 'width');
+                if (e.target.id === 'kisekae-resize-handle-b') return startDrag(e, 'height');
+                if (e.target.id === 'kisekae-resize-handle-br') return startDrag(e, 'both');
+                const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+                if (e.target !== target) return;
+                startDrag(e, 'move');
+            });
+            stage.addEventListener('pointermove', (e) => {
+                if (!kisekaeAdjustDragState || !kisekaeAdjustMode) return;
+                e.stopPropagation();
+                const wrap = document.getElementById('kisekae-mochisuke-wrap');
+                const wrapRect = wrap.getBoundingClientRect();
+                const dxPct = ((e.clientX - kisekaeAdjustDragState.startX) / wrapRect.width) * 100;
+                const dyPct = ((e.clientY - kisekaeAdjustDragState.startY) / wrapRect.height) * 100;
+                const t = kisekaeAdjustDragState.target, mode = kisekaeAdjustDragState.mode;
+                if (mode === 'move') {
+                    t.style.top = (parseFloat(t.style.top) + dyPct) + '%';
+                    t.style.left = (parseFloat(t.style.left) + dxPct) + '%';
+                } else {
+                    if (mode === 'width' || mode === 'both') t.style.width = Math.max(2, parseFloat(t.style.width) + dxPct) + '%';
+                    if (mode === 'height' || mode === 'both') t.style.height = Math.max(2, parseFloat(t.style.height) + dyPct) + '%';
+                }
+                kisekaeAdjustDragState.startX = e.clientX; kisekaeAdjustDragState.startY = e.clientY;
+                // ドラッグした内容を、元データにもその場で反映しておく（アイテムを切り替えても・コピーしても消えないように）
+                const editingItem = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === document.getElementById('kisekae-adjust-target').value);
+                if (editingItem) {
+                    editingItem.top = parseFloat(t.style.top);
+                    editingItem.left = parseFloat(t.style.left);
+                    editingItem.width = parseFloat(t.style.width);
+                    editingItem.height = parseFloat(t.style.height);
+                }
+                positionKisekaeHandles();
+                updateKisekaeAdjustReadout();
+            });
+            stage.addEventListener('pointerup', () => { kisekaeAdjustDragState = null; });
+            stage.addEventListener('pointercancel', () => { kisekaeAdjustDragState = null; });
+        }
+        function updateKisekaeAdjustReadout() {
+            const target = document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`);
+            const el = document.getElementById('kisekae-adjust-readout');
+            if (!target || !el) return;
+            el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${target.style.height};`;
+        }
+        function copyAllKisekaeCoords() {
+            const lines = [];
+            ['hat', 'face'].forEach(cat => {
+                lines.push(`【${KISEKAE_CATEGORY_LABELS[cat]}】`);
+                KISEKAE_ITEMS[cat].forEach(item => {
+                    lines.push(`${item.name}(${item.id}): top:${item.top}%; left:${item.left}%; width:${item.width}%; height:${item.height}%;`);
+                });
+            });
+            const text = lines.join('\n');
+            const textarea = document.getElementById('kisekae-copy-all-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
+
         function openOmiyageCollection() {
             const grid = document.getElementById('omiyage-collection-grid');
             grid.innerHTML = '';

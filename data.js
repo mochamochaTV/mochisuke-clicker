@@ -272,3 +272,40 @@
         ];
         const feedTeaseComments = ["ちょうだい！", "まだ〜？", "はやくよこせ！"];
         const FEED_TEASE_MAX_LEVEL = feedTeaseComments.length; // これ以上は毎回叫ぶだけになる
+
+        // ===================================================================
+        // 👗 着せ替え部屋：帽子・顔パーツ・服の3カテゴリ（あつまれどうぶつの森を参考にした一覧選択式）
+        // 帽子・顔パーツは、もちすけの上に重ねる「単体パーツ」画像で、位置・大きさを個別に調整する。
+        // 服だけは、もちすけ全身を着せ替えた状態の完成イラストをそのまま使う（座標調整は不要）。
+        // ===================================================================
+        const KISEKAE_ITEMS = {
+            hat: [
+                { id: 'hat_crown_red',      name: '王冠（赤）',        star: 3, img: 'ui_images/kisekae_hat_crown_red.webp',      top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_crown_blue',     name: '王冠（青）',        star: 3, img: 'ui_images/kisekae_hat_crown_blue.webp',     top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_pirate',         name: '海賊の帽子',        star: 2, img: 'ui_images/kisekae_hat_pirate.webp',        top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_kabuto',         name: 'カブト',            star: 2, img: 'ui_images/kisekae_hat_kabuto.webp',        top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_wizard',         name: '魔法使いの帽子',    star: 2, img: 'ui_images/kisekae_hat_wizard.webp',        top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_baby',           name: '赤ん帽',            star: 2, img: 'ui_images/kisekae_hat_baby.webp',          top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_santa',          name: 'サンタの帽子',      star: 2, img: 'ui_images/kisekae_hat_santa.webp',         top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_chef',           name: 'コック帽',          star: 1, img: 'ui_images/kisekae_hat_chef.webp',          top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_tophat_black',   name: 'シルクハット（黒）', star: 1, img: 'ui_images/kisekae_hat_tophat_black.webp',  top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_ribbon',         name: 'リボン',            star: 1, img: 'ui_images/kisekae_hat_ribbon.webp',        top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_graduate',       name: '学士の帽子',        star: 1, img: 'ui_images/kisekae_hat_graduate.webp',      top: 10, left: 40, width: 20, height: 15 },
+            ],
+            face: [
+                { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'ui_images/kisekae_face_sunglasses.webp',   top: 35, left: 38, width: 24, height: 12 },
+                { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'ui_images/kisekae_face_glasses_black.webp', top: 35, left: 38, width: 24, height: 12 },
+                { id: 'face_3dglasses',     name: '3Dメガネ',          star: 1, img: 'ui_images/kisekae_face_3dglasses.webp',    top: 35, left: 38, width: 24, height: 12 },
+            ],
+            clothes: [
+                { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'ui_images/image_0.webp' },
+                { id: 'clothes_king_red',    name: 'おうさまの服（赤）', star: 3, img: 'ui_images/kisekae_clothes_king_red.webp' },
+                { id: 'clothes_king_blue',   name: 'おうさまの服（青）', star: 3, img: 'ui_images/kisekae_clothes_king_blue.webp' },
+                { id: 'clothes_tshirt_red',   name: 'Tシャツ（赤）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_red.webp' },
+                { id: 'clothes_tshirt_white', name: 'Tシャツ（白）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_white.webp' },
+                { id: 'clothes_tshirt_blue',  name: 'Tシャツ（青）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_blue.webp' },
+                { id: 'clothes_tshirt_green', name: 'Tシャツ（緑）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_green.webp' },
+                { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'ui_images/kisekae_clothes_apron.webp' },
+            ],
+        };
+        const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服' };
