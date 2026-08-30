@@ -155,7 +155,9 @@
                 minigameSeenUnlocked: minigameSeenUnlocked,
                 prefTaps: prefTaps, lastActiveTimestamp: lastActiveTimestamp,
                 prestigeCount: prestigeCount, prestigePoints: prestigePoints, prestigeScoreHistory: prestigeScoreHistory,
-                prestigeShopLv: prestigeShopLv, gachaCoins: gachaCoins, minigameCoins: minigameCoins, ticketInventory: ticketInventory, slotPlaysRemaining: slotPlaysRemaining
+                prestigeShopLv: prestigeShopLv, gachaCoins: gachaCoins, minigameCoins: minigameCoins, ticketInventory: ticketInventory, slotPlaysRemaining: slotPlaysRemaining, slotBonusZoneSpinsLeft: slotBonusZoneSpinsLeft,
+                slotTotalPulls: slotTotalPulls, slotPullsSinceJackpot: slotPullsSinceJackpot, slotJackpotCount: slotJackpotCount,
+                slotShortestJackpotPulls: slotShortestJackpotPulls, slotLongestJackpotPulls: slotLongestJackpotPulls
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -221,6 +223,12 @@
                     minigameCoins = state.minigameCoins ?? 0;
                     ticketInventory = state.ticketInventory ?? { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 };
                     slotPlaysRemaining = state.slotPlaysRemaining ?? 0;
+                    slotBonusZoneSpinsLeft = state.slotBonusZoneSpinsLeft ?? 0;
+                    slotTotalPulls = state.slotTotalPulls ?? 0;
+                    slotPullsSinceJackpot = state.slotPullsSinceJackpot ?? 0;
+                    slotJackpotCount = state.slotJackpotCount ?? 0;
+                    slotShortestJackpotPulls = state.slotShortestJackpotPulls ?? null;
+                    slotLongestJackpotPulls = state.slotLongestJackpotPulls ?? null;
                     // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
                     prestigeShopLv = state.prestigeShopLv ?? {
                         offlineCap: state.offlineCapBonusHours ?? 0,

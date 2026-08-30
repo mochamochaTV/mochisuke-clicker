@@ -520,6 +520,25 @@
             50% { transform: scale(1.18); filter: drop-shadow(0 0 16px #ff6ec7); }
         }
         .slot-win-pulse { animation: slotWinPulse 0.7s ease-in-out infinite; position: relative; z-index: 3; }
+        /* リーチ中（残り1列になった時、2つ揃っている状態）の絵柄の光り方 */
+        @keyframes slotReachPulse {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 8px #ff3d00); }
+            50% { transform: scale(1.22); filter: drop-shadow(0 0 20px #ff9100); }
+        }
+        .slot-reach-pulse { animation: slotReachPulse 0.4s ease-in-out infinite; position: relative; z-index: 3; }
+        /* カットイン：横から勢いよく滑り込んでくる演出 */
+        @keyframes slotCutinSlide {
+            0% { transform: translateX(-120%) rotate(-8deg); opacity: 0; }
+            15% { transform: translateX(0) rotate(-8deg); opacity: 1; }
+            80% { transform: translateX(0) rotate(-8deg); opacity: 1; }
+            100% { transform: translateX(120%) rotate(-8deg); opacity: 0; }
+        }
+        /* 特化ゾーン中、リール窓を金色に光らせて「特別な時間」だと分かるようにする */
+        @keyframes slotBonusZoneGlow {
+            0%, 100% { box-shadow: 0 0 8px 2px #ffd700; }
+            50% { box-shadow: 0 0 20px 6px #ffab00; }
+        }
+        .slot-bonus-zone-active { animation: slotBonusZoneGlow 1.2s ease-in-out infinite; }
 
         .omiyage-shelf-arrow {
             position: absolute; top: 44%; left: 1%;

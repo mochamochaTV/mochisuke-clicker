@@ -10,9 +10,9 @@
         // 🎰 スロットの絵柄と配当（3つ揃った時の倍率）。同じ絵柄の並び順で、揃いにくいほど高配当にしてある
         // 🎰 絵柄一覧（価値が低い順）。weightが大きいほど出やすい（＝価値が高いほどレア）
         const SLOT_SYMBOLS = [
-            { id: 'cherry',      icon: '🍒', img: 'ui_images/slot_symbol_cherry.webp',      label: 'チェリー',   payout: 2,   weight: 32 },
-            { id: 'carrot',      icon: '🥕', img: 'ui_images/slot_symbol_carrot.webp',      label: '人参',      payout: 3,   weight: 26 },
-            { id: 'bell',        icon: '🔔', img: 'ui_images/slot_symbol_bell.webp',        label: 'ベル',      payout: 4,   weight: 22 },
+            { id: 'cherry',      icon: '🍒', img: 'ui_images/slot_symbol_cherry.webp',      label: 'チェリー',   payout: 2,   weight: 44 },
+            { id: 'carrot',      icon: '🥕', img: 'ui_images/slot_symbol_carrot.webp',      label: '人参',      payout: 3,   weight: 36 },
+            { id: 'bell',        icon: '🔔', img: 'ui_images/slot_symbol_bell.webp',        label: 'ベル',      payout: 4,   weight: 30 },
             { id: 'sweetpotato', icon: '🍠', img: 'ui_images/slot_symbol_sweetpotato.webp', label: 'さつまいも', payout: 5,   weight: 16 },
             { id: 'banana',      icon: '🍌', img: 'ui_images/slot_symbol_banana.webp',      label: 'バナナ',    payout: 6,   weight: 12 },
             { id: 'apple',       icon: '🍎', img: 'ui_images/slot_symbol_apple.webp',       label: 'リンゴ',    payout: 8,   weight: 9 },
@@ -23,7 +23,7 @@
             { id: 'marmot',      icon: '🐹', img: 'ui_images/slot_symbol_marmot.webp',      label: 'マーモット', payout: 150, weight: 0.15, isJackpot: true },
         ];
         // リプレイ：揃うとコインを消費せず、もう一度レバーを引ける（配当表には含めない特殊絵柄）
-        const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'ui_images/slot_symbol_replay.webp', label: 'リプレイ', weight: 14 };
+        const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'ui_images/slot_symbol_replay.webp', label: 'リプレイ', weight: 20 };
         const SLOT_ALL_SYMBOLS = [...SLOT_SYMBOLS, SLOT_REPLAY_SYMBOL]; // リールの帯を作る時に使う、全絵柄（リプレイ含む）
         const SLOT_COIN_COST = 1;        // コインを1回投入するのに必要なミニゲームコイン
         const SLOT_PLAYS_PER_COIN = 5;   // コイン1枚で、レバーを何回引けるか
@@ -724,6 +724,18 @@
         let slotReelResults = [null, null, null];   // この回で、各リールが最終的にどの絵柄で止まるか（レバーを引いた瞬間に内部で先に決める）
         let slotReelAnimations = [null, null, null]; // 各リールの「回り続ける」アニメーションを、止める時にcancelできるよう保持
         let slotReelLandingRow = [null, null, null]; // 各リールが最終的に止まった時の、帯の中の行番号（揃った絵柄を光らせる時に使う）
+        let slotStoppedReels = [];       // 今の回で、すでに止めたリールの番号（リーチ判定に使う）
+        let slotBonusZoneSpinsLeft = 0;  // 特化ゾーン：残りこの回数ぶん、当たりやすい状態が続く
+        let slotTotalPulls = 0;          // 総回転数（レバーを引いた回数、全期間）
+        let slotPullsSinceJackpot = 0;   // 前回マーモットが出てから、何回転しているか
+        let slotJackpotCount = 0;        // マーモットが出た回数
+        let slotShortestJackpotPulls = null; // マーモットが出るまでの回転数、最短記録
+        let slotLongestJackpotPulls = null;  // マーモットが出るまでの回転数、最長記録
+        const SLOT_BONUS_ZONE_SPINS = 10; // マーモット後、特化ゾーンが続くレバー回数
+        // 特化ゾーン中は、この重みで抽選する（BAR以上の高価値な絵柄が出やすくなる）
+        const SLOT_BONUS_ZONE_SYMBOLS = SLOT_SYMBOLS.map(s => ({
+            ...s, weight: (s.payout >= 10) ? s.weight * 6 : s.weight * 0.4,
+        })).concat([{ ...SLOT_REPLAY_SYMBOL, weight: SLOT_REPLAY_SYMBOL.weight * 2 }]); // リプレイも少し出やすくして、ゾーンが長続きしやすくする
         let slotNextSpinFree = false; // リプレイが揃った直後は、次の1回はコイン消費なし
 
         // 🛠️ スロットの各パーツ位置・大きさを、実際のイラストに合わせて調整するための開発者用ツール
@@ -958,7 +970,18 @@
 
         function toggleSlotHelpOverlay() {
             const overlay = document.getElementById('slot-help-overlay');
-            if (overlay) overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
+            if (!overlay) return;
+            const opening = overlay.style.display !== 'block';
+            overlay.style.display = opening ? 'block' : 'none';
+            if (opening) {
+                const statsEl = document.getElementById('slot-stats-content');
+                if (statsEl) statsEl.innerHTML = `
+                    総回転数：${slotTotalPulls}回転<br>
+                    マーモット獲得回数：${slotJackpotCount}回<br>
+                    最短：${slotShortestJackpotPulls == null ? '－' : slotShortestJackpotPulls + '回転'}<br>
+                    最長：${slotLongestJackpotPulls == null ? '－' : slotLongestJackpotPulls + '回転'}
+                `;
+            }
         }
 
         // 残りプレイ回数に応じて、次に光らせるべきパーツを決める（残っていればレバー、無くなっていればコイン投入口）
@@ -973,15 +996,29 @@
             const el = document.getElementById('slot-plays-remaining');
             if (el) el.innerText = slotPlaysRemaining > 0 ? `（あと${slotPlaysRemaining}回引けます）` : '';
         }
+        function updateSlotBonusZoneDisplay() {
+            const el = document.getElementById('slot-bonus-zone-text');
+            const active = slotBonusZoneSpinsLeft > 0;
+            if (el) el.innerText = active ? `✨ 特化ゾーン 残り${slotBonusZoneSpinsLeft}回 ✨` : '';
+            [0, 1, 2].forEach(i => {
+                const win = document.getElementById(`slot-reel-window-${i}`);
+                if (win) win.classList.toggle('slot-bonus-zone-active', active);
+            });
+        }
+        function updateSlotPullsSinceJackpotDisplay() {
+            const el = document.getElementById('slot-pulls-since-jackpot');
+            if (el) el.innerText = `前回のマーモットから ${slotPullsSinceJackpot}回転`;
+        }
 
         function pickWeightedSlotSymbol() {
-            const total = SLOT_ALL_SYMBOLS.reduce((s, sym) => s + sym.weight, 0);
+            const pool = slotBonusZoneSpinsLeft > 0 ? SLOT_BONUS_ZONE_SYMBOLS : SLOT_ALL_SYMBOLS;
+            const total = pool.reduce((s, sym) => s + sym.weight, 0);
             let roll = Math.random() * total;
-            for (const sym of SLOT_ALL_SYMBOLS) {
+            for (const sym of pool) {
                 if (roll < sym.weight) return sym;
                 roll -= sym.weight;
             }
-            return SLOT_ALL_SYMBOLS[0];
+            return pool[0];
         }
 
         function buildSlotReelStripHtml() {
@@ -1015,10 +1052,12 @@
             container.style.background = 'transparent'; // 機体イラストの後ろに白い箱が見えないよう、この画面だけ背景を消す
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
-                    <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 10px; margin-bottom:10px;">
                         <div style="font-weight:900; color:#7b1fa2; text-shadow:0 1px 3px rgba(255,255,255,0.8);"><img src="ui_images/slot_coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持<span id="slot-plays-remaining" style="font-size:0.7rem; color:#e91e63;"></span></div>
+                        <div id="slot-bonus-zone-text" style="font-weight:900; color:#ffab00; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>
                         <button onclick="toggleSlotHelpOverlay()" style="width:24px; height:24px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900; font-size:0.75rem;">？</button>
                     </div>
+                    <div id="slot-pulls-since-jackpot" style="font-size:0.68rem; color:#8d6e63; text-shadow:0 1px 3px rgba(255,255,255,0.8); margin-bottom:6px;"></div>
 
                     <div id="slot-machine-stage" style="position:relative; width:100%; max-width:280px; height:280px; margin:0 auto;">
                         ${[0, 1, 2].map(i => `
@@ -1056,9 +1095,33 @@
                         <button onclick="toggleSlotHelpOverlay()" style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
                         <h3 style="margin:0 0 10px; color:#5d4037; text-align:center;">🎰 スロットの遊び方</h3>
                         <p style="font-size:0.78rem; color:#5d4037; line-height:1.6;">① 光っているコインをタップして投入します（1枚で1回）<br>② 光っているレバーを引くとリールが回り始めます<br>③ 光っている3つのボタンで、リールを1つずつ好きなタイミングで止められます<br>④ 上段・中段・下段・斜め2本、5つのライン上に絵柄が3つ揃うと、コインが払い出されます<br>（複数ラインが同時に揃うと、その分コインも増えます）</p>
-                        <div style="margin-top:14px; font-size:0.72rem; color:#5d4037; line-height:1.9;">
-                            ${SLOT_SYMBOLS.slice().reverse().map(s => `<div>${s.label}×3 → ${s.payout}枚</div>`).join('')}
-                            <div style="margin-top:8px; color:#4caf50;">🍡リプレイ×3 → コイン消費なしでもう一度！</div>
+                        <div style="margin-top:14px;">
+                            ${SLOT_SYMBOLS.slice().reverse().map(s => `
+                                <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-bottom:6px;">
+                                    <img src="${s.img}" alt="${s.label}" style="width:26px; height:26px; object-fit:contain;">
+                                    <img src="${s.img}" alt="" style="width:26px; height:26px; object-fit:contain;">
+                                    <img src="${s.img}" alt="" style="width:26px; height:26px; object-fit:contain;">
+                                    <span style="font-size:0.9rem; color:#5d4037; margin:0 4px;">→</span>
+                                    <img src="ui_images/slot_coin.webp" alt="コイン" style="width:20px; height:20px; object-fit:contain;">
+                                    <span style="font-size:0.85rem; font-weight:900; color:#5d4037;">×${s.payout}枚</span>
+                                </div>
+                            `).join('')}
+                            <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-top:4px;">
+                                <img src="ui_images/slot_symbol_replay.webp" alt="リプレイ" style="width:26px; height:26px; object-fit:contain;">
+                                <img src="ui_images/slot_symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
+                                <img src="ui_images/slot_symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
+                                <span style="font-size:0.78rem; color:#4caf50; margin-left:6px;">→ コイン消費なしでもう一度！</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:16px; padding-top:10px; border-top:1px dashed #ddd; text-align:center;">
+                            <div style="font-size:0.7rem; color:#8d6e63; font-weight:900; margin-bottom:6px;">📊 記録</div>
+                            <div id="slot-stats-content" style="font-size:0.72rem; color:#5d4037; line-height:1.8;">
+                                総回転数：${slotTotalPulls}回転<br>
+                                マーモット獲得回数：${slotJackpotCount}回<br>
+                                最短：${slotShortestJackpotPulls == null ? '－' : slotShortestJackpotPulls + '回転'}<br>
+                                最長：${slotLongestJackpotPulls == null ? '－' : slotLongestJackpotPulls + '回転'}
+                            </div>
                         </div>
 
                         ${IS_DEV_MODE ? `
@@ -1083,6 +1146,8 @@
             `;
             updateSlotPlaysRemainingDisplay();
             inviteNextSlotStep(); // 前回の残り回数を引き継いでいるので、それに応じてレバーかコイン投入口、どちらかが光る
+            updateSlotBonusZoneDisplay(); // 特化ゾーンが残っていれば、それも引き継いで表示する
+            updateSlotPullsSinceJackpotDisplay();
         }
 
         // 🪙 コインを投入口にポトッと落とす演出。位置は#slot-coin-slot-inの座標を実測して使う
@@ -1139,10 +1204,17 @@
             if (!slotNextSpinFree && !lever.classList.contains('slot-invite-glow')) return; // コイン投入がまだの時は引けない
             slotIsSpinning = true;
             slotStoppedCount = 0;
-            if (!slotNextSpinFree) slotPlaysRemaining--; // リプレイは無料なので、残り回数を消費しない
+            slotStoppedReels = [];
+            slotTotalPulls++; slotPullsSinceJackpot++; // 総回転数・前回マーモットからの回転数は、リプレイぶんも含めて数える
+            updateSlotPullsSinceJackpotDisplay();
+            if (!slotNextSpinFree) {
+                slotPlaysRemaining--; // リプレイは無料なので、残り回数を消費しない
+                if (slotBonusZoneSpinsLeft > 0) slotBonusZoneSpinsLeft--; // 特化ゾーンも、リプレイでは消費しない
+            }
             slotNextSpinFree = false;
             lever.classList.remove('slot-invite-glow');
             updateSlotPlaysRemainingDisplay();
+            updateSlotBonusZoneDisplay();
             saveGame(); updateDisplay();
             document.getElementById('slot-result-text').innerText = '';
             document.getElementById('slot-payout-popup').style.display = 'none';
@@ -1218,11 +1290,65 @@
             playAudioFile('audio/tap.mp3');
             vibrate([10]);
 
+            slotStoppedReels.push(reelIndex);
             slotStoppedCount++;
-            if (slotStoppedCount >= 3) {
+            if (slotStoppedCount === 2) {
+                setTimeout(checkSlotReach, 250); // 着地演出が落ち着いてから判定する
+            } else if (slotStoppedCount >= 3) {
                 stopSlotSpinLoopSound();
                 setTimeout(evaluateSlotResult, 300);
             }
+        }
+
+        // 🎰 リーチ判定：2つ止まった時点で、5ラインのどこかで2つとも同じ絵柄が揃っていれば「リーチ」
+        function checkSlotReach() {
+            if (slotStoppedReels.length !== 2) return;
+            const cols = {};
+            slotStoppedReels.forEach(i => { cols[i] = getSlotReelColumn(slotReelResults[i]); });
+
+            let bestReachSymbol = null;
+            SLOT_LINE_ROW_OFFSETS.forEach((offsets) => {
+                const a = cols[slotStoppedReels[0]][offsets[slotStoppedReels[0]]];
+                const b = cols[slotStoppedReels[1]][offsets[slotStoppedReels[1]]];
+                if (a.id !== b.id) return;
+                const value = a.id === 'replay' ? 1 : a.payout;
+                if (!bestReachSymbol || value > (bestReachSymbol.id === 'replay' ? 1 : bestReachSymbol.payout)) bestReachSymbol = a;
+            });
+            if (bestReachSymbol) triggerSlotReachEffect(bestReachSymbol);
+        }
+
+        // 🎰 リーチ演出：効果音・絵柄の強調・大きな当たりの時だけカットイン
+        function triggerSlotReachEffect(symbol) {
+            playAudioFile('audio/slot_reach.mp3');
+            vibrate([20, 30, 20]);
+            document.getElementById('slot-result-text').style.color = '#ff3d00';
+            document.getElementById('slot-result-text').innerText = 'リーチ！！';
+
+            // 揃っている2つの絵柄を、3つ目が止まるまで強調して光らせる
+            slotStoppedReels.forEach((reelIndex) => {
+                const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
+                const landingRow = slotReelLandingRow[reelIndex];
+                SLOT_LINE_ROW_OFFSETS.forEach((offsets) => {
+                    const el = strip.children[landingRow + offsets[reelIndex]];
+                    if (el) el.classList.add('slot-reach-pulse');
+                });
+            });
+
+            // BAR以上の高価値な絵柄が2つ揃っている時だけ、カットインで盛り上げる
+            const isBigReach = symbol.id === 'replay' ? false : symbol.payout >= 10;
+            if (isBigReach) showSlotCutin();
+        }
+
+        // 🎬 カットイン：もちすけの驚き顔が、横から勢いよく滑り込んでくる演出
+        function showSlotCutin() {
+            const stage = document.getElementById('slot-machine-stage');
+            if (!stage) return;
+            const cutin = document.createElement('img');
+            cutin.src = 'ui_images/image_scream.webp';
+            cutin.style.cssText = 'position:absolute; top:30%; left:50%; width:70%; transform:translate(-50%,-50%); z-index:500; pointer-events:none; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5)); animation: slotCutinSlide 900ms ease-in-out;';
+            stage.appendChild(cutin);
+            playAudioFile('audio/gacha_crank.mp3');
+            setTimeout(() => cutin.remove(), 900);
         }
 
         // 🪙 払い出し口から、コインが実際に出てくる演出。countが多いほど「あふれ出す」感じになる
@@ -1295,6 +1421,7 @@
             if (!resultText) return; // 回転中に画面を離れていたら、何もしない
             const lever = document.getElementById('slot-lever');
             if (lever) lever.style.pointerEvents = 'auto';
+            document.querySelectorAll('.slot-reach-pulse').forEach(el => el.classList.remove('slot-reach-pulse')); // リーチ演出は、結果が出たら一旦リセット
 
             // 3列ぶんの縦3コマ(上・中・下)を求めて、5ライン(上段・中段・下段・斜め2本)を判定する
             const cols = slotReelResults.map(getSlotReelColumn); // cols[reel] = [top, mid, bottom]
@@ -1354,6 +1481,11 @@
                 // 🐹 マーモット：最上位の大当たり演出。コインだけでは物足りないので、ガチャコインも一緒に付与する
                 const bonusGachaCoins = 30;
                 gachaCoins += bonusGachaCoins;
+                slotJackpotCount++;
+                slotShortestJackpotPulls = (slotShortestJackpotPulls == null) ? slotPullsSinceJackpot : Math.min(slotShortestJackpotPulls, slotPullsSinceJackpot);
+                slotLongestJackpotPulls = (slotLongestJackpotPulls == null) ? slotPullsSinceJackpot : Math.max(slotLongestJackpotPulls, slotPullsSinceJackpot);
+                slotPullsSinceJackpot = 0;
+                updateSlotPullsSinceJackpotDisplay();
                 saveGame();
                 resultText.innerHTML = `<span style="font-size:1.3rem;">🎉✨ ${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 大当たり！！ ✨🎉</span><br>マーモット揃い！${lineWord} +${totalPayout}枚！！<br>🎰 ガチャコイン+${bonusGachaCoins}枚もおまけ！`;
                 playAudioFile('audio/japan_clear.mp3');
@@ -1378,6 +1510,7 @@
                 <p style="color:#fff; font-weight:900; font-size:1.3rem; margin-top:16px; text-align:center; text-shadow:0 2px 8px rgba(0,0,0,0.6); opacity:0; transition:opacity 0.4s;">マーモットや！！<br>こんなん初めて見たで！！</p>
                 <p style="color:#ffd700; font-weight:900; font-size:1.1rem; margin-top:10px; opacity:0; transition:opacity 0.4s;">+${payout}枚 獲得！</p>
                 <p style="color:#e91e63; font-weight:900; font-size:1rem; margin-top:4px; opacity:0; transition:opacity 0.4s;">🎰 ガチャコイン +${bonusGachaCoins}枚もおまけ！</p>
+                <p style="color:#ffab00; font-weight:900; font-size:1rem; margin-top:10px; opacity:0; transition:opacity 0.4s;">✨ この後${SLOT_BONUS_ZONE_SPINS}回、当たりやすい特化ゾーンに突入！ ✨</p>
             `;
             document.body.appendChild(overlay);
             requestAnimationFrame(() => {
@@ -1389,6 +1522,9 @@
                 overlay.style.background = 'rgba(0,0,0,0)';
                 overlay.querySelectorAll('*').forEach(el => el.style.opacity = '0');
                 setTimeout(() => overlay.remove(), 400);
+                slotBonusZoneSpinsLeft = SLOT_BONUS_ZONE_SPINS;
+                saveGame();
+                updateSlotBonusZoneDisplay();
             });
         }
 
