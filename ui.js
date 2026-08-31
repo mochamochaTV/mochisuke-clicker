@@ -327,8 +327,8 @@
         // ここで変えた値は、着せ替え部屋のもちすけ本体にもその場で同期する
         function adjustMochisukeBodySize(deltaWidth, deltaMaxHeight) {
             const btn = document.getElementById('mochisuke-btn');
-            const curWidth = parseFloat(btn.style.width) || 185;
-            const curMaxH = parseFloat(btn.style.maxHeight) || 224;
+            const curWidth = parseFloat(btn.style.width) || 170;
+            const curMaxH = parseFloat(btn.style.maxHeight) || 206;
             const newWidth = Math.max(60, curWidth + deltaWidth);
             const newMaxH = Math.max(60, curMaxH + deltaMaxHeight);
             btn.style.width = newWidth + 'px';
@@ -341,11 +341,11 @@
             const btn = document.getElementById('mochisuke-btn');
             const el = document.getElementById('mochisuke-body-readout');
             if (!btn || !el) return;
-            el.textContent = `width:${btn.style.width || '185px'}; max-height:${btn.style.maxHeight || '224px'};（着せ替え部屋にも自動で同期済み）`;
+            el.textContent = `width:${btn.style.width || '170px'}; max-height:${btn.style.maxHeight || '206px'};（着せ替え部屋にも自動で同期済み）`;
         }
         function copyMochisukeBodyCoords() {
             const btn = document.getElementById('mochisuke-btn');
-            const text = `もちすけ本体: width:${btn.style.width || '185px'}; max-height:${btn.style.maxHeight || '224px'};`;
+            const text = `もちすけ本体: width:${btn.style.width || '170px'}; max-height:${btn.style.maxHeight || '206px'};`;
             const textarea = document.getElementById('mochisuke-body-copy-textarea');
             textarea.value = text; textarea.style.display = 'block'; textarea.select();
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
@@ -476,7 +476,7 @@
                     roomImg.style.width = item.width + '%';
                     roomImg.style.height = item.height + '%';
                     roomImg.style.transform = `rotate(${item.rotation || 0}deg)`;
-                    roomImg.style.zIndex = item.behindMochisuke ? '0' : '6'; // 赤ん帽・カブトは、もちすけの後ろに回す
+                    roomImg.style.zIndex = item.behindMochisuke ? '-1' : '6'; // 赤ん帽・カブトは、もちすけの後ろに回す（本体は position:static なので、負の値でないと後ろに回らない）
                 } else {
                     roomImg.style.display = 'none';
                 }
@@ -504,7 +504,7 @@
                     mainImg.style.width = item.width + '%';
                     mainImg.style.height = item.height + '%';
                     mainImg.style.transform = `rotate(${item.rotation || 0}deg)`;
-                    if (cat === 'hat') mainImg.style.zIndex = item.behindMochisuke ? '1' : '7'; // 赤ん帽・カブトは、もちすけの後ろに回す（本体のz-indexは5）
+                    if (cat === 'hat') mainImg.style.zIndex = item.behindMochisuke ? '-1' : '7'; // 赤ん帽・カブトは、もちすけの後ろに回す（本体は position:static なので、負の値でないと後ろに回らない）
                 } else {
                     mainImg.style.display = 'none';
                 }
@@ -737,6 +737,52 @@
             textarea.style.display = 'block';
             textarea.select();
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
+
+        // ===================================================================
+        // 🎩 もちすけの変形（タップ・長押し・伸ばす等）に、帽子・顔パーツを追従させる。
+        // タップ側のtransformが設定される場所は複数（tap.js内に多数）あり、1箇所ずつ追いかけると
+        // 漏れが出やすいので、mochisuke-btnのstyle変化をMutationObserverで監視し、
+        // 「今どんなtransformが、どの基準点(transform-origin)でかかっているか」を、
+        // 帽子・顔パーツそれぞれの座標系に変換して、そのまま伝える方式にしてある。
+        // これにより、tap.js側に一切手を入れずに、今後どんな変形が増えても自動で追従する。
+        let kisekaeLastOriginStr = null; // 直前のtransform-origin（変化した時だけ再計算するためのキャッシュ）
+        function syncKisekaeOverlaysToMochisuke() {
+            const mochiBtn = document.getElementById('mochisuke-btn');
+            if (!mochiBtn) return;
+            const transform = mochiBtn.style.transform || 'none';
+            const computedOrigin = getComputedStyle(mochiBtn).transformOrigin; // 例: "85px 224px"（px解決済み）
+
+            ['hat', 'face'].forEach(cat => {
+                const el = document.getElementById(`mochisuke-kisekae-${cat}`);
+                if (!el || el.style.display === 'none') return;
+                const itemId = equippedKisekae[cat];
+                const item = itemId ? KISEKAE_ITEMS[cat].find(i => i.id === itemId) : null;
+                if (!item) return;
+
+                if (computedOrigin !== kisekaeLastOriginStr || !el.dataset.kisekaeOriginCache) {
+                    const [ox, oy] = computedOrigin.split(' ').map(parseFloat);
+                    const mochiRect = mochiBtn.getBoundingClientRect();
+                    if (mochiRect.width > 0 && mochiRect.height > 0) {
+                        const originXPercentOfWrap = (ox / mochiRect.width) * 100;
+                        const originYPercentOfWrap = (oy / mochiRect.height) * 100;
+                        const originXInItem = ((originXPercentOfWrap - item.left) / item.width) * 100;
+                        const originYInItem = ((originYPercentOfWrap - item.top) / item.height) * 100;
+                        el.dataset.kisekaeOriginCache = `${originXInItem}% ${originYInItem}%`;
+                        el.style.transformOrigin = el.dataset.kisekaeOriginCache;
+                    }
+                }
+                // 顔パーツ自身の傾き調整は、もちすけの変形の「後」にかけ足す（もちすけの動きに、常に自前の傾きを上乗せする形）
+                const ownRotation = (cat === 'face') ? ` rotate(${item.rotation || 0}deg)` : '';
+                el.style.transform = (transform === 'none' ? '' : transform) + ownRotation;
+            });
+            kisekaeLastOriginStr = computedOrigin;
+        }
+        function initKisekaeTransformSync() {
+            const mochiBtn = document.getElementById('mochisuke-btn');
+            if (!mochiBtn) return;
+            const observer = new MutationObserver(syncKisekaeOverlaysToMochisuke);
+            observer.observe(mochiBtn, { attributes: true, attributeFilter: ['style'] });
         }
 
         function openOmiyageCollection() {

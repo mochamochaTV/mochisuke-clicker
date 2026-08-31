@@ -293,9 +293,9 @@
                 { id: 'hat_graduate',       name: '学士の帽子',        star: 1, img: 'ui_images/kisekae_hat_graduate.webp',      top: -17.232144, left: 21.621614, width: 49.729738, height: 35.982146, locked: true },
             ],
             face: [
-                { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'ui_images/kisekae_face_sunglasses.webp',   top: 35, left: 38, width: 24, height: 12, rotation: 0 },
-                { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'ui_images/kisekae_face_glasses_black.webp', top: 35, left: 38, width: 24, height: 12, rotation: 0 },
-                { id: 'face_3dglasses',     name: '3Dメガネ',          star: 1, img: 'ui_images/kisekae_face_3dglasses.webp',    top: 35, left: 38, width: 24, height: 12, rotation: 0 },
+                { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'ui_images/kisekae_face_sunglasses.webp',   top: -3.392867, left: -14.972971, width: 124.000039, height: 41.464299, rotation: -5, locked: true },
+                { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'ui_images/kisekae_face_glasses_black.webp', top: -0.267859,  left: -23.081076, width: 141.837891, height: 35.2143,   rotation: -5, locked: true },
+                { id: 'face_3dglasses',     name: '3Dメガネ',          star: 1, img: 'ui_images/kisekae_face_3dglasses.webp',    top: -6.07144,   left: -15.513525, width: 124.000023, height: 48.160733, rotation: -5, locked: true },
             ],
             clothes: [
                 { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'ui_images/image_0.webp' },
