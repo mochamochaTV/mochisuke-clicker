@@ -739,47 +739,6 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
 
-        // ===================================================================
-        // 🎩 もちすけの変形（タップ・長押し・伸ばす等）に、帽子・顔パーツを追従させる。
-        // タップ側のtransformが設定される場所は複数（tap.js内に多数）あり、1箇所ずつ追いかけると
-        // 漏れが出やすいので、mochisuke-btnのstyle変化をMutationObserverで監視する方式にしてある。
-        // 変形（拡大縮小・スキュー等）までは再現せず、「今どれだけ移動したか」だけを帽子・顔パーツにも
-        // そのまま伝える。もちすけと同じtransitionの速さで動かすことで、素早い連続タップでも
-        // 頭に固定されているように見える。
-        // 毎フレーム、もちすけの「今実際に画面上でどう見えているか」を直接測って、
-        // 帽子・顔パーツをその位置・大きさに合わせて配置し直す。
-        // transformの中身を解析する必要が無いので、どんな変形が増えても確実に追従する。
-        function syncKisekaeOverlaysToMochisuke() {
-            const mochiBtn = document.getElementById('mochisuke-btn');
-            const wrap = document.getElementById('mochisuke-breathe-wrap');
-            if (!mochiBtn || !wrap) return;
-            const hasHat = equippedKisekae.hat, hasFace = equippedKisekae.face;
-            if (!hasHat && !hasFace) return; // 何も装着していない時は、測るだけ無駄なので早めに抜ける
-
-            const mochiRect = mochiBtn.getBoundingClientRect(); // 変形後の、実際の見た目のサイズ・位置
-            const wrapRect = wrap.getBoundingClientRect(); // 帽子側の配置の基準（動かない親要素）
-
-            ['hat', 'face'].forEach(cat => {
-                const el = document.getElementById(`mochisuke-kisekae-${cat}`);
-                if (!el) return;
-                const itemId = equippedKisekae[cat];
-                const item = itemId ? KISEKAE_ITEMS[cat].find(i => i.id === itemId) : null;
-                if (!item) return;
-                el.style.left = (mochiRect.left - wrapRect.left + (item.left / 100) * mochiRect.width) + 'px';
-                el.style.top = (mochiRect.top - wrapRect.top + (item.top / 100) * mochiRect.height) + 'px';
-                el.style.width = ((item.width / 100) * mochiRect.width) + 'px';
-                el.style.height = ((item.height / 100) * mochiRect.height) + 'px';
-                el.style.transform = (cat === 'face') ? `rotate(${item.rotation || 0}deg)` : ''; // 位置はleft/topで直接指定するので、残すのは自前の回転だけ
-            });
-        }
-        function initKisekaeTransformSync() {
-            function loop() {
-                syncKisekaeOverlaysToMochisuke();
-                requestAnimationFrame(loop);
-            }
-            requestAnimationFrame(loop);
-        }
-
         function openOmiyageCollection() {
             const grid = document.getElementById('omiyage-collection-grid');
             grid.innerHTML = '';

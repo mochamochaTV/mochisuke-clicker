@@ -243,8 +243,7 @@
         function revertScreamFace() {
             clearTimeout(screamRevertTimeout);
             isScreamActive = false;
-            const target = clothesData.find(c => c.id === equippedClotheId);
-            mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
+            mochiBtnElement.src = getMochisukeBaseImg();
             mochiBtnElement.classList.remove('mochi-scream');
             if (!isMochiPressed) mochiBreatheWrapEl.classList.add('breathe-idle');
             updateMouthPatchVisibility();
@@ -373,6 +372,7 @@
         }
 
         const mochiBtnElement = document.getElementById('mochisuke-btn');
+        const mochiDeformWrap = document.getElementById('mochisuke-deform-wrap'); // タップ・スクイーズの見た目の変形は、もちすけ本体ではなくこちらにかける（帽子・顔パーツ・口も道連れで一緒に動くように）
         const mochiBreatheWrapEl = document.getElementById('mochisuke-breathe-wrap'); // 呼吸アニメーションは、もちすけ画像と口パーツをまとめて包むこちらにかける
         mochiBtnElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -395,10 +395,10 @@
             const clones = bunshinCloneEls;
 
             if (skills.hissatsu.activeTimer > 0) {
-                mochiBtnElement.style.transform = 'scale(1.55, 1.2)';
+                mochiDeformWrap.style.transform = 'scale(1.55, 1.2)';
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.55, 1.2)');
             } else {
-                mochiBtnElement.style.transform = 'scale(1.25, 0.72)';
+                mochiDeformWrap.style.transform = 'scale(1.25, 0.72)';
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)');
                 // 🫧 スクイーズ：ここから指の動きを追いかけて、引っ張った方向に伸縮させる
                 squeezeStartX = e.clientX; squeezeStartY = e.clientY;
@@ -472,8 +472,8 @@
         function applySqueezeTransform(dx, dy) {
             const dist = Math.min(Math.sqrt(dx * dx + dy * dy), SQUEEZE_MAX_DRAG);
             const ratio = dist / SQUEEZE_MAX_DRAG;
-            mochiBtnElement.style.transformOrigin = 'center center';
-            mochiBtnElement.style.transform = squeezeTransformFor(dx, dy, ratio);
+            mochiDeformWrap.style.transformOrigin = 'center center';
+            mochiDeformWrap.style.transform = squeezeTransformFor(dx, dy, ratio);
             updateStretchSound(ratio);
             return ratio;
         }
@@ -511,14 +511,14 @@
             const ratio = dist / SQUEEZE_MAX_DRAG;
             const overshoot = ratio * 0.55; // 伸ばした/つぶした分だけ、戻る時のプルンも大きくなる
 
-            mochiBtnElement.animate([
+            mochiDeformWrap.animate([
                 { transform: squeezeTransformFor(dx, dy, ratio) },
                 { transform: squeezeTransformFor(dx, dy, -overshoot * 0.65), offset: 0.32 },
                 { transform: squeezeTransformFor(dx, dy, overshoot * 0.32), offset: 0.58 },
                 { transform: squeezeTransformFor(dx, dy, -overshoot * 0.12), offset: 0.8 },
                 { transform: 'scale(1, 1)' },
             ], { duration: 420 + ratio * 280, easing: 'ease-out' });
-            mochiBtnElement.style.transform = 'scale(1, 1)';
+            mochiDeformWrap.style.transform = 'scale(1, 1)';
         }
 
         function releaseMochiSucre() {
@@ -530,12 +530,12 @@
             const clones = bunshinCloneEls;
 
             if (skills.hissatsu.activeTimer > 0) {
-                mochiBtnElement.style.transform = 'scale(1.5)';
+                mochiDeformWrap.style.transform = 'scale(1.5)';
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.5)');
             } else if (isDraggingSqueeze && Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy) >= SQUEEZE_MIN_DRAG) {
                 // 🫧 スクイーズ：一定以上引っ張られていた時だけ、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻る
                 releaseSqueezeWithOvershoot(squeezeLastDx, squeezeLastDy);
-                setTimeout(() => { mochiBtnElement.style.transformOrigin = ''; }, 720);
+                setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, 720);
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
@@ -547,14 +547,14 @@
                 });
             } else {
                 // 引っ張りとして扱うほどの移動が無かった＝ただのタップ。従来通りの「もちっ」とした押し込みアニメーション
-                mochiBtnElement.style.transformOrigin = '';
-                mochiBtnElement.animate([
+                mochiDeformWrap.style.transformOrigin = '';
+                mochiDeformWrap.animate([
                     { transform: 'scale(1.25, 0.72)' },
                     { transform: 'scale(0.86, 1.14)', offset: 0.4 }, 
                     { transform: 'scale(1.04, 0.96)', offset: 0.75 }, 
                     { transform: 'scale(1, 1)' }
                 ], { duration: 240, easing: 'ease-out' });
-                mochiBtnElement.style.transform = 'scale(1, 1)';
+                mochiDeformWrap.style.transform = 'scale(1, 1)';
                 
                 clones.forEach(c => {
                     c.animate([
@@ -674,7 +674,7 @@
 
                 // 親方化して巨大に固定
                 mochiBreatheWrapEl.classList.remove('breathe-idle');
-                mochiBtnElement.style.transform = 'scale(1.5)';
+                mochiDeformWrap.style.transform = 'scale(1.5)';
                 const clones = document.querySelectorAll('.bunshin-clone-img');
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.5)');
                 mochiBtnElement.style.filter = mochiBtnElement.style.filter + " contrast(1.4) brightness(1.05)";
@@ -688,7 +688,7 @@
                 // 必殺技BGMを終了し通常BGMを再開
                 if (isBgmInitialized) playBgmLoop('audio/bgm.mp3');
 
-                mochiBtnElement.style.transform = 'scale(1)';
+                mochiDeformWrap.style.transform = 'scale(1)';
                 const clones = document.querySelectorAll('.bunshin-clone-img');
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1)');
                 resetMochiFilter();
@@ -699,10 +699,19 @@
         let critFilterTimeout = null;
         let critTapId = 0;
         let isScreamActive = false; // 叫び演出中は、会心などの他の演出が画像を上書きしないようにするためのフラグ
+        // 🐛修正：以前はここが古い衣装システム(clothesData)だけを見ていたため、タップのたびに
+        // 着せ替え部屋で選んだ服が初期状態に戻ってしまっていた。今は着せ替え部屋の選択を優先する。
+        function getMochisukeBaseImg() {
+            const clothesItem = (typeof KISEKAE_ITEMS !== 'undefined' && typeof equippedKisekae !== 'undefined')
+                ? KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes)
+                : null;
+            if (clothesItem) return clothesItem.img;
+            const target = clothesData.find(c => c.id === equippedClotheId);
+            return (target && target.img) ? target.img : 'ui_images/image_0.webp';
+        }
         function resetMochiFilter() {
             if (!isScreamActive) {
-                const target = clothesData.find(c => c.id === equippedClotheId);
-                mochiBtnElement.src = (target && target.img) ? target.img : 'ui_images/image_0.webp';
+                mochiBtnElement.src = getMochisukeBaseImg();
             }
             const target2 = clothesData.find(c => c.id === equippedClotheId);
             let baseFilter = target2 ? (target2.filter || "drop-shadow(0 10px 10px rgba(0,0,0,0.15))") : "drop-shadow(0 10px 10px rgba(0,0,0,0.15))";
