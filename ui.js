@@ -476,7 +476,7 @@
                     roomImg.style.width = item.width + '%';
                     roomImg.style.height = item.height + '%';
                     roomImg.style.transform = `rotate(${item.rotation || 0}deg)`;
-                    roomImg.style.zIndex = item.behindMochisuke ? '-1' : '6'; // 赤ん帽・カブトは、もちすけの後ろに回す（本体は position:static なので、負の値でないと後ろに回らない）
+                    roomImg.style.zIndex = '6'; // 帽子・顔パーツは、常にもちすけの手前
                 } else {
                     roomImg.style.display = 'none';
                 }
@@ -504,7 +504,7 @@
                     mainImg.style.width = item.width + '%';
                     mainImg.style.height = item.height + '%';
                     mainImg.style.transform = `rotate(${item.rotation || 0}deg)`;
-                    if (cat === 'hat') mainImg.style.zIndex = item.behindMochisuke ? '-1' : '7'; // 赤ん帽・カブトは、もちすけの後ろに回す（本体は position:static なので、負の値でないと後ろに回らない）
+                    if (cat === 'hat') mainImg.style.zIndex = '7'; // 帽子は、常にもちすけの手前
                 } else {
                     mainImg.style.display = 'none';
                 }
