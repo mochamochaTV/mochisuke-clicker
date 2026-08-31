@@ -496,7 +496,7 @@
                 el.animate([
                     { transform: el.style.transform || 'none', opacity: 1, offset: 0 },
                     { transform: `translate(${d.x}px, ${d.y}px) rotate(${d.r}deg)`, opacity: 0, offset: 1 },
-                ], { duration: 380, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)', fill: 'forwards' });
+                ], { duration: 950, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)', fill: 'forwards' });
             });
         }
         // 通常に戻ったら、飛んでいった帽子・顔パーツを、ふわっと元の位置に着け直す
@@ -512,7 +512,7 @@
                 el.animate([
                     { transform: `translate(${d.x}px, ${d.y}px) rotate(${d.r}deg)`, opacity: 0, offset: 0 },
                     { transform: restTransform, opacity: 1, offset: 1 },
-                ], { duration: 420, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)', fill: 'forwards' });
+                ], { duration: 750, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)', fill: 'forwards' });
             });
         }
 
@@ -520,6 +520,15 @@
             const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
             const mainBtn = document.getElementById('mochisuke-btn');
             if (mainBtn) mainBtn.src = clothesItem.img;
+
+            // 🐛服のイラストによって、口の位置が微妙にずれるものがあるため、服ごとの指定（無ければ既定値）を反映する
+            const mouthAnchor = document.getElementById('mochisuke-mouth-anchor');
+            if (mouthAnchor) {
+                const mouthPos = clothesItem.mouthOverride || DEFAULT_MOUTH_POSITION;
+                mouthAnchor.style.top = mouthPos.top + '%';
+                mouthAnchor.style.left = mouthPos.left + '%';
+                mouthAnchor.style.width = mouthPos.width + '%';
+            }
 
             ['hat', 'face'].forEach(cat => {
                 const mainImg = document.getElementById(`mochisuke-kisekae-${cat}`);
@@ -583,10 +592,21 @@
             if (IS_DEV_MODE) renderKisekaeAdjustPanel(cat);
         }
 
+        let kisekaeNameLabelTimeout = null;
+        function showKisekaeItemNameLabel(name) {
+            const label = document.getElementById('kisekae-item-name-label');
+            if (!label) return;
+            clearTimeout(kisekaeNameLabelTimeout);
+            label.textContent = name;
+            label.style.display = 'block';
+            kisekaeNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
+        }
         function equipKisekaeItem(cat, id) {
             previewKisekae[cat] = id; // 「決定」を押すまでは、試着中の状態を更新するだけ
             renderKisekaeMochisuke();
             openKisekaeCategory(cat);
+            const item = id ? KISEKAE_ITEMS[cat].find(i => i.id === id) : null;
+            showKisekaeItemNameLabel(item ? item.name : '外す');
         }
 
         // 🎯「決定」ボタン：試着中の服装を、実際に確定して保存・タップ画面にも反映する

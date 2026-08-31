@@ -283,9 +283,9 @@
                 { id: 'hat_crown_red',      name: '王冠（赤）',        star: 3, img: 'ui_images/kisekae_hat_crown_red.webp',      top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
                 { id: 'hat_crown_blue',     name: '王冠（青）',        star: 3, img: 'ui_images/kisekae_hat_crown_blue.webp',     top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
                 { id: 'hat_pirate',         name: '海賊の帽子',        star: 2, img: 'ui_images/kisekae_hat_pirate.webp',        top: -20.35714,  left: 12.43243,  width: 69.189207, height: 29.732147, locked: true },
-                { id: 'hat_kabuto',         name: 'カブト',            star: 2, img: 'ui_images/kisekae_hat_kabuto.webp',        top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_kabuto',         name: 'カブト',            star: 2, img: 'ui_images/kisekae_hat_kabuto.webp',        top: -30.291262, left: -6.470588,  width: 111.176476, height: 81.504865,  locked: true },
                 { id: 'hat_wizard',         name: '魔法使いの帽子',    star: 2, img: 'ui_images/kisekae_hat_wizard.webp',        top: -28.839283, left: 16.216211, width: 59.459471, height: 39.107151, locked: true },
-                { id: 'hat_baby',           name: '赤ん帽',            star: 2, img: 'ui_images/kisekae_hat_baby.webp',          top: 10, left: 40, width: 20, height: 15 },
+                { id: 'hat_baby',           name: '赤ん帽',            star: 2, img: 'ui_images/kisekae_hat_baby.webp',          top: -30.291263, left: -42.941172, width: 181.17647,  height: 135.873805, locked: true },
                 { id: 'hat_santa',          name: 'サンタの帽子',      star: 2, img: 'ui_images/kisekae_hat_santa.webp',         top: -23.928569, left: 26.486484, width: 41.081091, height: 31.517859, locked: true },
                 { id: 'hat_chef',           name: 'コック帽',          star: 1, img: 'ui_images/kisekae_hat_chef.webp',          top: -22.142849, left: 24.864866, width: 42.162169, height: 29.285719, locked: true },
                 { id: 'hat_tophat_black',   name: 'シルクハット（黒）', star: 1, img: 'ui_images/kisekae_hat_tophat_black.webp',  top: -17.67857,  left: 23.243241, width: 44.324333, height: 26.607146, locked: true },
@@ -299,13 +299,14 @@
             ],
             clothes: [
                 { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'ui_images/image_0.webp' },
-                { id: 'clothes_king_red',    name: 'おうさまの服（赤）', star: 3, img: 'ui_images/kisekae_clothes_king_red.webp' },
+                { id: 'clothes_king_red',    name: 'おうさまの服（赤）', star: 3, img: 'ui_images/kisekae_clothes_king_red.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
                 { id: 'clothes_king_blue',   name: 'おうさまの服（青）', star: 3, img: 'ui_images/kisekae_clothes_king_blue.webp' },
                 { id: 'clothes_tshirt_red',   name: 'Tシャツ（赤）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_red.webp' },
                 { id: 'clothes_tshirt_white', name: 'Tシャツ（白）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_white.webp' },
                 { id: 'clothes_tshirt_blue',  name: 'Tシャツ（青）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_blue.webp' },
                 { id: 'clothes_tshirt_green', name: 'Tシャツ（緑）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_green.webp' },
-                { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'ui_images/kisekae_clothes_apron.webp' },
+                { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'ui_images/kisekae_clothes_apron.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
             ],
         };
         const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服' };
+        const DEFAULT_MOUTH_POSITION = { top: 36.986245, left: 48.44735, width: 17 }; // 服の指定が無い時（初期衣装含む）はこちら
