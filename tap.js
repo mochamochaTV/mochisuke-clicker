@@ -230,10 +230,11 @@
         function startScreamFace() {
             isScreamActive = true;
             mochiBreatheWrapEl.classList.remove('breathe-idle');
-            mochiBtnElement.classList.remove('mochi-scream');
-            void mochiBtnElement.offsetWidth;
-            mochiBtnElement.classList.add('mochi-scream');
+            mochiDeformWrap.classList.remove('mochi-scream');
+            void mochiDeformWrap.offsetWidth;
+            mochiDeformWrap.classList.add('mochi-scream'); // 拡大・シェイクは、帽子・顔パーツも道連れの入れ物にかける
             mochiBtnElement.src = 'ui_images/image_scream.webp';
+            flyOffKisekaeOverlays(); // 🎩💨 叫びの勢いで、帽子・顔パーツが吹っ飛ぶ
             updateMouthPatchVisibility();
 
             clearTimeout(screamRevertTimeout);
@@ -244,7 +245,8 @@
             clearTimeout(screamRevertTimeout);
             isScreamActive = false;
             mochiBtnElement.src = getMochisukeBaseImg();
-            mochiBtnElement.classList.remove('mochi-scream');
+            mochiDeformWrap.classList.remove('mochi-scream');
+            flyBackKisekaeOverlays(); // 🎩 通常に戻ったら、飛んでいった帽子・顔パーツをまた着け直す
             if (!isMochiPressed) mochiBreatheWrapEl.classList.add('breathe-idle');
             updateMouthPatchVisibility();
         }

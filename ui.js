@@ -486,6 +486,36 @@
 
         // 🚧 通常のタップ画面にも反映する。服については、既存の「衣装（きせかえタブ）」システムと
         // 見た目の適用先が重なるため、しばらくは「後から呼ばれた方が勝つ」形で共存させている
+        // 🎩💨 叫んだ勢いで、帽子・顔パーツが吹っ飛んでいく（服だけは1枚絵の都合で諦めて、初期衣装に戻る）
+        function flyOffKisekaeOverlays() {
+            const dirs = { hat: { x: -70, y: -160, r: -150 }, face: { x: 80, y: -130, r: 170 } };
+            ['hat', 'face'].forEach(cat => {
+                const el = document.getElementById(`mochisuke-kisekae-${cat}`);
+                if (!el || el.style.display === 'none') return;
+                const d = dirs[cat];
+                el.animate([
+                    { transform: el.style.transform || 'none', opacity: 1, offset: 0 },
+                    { transform: `translate(${d.x}px, ${d.y}px) rotate(${d.r}deg)`, opacity: 0, offset: 1 },
+                ], { duration: 380, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)', fill: 'forwards' });
+            });
+        }
+        // 通常に戻ったら、飛んでいった帽子・顔パーツを、ふわっと元の位置に着け直す
+        function flyBackKisekaeOverlays() {
+            const dirs = { hat: { x: -70, y: -160, r: -150 }, face: { x: 80, y: -130, r: 170 } };
+            ['hat', 'face'].forEach(cat => {
+                const el = document.getElementById(`mochisuke-kisekae-${cat}`);
+                if (!el || el.style.display === 'none') return;
+                const d = dirs[cat];
+                const itemId = equippedKisekae[cat];
+                const item = itemId ? KISEKAE_ITEMS[cat].find(i => i.id === itemId) : null;
+                const restTransform = item ? `rotate(${item.rotation || 0}deg)` : 'none';
+                el.animate([
+                    { transform: `translate(${d.x}px, ${d.y}px) rotate(${d.r}deg)`, opacity: 0, offset: 0 },
+                    { transform: restTransform, opacity: 1, offset: 1 },
+                ], { duration: 420, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)', fill: 'forwards' });
+            });
+        }
+
         function applyKisekaeToMainScreen() {
             const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
             const mainBtn = document.getElementById('mochisuke-btn');
