@@ -15,7 +15,29 @@
         }
 
         // 起動時に読み込まなくていい大きな画像（マップ・おみやげ屋の背景）は、実際に開いた時だけ読み込む
-        function openShop() { lazyLoadImage('omiyage-shelf-img'); openModal('shop-modal'); switchShopTab(currentShopTab); updateShopTabHighlight(); }
+        function openShop() {
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3'); // 県移動の時と同じ、移動音
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                lazyLoadImage('omiyage-shelf-img');
+                openModal('shop-modal');
+                switchShopTab(currentShopTab);
+                updateShopTabHighlight();
+                playBgmLoop('audio/bgm_shop.mp3'); // ショップ専用BGMに切り替え
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
+        }
+        function closeShop() {
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                closeModal('shop-modal');
+                playBgmLoop('audio/bgm.mp3'); // 通常のBGMに戻す
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
+        }
 
         // ✖ボタンを廃止した代わりに、棚の背景(商品以外の場所)をタップすると詳細パネルを閉じるようにする
         document.addEventListener('DOMContentLoaded', () => {

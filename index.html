@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-126">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-127">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -212,7 +212,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-126</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-127</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -356,7 +356,7 @@
 
     <div id="shop-modal" class="modal">
         <div class="modal-content modal-fullscreen">
-            <button class="modal-fullscreen-close" onclick="closeModal('shop-modal')">×</button>
+            <button class="modal-fullscreen-close" onclick="closeShop()">×</button>
 
             <div id="omiyage-shelf-view">
                 <div id="omiyage-shelf-container">
@@ -758,36 +758,16 @@
             <button class="modal-fullscreen-close" onclick="closeModal('ranking-modal')">×</button>
 
             <div style="width:100%; flex-shrink:0;">
-                <img src="ui_images/ranking_banner.webp" alt="ランキング" style="width:100%; aspect-ratio:4/3; object-fit:cover; display:block;">
+                <img src="ui_images/ranking_banner.webp" alt="ランキング" style="width:100%; height:auto; display:block;">
             </div>
 
             <div style="display:flex; gap:6px; padding:8px 10px; flex-shrink:0; background:#fff8ec; overflow-x:auto;">
                 <button id="rank-tab-score" class="rank-tab-btn active" onclick="switchRankingTab('score')">🍡 もち数</button>
-                <button id="rank-tab-taps" class="rank-tab-btn" onclick="switchRankingTab('taps')">👆 タップ数（全国合計）</button>
+                <button id="rank-tab-taps" class="rank-tab-btn" onclick="switchRankingTab('taps')">👆 タップ数</button>
                 <button id="rank-tab-prestige" class="rank-tab-btn" onclick="switchRankingTab('prestige')">🔄 転生回数</button>
             </div>
 
-            <div id="ranking-list" style="flex:1; min-height:0; overflow-y:auto; padding:6px 10px; box-sizing:border-box; background:#fff8ec;"></div>
-
-            <div style="width:100%; padding:10px 0 calc(6px + env(safe-area-inset-bottom, 0px)) 0; box-sizing:border-box; display:flex; justify-content:center; flex-shrink:0;">
-                <div class="nav-menu">
-                    <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.webp');">
-                        <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
-                    </button>
-                    <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
-                        <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
-                    </button>
-                    <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
-                        <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
-                    </button>
-                    <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.webp');">
-                        <span class="btn-illust-label" style="top:73.5%; left:9%; width:82%; height:20.2%; font-size:0.68rem; white-space:nowrap;">ミニゲーム</span>
-                    </button>
-                    <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');">
-                        <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
-                    </button>
-                </div>
-            </div>
+            <div id="ranking-list" style="flex:1; min-height:0; overflow-y:auto; padding:6px 10px calc(10px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; background:#fff8ec;"></div>
         </div>
     </div>
 
@@ -825,13 +805,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-126"></script>
-    <script src="state.js?v=2026-08-05-126"></script>
-    <script src="tap.js?v=2026-08-05-126"></script>
-    <script src="shop.js?v=2026-08-05-126"></script>
-    <script src="progress.js?v=2026-08-05-126"></script>
-    <script src="minigames.js?v=2026-08-05-126"></script>
-    <script src="ui.js?v=2026-08-05-126"></script>
-    <script src="main.js?v=2026-08-05-126"></script>
+    <script src="data.js?v=2026-08-05-127"></script>
+    <script src="state.js?v=2026-08-05-127"></script>
+    <script src="tap.js?v=2026-08-05-127"></script>
+    <script src="shop.js?v=2026-08-05-127"></script>
+    <script src="progress.js?v=2026-08-05-127"></script>
+    <script src="minigames.js?v=2026-08-05-127"></script>
+    <script src="ui.js?v=2026-08-05-127"></script>
+    <script src="main.js?v=2026-08-05-127"></script>
 </body>
 </html>
