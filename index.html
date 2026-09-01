@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-127">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-128">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -212,7 +212,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-127</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-128</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -308,21 +308,26 @@
 
         <div id="control-panel">
             <div class="nav-menu">
-                <button id="nav-btn-warehouse" class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.webp');">
-                    <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
-                </button>
-                <button id="nav-btn-shop" class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
-                    <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
-                </button>
-                <button id="nav-btn-diary" class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
-                    <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
-                </button>
-                <button id="nav-btn-minigame" class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.webp');">
-                    <span class="btn-illust-label" style="top:73.5%; left:9%; width:82%; height:20.2%; font-size:0.68rem; white-space:nowrap;">ミニゲーム</span>
-                </button>
-                <button id="nav-btn-ranking" class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');">
-                    <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
-                </button>
+                <button id="nav-btn-oshigoto" class="nav-btn" onclick="openOshigotoPlaceholder()" style="background-image: url('ui_images/oshigoto.webp');"></button>
+                <button id="nav-btn-kisekae" class="nav-btn" onclick="openKisekaeRoom()" style="background-image: url('ui_images/kisekae_nav.webp');"></button>
+                <button id="nav-btn-move" class="nav-btn" onclick="openMoveMenu()" style="background-image: url('ui_images/idou.webp');"></button>
+                <button id="nav-btn-friend" class="nav-btn" onclick="openFriendPlaceholder()" style="background-image: url('ui_images/friend.webp');"></button>
+                <button id="nav-btn-ranking" class="nav-btn" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');"></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="move-menu-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('move-menu-modal')">×</button>
+            <h2>🚶 どこへ行く？</h2>
+            <p style="font-size:0.75rem; color:#999; text-align:center; margin-top:-8px;">🚧 このメニューのデザインは、まだ仮の状態です</p>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">
+                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900;" onclick="moveMenuGoHome()">🏠 ホーム</button>
+                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900;" onclick="closeModal('move-menu-modal'); openWarehouse();">📦 ものおき</button>
+                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900;" onclick="closeModal('move-menu-modal'); openShop();">🏪 ショップ</button>
+                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900;" onclick="closeModal('move-menu-modal'); openMinigameCenter();">🎮 ゲーセン</button>
+                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900; opacity:0.6;" onclick="openMyRoomPlaceholder()">🛋️ マイルーム</button>
             </div>
         </div>
     </div>
@@ -330,16 +335,14 @@
     <div id="warehouse-modal" class="modal">
         <div class="modal-content">
             <button class="modal-close-x" onclick="closeModal('warehouse-modal')">×</button>
-            <h2>📦 もちすけの倉庫</h2>
+            <h2>📦 ものおき</h2>
             <div class="status-box" id="warehouse-status-box"></div>
+            <button class="item-action-btn btn-shop" style="width:100%; background:#795548; color:#fff; margin-bottom:10px;" onclick="closeModal('warehouse-modal'); openDiary();">📔 絵日記</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#9c27b0; color:#fff; margin-bottom:10px;" onclick="openTrophyRoom()">🏅 都道府県トロフィー</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#3f51b5; color:#fff; margin-bottom:10px;" onclick="openPrestigeConfirm()">🔄 転生する（日本制覇後に解放）</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#009688; color:#fff; margin-bottom:10px;" onclick="openPrestigeShop()">🛍️ 転生ポイントショップ</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#e91e63; color:#fff; margin-bottom:10px;" onclick="openOmiyageCollection()">🍡 お土産一覧（もちすけにあげる）</button>
             <button class="item-action-btn btn-shop" style="width:100%; background:#4caf50; color:#fff; margin-bottom:10px;" onclick="openTicketInventory()">🎫 アイテム一覧（チケットを使う）</button>
-            <button class="item-action-btn btn-shop" style="width:100%; background:#ff6fa5; color:#fff; margin-bottom:10px;" onclick="openKisekaeRoom()">👗 着せ替え部屋</button>
-            <h3>👕 衣装をきがえる</h3>
-            <div class="list-container" id="warehouse-clothes-list"></div>
             <button class="btn-red" onclick="closeModal('warehouse-modal')">閉じる</button>
         </div>
     </div>
@@ -505,21 +508,11 @@
 
             <div style="width:100%; padding:10px 0 calc(6px + env(safe-area-inset-bottom, 0px)) 0; box-sizing:border-box; display:flex; justify-content:center; flex-shrink:0;">
                 <div class="nav-menu">
-                    <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.webp');">
-                        <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
-                    </button>
-                    <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
-                        <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
-                    </button>
-                    <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
-                        <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
-                    </button>
-                    <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.webp');">
-                        <span class="btn-illust-label" style="top:73.5%; left:9%; width:82%; height:20.2%; font-size:0.68rem; white-space:nowrap;">ミニゲーム</span>
-                    </button>
-                    <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');">
-                        <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
-                    </button>
+                    <button class="nav-btn" onclick="openOshigotoPlaceholder()" style="background-image: url('ui_images/oshigoto.webp');"></button>
+                    <button class="nav-btn" onclick="openKisekaeRoom()" style="background-image: url('ui_images/kisekae_nav.webp');"></button>
+                    <button class="nav-btn" onclick="openMoveMenu()" style="background-image: url('ui_images/idou.webp');"></button>
+                    <button class="nav-btn" onclick="openFriendPlaceholder()" style="background-image: url('ui_images/friend.webp');"></button>
+                    <button class="nav-btn" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');"></button>
                 </div>
             </div>
         </div>
@@ -532,21 +525,11 @@
             <div id="minigame-play-view" style="display:none; flex:1; min-height:0; overflow-y:auto; background:rgba(255,248,236,0.95); padding:14px; box-sizing:border-box;"></div>
             <div id="minigame-center-bottom-nav" style="width:100%; padding:10px 0 calc(6px + env(safe-area-inset-bottom, 0px)) 0; box-sizing:border-box; display:flex; justify-content:center; flex-shrink:0;">
                 <div class="nav-menu">
-                    <button class="nav-btn btn-warehouse" onclick="openWarehouse()" style="background-image: url('ui_images/souko.webp');">
-                        <span class="btn-illust-label" style="top:57.8%; left:15.6%; width:59.6%; height:28.6%; font-size:0.68rem;">倉庫</span>
-                    </button>
-                    <button class="nav-btn btn-shop" onclick="openShop()" style="background-image: url('ui_images/shop.webp');">
-                        <span class="btn-illust-label" style="top:70.5%; left:16.7%; width:64.0%; height:17.8%; font-size:0.68rem;">ショップ</span>
-                    </button>
-                    <button class="nav-btn btn-diary" onclick="openDiary()" style="background-image: url('ui_images/enikki.webp');">
-                        <span class="btn-illust-label" style="top:77.1%; left:15.7%; width:62.5%; height:17.7%; font-size:0.68rem;">絵日記</span>
-                    </button>
-                    <button class="nav-btn btn-minigame" onclick="openMinigameCenter()" style="background-image: url('ui_images/minigame.webp');">
-                        <span class="btn-illust-label" style="top:73.5%; left:9%; width:82%; height:20.2%; font-size:0.68rem; white-space:nowrap;">ミニゲーム</span>
-                    </button>
-                    <button class="nav-btn btn-ranking" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');">
-                        <span class="btn-illust-label" style="top:73.3%; left:11.9%; width:74.7%; height:21.3%; font-size:0.68rem;">ランキング</span>
-                    </button>
+                    <button class="nav-btn" onclick="openOshigotoPlaceholder()" style="background-image: url('ui_images/oshigoto.webp');"></button>
+                    <button class="nav-btn" onclick="openKisekaeRoom()" style="background-image: url('ui_images/kisekae_nav.webp');"></button>
+                    <button class="nav-btn" onclick="openMoveMenu()" style="background-image: url('ui_images/idou.webp');"></button>
+                    <button class="nav-btn" onclick="openFriendPlaceholder()" style="background-image: url('ui_images/friend.webp');"></button>
+                    <button class="nav-btn" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');"></button>
                 </div>
             </div>
         </div>
@@ -757,8 +740,9 @@
         <div class="modal-content modal-fullscreen">
             <button class="modal-fullscreen-close" onclick="closeModal('ranking-modal')">×</button>
 
-            <div style="width:100%; flex-shrink:0;">
+            <div style="width:100%; flex-shrink:0; position:relative;">
                 <img src="ui_images/ranking_banner.webp" alt="ランキング" style="width:100%; height:auto; display:block;">
+                <button onclick="toggleRankingHelpOverlay()" style="position:absolute; bottom:10px; left:10px; z-index:60; width:34px; height:34px; border-radius:50%; border:none; background:rgba(0,0,0,0.4); color:#fff; font-size:1.1rem; font-weight:bold; display:flex; align-items:center; justify-content:center; cursor:pointer;">？</button>
             </div>
 
             <div style="display:flex; gap:6px; padding:8px 10px; flex-shrink:0; background:#fff8ec; overflow-x:auto;">
@@ -768,6 +752,19 @@
             </div>
 
             <div id="ranking-list" style="flex:1; min-height:0; overflow-y:auto; padding:6px 10px calc(10px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; background:#fff8ec;"></div>
+
+            <div id="ranking-help-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:20px; overflow-y:auto; box-sizing:border-box; text-align:left;">
+                <button onclick="toggleRankingHelpOverlay()" style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
+                <h3 style="margin:0 0 10px; color:#5d4037; text-align:center;">🍡 もちの数え方について</h3>
+                <p style="font-size:0.8rem; color:#5d4037; line-height:1.8;">
+                    もちの数が大きくなると、億より上の桁は、日本語の単位で短くまとめて表示されます。<br><br>
+                    1億 = 100,000,000<br>
+                    1兆 = 1億の1万倍<br>
+                    1京 = 1兆の1万倍<br>
+                    1垓 = 1京の1万倍<br><br>
+                    数字がどんどん伸びていっても読みやすいよう、このような表記にしています。
+                </p>
+            </div>
         </div>
     </div>
 
@@ -805,13 +802,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-127"></script>
-    <script src="state.js?v=2026-08-05-127"></script>
-    <script src="tap.js?v=2026-08-05-127"></script>
-    <script src="shop.js?v=2026-08-05-127"></script>
-    <script src="progress.js?v=2026-08-05-127"></script>
-    <script src="minigames.js?v=2026-08-05-127"></script>
-    <script src="ui.js?v=2026-08-05-127"></script>
-    <script src="main.js?v=2026-08-05-127"></script>
+    <script src="data.js?v=2026-08-05-128"></script>
+    <script src="state.js?v=2026-08-05-128"></script>
+    <script src="tap.js?v=2026-08-05-128"></script>
+    <script src="shop.js?v=2026-08-05-128"></script>
+    <script src="progress.js?v=2026-08-05-128"></script>
+    <script src="minigames.js?v=2026-08-05-128"></script>
+    <script src="ui.js?v=2026-08-05-128"></script>
+    <script src="main.js?v=2026-08-05-128"></script>
 </body>
 </html>

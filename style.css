@@ -438,6 +438,12 @@
         #omiyage-money-flash.show { opacity: 1; transform: translateY(0) scale(1.1); }
 
         #omiyage-slots-layer { position: absolute; inset: 0; }
+        @keyframes omiyageShelfShake {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            25% { transform: rotate(-6deg) scale(1.06); }
+            55% { transform: rotate(5deg) scale(1.04); }
+            80% { transform: rotate(-2deg) scale(1.01); }
+        }
         .omiyage-slot {
             position: absolute; display: flex; align-items: center; justify-content: center;
             cursor: pointer;

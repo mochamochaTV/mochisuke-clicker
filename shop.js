@@ -11,7 +11,7 @@
         function equipClothe(id) {
             equippedClotheId = id;
             resetMochiFilter();
-            saveGame(); openWarehouse(); updateDisplay();
+            saveGame(); updateDisplay();
         }
 
         // 起動時に読み込まなくていい大きな画像（マップ・おみやげ屋の背景）は、実際に開いた時だけ読み込む
@@ -720,7 +720,7 @@
             frame.style.top = top + 'px';
         }
 
-        function renderOmiyageShelf() {
+        function renderOmiyageShelf(shake) {
             syncOmiyageImageFrame();
             const maxPage = Math.ceil(stages.length / OMIYAGE_PAGE_SIZE) - 1;
             if (omiyagePage > maxPage) omiyagePage = 0;
@@ -749,6 +749,10 @@
                 itemDiv.innerHTML = isLocked
                     ? `<div class="omiyage-slot-emoji">❔</div>`
                     : (stage.itemImg ? `<img class="omiyage-slot-img" src="${stage.itemImg}" alt="${stage.item}">` : `<div class="omiyage-slot-emoji">🎁</div>`);
+                if (shake) {
+                    // 棚を切り替えた時だけ、左上から順に少しずつ揺れるようにする（一斉に同時ではなく、波が伝わる感じにする）
+                    itemDiv.style.animation = `omiyageShelfShake 0.4s ease-in-out ${slot * 0.03}s`;
+                }
                 if (!isLocked) itemDiv.addEventListener('click', () => onOmiyageSlotTap(i, itemDiv));
                 slotsLayer.appendChild(itemDiv);
 
@@ -776,7 +780,8 @@
             const maxPage = Math.ceil(stages.length / OMIYAGE_PAGE_SIZE) - 1;
             omiyagePage = (omiyagePage + dir + maxPage + 1) % (maxPage + 1); // 最初で←→最後、最後で→→最初
             omiyageSelectedIdx = null;
-            renderOmiyageShelf();
+            playAudioFile('audio/shelf_switch.mp3'); // 棚を切り替える専用の効果音
+            renderOmiyageShelf(true); // trueで、切り替え時の揺れ演出を出す
         }
 
         function onOmiyageSlotTap(idx, el) {
@@ -866,6 +871,7 @@
             const target = clothesData.find(c => c.id === id);
             if (score >= target.price && !purchasedClothes[id]) {
                 score -= target.price; purchasedClothes[id] = true;
+                equipClothe(id); // 🐛修正：装備専用のUIを廃止したので、買ったらその場で自動装備する（能力ボーナスが有効になるように）
                 saveGame(); renderShopList(); updateDisplay();
             }
         }

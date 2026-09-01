@@ -381,39 +381,45 @@
             openModal('trophy-room-modal');
         }
 
+        // 🚧 準備中の機能。デザインが決まったら、それぞれ本実装に差し替える
+        function openOshigotoPlaceholder() {
+            alert('💼 「おしごと」は準備中です！\nお楽しみに！');
+        }
+        function openFriendPlaceholder() {
+            alert('🤝 「フレンド」機能は準備中です！\nお楽しみに！');
+        }
+        function openMyRoomPlaceholder() {
+            alert('🏠 「マイルーム」は準備中です！\nお楽しみに！');
+        }
+        // 🚧「移動する」の最終的なUIはまだ未定。ひとまず一覧を出す形で仮実装しておく
+        function openMoveMenu() {
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                openModal('move-menu-modal', true);
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
+        }
+        function moveMenuGoHome() {
+            closeModal('move-menu-modal');
+        }
+
         function openWarehouse() {
             let boughtCount = 0;
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
-            const currentClothe = clothesData.find(c => c.id === equippedClotheId);
-            
+            const currentKisekaeClothes = KISEKAE_ITEMS.clothes.find(c => c.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
+
             document.getElementById('warehouse-status-box').innerHTML = `
                 <strong>🏆 もちすけデータ</strong><br>
                 ・現在の所持金: ${formatMochi(score)} もち<br>
                 ・現在の通常タップ力: +${formatMochi(getTapPower())} もち<br>
                 ・自動生産力 (Mps): ${formatMochi(getMps())} もち/秒<br>
                 ・解放したおみやげ: ${boughtCount} / ${stages.length} 種類<br>
-                ・現在の着用衣装: <strong>${currentClothe.name}</strong><br>
+                ・現在の着用衣装: <strong>${currentKisekaeClothes.name}</strong><br>
                 ・転生回数: ${prestigeCount}回（恒久ボーナス +${(prestigeCount * PRESTIGE_BONUS_PER_COUNT * 100).toFixed(0)}%）<br>
                 ・所持転生ポイント: ${prestigePoints}
             `;
-
-            const listContainer = document.getElementById('warehouse-clothes-list');
-            listContainer.innerHTML = "";
-            clothesData.forEach(c => {
-                const isOwned = purchasedClothes[c.id];
-                const isEquipped = equippedClotheId === c.id;
-                let btnHtml = "";
-                if (!isOwned) { btnHtml = `<button class="item-action-btn" disabled style="background:#bbb;">未所持</button>`; }
-                else if (isEquipped) { btnHtml = `<button class="item-action-btn btn-green" disabled>着用中</button>`; }
-                else { btnHtml = `<button class="item-action-btn btn-blue" onclick="equipClothe('${c.id}')">着替える</button>`; }
-
-                const row = document.createElement('div');
-                row.className = "list-item";
-                const thumbSrc = c.img || 'ui_images/image_0.webp';
-                const thumbFilter = c.img ? 'none' : (c.filter || 'none');
-                row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
-                listContainer.appendChild(row);
-            });
             openModal('warehouse-modal');
         }
 
@@ -1082,13 +1088,13 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             const stage = stages[selectedStageIndex];
             const curLv = purchasedItems[selectedStageIndex] || 0;
             if (curLv === 0 && stage && score >= getOmiyagePrice(stage, 0)) {
-                return 'nav-btn-shop';
+                return 'nav-btn-move';
             }
             // ② スキルを1つも取得していない、かつ一番安いスキルが買える資金がある → ショップへ
             const anySkillUnlocked = Object.values(skills).some(s => s.lv > 0);
             if (!anySkillUnlocked) {
                 const cheapestUnlockPrice = Math.min(...Object.values(skills).map(s => s.unlockPrice || Infinity));
-                if (score >= cheapestUnlockPrice) return 'nav-btn-shop';
+                if (score >= cheapestUnlockPrice) return 'nav-btn-move';
             }
             // ③ 使用可能（クールタイム明け）なスキルがある → そのスキルボタンへ
             const readyEntry = Object.entries(skills).find(([k, s]) => k !== 'hissatsu' && s.lv > 0 && s.currentCd <= 0 && s.activeTimer <= 0);
@@ -1096,7 +1102,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             // ④ 必殺技が使用可能 → 必殺技ボタンへ
             if (skills.hissatsu.lv > 0 && skills.hissatsu.currentCd <= 0 && skills.hissatsu.activeTimer <= 0) return 'btn-hissatsu';
             // ⑤ 新しく解放されて、まだ見ていない（遊んでいない）ミニゲームがある → ミニゲームへ
-            if (hasNewlyUnlockedMinigame()) return 'nav-btn-minigame';
+            if (hasNewlyUnlockedMinigame()) return 'nav-btn-move';
             // 特に無ければハイライトしない
             return null;
         }
@@ -1160,6 +1166,11 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         // 🎮 ミニゲームセンター：共通ロジック
         // ===================================================================
         let currentRankingTab = 'score';
+
+        function toggleRankingHelpOverlay() {
+            const overlay = document.getElementById('ranking-help-overlay');
+            if (overlay) overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
+        }
 
         function switchRankingTab(tab) {
             currentRankingTab = tab;
