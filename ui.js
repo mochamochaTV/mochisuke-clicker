@@ -413,18 +413,8 @@
         function openWarehouse() {
             let boughtCount = 0;
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
-            const currentKisekaeClothes = KISEKAE_ITEMS.clothes.find(c => c.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
-
-            document.getElementById('warehouse-status-box').innerHTML = `
-                <strong>🏆 もちすけデータ</strong><br>
-                ・現在の所持金: ${formatMochi(score)} もち<br>
-                ・現在の通常タップ力: +${formatMochi(getTapPower())} もち<br>
-                ・自動生産力 (Mps): ${formatMochi(getMps())} もち/秒<br>
-                ・解放したおみやげ: ${boughtCount} / ${stages.length} 種類<br>
-                ・現在の着用衣装: <strong>${currentKisekaeClothes.name}</strong><br>
-                ・転生回数: ${prestigeCount}回（恒久ボーナス +${(prestigeCount * PRESTIGE_BONUS_PER_COUNT * 100).toFixed(0)}%）<br>
-                ・所持転生ポイント: ${prestigePoints}
-            `;
+            const badge = document.getElementById('warehouse-omiyage-badge');
+            if (badge) badge.textContent = `${boughtCount}/${stages.length}`;
             openModal('warehouse-modal');
         }
 
@@ -1138,6 +1128,8 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         }
         function updateDisplay() {
             updateRecommendedActionHighlight();
+            const prestigeBtn = document.getElementById('main-prestige-btn');
+            if (prestigeBtn) prestigeBtn.style.display = canPrestige() ? 'block' : 'none';
             const scoreFormatted = formatMochi(score) + " もち";
             const scoreEl = document.getElementById('score-text');
             const fullText = isFever ? `🔥 5倍中 (${feverTimeLeft}s) ${scoreFormatted}` : scoreFormatted;
