@@ -336,6 +336,15 @@
             color: #ff5252;
             font-size: 1.25rem;
         }
+        .move-menu-hotspot {
+            position: absolute; transform: translate(-50%, -50%);
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            background: rgba(255,255,255,0.92); border: none; border-radius: 14px;
+            padding: 8px 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+            font-size: 1.4rem; cursor: pointer;
+        }
+        .move-menu-hotspot span { font-size: 0.62rem; font-weight: 900; color: #5d4037; }
+        .move-menu-hotspot:active { transform: translate(-50%, -50%) scale(0.94); }
         .warehouse-grid-btn {
             position: relative; aspect-ratio: 1/0.85; border: none; border-radius: 16px;
             color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;

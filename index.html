@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-132">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-133">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -212,7 +212,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-132</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-133</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -319,23 +319,21 @@
     </div>
 
     <div id="move-menu-modal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close-x" onclick="closeModal('move-menu-modal')">×</button>
-            <h2>🚶 どこへ行く？</h2>
-            <p style="font-size:0.75rem; color:#999; text-align:center; margin-top:-8px;">🚧 このメニューのデザインは、まだ仮の状態です</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">
-                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900;" onclick="moveMenuGoHome()">🏠 ホーム</button>
-                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900;" onclick="moveMenuGoTo(openWarehouse)">📦 ものおき</button>
-                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900;" onclick="closeModal('move-menu-modal'); openShop();">🏪 ショップ</button>
-                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900;" onclick="closeModal('move-menu-modal'); openMinigameCenter();">🎮 ゲーセン</button>
-                <button class="btn-shop" style="padding:16px 8px; border-radius:12px; font-weight:900; opacity:0.6;" onclick="openMyRoomPlaceholder()">🛋️ マイルーム</button>
+        <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/move_menu_bg.webp'); background-size:cover; background-position:center;">
+            <button class="modal-fullscreen-close" onclick="closeModal('move-menu-modal')">×</button>
+            <div style="position:relative; flex:1; min-height:0;">
+                <button class="move-menu-hotspot" style="top:78%; left:50%;" onclick="moveMenuGoHome()">🏠<span>ホーム</span></button>
+                <button class="move-menu-hotspot" style="top:58%; left:22%;" onclick="moveMenuGoTo(openWarehouse)">📦<span>ものおき</span></button>
+                <button class="move-menu-hotspot" style="top:40%; left:70%;" onclick="closeModal('move-menu-modal'); openShop();">🏪<span>ショップ</span></button>
+                <button class="move-menu-hotspot" style="top:22%; left:28%;" onclick="closeModal('move-menu-modal'); openMinigameCenter();">🎮<span>ゲーセン</span></button>
+                <button class="move-menu-hotspot" style="top:8%; left:65%; opacity:0.6;" onclick="openMyRoomPlaceholder()">🛋️<span>マイルーム</span></button>
             </div>
         </div>
     </div>
 
     <div id="warehouse-modal" class="modal">
         <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/monooki_bg.webp'); background-size:cover; background-position:center;">
-            <button class="modal-fullscreen-close" onclick="closeModal('warehouse-modal')">×</button>
+            <button class="modal-fullscreen-close" onclick="closeWarehouse()">×</button>
             <div style="flex:1; min-height:0; overflow-y:auto; padding:calc(50px + env(safe-area-inset-top, 0px)) 16px 16px; display:flex; flex-direction:column; justify-content:center;">
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                     <button class="warehouse-grid-btn" style="background:#795548;" onclick="closeModal('warehouse-modal'); openDiary();">
@@ -533,15 +531,6 @@
             <button class="modal-fullscreen-close" onclick="closeMinigameCenter()">×</button>
             <div id="minigame-tile-view" style="position:relative; flex:1; min-height:0;"></div>
             <div id="minigame-play-view" style="display:none; flex:1; min-height:0; overflow-y:auto; background:rgba(255,248,236,0.95); padding:14px; box-sizing:border-box;"></div>
-            <div id="minigame-center-bottom-nav" style="width:100%; padding:10px 0 calc(6px + env(safe-area-inset-bottom, 0px)) 0; box-sizing:border-box; display:flex; justify-content:center; flex-shrink:0;">
-                <div class="nav-menu">
-                    <button class="nav-btn" onclick="openOshigotoPlaceholder()" style="background-image: url('ui_images/oshigoto.webp');"></button>
-                    <button class="nav-btn" onclick="openKisekaeRoom()" style="background-image: url('ui_images/kisekae_nav.webp');"></button>
-                    <button class="nav-btn" onclick="openMoveMenu()" style="background-image: url('ui_images/idou.webp');"></button>
-                    <button class="nav-btn" onclick="openFriendPlaceholder()" style="background-image: url('ui_images/friend.webp');"></button>
-                    <button class="nav-btn" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');"></button>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -812,13 +801,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-132"></script>
-    <script src="state.js?v=2026-08-05-132"></script>
-    <script src="tap.js?v=2026-08-05-132"></script>
-    <script src="shop.js?v=2026-08-05-132"></script>
-    <script src="progress.js?v=2026-08-05-132"></script>
-    <script src="minigames.js?v=2026-08-05-132"></script>
-    <script src="ui.js?v=2026-08-05-132"></script>
-    <script src="main.js?v=2026-08-05-132"></script>
+    <script src="data.js?v=2026-08-05-133"></script>
+    <script src="state.js?v=2026-08-05-133"></script>
+    <script src="tap.js?v=2026-08-05-133"></script>
+    <script src="shop.js?v=2026-08-05-133"></script>
+    <script src="progress.js?v=2026-08-05-133"></script>
+    <script src="minigames.js?v=2026-08-05-133"></script>
+    <script src="ui.js?v=2026-08-05-133"></script>
+    <script src="main.js?v=2026-08-05-133"></script>
 </body>
 </html>

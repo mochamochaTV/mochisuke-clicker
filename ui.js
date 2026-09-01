@@ -410,6 +410,15 @@
             moveMenuGoTo(() => {});
         }
 
+        function closeWarehouse() {
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                closeModal('warehouse-modal');
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
+        }
         function openWarehouse() {
             let boughtCount = 0;
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
