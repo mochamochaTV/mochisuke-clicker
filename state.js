@@ -1,6 +1,6 @@
         function menuSaveGame() {
             saveGame();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             alert("💾 セーブしました！");
         }
 
@@ -122,7 +122,7 @@
             if (!result.ok) { alert(result.reason); return; }
             playerName = result.name;
             localStorage.setItem('punicker_player_name', playerName);
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             alert('保存しました！');
         }
 

@@ -209,7 +209,7 @@
             if (!result.ok) { alert(result.reason); return; }
             playerName = result.name;
             localStorage.setItem('punicker_player_name', playerName);
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             closeModal('tutorial-name-modal');
         }
 
@@ -1174,6 +1174,25 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             await renderRankingList();
         }
 
+        // 順位の見た目（1〜3位は特別扱い）
+        function rankNumberStyle(rank) {
+            if (rank === 1) return { bg: 'linear-gradient(135deg,#ffd700,#ffb300)', color: '#5d4037' };
+            if (rank === 2) return { bg: 'linear-gradient(135deg,#e0e0e0,#b0bec5)', color: '#5d4037' };
+            if (rank === 3) return { bg: 'linear-gradient(135deg,#d7a06e,#b5651d)', color: '#fff' };
+            return { bg: '#fff', color: '#8d6e63' };
+        }
+        // そのプレイヤーの装着中の服・帽子・顔パーツを、小さいもちすけとして重ねて表示するHTMLを作る
+        function renderRankOutfitPreviewHtml(outfit) {
+            const clothesItem = (outfit && KISEKAE_ITEMS.clothes.find(i => i.id === outfit.clothes)) || KISEKAE_ITEMS.clothes[0];
+            let html = `<img src="${clothesItem.img}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">`;
+            ['hat', 'face'].forEach(cat => {
+                const itemId = outfit && outfit[cat];
+                const item = itemId ? KISEKAE_ITEMS[cat].find(i => i.id === itemId) : null;
+                if (!item) return;
+                html += `<img src="${item.img}" alt="" style="position:absolute; top:${item.top}%; left:${item.left}%; width:${item.width}%; height:${item.height}%; transform:rotate(${item.rotation || 0}deg);">`;
+            });
+            return html;
+        }
         async function renderRankingList() {
             const listContainer = document.getElementById('ranking-list');
             listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
@@ -1189,7 +1208,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             const getValue = (p) => tab === 'taps' ? (p.totalTaps || 0) : tab === 'prestige' ? (p.prestigeCount || 0) : (p.score || 0);
 
             if (!realList) {
-                // Firebase未設定 or 通信エラー時は、自分のスコアだけのローカル表示にフォールバック
                 listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:10px;">ランキングサーバーに接続できませんでした。<br>あなたの現在の${unit}数だけ表示しています。</div>`;
                 const item = document.createElement('div'); item.className = "list-item"; item.style.background = "#fff9c4";
                 item.innerHTML = `<span>${escapeHtml(playerName)}（自分）</span><strong>${formatValue(myValue)} ${unit}</strong>`;
@@ -1201,20 +1219,30 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             // オートセーブ前後でスコアが少しズレていても二重表示にはならない）
             const alreadyIn = realList.some(p => p.isMe);
             const combined = realList.map(p => ({ ...p }));
-            if (!alreadyIn) combined.push({ name: playerName, score: Math.floor(score), totalTaps: totalTapsCount, prestigeCount: prestigeCount, isMe: true });
+            if (!alreadyIn) combined.push({ name: playerName, score: Math.floor(score), totalTaps: totalTapsCount, prestigeCount: prestigeCount, outfit: equippedKisekae, isMe: true });
             else {
                 // 自分の分だけ表示値を最新のものに更新（サーバー側は最大10秒遅れているため）
                 const mine = combined.find(p => p.isMe);
-                if (mine) { mine.score = Math.floor(score); mine.totalTaps = totalTapsCount; mine.prestigeCount = prestigeCount; }
+                if (mine) { mine.score = Math.floor(score); mine.totalTaps = totalTapsCount; mine.prestigeCount = prestigeCount; mine.outfit = equippedKisekae; }
             }
             combined.sort((a, b) => getValue(b) - getValue(a));
 
             listContainer.innerHTML = "";
             combined.forEach((player, index) => {
-                let item = document.createElement('div'); item.className = "list-item";
-                if (player.isMe) item.style.background = "#fff9c4";
-                item.innerHTML = `<span>${index + 1}位. ${escapeHtml(player.name)}</span><strong>${formatValue(getValue(player))} ${unit}</strong>`;
-                listContainer.appendChild(item);
+                const rank = index + 1;
+                const rs = rankNumberStyle(rank);
+                const row = document.createElement('div');
+                row.style.cssText = `display:flex; align-items:center; gap:10px; padding:10px 8px; margin-bottom:6px; border-radius:12px; background:${player.isMe ? '#fff9c4' : '#fff'}; box-shadow:0 1px 4px rgba(0,0,0,0.08);`;
+                row.innerHTML = `
+                    <div style="flex-shrink:0; width:34px; height:34px; border-radius:50%; background:${rs.bg}; color:${rs.color}; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.85rem;">${rank}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:0.78rem; color:#5d4037; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(player.name)}${player.isMe ? '（自分）' : ''}</div>
+                        <hr style="border:none; border-top:1px solid #e0d5c5; margin:3px 0;">
+                        <div style="font-size:1.05rem; color:#e91e63; font-weight:900;">${formatValue(getValue(player))} ${unit}</div>
+                    </div>
+                    <div style="flex-shrink:0; position:relative; width:46px; height:46px;">${renderRankOutfitPreviewHtml(player.outfit)}</div>
+                `;
+                listContainer.appendChild(row);
             });
         }
 

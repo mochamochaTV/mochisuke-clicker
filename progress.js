@@ -186,7 +186,7 @@
                 skills[k].currentCd = 0;
             });
             saveGame();
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             if (window.backupSaveData) {
                 const raw = localStorage.getItem('mochisuke_save_data');
                 if (raw) window.backupSaveData(raw, true); // 転生による意図的なリセットなので、ガードを無視して確実にバックアップを更新する

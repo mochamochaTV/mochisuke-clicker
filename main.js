@@ -864,7 +864,7 @@
         setInterval(() => {
             saveGame();
             if (Date.now() - appStartTime < AUTOSAVE_CLOUD_GRACE_MS) return; // 起動直後はクラウド送信を見送る
-            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount);
+            if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             if (window.backupSaveData) {
                 const raw = localStorage.getItem('mochisuke_save_data');
                 if (raw) window.backupSaveData(raw);
