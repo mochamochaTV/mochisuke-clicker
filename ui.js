@@ -393,16 +393,21 @@
         }
         // 🚧「移動する」の最終的なUIはまだ未定。ひとまず一覧を出す形で仮実装しておく
         function openMoveMenu() {
+            openModal('move-menu-modal'); // 移動先を選ぶだけなので、ここではフェードしない（選んだ時にフェードする）
+        }
+        // 移動先が決まった時だけ、ここでフェード＋移動音を鳴らしてから実際に画面を切り替える
+        function moveMenuGoTo(fn) {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
-                openModal('move-menu-modal', true);
+                closeModal('move-menu-modal');
+                fn();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
         function moveMenuGoHome() {
-            closeModal('move-menu-modal');
+            moveMenuGoTo(() => {});
         }
 
         function openWarehouse() {
