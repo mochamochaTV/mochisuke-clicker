@@ -337,7 +337,7 @@
             font-size: 1.25rem;
         }
         .nav-menu {
-            display: flex; width: 96%; justify-content: space-between; gap: 2px;
+            display: flex; width: 96%; justify-content: space-between; gap: 0px;
             background-color: rgba(255, 245, 230, 0.88);
             -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
             border-radius: 18px; padding: 6px;
@@ -349,8 +349,9 @@
             position: relative; transition: transform 0.1s, filter 0.2s;
             aspect-ratio: 1 / 1; background-size: contain; background-position: center; background-repeat: no-repeat;
             background-color: transparent;
+            transform: scale(1.2, 1.1); /* 横1.2倍・縦1.1倍 */
         }
-        .nav-btn:active { transform: scale(0.95); }
+        .nav-btn:active { transform: scale(1.14, 1.045); } /* 縮小演出を保ちつつ、拡大した比率も維持する */
 
         /* モーダル共通 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: var(--app-height, 100%); background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
