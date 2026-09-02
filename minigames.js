@@ -243,11 +243,13 @@
                 ? `<img src="${q.correctStage.itemImg}" alt="${q.correctStage.item}" style="width:90px; height:90px; object-fit:contain; margin:6px auto 10px; display:block; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.2));">`
                 : '';
             const colors = ['#ff8a65', '#4fc3f7', '#81c784', '#ba68c8']; // 左上・右上・左下・右下、それぞれ別の色
+            const letters = ['A', 'B', 'C', 'D'];
             const choiceButtons = q.choices.map((c, idx) => {
                 const label = q.isNameToItem ? c.item : c.name;
                 const isCorrect = c === q.correctStage;
                 return `<button class="quiz-choice-btn-grid" id="quiz-choice-${idx}" style="background:${colors[idx % colors.length]};" onclick="answerQuizQuestion(${isCorrect}, ${idx})">
-                    ${label}
+                    <span class="quiz-choice-grid-letter">${letters[idx] || '?'}</span>
+                    <span class="quiz-choice-grid-label">${label}</span>
                 </button>`;
             }).join('');
             const dots = quizState.questions.map((_, i) => {
@@ -257,12 +259,12 @@
                 return `<span class="${cls}"></span>`;
             }).join('');
             container.innerHTML = `
-                <div style="text-align:center; padding:14px; background:radial-gradient(circle at 50% 10%, #e8f5ff, #fbfdff); border-radius:20px;">
-                    <div style="display:flex; justify-content:center; gap:6px; margin-bottom:8px;">${dots}</div>
-                    <div style="font-weight:900; font-size:0.8rem; color:#999; margin-bottom:2px;">${quizState.qIndex + 1}問目</div>
-                    <div style="font-weight:900; font-size:1.1rem; margin-bottom:4px; color:#5d4037;">${questionText}</div>
+                <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:14px; background:radial-gradient(circle at 50% 10%, #e8f5ff, #fbfdff); border-radius:20px;">
+                    <div style="display:flex; justify-content:center; gap:6px; margin-bottom:12px;">${dots}</div>
+                    <div style="font-weight:900; font-size:0.85rem; color:#999; margin-bottom:4px;">${quizState.qIndex + 1}問目</div>
+                    <div style="font-weight:900; font-size:1.3rem; margin-bottom:10px; color:#5d4037;">${questionText}</div>
                     ${itemImgHtml}
-                    <div id="quiz-choices-wrap" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">${choiceButtons}</div>
+                    <div id="quiz-choices-wrap" style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:20px;">${choiceButtons}</div>
                 </div>`;
         }
 
@@ -319,10 +321,11 @@
 
         function startTimeAttackGame(container) {
             container.innerHTML = `
-                <div style="text-align:center; padding:10px;">
-                    <div style="font-weight:bold; margin-bottom:10px;">⏱️ タップタイムアタック</div>
-                    <div style="font-size:0.85rem; color:#5d4037; margin-bottom:16px;">スタートを押したら${TIME_ATTACK_DURATION_SEC}秒間、ひたすらタップ！</div>
-                    <button class="item-action-btn btn-shop" style="background:#26a69a; color:#fff; width:100%;" onclick="beginTimeAttack()">スタート</button>
+                <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:14px; background:radial-gradient(circle at 50% 15%, #e3f6f3, #fbfffe); border-radius:20px;">
+                    <div style="font-size:3.5rem; margin-bottom:14px;">⏱️</div>
+                    <div style="font-weight:900; font-size:1.3rem; margin-bottom:14px; color:#5d4037;">タップタイムアタック</div>
+                    <div style="font-size:0.95rem; color:#5d4037; margin-bottom:28px; line-height:1.6;">スタートを押したら<br><span style="font-size:1.5rem; font-weight:900; color:#26a69a;">${TIME_ATTACK_DURATION_SEC}秒間</span>、ひたすらタップ！</div>
+                    <button class="item-action-btn btn-shop" style="background:#26a69a; color:#fff; width:100%; padding:16px; font-size:1.1rem; font-weight:900; border-radius:16px; box-shadow:0 5px 0 rgba(0,0,0,0.2);" onclick="beginTimeAttack()">スタート</button>
                 </div>`;
         }
 
@@ -330,20 +333,20 @@
             const container = document.getElementById('minigame-play-view');
             timeAttackState = { taps: 0, timeLeft: TIME_ATTACK_DURATION_SEC, timerId: null };
             container.innerHTML = `
-                <div style="text-align:center; padding:14px; background:radial-gradient(circle at 50% 15%, #e3f6f3, #fbfffe); border-radius:20px;">
-                    <div id="ta-timer-bar-outer" style="width:100%; height:14px; background:#e6e6e6; border-radius:10px; overflow:hidden; margin-bottom:10px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.18);">
+                <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:14px; background:radial-gradient(circle at 50% 15%, #e3f6f3, #fbfffe); border-radius:20px;">
+                    <div id="ta-timer-bar-outer" style="width:100%; height:16px; background:#e6e6e6; border-radius:10px; overflow:hidden; margin-bottom:14px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.18);">
                         <div id="ta-timer-bar-inner" style="height:100%; width:100%; background:linear-gradient(90deg,#81c784,#4caf50); transition:width 0.9s linear, background 0.3s; box-shadow:0 0 8px rgba(76,175,80,0.6);"></div>
                     </div>
-                    <div id="ta-timer" style="font-size:1.7rem; font-weight:900; color:#ff9800; margin-bottom:2px;">${TIME_ATTACK_DURATION_SEC}秒</div>
-                    <div style="margin:6px 0 18px;">
-                        <span id="ta-count" style="font-size:3rem; font-weight:900; color:#26a69a; display:inline-block; text-shadow:0 3px 0 rgba(0,0,0,0.06);">0</span>
-                        <span style="font-size:1.1rem; font-weight:bold; color:#5d4037;"> 回</span>
+                    <div id="ta-timer" style="font-size:2rem; font-weight:900; color:#ff9800; margin-bottom:6px;">${TIME_ATTACK_DURATION_SEC}秒</div>
+                    <div style="margin:10px 0 32px;">
+                        <span id="ta-count" style="font-size:4rem; font-weight:900; color:#26a69a; display:inline-block; text-shadow:0 3px 0 rgba(0,0,0,0.06);">0</span>
+                        <span style="font-size:1.2rem; font-weight:bold; color:#5d4037;"> 回</span>
                     </div>
-                    <div id="ta-btn-wrap" style="position:relative; width:170px; height:170px; margin:0 auto;">
-                        <button id="ta-tap-btn" style="position:relative; width:170px; height:170px; border-radius:50%;
+                    <div id="ta-btn-wrap" style="position:relative; width:210px; height:210px; margin:0 auto;">
+                        <button id="ta-tap-btn" style="position:relative; width:210px; height:210px; border-radius:50%;
                             background:radial-gradient(circle at 35% 28%, #5ddbcd, #26a69a 65%, #1c8579);
-                            color:#fff; font-size:1.25rem; font-weight:900; border:5px solid #fff;
-                            box-shadow:0 8px 18px rgba(0,0,0,0.3), inset 0 -6px 10px rgba(0,0,0,0.18); z-index:2;">タップ！</button>
+                            color:#fff; font-size:1.5rem; font-weight:900; border:6px solid #fff;
+                            box-shadow:0 10px 22px rgba(0,0,0,0.3), inset 0 -6px 10px rgba(0,0,0,0.18); z-index:2;">タップ！</button>
                     </div>
                 </div>`;
             const btn = document.getElementById('ta-tap-btn');
@@ -465,13 +468,13 @@
                         </div>
                         <div class="concentration-card-face concentration-card-front">
                             <img src="ui_images/concentration/card_front.webp" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">
-                            <img src="${c.stage.itemImg}" alt="${c.stage.item}" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:55%; height:55%; object-fit:contain;">
+                            <img src="${c.stage.itemImg}" alt="${c.stage.item}" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:78%; height:78%; object-fit:contain;">
                         </div>
                     </div>
                 </div>
             `).join('');
             container.innerHTML = `
-                <div style="padding:12px; background:radial-gradient(circle at 50% 10%, #fff3e0, #fffdf9); border-radius:20px;">
+                <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; padding:12px; background:radial-gradient(circle at 50% 10%, #fff3e0, #fffdf9); border-radius:20px;">
                     <div style="text-align:center; margin-bottom:10px; font-size:0.9rem; color:#5d4037; font-weight:bold;">🃏 めくった回数: <span id="concent-moves" style="color:#ff9800; font-size:1.1rem;">${st.moves}</span></div>
                     <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:8px;">${cardsHtml}</div>
                 </div>`;
@@ -587,19 +590,20 @@
             mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null, periodMs: MOCHITSUKI_INITIAL_PERIOD_MS, streak: 0, bestStreak: 0 };
             MOCHITSUKI_RANKS.forEach(r => mochitsukiState.counts[r.name] = 0);
             container.innerHTML = `
-                <div style="text-align:center; padding:14px; background:radial-gradient(circle at 50% 15%, #fff3e0, #fffdf9); border-radius:20px;">
-                    <div style="font-weight:bold; margin-bottom:8px;">🍡 もちつきリズム</div>
-                    <div style="font-size:0.78rem; color:#5d4037; margin-bottom:6px;">インジケーターが中央に来た瞬間にタップ！タップ毎にどんどん速くなるで（${MOCHITSUKI_BEATS}拍）</div>
-                    <div id="mochi-beat-count" style="font-size:0.8rem; color:#999; margin-bottom:4px;">1 / ${MOCHITSUKI_BEATS}拍</div>
-                    <div id="mochi-streak-text" style="font-size:0.75rem; font-weight:bold; color:#ff9800; height:1.2em; margin-bottom:6px;"></div>
-                    <div id="mochi-track" style="position:relative; width:100%; max-width:280px; height:48px; margin:0 auto 14px; background:linear-gradient(#fffaf0,#fdf3e0); border-radius:24px; overflow:hidden; border:3px solid #ffd699; box-shadow:inset 0 2px 6px rgba(0,0,0,0.08), 0 3px 8px rgba(0,0,0,0.08);">
+                <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:14px; background:radial-gradient(circle at 50% 15%, #fff3e0, #fffdf9); border-radius:20px;">
+                    <div style="font-size:2.6rem; margin-bottom:6px;">🍡</div>
+                    <div style="font-weight:900; font-size:1.15rem; margin-bottom:10px; color:#5d4037;">もちつきリズム</div>
+                    <div style="font-size:0.85rem; color:#5d4037; margin-bottom:10px; line-height:1.5;">インジケーターが中央に来た瞬間にタップ！<br>タップ毎にどんどん速くなるで（${MOCHITSUKI_BEATS}拍）</div>
+                    <div id="mochi-beat-count" style="font-size:0.85rem; color:#999; margin-bottom:6px;">1 / ${MOCHITSUKI_BEATS}拍</div>
+                    <div id="mochi-streak-text" style="font-size:0.8rem; font-weight:bold; color:#ff9800; height:1.3em; margin-bottom:10px;"></div>
+                    <div id="mochi-track" style="position:relative; width:100%; max-width:320px; height:62px; margin:0 auto 20px; background:linear-gradient(#fffaf0,#fdf3e0); border-radius:32px; overflow:hidden; border:4px solid #ffd699; box-shadow:inset 0 2px 6px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.1);">
                         ${buildMochitsukiBandsHtml()}
-                        <div id="mochi-indicator" style="position:absolute; top:5px; width:38px; height:38px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ff8a5c, #ff5722); box-shadow:0 3px 6px rgba(0,0,0,0.35), 0 0 10px rgba(255,87,34,0.5);"></div>
+                        <div id="mochi-indicator" style="position:absolute; top:6px; width:48px; height:48px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ff8a5c, #ff5722); box-shadow:0 3px 6px rgba(0,0,0,0.35), 0 0 10px rgba(255,87,34,0.5);"></div>
                     </div>
-                    <div id="mochi-judge-text" style="font-size:1.5rem; font-weight:900; height:36px; margin-bottom:8px;"></div>
-                    <button id="mochi-tap-btn" style="width:100%; padding:17px; border-radius:16px; border:none;
+                    <div id="mochi-judge-text" style="font-size:1.8rem; font-weight:900; height:42px; margin-bottom:14px;"></div>
+                    <button id="mochi-tap-btn" style="width:100%; padding:22px; border-radius:18px; border:none;
                         background:radial-gradient(circle at 30% 20%, #4dd0c4, #26a69a 65%, #1c8579);
-                        color:#fff; font-weight:900; font-size:1.05rem; box-shadow:0 5px 12px rgba(0,0,0,0.25), inset 0 -4px 8px rgba(0,0,0,0.15); border:2px solid #fff;">タップ！</button>
+                        color:#fff; font-weight:900; font-size:1.2rem; box-shadow:0 6px 14px rgba(0,0,0,0.25), inset 0 -4px 8px rgba(0,0,0,0.15); border:2px solid #fff;">タップ！</button>
                 </div>`;
             mochitsukiState.startTime = performance.now();
             document.getElementById('mochi-tap-btn').addEventListener('pointerdown', onMochitsukiTap);
@@ -619,7 +623,7 @@
                 const elapsed = performance.now() - mochitsukiState.startTime;
                 const percent = getMochitsukiIndicatorPercent(elapsed, mochitsukiState.periodMs);
                 const trackWidth = track.clientWidth;
-                el.style.left = Math.max(0, Math.min(trackWidth - 38, (percent / 100) * trackWidth - 19)) + 'px';
+                el.style.left = Math.max(0, Math.min(trackWidth - 48, (percent / 100) * trackWidth - 24)) + 'px';
             }
             mochitsukiState.animId = requestAnimationFrame(animateMochitsukiIndicator);
         }

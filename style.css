@@ -297,7 +297,6 @@
             display: flex; align-items: center; justify-content: center;
             overflow: hidden; box-sizing: border-box;
         }
-        .concentration-card-back { }
         .concentration-card-front { transform: rotateY(180deg); }
         .concentration-card-inner.matched .concentration-card-face {
             filter: drop-shadow(0 0 8px rgba(76,175,80,0.8));
@@ -981,12 +980,18 @@
 
         /* 🗾 ご当地クイズ：正解/不正解のフィードバック、選択肢ボタン、プログレスドット */
         .quiz-choice-btn-grid {
-            border: none; border-radius: 14px; padding: 18px 8px; color: #fff; font-weight: 900; font-size: 0.95rem;
-            box-shadow: 0 5px 0 rgba(0,0,0,0.25), 0 6px 10px rgba(0,0,0,0.15);
+            border: none; border-radius: 16px; padding: 22px 8px; color: #fff; font-weight: 900; font-size: 1.05rem;
+            box-shadow: 0 6px 0 rgba(0,0,0,0.25), 0 8px 14px rgba(0,0,0,0.15);
             cursor: pointer; transition: transform 0.08s, box-shadow 0.08s;
+            display: flex; flex-direction: column; align-items: center; gap: 6px; min-height: 88px;
         }
+        .quiz-choice-grid-letter {
+            width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.35);
+            display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 900;
+        }
+        .quiz-choice-grid-label { font-size: 1.05rem; }
         .quiz-choice-btn-grid:active {
-            transform: translateY(4px);
+            transform: translateY(5px);
             box-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.15);
         }
         .quiz-choice-btn {
