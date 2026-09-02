@@ -557,6 +557,7 @@
         function updateMoveMochisukePosition() {
             const signId = MOVE_MOCHISUKE_SIGN_ORDER[moveMochisukeLoopIndex];
             const signPart = MOVE_MENU_PARTS.find(p => p.id === signId);
+            const returnSignPart = MOVE_MENU_PARTS.find(p => p.id === 'move-sign-return');
             const mochi = document.getElementById('move-mochisuke-guide');
             if (!signPart || !mochi) return;
             // ちょこんと縮んでから、次の看板の位置へワープする（「とことこ」感を出す一瞬の縮み演出）
@@ -565,7 +566,9 @@
                 { transform: 'scale(0.6, 1.3)', offset: 0.4 },
                 { transform: 'scale(1, 1)' },
             ], { duration: 260, easing: 'ease-in-out' });
-            const mochiWidth = signPart.width * 0.55;
+            // 🐛修正：以前は看板ごとの幅を基準にしていたため、看板の大きさが違うともちすけの大きさも違って見えていた。
+            // 「戻る看板」の幅を基準にした固定値にして、どの看板の横にいても同じ大きさに統一する
+            const mochiWidth = returnSignPart.width * 0.55;
             mochi.style.width = mochiWidth + '%';
             mochi.style.top = (signPart.top + signPart.height * 0.15) + '%';
             mochi.style.left = (signPart.left + signPart.width + 1.5) + '%';
@@ -582,10 +585,6 @@
             });
         }
         // 移動先が決まった時だけ、ここでフェード＋移動音を鳴らしてから実際に画面を切り替える
-        function closeMoveMenu() {
-            stopMoveMochisukeLoop();
-            closeModal('move-menu-modal');
-        }
         function moveMenuGoTo(fn) {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
@@ -1399,7 +1398,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 closeModal('ranking-modal');
-                openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
