@@ -351,114 +351,6 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
 
-        // 🛠️ 開発者用：戻るボタンの位置調整ツール。CSS変数を操作するので、ショップで調整すると全画面に反映される
-        let backBtnAdjustMode = false;
-        let backBtnAdjustDragState = null;
-        function ensureBackBtnCssVarsInitialized() {
-            const root = document.documentElement;
-            const cs = getComputedStyle(root);
-            if (!cs.getPropertyValue('--back-btn-top').trim()) {
-                const target = document.querySelector('#shop-modal .modal-back-btn');
-                const rect = target.getBoundingClientRect();
-                root.style.setProperty('--back-btn-top', rect.top + 'px');
-                root.style.setProperty('--back-btn-left', rect.left + 'px');
-                root.style.setProperty('--back-btn-width', rect.width + 'px');
-                root.style.setProperty('--back-btn-height', rect.height + 'px');
-            }
-        }
-        function toggleBackBtnAdjustMode() {
-            backBtnAdjustMode = !backBtnAdjustMode;
-            const btn = document.getElementById('backbtn-adjust-toggle-btn');
-            const target = document.querySelector('#shop-modal .modal-back-btn');
-            if (backBtnAdjustMode) {
-                ensureBackBtnCssVarsInitialized();
-                target.style.outline = '2px dashed #e91e63';
-                btn.style.background = '#4caf50';
-                setupBackBtnAdjustDrag();
-                positionBackBtnHandles();
-                updateBackBtnAdjustReadout();
-            } else {
-                target.style.outline = '';
-                ['backbtn-resize-handle-r', 'backbtn-resize-handle-b', 'backbtn-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
-                btn.style.background = '#e91e63';
-            }
-        }
-        function positionBackBtnHandles() {
-            if (!backBtnAdjustMode) return;
-            const target = document.querySelector('#shop-modal .modal-back-btn');
-            const tRect = target.getBoundingClientRect();
-            const hR = document.getElementById('backbtn-resize-handle-r'), hB = document.getElementById('backbtn-resize-handle-b'), hBr = document.getElementById('backbtn-resize-handle-br');
-            [hR, hB, hBr].forEach(h => h.style.display = 'block');
-            hR.style.left = tRect.right + 'px'; hR.style.top = (tRect.top + tRect.height / 2) + 'px';
-            hB.style.left = (tRect.left + tRect.width / 2) + 'px'; hB.style.top = tRect.bottom + 'px';
-            hBr.style.left = tRect.right + 'px'; hBr.style.top = tRect.bottom + 'px';
-        }
-        function setupBackBtnAdjustDrag() {
-            if (document.body.dataset.backBtnDragSetup) return;
-            document.body.dataset.backBtnDragSetup = '1';
-            const startDrag = (e, mode) => {
-                if (!backBtnAdjustMode) return;
-                e.stopPropagation(); e.preventDefault();
-                const target = document.querySelector('#shop-modal .modal-back-btn');
-                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
-                backBtnAdjustDragState = { startX: e.clientX, startY: e.clientY, target, mode };
-            };
-            document.addEventListener('pointerdown', (e) => {
-                if (!backBtnAdjustMode) return;
-                if (e.target.id === 'backbtn-resize-handle-r') return startDrag(e, 'width');
-                if (e.target.id === 'backbtn-resize-handle-b') return startDrag(e, 'height');
-                if (e.target.id === 'backbtn-resize-handle-br') return startDrag(e, 'both');
-                const target = document.querySelector('#shop-modal .modal-back-btn');
-                if (e.target !== target) return;
-                startDrag(e, 'move');
-            });
-            document.addEventListener('pointermove', (e) => {
-                if (!backBtnAdjustDragState || !backBtnAdjustMode) return;
-                e.stopPropagation();
-                const dx = e.clientX - backBtnAdjustDragState.startX;
-                const dy = e.clientY - backBtnAdjustDragState.startY;
-                const root = document.documentElement;
-                const cs = getComputedStyle(root);
-                const curTop = parseFloat(cs.getPropertyValue('--back-btn-top'));
-                const curLeft = parseFloat(cs.getPropertyValue('--back-btn-left'));
-                const curWidth = parseFloat(cs.getPropertyValue('--back-btn-width'));
-                const curHeight = parseFloat(cs.getPropertyValue('--back-btn-height'));
-                const mode = backBtnAdjustDragState.mode;
-                if (mode === 'move') {
-                    root.style.setProperty('--back-btn-top', (curTop + dy) + 'px');
-                    root.style.setProperty('--back-btn-left', (curLeft + dx) + 'px');
-                } else {
-                    if (mode === 'width' || mode === 'both') root.style.setProperty('--back-btn-width', Math.max(20, curWidth + dx) + 'px');
-                    if (mode === 'height' || mode === 'both') root.style.setProperty('--back-btn-height', Math.max(20, curHeight + dy) + 'px');
-                }
-                backBtnAdjustDragState.startX = e.clientX; backBtnAdjustDragState.startY = e.clientY;
-                positionBackBtnHandles();
-                updateBackBtnAdjustReadout();
-            });
-            document.addEventListener('pointerup', () => { backBtnAdjustDragState = null; });
-            document.addEventListener('pointercancel', () => { backBtnAdjustDragState = null; });
-        }
-        function updateBackBtnAdjustReadout() {
-            const root = document.documentElement;
-            const cs = getComputedStyle(root);
-            const el = document.getElementById('backbtn-adjust-readout');
-            if (!el) return;
-            const top = cs.getPropertyValue('--back-btn-top').trim() || '(既定値)';
-            const left = cs.getPropertyValue('--back-btn-left').trim() || '(既定値)';
-            const width = cs.getPropertyValue('--back-btn-width').trim() || '(既定値)';
-            const height = cs.getPropertyValue('--back-btn-height').trim() || '(既定値)';
-            el.textContent = `top:${top}; left:${left}; width:${width}; height:${height};`;
-        }
-        function copyBackBtnCoords() {
-            const el = document.getElementById('backbtn-adjust-readout');
-            const text = `戻るボタン（全画面共通）: ${el.textContent}`;
-            const textarea = document.getElementById('backbtn-copy-textarea');
-            textarea.value = text;
-            textarea.style.display = 'block';
-            textarea.select();
-            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
-        }
-
         function openModal(id, skipSound) {
             cancelFeedDragIfActive(); // 給餌中に他画面へ移動したら、置きっぱなしのおみやげを片付ける
             if (!skipSound) playAudioFile('audio/skill_tap.mp3');
@@ -1189,7 +1081,7 @@
             startFeedBuffIndicator();
 
             const mochiRect = mochiBtnElement.getBoundingClientRect();
-            playAudioFile('audio/mochi_eat.mp3');
+            playAudioFile('audio/mochisuke/mochi_eat.mp3');
             vibrate([20, 40, 20]);
             screenFlash('#ff9800', 0.3);
             screenShake('small');

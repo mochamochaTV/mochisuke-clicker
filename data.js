@@ -56,7 +56,7 @@
         // price    : ショップでの購入価格（もち）。0にすると最初から所持済み扱いになります
         // desc     : 倉庫・ショップに表示される説明文（能力の説明もここに書いてください）
         // img      : 【新規追加時はここに画像ファイル名を書くだけでOK】
-        //            例: "img: 'ui_images/costume_ninja.webp'" のように書くと、その画像に着せ替わります。
+        //            例: "img: 'ui_images/costume/ninja.webp'" のように書くと、その画像に着せ替わります。
         //            画像を用意しない場合はこの行を省略すれば、filterで色味だけ変える従来方式になります。
         // filter   : imgを指定しない場合の色味加工（CSSのfilter）。imgがある場合は無視されます。
         // tapBonus : 装備中、タップ力に加算される値
@@ -68,7 +68,7 @@
             { id: "crown", name: "王様の冠", price: 3000, desc: "気品溢れる姿。自動増加 +12もち/秒", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1.2) sepia(0.5) saturate(2.5)", tapBonus: 0, mpsBonus: 12 },
             { id: "ninja", name: "忍びの服", price: 15000, desc: "影からもち増産。タップ力+10 / 自動+40", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(0.4) contrast(1.5)", tapBonus: 10, mpsBonus: 40 }
             // 👇 追加する時はこんな感じでコピペして書き換えてください（画像ありパターンの例）
-            // , { id: "yukata", name: "浴衣すがた", price: 30000, img: "ui_images/costume_yukata.webp", desc: "夏祭り気分。タップ力+20 / 自動+80", tapBonus: 20, mpsBonus: 80 }
+            // , { id: "yukata", name: "浴衣すがた", price: 30000, img: "ui_images/costume/yukata.webp", desc: "夏祭り気分。タップ力+20 / 自動+80", tapBonus: 20, mpsBonus: 80 }
         ];
 
         // スキル総合コアシステムデータ
@@ -218,7 +218,7 @@
             { text: 'ここから、ワイにお土産をあげられるで！', highlight: 'feed-toggle-btn', duration: 4500 },
             { text: 'さあ、日本一周の旅に出発や！応援してるで！', highlight: null, duration: 3500 },
         ];
-        const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochi_eat.mp3', 'audio/mochi_scream.mp3', 'audio/mochi_stretch.mp3', 'audio/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha_crank.mp3', 'audio/gacha_drop.mp3', 'audio/gacha_open.mp3'];
+        const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3'];
         const cheerLines = {
             0: ["もちもちやろ？", "その調子や！", "ええ感じやで！", "もちすけ嬉しいわ！", "いいペースやな！", "もっともっと！", "楽しなってきたな！"],
             50: ["50コンボ突破や！", "頑張れ！", "やるやないか！", "その勢いええで！", "もっといけるやろ！", "ノリノリやな！", "ええ調子やで！"],
@@ -241,9 +241,9 @@
 
         // 🎁 ノーマル（灰）で出る消耗品アイテム一覧
         const NORMAL_CONSUMABLE_ITEMS = [
-            { id: 'minigameTicket', name: 'ミニゲーム追加券', img: 'ui_images/item_minigame_ticket.webp', desc: '4種すべての今日の残り回数+1' },
-            { id: 'cooldownTicket', name: 'スキルクールタイム短縮チケット', img: 'ui_images/item_cooldown_ticket.webp', desc: '全スキルのクールタイムを即リセット' },
-            { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'ui_images/item_mochi30min_ticket.webp', desc: '今の自動増加×30分ぶんのもちを獲得' },
+            { id: 'minigameTicket', name: 'ミニゲーム追加券', img: 'ui_images/item/minigame_ticket.webp', desc: '4種すべての今日の残り回数+1' },
+            { id: 'cooldownTicket', name: 'スキルクールタイム短縮チケット', img: 'ui_images/item/cooldown_ticket.webp', desc: '全スキルのクールタイムを即リセット' },
+            { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'ui_images/item/mochi30min_ticket.webp', desc: '今の自動増加×30分ぶんのもちを獲得' },
         ];
 
         const GACHA_RARITIES = [
@@ -278,32 +278,32 @@
         // ===================================================================
         const KISEKAE_ITEMS = {
             hat: [
-                { id: 'hat_crown_red',      name: '王冠（赤）',        star: 3, img: 'ui_images/kisekae_hat_crown_red.webp',      top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
-                { id: 'hat_crown_blue',     name: '王冠（青）',        star: 3, img: 'ui_images/kisekae_hat_crown_blue.webp',     top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
-                { id: 'hat_pirate',         name: '海賊の帽子',        star: 2, img: 'ui_images/kisekae_hat_pirate.webp',        top: -20.35714,  left: 12.43243,  width: 69.189207, height: 29.732147, locked: true },
-                { id: 'hat_kabuto',         name: 'カブト',            star: 2, img: 'ui_images/kisekae_hat_kabuto.webp',        top: -30.291262, left: -6.470588,  width: 111.176476, height: 81.504865,  locked: true },
-                { id: 'hat_wizard',         name: '魔法使いの帽子',    star: 2, img: 'ui_images/kisekae_hat_wizard.webp',        top: -28.839283, left: 16.216211, width: 59.459471, height: 39.107151, locked: true },
-                { id: 'hat_baby',           name: '赤ん帽',            star: 2, img: 'ui_images/kisekae_hat_baby.webp',          top: -30.291263, left: -42.941172, width: 181.17647,  height: 135.873805, locked: true },
-                { id: 'hat_santa',          name: 'サンタの帽子',      star: 2, img: 'ui_images/kisekae_hat_santa.webp',         top: -23.928569, left: 26.486484, width: 41.081091, height: 31.517859, locked: true },
-                { id: 'hat_chef',           name: 'コック帽',          star: 1, img: 'ui_images/kisekae_hat_chef.webp',          top: -22.142849, left: 24.864866, width: 42.162169, height: 29.285719, locked: true },
-                { id: 'hat_tophat_black',   name: 'シルクハット（黒）', star: 1, img: 'ui_images/kisekae_hat_tophat_black.webp',  top: -17.67857,  left: 23.243241, width: 44.324333, height: 26.607146, locked: true },
-                { id: 'hat_ribbon',         name: 'リボン',            star: 1, img: 'ui_images/kisekae_hat_ribbon.webp',        top: -11.875006, left: 25.945935, width: 41.621629, height: 22.58929,  locked: true },
-                { id: 'hat_graduate',       name: '学士の帽子',        star: 1, img: 'ui_images/kisekae_hat_graduate.webp',      top: -17.232144, left: 21.621614, width: 49.729738, height: 35.982146, locked: true },
+                { id: 'hat_crown_red',      name: '王冠（赤）',        star: 3, img: 'ui_images/kisekae/hat_crown_red.webp',      top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
+                { id: 'hat_crown_blue',     name: '王冠（青）',        star: 3, img: 'ui_images/kisekae/hat_crown_blue.webp',     top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
+                { id: 'hat_pirate',         name: '海賊の帽子',        star: 2, img: 'ui_images/kisekae/hat_pirate.webp',        top: -20.35714,  left: 12.43243,  width: 69.189207, height: 29.732147, locked: true },
+                { id: 'hat_kabuto',         name: 'カブト',            star: 2, img: 'ui_images/kisekae/hat_kabuto.webp',        top: -30.291262, left: -6.470588,  width: 111.176476, height: 81.504865,  locked: true },
+                { id: 'hat_wizard',         name: '魔法使いの帽子',    star: 2, img: 'ui_images/kisekae/hat_wizard.webp',        top: -28.839283, left: 16.216211, width: 59.459471, height: 39.107151, locked: true },
+                { id: 'hat_baby',           name: '赤ん帽',            star: 2, img: 'ui_images/kisekae/hat_baby.webp',          top: -30.291263, left: -42.941172, width: 181.17647,  height: 135.873805, locked: true },
+                { id: 'hat_santa',          name: 'サンタの帽子',      star: 2, img: 'ui_images/kisekae/hat_santa.webp',         top: -23.928569, left: 26.486484, width: 41.081091, height: 31.517859, locked: true },
+                { id: 'hat_chef',           name: 'コック帽',          star: 1, img: 'ui_images/kisekae/hat_chef.webp',          top: -22.142849, left: 24.864866, width: 42.162169, height: 29.285719, locked: true },
+                { id: 'hat_tophat_black',   name: 'シルクハット（黒）', star: 1, img: 'ui_images/kisekae/hat_tophat_black.webp',  top: -17.67857,  left: 23.243241, width: 44.324333, height: 26.607146, locked: true },
+                { id: 'hat_ribbon',         name: 'リボン',            star: 1, img: 'ui_images/kisekae/hat_ribbon.webp',        top: -11.875006, left: 25.945935, width: 41.621629, height: 22.58929,  locked: true },
+                { id: 'hat_graduate',       name: '学士の帽子',        star: 1, img: 'ui_images/kisekae/hat_graduate.webp',      top: -17.232144, left: 21.621614, width: 49.729738, height: 35.982146, locked: true },
             ],
             face: [
-                { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'ui_images/kisekae_face_sunglasses.webp',   top: -3.392867, left: -14.972971, width: 124.000039, height: 41.464299, rotation: -5, locked: true },
-                { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'ui_images/kisekae_face_glasses_black.webp', top: -0.267859,  left: -23.081076, width: 141.837891, height: 35.2143,   rotation: -5, locked: true },
-                { id: 'face_3dglasses',     name: '3Dメガネ',          star: 1, img: 'ui_images/kisekae_face_3dglasses.webp',    top: -6.07144,   left: -15.513525, width: 124.000023, height: 48.160733, rotation: -5, locked: true },
+                { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'ui_images/kisekae/face_sunglasses.webp',   top: -3.392867, left: -14.972971, width: 124.000039, height: 41.464299, rotation: -5, locked: true },
+                { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'ui_images/kisekae/face_glasses_black.webp', top: -0.267859,  left: -23.081076, width: 141.837891, height: 35.2143,   rotation: -5, locked: true },
+                { id: 'face_3dglasses',     name: '3Dメガネ',          star: 1, img: 'ui_images/kisekae/face_3dglasses.webp',    top: -6.07144,   left: -15.513525, width: 124.000023, height: 48.160733, rotation: -5, locked: true },
             ],
             clothes: [
-                { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'ui_images/image_0.webp' },
-                { id: 'clothes_king_red',    name: 'おうさまの服（赤）', star: 3, img: 'ui_images/kisekae_clothes_king_red.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
-                { id: 'clothes_king_blue',   name: 'おうさまの服（青）', star: 3, img: 'ui_images/kisekae_clothes_king_blue.webp' },
-                { id: 'clothes_tshirt_red',   name: 'Tシャツ（赤）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_red.webp' },
-                { id: 'clothes_tshirt_white', name: 'Tシャツ（白）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_white.webp' },
-                { id: 'clothes_tshirt_blue',  name: 'Tシャツ（青）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_blue.webp' },
-                { id: 'clothes_tshirt_green', name: 'Tシャツ（緑）',    star: 1, img: 'ui_images/kisekae_clothes_tshirt_green.webp' },
-                { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'ui_images/kisekae_clothes_apron.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
+                { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'ui_images/mochisuke/image_0.webp' },
+                { id: 'clothes_king_red',    name: 'おうさまの服（赤）', star: 3, img: 'ui_images/kisekae/clothes_king_red.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
+                { id: 'clothes_king_blue',   name: 'おうさまの服（青）', star: 3, img: 'ui_images/kisekae/clothes_king_blue.webp' },
+                { id: 'clothes_tshirt_red',   name: 'Tシャツ（赤）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_red.webp' },
+                { id: 'clothes_tshirt_white', name: 'Tシャツ（白）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_white.webp' },
+                { id: 'clothes_tshirt_blue',  name: 'Tシャツ（青）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_blue.webp' },
+                { id: 'clothes_tshirt_green', name: 'Tシャツ（緑）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_green.webp' },
+                { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'ui_images/kisekae/clothes_apron.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
             ],
         };
         const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服' };
@@ -353,19 +353,19 @@
         // 🎮 ゲーセン：5つの筐体イラストの座標（#minigame-tile-view基準の%指定）
         // ===================================================================
         const ARCADE_CABINET_PARTS = [
-            { id: 'arcade-cabinet-quiz',          gameId: 'quiz',          img: 'ui_images/arcade_quiz.webp',          top: 12.689866, left: -6.432579, width: 52.396949, height: 36.335854 },
-            { id: 'arcade-cabinet-timeattack',    gameId: 'timeattack',    img: 'ui_images/arcade_timeattack.webp',    top: 14.505297, left: 29.099241, width: 44,         height: 34.21785 },
-            { id: 'arcade-cabinet-concentration', gameId: 'concentration', img: 'ui_images/arcade_concentration.webp', top: 15.506797, left: 63.541989, width: 36.36641,  height: 33.158848 },
-            { id: 'arcade-cabinet-mochitsuki',    gameId: 'mochitsuki',    img: 'ui_images/arcade_mochitsuki.webp',    top: 51.210285, left: -1.180664, width: 42.727735, height: 36.48714 },
-            { id: 'arcade-cabinet-slot',          gameId: 'slot',          img: 'ui_images/arcade_slot.webp',          top: 49.969752, left: 30.290074, width: 44,         height: 38 },
+            { id: 'arcade-cabinet-quiz',          gameId: 'quiz',          img: 'ui_images/arcade/quiz.webp',          top: 12.689866, left: -6.432579, width: 52.396949, height: 36.335854 },
+            { id: 'arcade-cabinet-timeattack',    gameId: 'timeattack',    img: 'ui_images/arcade/timeattack.webp',    top: 14.505297, left: 29.099241, width: 44,         height: 34.21785 },
+            { id: 'arcade-cabinet-concentration', gameId: 'concentration', img: 'ui_images/arcade/concentration.webp', top: 15.506797, left: 63.541989, width: 36.36641,  height: 33.158848 },
+            { id: 'arcade-cabinet-mochitsuki',    gameId: 'mochitsuki',    img: 'ui_images/arcade/mochitsuki.webp',    top: 51.210285, left: -1.180664, width: 42.727735, height: 36.48714 },
+            { id: 'arcade-cabinet-slot',          gameId: 'slot',          img: 'ui_images/arcade/slot.webp',          top: 49.969752, left: 30.290074, width: 44,         height: 38 },
         ];
 
         // ===================================================================
         // 📦 ものおき：4つの小物イラストの座標（#warehouse-item-stage基準の%指定）
         // ===================================================================
         const WAREHOUSE_ITEM_PARTS = [
-            { id: 'warehouse-item-trophy',  label: 'トロフィー',   action: 'trophy',  img: 'ui_images/warehouse_trophy.webp',  top: 21.767025, left: 7.78117,   width: 40, height: 34 },
-            { id: 'warehouse-item-omiyage', label: 'おみやげ',     action: 'omiyage', img: 'ui_images/warehouse_omiyage.webp', top: 8,         left: 54,        width: 40, height: 34 },
-            { id: 'warehouse-item-ticket',  label: 'アイテム一覧', action: 'ticket',  img: 'ui_images/warehouse_ticket.webp',  top: 61.07716,  left: 7.781172,  width: 40, height: 34 },
-            { id: 'warehouse-item-diary',   label: '絵日記',       action: 'diary',   img: 'ui_images/warehouse_diary.webp',   top: 45.19213,  left: 53.745547, width: 40, height: 34 },
+            { id: 'warehouse-item-trophy',  label: 'トロフィー',   action: 'trophy',  img: 'ui_images/warehouse/trophy.webp',  top: 21.767025, left: 7.78117,   width: 40, height: 34 },
+            { id: 'warehouse-item-omiyage', label: 'おみやげ',     action: 'omiyage', img: 'ui_images/warehouse/omiyage.webp', top: 8,         left: 54,        width: 40, height: 34 },
+            { id: 'warehouse-item-ticket',  label: 'アイテム一覧', action: 'ticket',  img: 'ui_images/warehouse/ticket.webp',  top: 61.07716,  left: 7.781172,  width: 40, height: 34 },
+            { id: 'warehouse-item-diary',   label: '絵日記',       action: 'diary',   img: 'ui_images/warehouse/diary.webp',   top: 45.19213,  left: 53.745547, width: 40, height: 34 },
         ];

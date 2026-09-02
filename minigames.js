@@ -10,20 +10,20 @@
         // 🎰 スロットの絵柄と配当（3つ揃った時の倍率）。同じ絵柄の並び順で、揃いにくいほど高配当にしてある
         // 🎰 絵柄一覧（価値が低い順）。weightが大きいほど出やすい（＝価値が高いほどレア）
         const SLOT_SYMBOLS = [
-            { id: 'cherry',      icon: '🍒', img: 'ui_images/slot_symbol_cherry.webp',      label: 'チェリー',   payout: 2,   weight: 44 },
-            { id: 'carrot',      icon: '🥕', img: 'ui_images/slot_symbol_carrot.webp',      label: '人参',      payout: 3,   weight: 36 },
-            { id: 'bell',        icon: '🔔', img: 'ui_images/slot_symbol_bell.webp',        label: 'ベル',      payout: 4,   weight: 30 },
-            { id: 'sweetpotato', icon: '🍠', img: 'ui_images/slot_symbol_sweetpotato.webp', label: 'さつまいも', payout: 5,   weight: 16 },
-            { id: 'banana',      icon: '🍌', img: 'ui_images/slot_symbol_banana.webp',      label: 'バナナ',    payout: 6,   weight: 12 },
-            { id: 'apple',       icon: '🍎', img: 'ui_images/slot_symbol_apple.webp',       label: 'リンゴ',    payout: 8,   weight: 9 },
-            { id: 'bar1',        icon: '➖',  img: 'ui_images/slot_symbol_bar1.webp',        label: 'BAR',       payout: 10,  weight: 6 },
-            { id: 'bar2',        icon: '➖➖', img: 'ui_images/slot_symbol_bar2.webp',        label: 'ダブルBAR',  payout: 15,  weight: 3.5 },
-            { id: 'bar3',        icon: '➖➖➖', img: 'ui_images/slot_symbol_bar3.webp',       label: 'トリプルBAR', payout: 25,  weight: 1.8 },
-            { id: 'seven',       icon: '7️⃣', img: 'ui_images/slot_symbol_seven.webp',       label: '7',         payout: 60,  weight: 0.5 },
-            { id: 'marmot',      icon: '🐹', img: 'ui_images/slot_symbol_marmot.webp',      label: 'マーモット', payout: 150, weight: 0.15, isJackpot: true },
+            { id: 'cherry',      icon: '🍒', img: 'ui_images/slot/symbol_cherry.webp',      label: 'チェリー',   payout: 2,   weight: 44 },
+            { id: 'carrot',      icon: '🥕', img: 'ui_images/slot/symbol_carrot.webp',      label: '人参',      payout: 3,   weight: 36 },
+            { id: 'bell',        icon: '🔔', img: 'ui_images/slot/symbol_bell.webp',        label: 'ベル',      payout: 4,   weight: 30 },
+            { id: 'sweetpotato', icon: '🍠', img: 'ui_images/slot/symbol_sweetpotato.webp', label: 'さつまいも', payout: 5,   weight: 16 },
+            { id: 'banana',      icon: '🍌', img: 'ui_images/slot/symbol_banana.webp',      label: 'バナナ',    payout: 6,   weight: 12 },
+            { id: 'apple',       icon: '🍎', img: 'ui_images/slot/symbol_apple.webp',       label: 'リンゴ',    payout: 8,   weight: 9 },
+            { id: 'bar1',        icon: '➖',  img: 'ui_images/slot/symbol_bar1.webp',        label: 'BAR',       payout: 10,  weight: 6 },
+            { id: 'bar2',        icon: '➖➖', img: 'ui_images/slot/symbol_bar2.webp',        label: 'ダブルBAR',  payout: 15,  weight: 3.5 },
+            { id: 'bar3',        icon: '➖➖➖', img: 'ui_images/slot/symbol_bar3.webp',       label: 'トリプルBAR', payout: 25,  weight: 1.8 },
+            { id: 'seven',       icon: '7️⃣', img: 'ui_images/slot/symbol_seven.webp',       label: '7',         payout: 60,  weight: 0.5 },
+            { id: 'marmot',      icon: '🐹', img: 'ui_images/slot/symbol_marmot.webp',      label: 'マーモット', payout: 150, weight: 0.15, isJackpot: true },
         ];
         // リプレイ：揃うとコインを消費せず、もう一度レバーを引ける（配当表には含めない特殊絵柄）
-        const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'ui_images/slot_symbol_replay.webp', label: 'リプレイ', weight: 20 };
+        const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'ui_images/slot/symbol_replay.webp', label: 'リプレイ', weight: 20 };
         const SLOT_ALL_SYMBOLS = [...SLOT_SYMBOLS, SLOT_REPLAY_SYMBOL]; // リールの帯を作る時に使う、全絵柄（リプレイ含む）
         const SLOT_COIN_COST = 1;        // コインを1回投入するのに必要なミニゲームコイン
         const SLOT_PLAYS_PER_COIN = 5;   // コイン1枚で、レバーを何回引けるか
@@ -67,7 +67,7 @@
                 document.getElementById('minigame-tile-view').style.display = 'flex';
                 renderMinigameTiles();
                 openModal('minigame-center-modal');
-                playBgmLoop('audio/bgm_minigame.mp3'); // ゲームセンター専用BGMに切り替え
+                playBgmLoop('audio/bgm/bgm_minigame.mp3'); // ゲームセンター専用BGMに切り替え
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
@@ -83,7 +83,7 @@
             setTimeout(() => {
                 cleanupActiveMinigameTimers();
                 closeModal('minigame-center-modal');
-                playBgmLoop('audio/bgm.mp3'); // 通常のBGMに戻す
+                playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
@@ -719,7 +719,7 @@
         function playSlotSpinLoopSound() {
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-            loadAudioBuffer('audio/slot_spin_loop.mp3').then((buffer) => {
+            loadAudioBuffer('audio/slot/spin_loop.mp3').then((buffer) => {
                 if (!buffer || !slotIsSpinning) return; // 読み込み中に止まっていたら鳴らさない
                 const source = ctx.createBufferSource();
                 source.buffer = buffer;
@@ -1068,7 +1068,7 @@
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
                     <div style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 10px; margin-bottom:10px;">
-                        <div style="font-weight:900; color:#7b1fa2; text-shadow:0 1px 3px rgba(255,255,255,0.8);"><img src="ui_images/slot_coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持<span id="slot-plays-remaining" style="font-size:0.7rem; color:#e91e63;"></span></div>
+                        <div style="font-weight:900; color:#7b1fa2; text-shadow:0 1px 3px rgba(255,255,255,0.8);"><img src="ui_images/slot/coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持<span id="slot-plays-remaining" style="font-size:0.7rem; color:#e91e63;"></span></div>
                         <div id="slot-bonus-zone-text" style="font-weight:900; color:#ffab00; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>
                         <button onclick="toggleSlotHelpOverlay()" style="width:24px; height:24px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900; font-size:0.75rem;">？</button>
                     </div>
@@ -1081,21 +1081,21 @@
                             </div>
                         `).join('')}
 
-                        <img id="slot-lever" src="ui_images/slot_lever.webp" alt="レバー" onclick="pullSlotLever()"
+                        <img id="slot-lever" src="ui_images/slot/lever.webp" alt="レバー" onclick="pullSlotLever()"
                              style="position:absolute; top:52.142868%; left:101.642867%; width:13.14286%; height:27.8125%; transform-origin:50% 88%; z-index:5; cursor:pointer;" data-rotation="10">
 
-                        <img id="slot-machine-body" src="ui_images/slot_machine_body.webp" alt="スロットマシン" style="position:absolute; top:5.714281%; left:-8.928571%; width:116.428577%; height:158.2031%; display:block; z-index:10; pointer-events:none;">
+                        <img id="slot-machine-body" src="ui_images/slot/machine_body.webp" alt="スロットマシン" style="position:absolute; top:5.714281%; left:-8.928571%; width:116.428577%; height:158.2031%; display:block; z-index:10; pointer-events:none;">
 
-                        <img id="slot-lever-mount" src="ui_images/slot_lever_mount.webp" alt="レバー取り付け部品"
+                        <img id="slot-lever-mount" src="ui_images/slot/lever_mount.webp" alt="レバー取り付け部品"
                              style="position:absolute; top:65.142855%; left:104.214279%; width:7.642855%; height:28.1585%; z-index:15; pointer-events:none;">
 
-                        <img id="slot-stop-btn-0" src="ui_images/slot_button_1.webp" alt="① 止める" onclick="stopSlotReel(0)" style="position:absolute; top:93.428576%; left:13.071423%; width:16%; height:11.8750%; cursor:pointer; z-index:16;">
-                        <img id="slot-stop-btn-1" src="ui_images/slot_button_2.webp" alt="② 止める" onclick="stopSlotReel(1)" style="position:absolute; top:93.428581%; left:41.642851%; width:16%; height:11.3672%; cursor:pointer; z-index:16;">
-                        <img id="slot-stop-btn-2" src="ui_images/slot_button_3.webp" alt="③ 止める" onclick="stopSlotReel(2)" style="position:absolute; top:93.428582%; left:70.214287%; width:16%; height:11.5625%; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-0" src="ui_images/slot/button_1.webp" alt="① 止める" onclick="stopSlotReel(0)" style="position:absolute; top:93.428576%; left:13.071423%; width:16%; height:11.8750%; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-1" src="ui_images/slot/button_2.webp" alt="② 止める" onclick="stopSlotReel(1)" style="position:absolute; top:93.428581%; left:41.642851%; width:16%; height:11.3672%; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-2" src="ui_images/slot/button_3.webp" alt="③ 止める" onclick="stopSlotReel(2)" style="position:absolute; top:93.428582%; left:70.214287%; width:16%; height:11.5625%; cursor:pointer; z-index:16;">
 
                         <div id="slot-coin-slot-in" onclick="insertSlotCoin()" style="position:absolute; top:137.142856%; left:7.857135%; width:8.071431%; height:5.2596%; cursor:pointer; z-index:21;"></div>
                         <div id="slot-coin-slot-out" style="position:absolute; top:137.500007%; left:72.500008%; width:20%; height:15.4967%;"></div>
-                        <img id="slot-coin-insert-img" src="ui_images/slot_coin_side.webp" alt="" style="display:none; position:absolute; top:138.214276%; left:7.142852%; width:9.642859%; height:auto; z-index:20; pointer-events:none;">
+                        <img id="slot-coin-insert-img" src="ui_images/slot/coin_side.webp" alt="" style="display:none; position:absolute; top:138.214276%; left:7.142852%; width:9.642859%; height:auto; z-index:20; pointer-events:none;">
 
                         <div id="slot-pivot-marker" style="display:none; position:absolute; width:10px; height:10px; margin:-5px; border-radius:50%; background:#00e5ff; border:2px solid #fff; z-index:998; pointer-events:none;"></div>
                         <div id="slot-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
@@ -1117,14 +1117,14 @@
                                     <img src="${s.img}" alt="" style="width:26px; height:26px; object-fit:contain;">
                                     <img src="${s.img}" alt="" style="width:26px; height:26px; object-fit:contain;">
                                     <span style="font-size:0.9rem; color:#5d4037; margin:0 4px;">→</span>
-                                    <img src="ui_images/slot_coin.webp" alt="コイン" style="width:20px; height:20px; object-fit:contain;">
+                                    <img src="ui_images/slot/coin.webp" alt="コイン" style="width:20px; height:20px; object-fit:contain;">
                                     <span style="font-size:0.85rem; font-weight:900; color:#5d4037;">×${s.payout}枚</span>
                                 </div>
                             `).join('')}
                             <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-top:4px;">
-                                <img src="ui_images/slot_symbol_replay.webp" alt="リプレイ" style="width:26px; height:26px; object-fit:contain;">
-                                <img src="ui_images/slot_symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
-                                <img src="ui_images/slot_symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
+                                <img src="ui_images/slot/symbol_replay.webp" alt="リプレイ" style="width:26px; height:26px; object-fit:contain;">
+                                <img src="ui_images/slot/symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
+                                <img src="ui_images/slot/symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
                                 <span style="font-size:0.78rem; color:#4caf50; margin-left:6px;">→ コイン消費なしでもう一度！</span>
                             </div>
                         </div>
@@ -1189,7 +1189,7 @@
                 ],
                 { duration: 380, easing: 'ease-in', fill: 'forwards' }
             );
-            playAudioFile('audio/slot_coin_insert.mp3');
+            playAudioFile('audio/slot/coin_insert.mp3');
         }
 
         // 🪙① コインをタップして投入する（1枚=1プレイぶん）。投入し終わったら、次はレバーが光って誘導する
@@ -1252,7 +1252,7 @@
                 { duration: 550, easing: 'ease-in-out' }
             );
             lever.style.pointerEvents = 'none';
-            playAudioFile('audio/gacha_crank.mp3');
+            playAudioFile('audio/gacha/crank.mp3');
             vibrate([15]);
 
             // 3つのリールを、それぞれ止まるまでずっと回し続ける（回転中のループ音も鳴らす）
@@ -1342,7 +1342,7 @@
 
         // 🎰 リーチ演出：効果音・絵柄の強調・大きな当たりの時だけカットイン
         function triggerSlotReachEffect(symbol, matchingLines) {
-            playAudioFile('audio/slot_reach.mp3');
+            playAudioFile('audio/slot/reach.mp3');
             vibrate([20, 30, 20]);
             document.getElementById('slot-result-text').style.color = '#ff3d00';
             document.getElementById('slot-result-text').innerText = 'リーチ！！';
@@ -1368,10 +1368,10 @@
             const stage = document.getElementById('slot-machine-stage');
             if (!stage) return;
             const cutin = document.createElement('img');
-            cutin.src = 'ui_images/image_scream.webp';
+            cutin.src = 'ui_images/mochisuke/image_scream.webp';
             cutin.style.cssText = 'position:absolute; top:30%; left:50%; width:70%; transform:translate(-50%,-50%); z-index:500; pointer-events:none; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5)); animation: slotCutinSlide 900ms ease-in-out;';
             stage.appendChild(cutin);
-            playAudioFile('audio/gacha_crank.mp3');
+            playAudioFile('audio/gacha/crank.mp3');
             setTimeout(() => cutin.remove(), 900);
         }
 
@@ -1389,7 +1389,7 @@
             for (let i = 0; i < count; i++) {
                 setTimeout(() => {
                     const coin = document.createElement('img');
-                    coin.src = 'ui_images/slot_coin.webp';
+                    coin.src = 'ui_images/slot/coin.webp';
                     const startLeft = baseLeftPct + Math.random() * slotWidthPct;
                     coin.style.cssText = `position:absolute; top:${baseTopPct}%; left:${startLeft}%; width:9%; z-index:20; pointer-events:none;`;
                     stage.appendChild(coin);
@@ -1469,7 +1469,7 @@
                 slotNextSpinFree = true;
                 resultText.style.color = '#4caf50';
                 resultText.innerText = `🍡 リプレイ！(${replayLines.length}ライン) コイン消費なしでもう一度！`;
-                playAudioFile('audio/slot_replay.mp3');
+                playAudioFile('audio/slot/replay.mp3');
                 vibrate([15, 15, 15]);
                 document.getElementById('slot-lever').classList.add('slot-invite-glow'); // コイン投入を飛ばして、直接レバーへ誘導
                 return;
@@ -1513,13 +1513,13 @@
                 updateSlotPullsSinceJackpotDisplay();
                 saveGame();
                 resultText.innerHTML = `<span style="font-size:1.3rem;">🎉✨ ${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 大当たり！！ ✨🎉</span><br>マーモット揃い！${lineWord} +${totalPayout}枚！！<br>🎰 ガチャコイン+${bonusGachaCoins}枚もおまけ！`;
-                playAudioFile('audio/japan_clear.mp3');
+                playAudioFile('audio/mochisuke/japan_clear.mp3');
                 screenFlash('#ff6ec7', 0.75);
                 vibrate([40, 50, 40, 50, 40, 50, 80]);
                 setTimeout(() => showSlotMarmotCelebration(totalPayout, bonusGachaCoins), 500);
             } else {
                 resultText.innerText = `${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 揃った！${lineWord} +${totalPayout}枚！`;
-                playAudioFile(bestSymbol.payout >= 60 ? 'audio/slot_win_seven.mp3' : bestSymbol.payout >= 10 ? 'audio/slot_win_bar.mp3' : 'audio/slot_win_small.mp3');
+                playAudioFile(bestSymbol.payout >= 60 ? 'audio/slot/win_seven.mp3' : bestSymbol.payout >= 10 ? 'audio/slot/win_bar.mp3' : 'audio/slot/win_small.mp3');
                 screenFlash('#ffd700', bestSymbol.payout >= 25 ? 0.55 : 0.3);
                 vibrate(bestSymbol.payout >= 25 ? [30, 40, 30, 40, 50] : [20, 30, 20]);
             }
@@ -1531,7 +1531,7 @@
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:background 0.4s;';
             overlay.innerHTML = `
-                <img src="ui_images/slot_symbol_marmot.webp" alt="マーモット" style="width:0; transition:width 0.5s cubic-bezier(0.2,0.8,0.3,1.2); filter:drop-shadow(0 0 30px #ff6ec7);">
+                <img src="ui_images/slot/symbol_marmot.webp" alt="マーモット" style="width:0; transition:width 0.5s cubic-bezier(0.2,0.8,0.3,1.2); filter:drop-shadow(0 0 30px #ff6ec7);">
                 <p style="color:#fff; font-weight:900; font-size:1.3rem; margin-top:16px; text-align:center; text-shadow:0 2px 8px rgba(0,0,0,0.6); opacity:0; transition:opacity 0.4s;">マーモットや！！<br>こんなん初めて見たで！！</p>
                 <p style="color:#ffd700; font-weight:900; font-size:1.1rem; margin-top:10px; opacity:0; transition:opacity 0.4s;">+${payout}枚 獲得！</p>
                 <p style="color:#e91e63; font-weight:900; font-size:1rem; margin-top:4px; opacity:0; transition:opacity 0.4s;">🎰 ガチャコイン +${bonusGachaCoins}枚もおまけ！</p>

@@ -24,8 +24,7 @@
                 openModal('shop-modal');
                 switchShopTab(currentShopTab);
                 updateShopTabHighlight();
-                playBgmLoop('audio/bgm_shop.mp3'); // ショップ専用BGMに切り替え
-                if (IS_DEV_MODE) document.getElementById('backbtn-adjust-panel').style.display = 'block';
+                playBgmLoop('audio/bgm/bgm_shop.mp3'); // ショップ専用BGMに切り替え
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
@@ -35,7 +34,7 @@
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 closeModal('shop-modal');
-                playBgmLoop('audio/bgm.mp3'); // 通常のBGMに戻す
+                playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
@@ -89,7 +88,7 @@
         // 🎰 3段階の回転演出（1連・10連で共通）：Promiseを返し、終わったら呼び出し側が次の処理に進める
         function playGachaCrankSequence() {
             const crank = document.getElementById('gacha-crank');
-            playAudioFile('audio/gacha_crank.mp3');
+            playAudioFile('audio/gacha/crank.mp3');
 
             // ステージ①：ゆっくり1回転
             return crank.animate(
@@ -105,7 +104,7 @@
                 ).finished;
             }).then(() => {
                 // ステージ③：一番速く3回転、本体ごと揺れる
-                playAudioFile('audio/gacha_crank.mp3');
+                playAudioFile('audio/gacha/crank.mp3');
                 screenShake('big');
                 vibrate([20, 20, 20, 20, 40]);
                 // 本体・レバー・カプセルをまとめている枠ごと揺らす（枠自体はtop/leftで位置決めしているため、
@@ -250,7 +249,7 @@
             capsuleTop.style.filter = currentGachaRarity.filter;
             capsuleBottom.style.filter = currentGachaRarity.filter;
 
-            playAudioFile('audio/gacha_drop.mp3');
+            playAudioFile('audio/gacha/drop.mp3');
             vibrate([15, 30, 60]);
             capsuleWrap.animate(
                 [
@@ -287,7 +286,7 @@
             const capsuleWhole = document.getElementById('gacha-capsule-whole');
             const capsuleTop = document.getElementById('gacha-capsule-top');
             const capsuleBottom = document.getElementById('gacha-capsule-bottom');
-            playAudioFile('audio/gacha_open.mp3');
+            playAudioFile('audio/gacha/open.mp3');
             vibrate([10, 20, 10]);
             screenFlash('#ffffff', 0.25);
 
@@ -415,7 +414,7 @@
             capsuleImg.style.filter = rarities[index].filter;
             capsuleWrap.style.display = 'block';
 
-            playAudioFile('audio/gacha_drop.mp3');
+            playAudioFile('audio/gacha/drop.mp3');
             vibrate([12]);
             capsuleWrap.animate(
                 [
@@ -458,15 +457,15 @@
                 cell.style.cssText = `position:relative; width:${CAPSULE_PX}px; height:${CAPSULE_PX}px; display:flex; align-items:center; justify-content:center;`;
 
                 const whole = document.createElement('img');
-                whole.src = 'ui_images/gacha_capsule.webp';
+                whole.src = 'ui_images/gacha/capsule.webp';
                 whole.style.cssText = `position:absolute; width:100%; display:block; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35)) ${r.filter};`;
 
                 const top = document.createElement('img');
-                top.src = 'ui_images/gacha_capsule_top.webp';
+                top.src = 'ui_images/gacha/capsule_top.webp';
                 top.style.cssText = `position:absolute; width:100%; display:none; filter:${r.filter};`;
 
                 const bottom = document.createElement('img');
-                bottom.src = 'ui_images/gacha_capsule_bottom.webp';
+                bottom.src = 'ui_images/gacha/capsule_bottom.webp';
                 bottom.style.cssText = `position:absolute; width:100%; display:none; filter:${r.filter};`;
 
                 const icon = document.createElement('div');
@@ -509,7 +508,7 @@
             const icon = iconEls[index];
             const flair = rarities[index].flair;
             cell.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 入りきらない分は、開く場所に合わせて自動でスクロール
-            playAudioFile('audio/gacha_open.mp3');
+            playAudioFile('audio/gacha/open.mp3');
             vibrate(flair.vibrate);
             if (flair.glow > 0) screenFlash(rarities[index].color, flair.flash * 0.6); // 10連は連続で光ると煩わしいので、1連より控えめに
 
@@ -594,11 +593,11 @@
                 listContainer.innerHTML = `
                     <div id="gacha-stage" style="position:relative; width:100%; height:360px;">
                         <div id="gacha-illustration-wrap" style="position:absolute; top:24px; left:0; width:100%; height:340px;">
-                            <img id="gacha-machine-body" src="ui_images/gacha_machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
-                            <img id="gacha-crank" src="ui_images/gacha_crank.webp" alt="" style="position:absolute; width:18%; top:62.402035%; left:40.544265%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
+                            <img id="gacha-machine-body" src="ui_images/gacha/machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
+                            <img id="gacha-crank" src="ui_images/gacha/crank.webp" alt="" style="position:absolute; width:18%; top:62.402035%; left:40.544265%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
 
                             <div id="gacha-capsule-wrap-mini" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
-                                <img src="ui_images/gacha_capsule.webp" alt="" style="width:100%; display:block;">
+                                <img src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
                             </div>
                         </div>
 
@@ -618,9 +617,9 @@
                     <div id="gacha-reveal-fullscreen" style="display:none; position:fixed; inset:0; max-width:480px; margin:0 auto; z-index:1500; background:radial-gradient(ellipse at center, #5a4330 0%, #1a0f08 100%); align-items:center; justify-content:center;">
                         <div id="gacha-reveal-single" style="display:none; position:relative; width:100%; height:100%; align-items:center; justify-content:center;">
                             <div id="gacha-capsule-wrap" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); width:45%; max-width:220px; z-index:4;">
-                                <img id="gacha-capsule-whole" src="ui_images/gacha_capsule.webp" alt="" style="width:100%; display:block;">
-                                <img id="gacha-capsule-top" src="ui_images/gacha_capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
-                                <img id="gacha-capsule-bottom" src="ui_images/gacha_capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                                <img id="gacha-capsule-whole" src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
+                                <img id="gacha-capsule-top" src="ui_images/gacha/capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                                <img id="gacha-capsule-bottom" src="ui_images/gacha/capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
                             </div>
 
                             <div id="gacha-prize-reveal" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); text-align:center; z-index:5; opacity:0;">
@@ -650,7 +649,7 @@
                     }
                     const row = document.createElement('div');
                     row.className = "list-item";
-                    const thumbSrc = c.img || 'ui_images/image_0.webp';
+                    const thumbSrc = c.img || 'ui_images/mochisuke/image_0.webp';
                     const thumbFilter = c.img ? 'none' : (c.filter || 'none');
                     row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">👕 ${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
                     listContainer.appendChild(row);

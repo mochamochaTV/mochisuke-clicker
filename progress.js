@@ -214,7 +214,7 @@
             gachaCoins += GACHA_COIN_JAPAN_CLEAR;
             saveGame();
 
-            playAudioFile('audio/japan_clear.mp3'); // 専用の祝賀SE（無ければ用意してください。それまでは無音になります）
+            playAudioFile('audio/mochisuke/japan_clear.mp3'); // 専用の祝賀SE（無ければ用意してください。それまでは無音になります）
             vibrate([40, 60, 40, 60, 40, 60, 160]);
 
             // 紙吹雪演出：色を増やし、量も時間も伸ばして、より豪華に
@@ -335,7 +335,7 @@
             bg.onerror = () => {
                 alert('画像の生成に失敗しました。しばらくしてからもう一度お試しください。');
             };
-            bg.src = 'ui_images/japan_clear_bg.webp';
+            bg.src = 'ui_images/backgrounds/japan_clear.webp';
         }
 
         let collectedStamps = {}; // { 都道府県のインデックス: true }  -- スタンプ帳に押した記録

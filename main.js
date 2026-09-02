@@ -170,7 +170,7 @@
             if (ambientSparkles.length > 18) ambientSparkles.shift(); // 増えすぎ防止
         }
         setInterval(spawnAmbientSparkle, 900);
-        const particleImg = new Image(); particleImg.src = 'ui_images/mochi_particle.webp';
+        const particleImg = new Image(); particleImg.src = 'ui_images/mochisuke/mochi_particle.webp';
         // ctx.filter (hue-rotate/drop-shadow) はスマホブラウザ(特にiOS Safari)で
         // 正しく適用されないことがあるため、金色版画像を事前に1回だけ焼き込んで使い回す
         let goldParticleImg = null;
@@ -399,7 +399,7 @@
         function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
-            playBgmLoop('audio/bgm.mp3');
+            playBgmLoop('audio/bgm/bgm.mp3');
         }
 
         // 🎬 OP画面をタップしてゲームへ。ブラウザの仕様上「一切操作なしで音を鳴らす」ことはiOSではできないが、

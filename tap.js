@@ -233,7 +233,7 @@
             mochiDeformWrap.classList.remove('mochi-scream');
             void mochiDeformWrap.offsetWidth;
             mochiDeformWrap.classList.add('mochi-scream'); // 拡大・シェイクは、帽子・顔パーツも道連れの入れ物にかける
-            mochiBtnElement.src = 'ui_images/image_scream.webp';
+            mochiBtnElement.src = 'ui_images/mochisuke/image_scream.webp';
             flyOffKisekaeOverlays(); // 🎩💨 叫びの勢いで、帽子・顔パーツが吹っ飛ぶ
             updateMouthPatchVisibility();
 
@@ -254,7 +254,7 @@
         // 🌟 覚醒：ごく低確率でもちすけが覚醒して叫び、そのタップだけ10倍のもちを吐き出す
         // （おみやげをあげないときの「我慢の限界」の叫びとは完全に別の仕組み。見た目・音は使い回すが、もちの量には影響しない）
         function triggerAwakeningScream() {
-            playAudioFile('audio/mochi_scream.mp3');
+            playAudioFile('audio/mochisuke/mochi_scream.mp3');
             vibrate([60, 40, 60, 40, 80, 40, 100]);
             screenShake('big');
             screenFlash('#ffd700', 0.35);
@@ -486,7 +486,7 @@
             if (stretchSoundSource) return;
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-            const buffer = audioBuffers['audio/mochi_stretch.mp3'];
+            const buffer = audioBuffers['audio/mochisuke/mochi_stretch.mp3'];
             if (!buffer) return;
             stretchSoundSource = ctx.createBufferSource();
             stretchSoundSource.buffer = buffer;
@@ -654,7 +654,7 @@
                 const xOffsets = [-130, 130];
                 for (let i = 0; i < 2; i++) {
                     const img = document.createElement('img');
-                    img.src = 'ui_images/image_0.webp';
+                    img.src = 'ui_images/mochisuke/image_0.webp';
                     img.className = 'bunshin-clone-img';
                     img.style.position = 'absolute'; 
                     img.style.width = '190px'; 
@@ -673,7 +673,7 @@
             
             if (key === 'hissatsu') {
                 // 必殺技専用BGMの再生（通常BGMから切り替え）
-                playBgmLoop('audio/hissatsu_bgm.mp3');
+                playBgmLoop('audio/bgm/hissatsu_bgm.mp3');
 
                 // 親方化して巨大に固定
                 mochiBreatheWrapEl.classList.remove('breathe-idle');
@@ -689,7 +689,7 @@
             if (key === 'skill3') { document.getElementById('bunshin-container').innerHTML = ''; bunshinCloneRects = []; bunshinCloneEls = []; }
             if (key === 'hissatsu') {
                 // 必殺技BGMを終了し通常BGMを再開
-                if (isBgmInitialized) playBgmLoop('audio/bgm.mp3');
+                if (isBgmInitialized) playBgmLoop('audio/bgm/bgm.mp3');
 
                 mochiDeformWrap.style.transform = 'scale(1)';
                 const clones = document.querySelectorAll('.bunshin-clone-img');
@@ -710,7 +710,7 @@
                 : null;
             if (clothesItem) return clothesItem.img;
             const target = clothesData.find(c => c.id === equippedClotheId);
-            return (target && target.img) ? target.img : 'ui_images/image_0.webp';
+            return (target && target.img) ? target.img : 'ui_images/mochisuke/image_0.webp';
         }
         function resetMochiFilter() {
             if (!isScreamActive) {
@@ -883,7 +883,7 @@
             if (isTutorialActive) return;
             if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) {
                 // 我慢の限界：専用の叫び効果音＋専用イラスト＋周りに散る「あ゛」で叫んでる感を強化
-                playAudioFile('audio/mochi_scream.mp3');
+                playAudioFile('audio/mochisuke/mochi_scream.mp3');
                 vibrate([60, 40, 60, 40, 80, 40, 100]);
                 screenShake('big');
                 screenFlash('#ff1744', 0.28);
