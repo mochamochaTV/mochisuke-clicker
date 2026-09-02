@@ -852,6 +852,18 @@
 
         let feedDragState = null;
 
+        // 🐛修正：給餌中に他のボタン（ランキング等）を押して別画面へ移動しても、
+        // 置きっぱなしのおみやげアイコンが最前面に残り続けてしまっていたのを片付ける
+        function cancelFeedDragIfActive() {
+            const icon = document.getElementById('feed-placed-icon');
+            if (icon) icon.remove();
+            document.removeEventListener('pointermove', onFeedDragMove);
+            document.removeEventListener('pointerup', onFeedDragEnd);
+            document.removeEventListener('pointercancel', onFeedDragEnd);
+            feedDragState = null;
+            clearTimeout(feedTeaseTimer);
+        }
+
         // じらすとだんだん機嫌が悪くなっていくセリフ（最終段階で叫ぶ）
         const FEED_TEASE_TIME_MS = 10000; // これだけ経つと、ドロップに失敗しなくても自動で機嫌が悪くなる
         let feedTeaseLevel = 0;

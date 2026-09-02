@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-142">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-143">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -286,7 +286,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-142</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-143</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -462,6 +462,18 @@
     <div id="shop-modal" class="modal">
         <div class="modal-content modal-fullscreen">
             <button class="modal-back-btn" onclick="closeShop()"></button>
+
+            <div id="backbtn-adjust-panel" style="display:none; position:fixed; top:70px; right:4px; z-index:2000; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:180px; font-size:0.6rem;">
+                <div style="font-size:0.6rem; font-weight:900; margin-bottom:4px;">戻るボタン（全画面共通）</div>
+                <button onclick="toggleBackBtnAdjustMode()" id="backbtn-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; width:100%;">位置調整ON/OFF</button>
+                <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
+                <div id="backbtn-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
+                <button onclick="copyBackBtnCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
+                <textarea id="backbtn-copy-textarea" readonly style="display:none; width:100%; height:60px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
+            </div>
+            <div id="backbtn-resize-handle-r" style="display:none; position:fixed; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:2001; cursor:ew-resize;"></div>
+            <div id="backbtn-resize-handle-b" style="display:none; position:fixed; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:2001; cursor:ns-resize;"></div>
+            <div id="backbtn-resize-handle-br" style="display:none; position:fixed; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:2001; cursor:nwse-resize;"></div>
 
             <div id="omiyage-shelf-view">
                 <div id="omiyage-shelf-container">
@@ -897,13 +909,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-142"></script>
-    <script src="state.js?v=2026-08-05-142"></script>
-    <script src="tap.js?v=2026-08-05-142"></script>
-    <script src="shop.js?v=2026-08-05-142"></script>
-    <script src="progress.js?v=2026-08-05-142"></script>
-    <script src="minigames.js?v=2026-08-05-142"></script>
-    <script src="ui.js?v=2026-08-05-142"></script>
-    <script src="main.js?v=2026-08-05-142"></script>
+    <script src="data.js?v=2026-08-05-143"></script>
+    <script src="state.js?v=2026-08-05-143"></script>
+    <script src="tap.js?v=2026-08-05-143"></script>
+    <script src="shop.js?v=2026-08-05-143"></script>
+    <script src="progress.js?v=2026-08-05-143"></script>
+    <script src="minigames.js?v=2026-08-05-143"></script>
+    <script src="ui.js?v=2026-08-05-143"></script>
+    <script src="main.js?v=2026-08-05-143"></script>
 </body>
 </html>

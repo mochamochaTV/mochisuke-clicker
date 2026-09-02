@@ -25,6 +25,7 @@
                 switchShopTab(currentShopTab);
                 updateShopTabHighlight();
                 playBgmLoop('audio/bgm_shop.mp3'); // ショップ専用BGMに切り替え
+                if (IS_DEV_MODE) document.getElementById('backbtn-adjust-panel').style.display = 'block';
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
