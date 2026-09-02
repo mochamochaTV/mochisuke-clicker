@@ -369,3 +369,28 @@
             { id: 'warehouse-item-ticket',  label: 'アイテム一覧', action: 'ticket',  img: 'ui_images/warehouse/ticket.webp',  top: 61.07716,  left: 7.781172,  width: 40, height: 34 },
             { id: 'warehouse-item-diary',   label: '絵日記',       action: 'diary',   img: 'ui_images/warehouse/diary.webp',   top: 45.19213,  left: 53.745547, width: 40, height: 34 },
         ];
+
+        // ===================================================================
+        // 🛋️ マイルーム：壁紙・床・家具（4スロット）の6カテゴリ。着せ替え部屋と同じ操作方式
+        // 壁紙・床は常に1つ装着、家具は各スロットに1つずつ置ける（無しも選べる）
+        // ===================================================================
+        const MYROOM_ITEMS = {
+            wallpaper: [
+                { id: 'wallpaper_default', name: 'ふつうの壁', star: 1, img: 'ui_images/myroom/wallpaper_default.webp' },
+            ],
+            flooring: [
+                { id: 'flooring_default', name: 'ふつうの床', star: 1, img: 'ui_images/myroom/flooring_default.webp' },
+            ],
+            wall_deco:  [],  // 壁掛け（絵画・時計など）
+            big_furniture: [], // 大型家具（ソファ・ベッドなど）
+            table: [],       // 机・棚
+            small_deco: [],  // 小物（観葉植物・ぬいぐるみなど）
+        };
+        const MYROOM_CATEGORY_LABELS = { wallpaper: '壁紙', flooring: '床', wall_deco: '壁掛け', big_furniture: '大型家具', table: '机・棚', small_deco: '小物' };
+        // 家具4カテゴリは、部屋の中の決まった位置（%指定）に置かれる。壁紙・床は部屋全体を覆うので座標不要
+        const MYROOM_SLOT_POSITIONS = {
+            wall_deco:      { top: 8,  left: 30, width: 26, height: 20 },
+            big_furniture:  { top: 48, left: 4,  width: 40, height: 40 },
+            table:          { top: 52, left: 56, width: 30, height: 32 },
+            small_deco:     { top: 30, left: 68, width: 20, height: 20 },
+        };

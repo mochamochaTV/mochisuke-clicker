@@ -161,7 +161,8 @@
                 ownedKisekaeItems: ownedKisekaeItems, equippedKisekae: equippedKisekae,
                 missionCounters: missionCounters, missionDailyDate: missionDailyDate, missionWeeklyWeekKey: missionWeeklyWeekKey,
                 missionDailySelected: missionDailySelected, missionWeeklySelected: missionWeeklySelected,
-                missionClaimed: missionClaimed, tutorialMissionStep: tutorialMissionStep
+                missionClaimed: missionClaimed, tutorialMissionStep: tutorialMissionStep,
+                ownedMyroomItems: ownedMyroomItems, equippedMyroom: equippedMyroom
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -242,6 +243,8 @@
                     missionWeeklySelected = state.missionWeeklySelected ?? [];
                     missionClaimed = state.missionClaimed ?? {};
                     tutorialMissionStep = state.tutorialMissionStep ?? 0;
+                    ownedMyroomItems = state.ownedMyroomItems ?? { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [] };
+                    equippedMyroom = state.equippedMyroom ?? { wallpaper: 'wallpaper_default', flooring: 'flooring_default', wall_deco: null, big_furniture: null, table: null, small_deco: null };
                     // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
                     prestigeShopLv = state.prestigeShopLv ?? {
                         offlineCap: state.offlineCapBonusHours ?? 0,

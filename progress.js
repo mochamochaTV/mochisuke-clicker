@@ -16,6 +16,10 @@
         let missionWeeklySelected = [];  // 今週選ばれているウィークリーミッションのID
         let missionClaimed = {};         // { [ミッションID]: true } 受け取り済み
         let tutorialMissionStep = 0;     // チュートリアルミッション、次に見せるステップ番号
+
+        // 🛋️ マイルーム：所持アイテムと、今の配置状況
+        let ownedMyroomItems = { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [] };
+        let equippedMyroom = { wallpaper: 'wallpaper_default', flooring: 'flooring_default', wall_deco: null, big_furniture: null, table: null, small_deco: null };
         let previewKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' }; // 「決定」を押すまでの試着中の状態
         let prestigeScoreHistory = []; // 各転生の直前に持っていたもち数の記録（将来使う可能性があるので記録だけしておく）
         let prestigePoints = 0;     // 転生ポイント（所持数、将来のショップで消費する予定）

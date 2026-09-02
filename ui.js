@@ -533,9 +533,6 @@
             });
         }
 
-        function openMyRoomPlaceholder() {
-            alert('🏠 「マイルーム」は準備中です！\nお楽しみに！');
-        }
         // 🚧「移動する」の最終的なUIはまだ未定。ひとまず一覧を出す形で仮実装しておく
         function openMoveMenu() {
             openModal('move-menu-modal'); // 移動先を選ぶだけなので、ここではフェードしない（選んだ時にフェードする）
@@ -642,6 +639,118 @@
                 badge.style.left = (omiyagePart.left + omiyagePart.width - 12) + '%';
             }
         }
+        // ===================================================================
+        // 🛋️ マイルーム
+        // ===================================================================
+        let previewMyroom = {};
+        function openMyRoom() {
+            previewMyroom = { ...equippedMyroom };
+            renderMyroomLayout();
+            openMyroomCategory('wallpaper');
+            openModal('myroom-modal');
+        }
+        function closeMyRoom() {
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                closeModal('myroom-modal');
+                openMoveMenu();
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
+        }
+        function renderMyroomLayout() {
+            const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === previewMyroom.wallpaper) || MYROOM_ITEMS.wallpaper[0];
+            const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === previewMyroom.flooring) || MYROOM_ITEMS.flooring[0];
+            document.getElementById('myroom-wallpaper-layer').src = wallpaperItem.img;
+            document.getElementById('myroom-flooring-layer').src = flooringItem.img;
+
+            Object.keys(MYROOM_SLOT_POSITIONS).forEach(cat => {
+                const el = document.getElementById(`myroom-slot-${cat}`);
+                const itemId = previewMyroom[cat];
+                const pos = MYROOM_SLOT_POSITIONS[cat];
+                if (itemId) {
+                    const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
+                    if (item) {
+                        el.src = item.img;
+                        el.style.display = 'block';
+                        el.style.top = pos.top + '%';
+                        el.style.left = pos.left + '%';
+                        el.style.width = pos.width + '%';
+                        el.style.height = pos.height + '%';
+                    }
+                } else {
+                    el.style.display = 'none';
+                }
+            });
+        }
+        const MYROOM_CATEGORY_ORDER = ['wallpaper', 'flooring', 'wall_deco', 'big_furniture', 'table', 'small_deco'];
+        let myroomCurrentCategory = 'wallpaper';
+        function openMyroomCategory(cat) {
+            playAudioFile('audio/skill_tap.mp3');
+            myroomCurrentCategory = cat;
+            const sortedItems = [...MYROOM_ITEMS[cat]].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+            // 壁紙・床は常に何か装着しているので「外す」ボタンは無し。家具4種は「外す」ボタンあり
+            const canRemove = (cat !== 'wallpaper' && cat !== 'flooring');
+            const items = canRemove ? [{ id: null, name: '外す', isRemoveButton: true }, ...sortedItems] : sortedItems;
+            const owned = ownedMyroomItems[cat] || [];
+
+            const leftList = document.getElementById('myroom-item-list-left');
+            const rightList = document.getElementById('myroom-item-list-right');
+            leftList.innerHTML = ''; rightList.innerHTML = '';
+
+            items.forEach((item, i) => {
+                const cell = document.createElement('div');
+                if (item.isRemoveButton) {
+                    const isEquipped = previewMyroom[cat] == null;
+                    cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); cursor:pointer;`;
+                    cell.innerHTML = `<div style="font-size:1.8rem; color:#e57373; font-weight:900;">✕</div>`;
+                    cell.onclick = () => equipMyroomItem(cat, null);
+                    (i % 2 === 0 ? leftList : rightList).appendChild(cell);
+                    return;
+                }
+                const isOwned = owned.includes(item.id);
+                const isEquipped = previewMyroom[cat] === item.id;
+                cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
+                cell.innerHTML = `<img src="${item.img}" alt="${item.name}" style="width:80%; height:80%; object-fit:contain; ${isOwned ? '' : 'filter:grayscale(1); opacity:0.5;'}">`;
+                if (!isOwned) {
+                    cell.insertAdjacentHTML('beforeend', `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">🔒</div>`);
+                } else {
+                    cell.onclick = () => equipMyroomItem(cat, item.id);
+                }
+                (i % 2 === 0 ? leftList : rightList).appendChild(cell);
+            });
+
+            if (sortedItems.length === 0) {
+                const emptyMsg = `<div style="text-align:center; color:#fff; font-size:0.68rem; padding:14px; text-shadow:0 1px 3px rgba(0,0,0,0.5); grid-column:1/-1;">まだアイテムがありません</div>`;
+                leftList.insertAdjacentHTML('beforeend', emptyMsg);
+            }
+
+            document.querySelectorAll('.myroom-cat-btn').forEach((btn, idx) => {
+                btn.style.boxShadow = (MYROOM_CATEGORY_ORDER[idx] === cat) ? '0 0 0 3px #ffd700, 0 3px 8px rgba(0,0,0,0.25)' : '0 3px 8px rgba(0,0,0,0.25)';
+            });
+        }
+        let myroomNameLabelTimeout = null;
+        function equipMyroomItem(cat, id) {
+            previewMyroom[cat] = id;
+            renderMyroomLayout();
+            openMyroomCategory(cat);
+            const item = id ? MYROOM_ITEMS[cat].find(i => i.id === id) : null;
+            const label = document.getElementById('myroom-item-name-label');
+            clearTimeout(myroomNameLabelTimeout);
+            label.textContent = item ? item.name : '外す';
+            label.style.display = 'block';
+            myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
+        }
+        function confirmMyroomLayout() {
+            equippedMyroom = { ...previewMyroom };
+            saveGame();
+            const btn = document.getElementById('myroom-confirm-btn');
+            const original = btn.innerText;
+            btn.innerText = '✅ 決定しました！';
+            setTimeout(() => { btn.innerText = original; }, 1200);
+        }
+
         function openWarehouse() {
             let boughtCount = 0;
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
@@ -787,6 +896,7 @@
         let kisekaeCurrentCategory = 'clothes';
         // カテゴリを開いて、名前順・Zの字並びで左右にアイテムを並べる
         function openKisekaeCategory(cat) {
+            playAudioFile('audio/skill_tap.mp3');
             kisekaeCurrentCategory = cat;
             const sortedItems = [...KISEKAE_ITEMS[cat]].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
             // 帽子・顔パーツは、一番左上に「外す」ボタンを置く（服は必ず何か着ている状態にするので対象外）

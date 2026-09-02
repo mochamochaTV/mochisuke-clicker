@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-145">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-146">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -286,7 +286,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-145</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-146</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -400,6 +400,39 @@
         </div>
     </div>
 
+    <div id="myroom-modal" class="modal">
+        <div class="modal-content modal-fullscreen">
+            <button class="modal-back-btn" onclick="closeMyRoom()"></button>
+            <div id="myroom-stage" style="position:relative; flex:1; min-height:0; overflow:hidden;">
+                <img id="myroom-wallpaper-layer" src="" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:1;">
+                <img id="myroom-flooring-layer" src="" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:2;">
+
+                <img id="myroom-mochisuke" src="ui_images/mochisuke/image_0.webp" alt="" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:3; pointer-events:none;">
+
+                <img id="myroom-slot-wall_deco" class="myroom-slot-img" src="" alt="" style="display:none; position:absolute; z-index:4; cursor:pointer;">
+                <img id="myroom-slot-big_furniture" class="myroom-slot-img" src="" alt="" style="display:none; position:absolute; z-index:4; cursor:pointer;">
+                <img id="myroom-slot-table" class="myroom-slot-img" src="" alt="" style="display:none; position:absolute; z-index:4; cursor:pointer;">
+                <img id="myroom-slot-small_deco" class="myroom-slot-img" src="" alt="" style="display:none; position:absolute; z-index:4; cursor:pointer;">
+
+                <div id="myroom-item-name-label" style="display:none; position:absolute; top:17%; left:50%; transform:translateX(-50%); z-index:9; background:rgba(255,255,255,0.95); color:#5d4037; font-weight:900; font-size:0.85rem; padding:5px 14px; border-radius:16px; box-shadow:0 2px 6px rgba(0,0,0,0.2); white-space:nowrap;"></div>
+
+                <div style="position:absolute; top:6%; left:50%; transform:translateX(-50%); display:flex; gap:8px; z-index:10; flex-wrap:wrap; justify-content:center; width:90%;">
+                    <button class="myroom-cat-btn" onclick="openMyroomCategory('wallpaper')" style="background:#ff8a65;">🖼️</button>
+                    <button class="myroom-cat-btn" onclick="openMyroomCategory('flooring')" style="background:#a1887f;">🟫</button>
+                    <button class="myroom-cat-btn" onclick="openMyroomCategory('wall_deco')" style="background:#4fc3f7;">🖼️</button>
+                    <button class="myroom-cat-btn" onclick="openMyroomCategory('big_furniture')" style="background:#ff6fa5;">🛋️</button>
+                    <button class="myroom-cat-btn" onclick="openMyroomCategory('table')" style="background:#66bb6a;">🪑</button>
+                    <button class="myroom-cat-btn" onclick="openMyroomCategory('small_deco')" style="background:#ba68c8;">🪴</button>
+                </div>
+
+                <div id="myroom-item-list-left" style="position:absolute; left:2%; top:24%; bottom:16%; width:21%; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; display:flex; flex-direction:column; gap:8px; z-index:8;"></div>
+                <div id="myroom-item-list-right" style="position:absolute; right:2%; top:24%; bottom:16%; width:21%; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; display:flex; flex-direction:column; gap:8px; z-index:8;"></div>
+
+                <button id="myroom-confirm-btn" onclick="confirmMyroomLayout()" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); z-index:10; background:linear-gradient(135deg,#ff9800,#ff6fa5); color:#fff; border:none; border-radius:24px; padding:10px 28px; font-weight:900; font-size:0.95rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">✅ この部屋に決定</button>
+            </div>
+        </div>
+    </div>
+
     <div id="friend-modal" class="modal">
         <div class="modal-content">
             <button class="modal-close-x" onclick="closeModal('friend-modal')">×</button>
@@ -430,8 +463,8 @@
                 <img id="move-sign-shop" class="move-part-img" src="ui_images/move/sign_shop.webp" alt="" onclick="moveMenuGoTo(openShop)" style="position:absolute; cursor:pointer;">
                 <img id="move-house-arcade" class="move-part-img" src="ui_images/move/house_arcade.webp" alt="" onclick="moveMenuGoTo(openMinigameCenter)" style="position:absolute; cursor:pointer;">
                 <img id="move-sign-arcade" class="move-part-img" src="ui_images/move/sign_arcade.webp" alt="" onclick="moveMenuGoTo(openMinigameCenter)" style="position:absolute; cursor:pointer;">
-                <img id="move-house-myroom" class="move-part-img" src="ui_images/move/house_myroom.webp" alt="" onclick="openMyRoomPlaceholder()" style="position:absolute; cursor:pointer;">
-                <img id="move-sign-myroom" class="move-part-img" src="ui_images/move/sign_myroom.webp" alt="" onclick="openMyRoomPlaceholder()" style="position:absolute; cursor:pointer;">
+                <img id="move-house-myroom" class="move-part-img" src="ui_images/move/house_myroom.webp" alt="" onclick="moveMenuGoTo(openMyRoom)" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-myroom" class="move-part-img" src="ui_images/move/sign_myroom.webp" alt="" onclick="moveMenuGoTo(openMyRoom)" style="position:absolute; cursor:pointer;">
                 <img id="move-sign-return" class="move-part-img" src="ui_images/move/sign_return.webp" alt="" onclick="moveMenuGoHome()" style="position:absolute; cursor:pointer;">
                 <img id="move-mochisuke-guide" src="ui_images/mochisuke/image_0.webp" alt="" style="position:absolute; pointer-events:none; z-index:20;">
 
@@ -898,13 +931,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-145"></script>
-    <script src="state.js?v=2026-08-05-145"></script>
-    <script src="tap.js?v=2026-08-05-145"></script>
-    <script src="shop.js?v=2026-08-05-145"></script>
-    <script src="progress.js?v=2026-08-05-145"></script>
-    <script src="minigames.js?v=2026-08-05-145"></script>
-    <script src="ui.js?v=2026-08-05-145"></script>
-    <script src="main.js?v=2026-08-05-145"></script>
+    <script src="data.js?v=2026-08-05-146"></script>
+    <script src="state.js?v=2026-08-05-146"></script>
+    <script src="tap.js?v=2026-08-05-146"></script>
+    <script src="shop.js?v=2026-08-05-146"></script>
+    <script src="progress.js?v=2026-08-05-146"></script>
+    <script src="minigames.js?v=2026-08-05-146"></script>
+    <script src="ui.js?v=2026-08-05-146"></script>
+    <script src="main.js?v=2026-08-05-146"></script>
 </body>
 </html>
