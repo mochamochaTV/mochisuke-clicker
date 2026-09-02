@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-140">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-141">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -286,7 +286,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-140</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-141</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -423,7 +423,7 @@
 
     <div id="move-menu-modal" class="modal">
         <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/move_menu_bg.webp'); background-size:cover; background-position:center;">
-            <button class="modal-fullscreen-close" onclick="closeModal('move-menu-modal')">×</button>
+            <button class="modal-fullscreen-close" onclick="closeMoveMenu()">×</button>
             <div id="move-menu-stage" style="position:relative; flex:1; min-height:0;">
                 <img id="move-house-warehouse" class="move-part-img" src="ui_images/move_house_warehouse.webp" alt="" onclick="moveMenuGoTo(openWarehouse)" style="position:absolute; cursor:pointer;">
                 <img id="move-sign-warehouse" class="move-part-img" src="ui_images/move_sign_warehouse.webp" alt="" onclick="moveMenuGoTo(openWarehouse)" style="position:absolute; cursor:pointer;">
@@ -434,6 +434,7 @@
                 <img id="move-house-myroom" class="move-part-img" src="ui_images/move_house_myroom.webp" alt="" onclick="openMyRoomPlaceholder()" style="position:absolute; cursor:pointer;">
                 <img id="move-sign-myroom" class="move-part-img" src="ui_images/move_sign_myroom.webp" alt="" onclick="openMyRoomPlaceholder()" style="position:absolute; cursor:pointer;">
                 <img id="move-sign-return" class="move-part-img" src="ui_images/move_sign_return.webp" alt="" onclick="moveMenuGoHome()" style="position:absolute; cursor:pointer;">
+                <img id="move-mochisuke-guide" src="ui_images/image_0.webp" alt="" style="position:absolute; pointer-events:none; z-index:20;">
 
             </div>
         </div>
@@ -441,7 +442,7 @@
 
     <div id="warehouse-modal" class="modal">
         <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/monooki_bg.webp'); background-size:cover; background-position:center;">
-            <button class="modal-fullscreen-close" onclick="closeWarehouse()">×</button>
+            <button class="modal-back-btn" onclick="closeWarehouse()"></button>
             <div id="warehouse-item-stage" style="position:relative; flex:1; min-height:0;">
                 <span id="warehouse-omiyage-badge" class="warehouse-grid-badge" style="position:absolute; z-index:5;"></span>
 
@@ -461,7 +462,7 @@
 
     <div id="shop-modal" class="modal">
         <div class="modal-content modal-fullscreen">
-            <button class="modal-fullscreen-close" onclick="closeShop()">×</button>
+            <button class="modal-back-btn" onclick="closeShop()"></button>
 
             <div id="omiyage-shelf-view">
                 <div id="omiyage-shelf-container">
@@ -623,7 +624,7 @@
 
     <div id="minigame-center-modal" class="modal">
         <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/minigame_center_bg.webp'); background-size:cover; background-position:center;">
-            <button class="modal-fullscreen-close" onclick="closeMinigameCenter()">×</button>
+            <button class="modal-back-btn" onclick="closeMinigameCenter()"></button>
             <div id="minigame-tile-view" style="position:relative; flex:1; min-height:0;">
             </div>
             <div id="minigame-play-view" style="display:none; flex:1; min-height:0; overflow-y:auto; background:rgba(255,248,236,0.95); padding:14px; box-sizing:border-box;"></div>
@@ -833,7 +834,7 @@
 
     <div id="ranking-modal" class="modal">
         <div class="modal-content modal-fullscreen">
-            <button class="modal-fullscreen-close" onclick="closeModal('ranking-modal')">×</button>
+            <button class="modal-back-btn" onclick="closeRanking()"></button>
 
             <div style="width:100%; flex-shrink:0; position:relative;">
                 <img src="ui_images/ranking_banner.webp" alt="ランキング" style="width:100%; height:auto; display:block;">
@@ -897,13 +898,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-140"></script>
-    <script src="state.js?v=2026-08-05-140"></script>
-    <script src="tap.js?v=2026-08-05-140"></script>
-    <script src="shop.js?v=2026-08-05-140"></script>
-    <script src="progress.js?v=2026-08-05-140"></script>
-    <script src="minigames.js?v=2026-08-05-140"></script>
-    <script src="ui.js?v=2026-08-05-140"></script>
-    <script src="main.js?v=2026-08-05-140"></script>
+    <script src="data.js?v=2026-08-05-141"></script>
+    <script src="state.js?v=2026-08-05-141"></script>
+    <script src="tap.js?v=2026-08-05-141"></script>
+    <script src="shop.js?v=2026-08-05-141"></script>
+    <script src="progress.js?v=2026-08-05-141"></script>
+    <script src="minigames.js?v=2026-08-05-141"></script>
+    <script src="ui.js?v=2026-08-05-141"></script>
+    <script src="main.js?v=2026-08-05-141"></script>
 </body>
 </html>

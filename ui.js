@@ -535,6 +535,40 @@
         function openMoveMenu() {
             openModal('move-menu-modal'); // 移動先を選ぶだけなので、ここではフェードしない（選んだ時にフェードする）
             renderMoveMenuParts();
+            startMoveMochisukeLoop();
+        }
+        // 🐹 もちすけが、ものおき→ショップ→ゲーセン→マイルーム→戻る看板、の順に看板の右をワープして回る演出
+        const MOVE_MOCHISUKE_SIGN_ORDER = ['move-sign-warehouse', 'move-sign-shop', 'move-sign-arcade', 'move-sign-myroom', 'move-sign-return'];
+        let moveMochisukeLoopTimer = null;
+        let moveMochisukeLoopIndex = 0;
+        function startMoveMochisukeLoop() {
+            stopMoveMochisukeLoop();
+            moveMochisukeLoopIndex = 0;
+            updateMoveMochisukePosition();
+            moveMochisukeLoopTimer = setInterval(() => {
+                moveMochisukeLoopIndex = (moveMochisukeLoopIndex + 1) % MOVE_MOCHISUKE_SIGN_ORDER.length;
+                updateMoveMochisukePosition();
+            }, 1500);
+        }
+        function stopMoveMochisukeLoop() {
+            if (moveMochisukeLoopTimer) clearInterval(moveMochisukeLoopTimer);
+            moveMochisukeLoopTimer = null;
+        }
+        function updateMoveMochisukePosition() {
+            const signId = MOVE_MOCHISUKE_SIGN_ORDER[moveMochisukeLoopIndex];
+            const signPart = MOVE_MENU_PARTS.find(p => p.id === signId);
+            const mochi = document.getElementById('move-mochisuke-guide');
+            if (!signPart || !mochi) return;
+            // ちょこんと縮んでから、次の看板の位置へワープする（「とことこ」感を出す一瞬の縮み演出）
+            mochi.animate([
+                { transform: 'scale(1, 1)' },
+                { transform: 'scale(0.6, 1.3)', offset: 0.4 },
+                { transform: 'scale(1, 1)' },
+            ], { duration: 260, easing: 'ease-in-out' });
+            const mochiWidth = signPart.width * 0.55;
+            mochi.style.width = mochiWidth + '%';
+            mochi.style.top = (signPart.top + signPart.height * 0.15) + '%';
+            mochi.style.left = (signPart.left + signPart.width + 1.5) + '%';
         }
         // MOVE_MENU_PARTSの座標を、実際の画像に反映する
         function renderMoveMenuParts() {
@@ -548,10 +582,15 @@
             });
         }
         // 移動先が決まった時だけ、ここでフェード＋移動音を鳴らしてから実際に画面を切り替える
+        function closeMoveMenu() {
+            stopMoveMochisukeLoop();
+            closeModal('move-menu-modal');
+        }
         function moveMenuGoTo(fn) {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
+            stopMoveMochisukeLoop();
             setTimeout(() => {
                 closeModal('move-menu-modal');
                 fn();
@@ -568,6 +607,7 @@
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 closeModal('warehouse-modal');
+                openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
@@ -575,7 +615,7 @@
             if (action === 'trophy') openTrophyRoom();
             else if (action === 'omiyage') openOmiyageCollection();
             else if (action === 'ticket') openTicketInventory();
-            else if (action === 'diary') { closeModal('warehouse-modal'); openDiary(); }
+            else if (action === 'diary') openDiary();
         }
         function renderWarehouseItems() {
             const stage = document.getElementById('warehouse-item-stage');
@@ -1353,6 +1393,16 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         // ===================================================================
         let currentRankingTab = 'score';
 
+        function closeRanking() {
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                closeModal('ranking-modal');
+                openMoveMenu();
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
+        }
         function toggleRankingHelpOverlay() {
             const overlay = document.getElementById('ranking-help-overlay');
             if (overlay) overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';

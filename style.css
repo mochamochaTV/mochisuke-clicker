@@ -413,6 +413,13 @@
             display: flex; align-items: center; justify-content: center; cursor: pointer;
             padding-bottom: 2px;
         }
+        .modal-back-btn {
+            position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 60;
+            width: 46px; height: 46px; border: none; background-color: transparent;
+            background-image: url('ui_images/back_button.webp'); background-size: contain;
+            background-position: center; background-repeat: no-repeat; cursor: pointer; padding: 0;
+        }
+        .modal-back-btn:active { transform: scale(0.92); }
         .modal-content h2 { margin-top: 0; color: #333; font-size: 1.4rem; padding-right: 20px; }
         .btn-red { background: #e53935; color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .modal-close-x { position: absolute; top: 14px; right: 16px; font-size: 1.6rem; color: #aaa; cursor: pointer; border: none; background: none; padding: 4px; line-height: 1; font-weight: bold; z-index: 99; }

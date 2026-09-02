@@ -35,6 +35,7 @@
             setTimeout(() => {
                 closeModal('shop-modal');
                 playBgmLoop('audio/bgm.mp3'); // 通常のBGMに戻す
+                openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
