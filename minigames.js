@@ -141,8 +141,6 @@
                 wrap.insertAdjacentHTML('beforeend', badgeHtml);
                 container.appendChild(wrap);
             });
-
-            if (IS_DEV_MODE) renderMinigameAdjustPanel();
         }
 
         function startMinigame(id) {
