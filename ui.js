@@ -381,13 +381,153 @@
             openModal('trophy-room-modal');
         }
 
-        // 🚧 準備中の機能。デザインが決まったら、それぞれ本実装に差し替える
+        // 💼 おしごとミッション
         function openOshigotoPlaceholder() {
-            alert('💼 「おしごと」は準備中です！\nお楽しみに！');
+            checkAndRotateMissions(); // 開くたびに、日付/週またぎを最新化する
+            openModal('mission-modal');
+            renderMissionList();
         }
-        function openFriendPlaceholder() {
-            alert('🤝 「フレンド」機能は準備中です！\nお楽しみに！');
+        function renderMissionRow(mission) {
+            const progress = getMissionProgress(mission);
+            const complete = isMissionComplete(mission);
+            const claimed = missionClaimed[mission.id];
+            let btnHtml;
+            if (claimed) {
+                btnHtml = `<button class="item-action-btn" disabled style="background:#bbb; color:#fff;">受取済</button>`;
+            } else if (complete) {
+                btnHtml = `<button class="item-action-btn btn-green" onclick="onClaimMissionTap('${mission.id}')">受け取る</button>`;
+            } else {
+                btnHtml = `<button class="item-action-btn" disabled style="background:#ddd; color:#999;">未達成</button>`;
+            }
+            const progressText = `${Math.min(progress, mission.target)}/${mission.target}`;
+            const pct = Math.min(100, (progress / mission.target) * 100);
+            return `
+                <div class="list-item" style="flex-direction:column; align-items:stretch; gap:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.82rem; font-weight:700; color:#5d4037;">${mission.text}</span>
+                        <span style="font-size:0.68rem; color:#e91e63; font-weight:900;">🪙${mission.reward}</span>
+                    </div>
+                    <div style="background:#eee; border-radius:6px; height:8px; overflow:hidden;">
+                        <div style="background:#4caf50; height:100%; width:${pct}%;"></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.68rem; color:#999;">${progressText}</span>
+                        ${btnHtml}
+                    </div>
+                </div>
+            `;
         }
+        function renderMissionList() {
+            const container = document.getElementById('mission-list-container');
+            let html = '';
+
+            // チュートリアルミッション：全部終わるまでは、今のステップだけ順番に見せる
+            if (tutorialMissionStep < TUTORIAL_MISSIONS.length) {
+                html += `<h3 style="margin-bottom:6px;">🔰 はじめてのおしごと</h3><div class="list-container" style="margin-bottom:14px;">`;
+                html += renderMissionRow(TUTORIAL_MISSIONS[tutorialMissionStep]);
+                html += `</div>`;
+            }
+
+            html += `<h3 style="margin-bottom:6px;">📅 デイリーミッション</h3><div class="list-container" style="margin-bottom:14px;">`;
+            missionDailySelected.forEach(id => {
+                const m = getMissionDef(id);
+                if (m) html += renderMissionRow(m);
+            });
+            html += `</div>`;
+
+            html += `<h3 style="margin-bottom:6px;">🗓️ ウィークリーミッション</h3><div class="list-container">`;
+            missionWeeklySelected.forEach(id => {
+                const m = getMissionDef(id);
+                if (m) html += renderMissionRow(m);
+            });
+            html += `</div>`;
+
+            container.innerHTML = html;
+        }
+        function onClaimMissionTap(id) {
+            const success = claimMission(id);
+            if (success) {
+                playAudioFile('audio/levelup.mp3');
+                updateDisplay();
+                renderMissionList();
+            }
+        }
+
+        // 🤝 フレンド機能
+        async function openFriendPlaceholder() {
+            openModal('friend-modal');
+            document.getElementById('friend-add-result').innerText = '';
+            document.getElementById('friend-code-input').value = '';
+
+            const codeEl = document.getElementById('my-friend-code');
+            codeEl.innerText = '読み込み中...';
+            if (window.isRankingReady && window.isRankingReady()) {
+                const code = await window.ensureMyFriendCode();
+                codeEl.innerText = code || '（取得できませんでした）';
+            } else {
+                codeEl.innerText = '（オフラインです）';
+            }
+            renderFriendList();
+        }
+        function copyMyFriendCode() {
+            const code = document.getElementById('my-friend-code').innerText;
+            if (!code || code.includes('（') || code.includes('読み込み')) return;
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).catch(() => {});
+            const result = document.getElementById('friend-add-result');
+            result.style.color = '#4caf50';
+            result.innerText = 'コピーしました！';
+        }
+        async function onAddFriendTap() {
+            const input = document.getElementById('friend-code-input');
+            const result = document.getElementById('friend-add-result');
+            const code = input.value.trim();
+            if (!code) return;
+            if (!window.isRankingReady || !window.isRankingReady()) {
+                result.style.color = '#e57373'; result.innerText = '通信エラー：時間を置いて試してください'; return;
+            }
+            result.style.color = '#999'; result.innerText = '追加中...';
+            const res = await window.addFriendByCode(code);
+            if (res.success) {
+                result.style.color = '#4caf50';
+                result.innerText = `${res.name}さんとフレンドになりました！`;
+                input.value = '';
+                renderFriendList();
+            } else if (res.reason === 'not_found') {
+                result.style.color = '#e57373'; result.innerText = 'そのコードは見つかりませんでした';
+            } else if (res.reason === 'self') {
+                result.style.color = '#e57373'; result.innerText = '自分のコードは追加できません';
+            } else {
+                result.style.color = '#e57373'; result.innerText = '通信エラーが発生しました';
+            }
+        }
+        async function renderFriendList() {
+            const listEl = document.getElementById('friend-list');
+            listEl.innerHTML = `<div style="text-align:center; color:#aaa; padding:14px;">読み込み中...</div>`;
+            if (!window.isRankingReady || !window.isRankingReady()) {
+                listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:14px;">通信エラーのため、フレンド一覧を表示できません</div>`;
+                return;
+            }
+            const friends = await window.fetchFriendList();
+            if (!friends || friends.length === 0) {
+                listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:14px;">まだフレンドがいません。<br>コードを教え合って追加してみましょう！</div>`;
+                return;
+            }
+            listEl.innerHTML = '';
+            friends.sort((a, b) => b.score - a.score);
+            friends.forEach(f => {
+                const row = document.createElement('div');
+                row.style.cssText = `display:flex; align-items:center; gap:10px; padding:9px 8px; margin-bottom:6px; border-radius:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.08);`;
+                row.innerHTML = `
+                    <div style="flex-shrink:0; position:relative; width:40px; height:40px;">${renderRankOutfitPreviewHtml(f.outfit)}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:0.8rem; color:#5d4037; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(f.name)}</div>
+                        <div style="font-size:0.68rem; color:#e91e63; font-weight:900;">${formatMochi(f.score)} もち</div>
+                    </div>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+
         function openMyRoomPlaceholder() {
             alert('🏠 「マイルーム」は準備中です！\nお楽しみに！');
         }

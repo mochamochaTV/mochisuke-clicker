@@ -308,3 +308,28 @@
         };
         const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服' };
         const DEFAULT_MOUTH_POSITION = { top: 36.986245, left: 48.44735, width: 17 }; // 服の指定が無い時（初期衣装含む）はこちら
+
+        // ===================================================================
+        // 💼 おしごとミッション：序盤の1本道チュートリアル → デイリー → ウィークリー、の3段階
+        // 進捗は trackKey に対応するカウンター(missionCounters)を見て判定する
+        // ===================================================================
+        const TUTORIAL_MISSIONS = [
+            { id: 'tut_tap10', text: '10回タップしよう！', trackKey: 'totalTaps', target: 10, reward: 5 },
+            { id: 'tut_buy_omiyage', text: 'ショップでおみやげを買おう！', trackKey: 'omiyageBoughtTotal', target: 1, reward: 5 },
+            { id: 'tut_minigame', text: 'ミニゲームを1回遊ぼう！', trackKey: 'minigamesPlayedTotal', target: 1, reward: 10 },
+        ];
+        const DAILY_MISSION_POOL = [
+            { id: 'daily_login', text: 'ログインする', trackKey: 'loginToday', target: 1, reward: 3 },
+            { id: 'daily_tap100', text: '100回タップする', trackKey: 'tapsToday', target: 100, reward: 5 },
+            { id: 'daily_minigame1', text: 'ミニゲームを1回遊ぶ', trackKey: 'minigamesToday', target: 1, reward: 5 },
+            { id: 'daily_buy1', text: 'おみやげを1つ買う', trackKey: 'omiyageBoughtToday', target: 1, reward: 5 },
+            { id: 'daily_gacha1', text: 'ガチャ・スロットを1回まわす', trackKey: 'gachaSpinsToday', target: 1, reward: 5 },
+        ];
+        const WEEKLY_MISSION_POOL = [
+            { id: 'weekly_login3', text: '3日ログインする', trackKey: 'loginDaysThisWeek', target: 3, reward: 15 },
+            { id: 'weekly_stamp3', text: '都道府県を3つ制覇する', trackKey: 'stampsThisWeek', target: 3, reward: 20 },
+            { id: 'weekly_jackpot', text: 'スロットで大当たりを出す', trackKey: 'jackpotsThisWeek', target: 1, reward: 25 },
+            { id: 'weekly_tap500', text: '合計500回タップする', trackKey: 'tapsThisWeek', target: 500, reward: 15 },
+        ];
+        const DAILY_MISSION_COUNT = 3; // 毎日、プールの中からこの数だけランダムに選ばれる
+        const WEEKLY_MISSION_COUNT = 2;

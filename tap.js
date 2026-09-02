@@ -386,6 +386,7 @@
             initAndPlayBGM();
             playAudioFile('audio/tap.mp3'); 
             totalTapsCount++;
+            trackMissionEvent('totalTaps', 1); trackMissionEvent('tapsToday', 1); trackMissionEvent('tapsThisWeek', 1);
             chargeHissatsuByTap();
             prefTaps[selectedStageIndex] = (prefTaps[selectedStageIndex] || 0) + 1;
             

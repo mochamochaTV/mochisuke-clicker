@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-133">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-135">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -65,7 +65,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, addDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, addDoc, getDocs, collection, query, orderBy, limit, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
         const firebaseConfig = {
@@ -186,6 +186,80 @@
 
         window.isRankingReady = function () { return fbReady; };
 
+        // ===================================================================
+        // 🤝 フレンド機能：8桁のフレンドコードで、承認なしの即時相互フレンドになる方式
+        // 🚧注意：friendshipsコレクションへの書き込みを許可するFirestoreセキュリティルールが
+        // 別途必要です（このファイルからは設定できません。Firebaseコンソール側での設定が必要）
+        // ===================================================================
+        function generateFriendCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 紛らわしい0/O/1/Iは除外
+            let code = '';
+            for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        }
+        window.ensureMyFriendCode = async function () {
+            if (!fbReady || !db || !currentUid) return null;
+            try {
+                const myDoc = await getDoc(doc(db, "rankings", currentUid));
+                const existing = myDoc.exists() ? myDoc.data().friendCode : null;
+                if (existing) return existing;
+
+                // 衝突しないコードが出るまで、最大5回まで試す
+                for (let i = 0; i < 5; i++) {
+                    const candidate = generateFriendCode();
+                    const dupCheck = await getDocs(query(collection(db, "rankings"), where("friendCode", "==", candidate)));
+                    if (dupCheck.empty) {
+                        await setDoc(doc(db, "rankings", currentUid), { friendCode: candidate }, { merge: true });
+                        return candidate;
+                    }
+                }
+                return null;
+            } catch (e) {
+                console.error("フレンドコード発行エラー:", e);
+                return null;
+            }
+        };
+        window.addFriendByCode = async function (code) {
+            if (!fbReady || !db || !currentUid) return { success: false, reason: 'offline' };
+            try {
+                const trimmed = String(code).trim().toUpperCase();
+                const q = await getDocs(query(collection(db, "rankings"), where("friendCode", "==", trimmed)));
+                if (q.empty) return { success: false, reason: 'not_found' };
+                const targetDoc = q.docs[0];
+                const targetUid = targetDoc.id;
+                if (targetUid === currentUid) return { success: false, reason: 'self' };
+
+                const pairId = [currentUid, targetUid].sort().join('_');
+                await setDoc(doc(db, "friendships", pairId), {
+                    uids: [currentUid, targetUid],
+                    createdAt: Date.now()
+                });
+                return { success: true, name: targetDoc.data().name || '名無しさん' };
+            } catch (e) {
+                console.error("フレンド追加エラー:", e);
+                return { success: false, reason: 'error' };
+            }
+        };
+        window.fetchFriendList = async function () {
+            if (!fbReady || !db || !currentUid) return null;
+            try {
+                const q = await getDocs(query(collection(db, "friendships"), where("uids", "array-contains", currentUid)));
+                const friendUids = q.docs.map(d => d.data().uids.find(u => u !== currentUid)).filter(Boolean);
+                const friends = [];
+                for (const uid of friendUids) {
+                    const fDoc = await getDoc(doc(db, "rankings", uid));
+                    if (fDoc.exists()) {
+                        const d = fDoc.data();
+                        friends.push({ uid, name: d.name || '名無しさん', score: d.score || 0, outfit: d.outfit || null });
+                    }
+                }
+                return friends;
+            } catch (e) {
+                console.error("フレンド一覧取得エラー:", e);
+                return null;
+            }
+        };
+
         // ✏️ ご意見・要望をFirestoreに直接送信（メールアプリを開く手間を無くすため）
         window.submitFeedback = async function (text, name) {
             if (!fbReady || !db) return false;
@@ -212,7 +286,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-133</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-135</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -315,6 +389,35 @@
                 <button id="nav-btn-friend" class="nav-btn" onclick="openFriendPlaceholder()" style="background-image: url('ui_images/friend.webp');"></button>
                 <button id="nav-btn-ranking" class="nav-btn" onclick="openRanking()" style="background-image: url('ui_images/rank.webp');"></button>
             </div>
+        </div>
+    </div>
+
+    <div id="mission-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('mission-modal')">×</button>
+            <h2>💼 おしごと</h2>
+            <div id="mission-list-container"></div>
+        </div>
+    </div>
+
+    <div id="friend-modal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close-x" onclick="closeModal('friend-modal')">×</button>
+            <h2>🤝 フレンド</h2>
+            <div style="background:#fff3e0; border-radius:12px; padding:12px; text-align:center; margin-bottom:12px;">
+                <div style="font-size:0.7rem; color:#8d6e63; margin-bottom:4px;">あなたのフレンドコード</div>
+                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <div id="my-friend-code" style="font-size:1.3rem; font-weight:900; letter-spacing:2px; color:#5d4037;">----------</div>
+                    <button onclick="copyMyFriendCode()" style="background:#ff9800; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:0.7rem; font-weight:900;">コピー</button>
+                </div>
+                <div style="font-size:0.62rem; color:#aaa; margin-top:4px;">このコードを教え合うと、フレンドになれます</div>
+            </div>
+            <div style="display:flex; gap:6px; margin-bottom:6px;">
+                <input id="friend-code-input" type="text" placeholder="フレンドのコードを入力" maxlength="8" style="flex:1; padding:9px; border-radius:8px; border:1px solid #ddd; font-size:0.85rem; text-transform:uppercase;">
+                <button onclick="onAddFriendTap()" style="background:#e91e63; color:#fff; border:none; border-radius:8px; padding:9px 14px; font-weight:900; font-size:0.8rem;">追加</button>
+            </div>
+            <div id="friend-add-result" style="font-size:0.72rem; text-align:center; min-height:1.2em; margin-bottom:8px;"></div>
+            <div id="friend-list" class="list-container"></div>
         </div>
     </div>
 
@@ -801,13 +904,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-133"></script>
-    <script src="state.js?v=2026-08-05-133"></script>
-    <script src="tap.js?v=2026-08-05-133"></script>
-    <script src="shop.js?v=2026-08-05-133"></script>
-    <script src="progress.js?v=2026-08-05-133"></script>
-    <script src="minigames.js?v=2026-08-05-133"></script>
-    <script src="ui.js?v=2026-08-05-133"></script>
-    <script src="main.js?v=2026-08-05-133"></script>
+    <script src="data.js?v=2026-08-05-135"></script>
+    <script src="state.js?v=2026-08-05-135"></script>
+    <script src="tap.js?v=2026-08-05-135"></script>
+    <script src="shop.js?v=2026-08-05-135"></script>
+    <script src="progress.js?v=2026-08-05-135"></script>
+    <script src="minigames.js?v=2026-08-05-135"></script>
+    <script src="ui.js?v=2026-08-05-135"></script>
+    <script src="main.js?v=2026-08-05-135"></script>
 </body>
 </html>

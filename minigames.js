@@ -171,6 +171,7 @@
         function grantMinigameReward(multiplier) {
             const coinGain = getMinigameCoinGain(multiplier);
             minigameCoins += coinGain;
+            trackMissionEvent('minigamesPlayedTotal', 1); trackMissionEvent('minigamesToday', 1);
             saveGame(); updateDisplay();
             return { coins: coinGain };
         }
@@ -1206,6 +1207,7 @@
             slotStoppedCount = 0;
             slotStoppedReels = [];
             slotTotalPulls++; slotPullsSinceJackpot++; // 総回転数・前回マーモットからの回転数は、リプレイぶんも含めて数える
+            trackMissionEvent('minigamesToday', 1); trackMissionEvent('minigamesPlayedTotal', 1); trackMissionEvent('gachaSpinsToday', 1);
             updateSlotPullsSinceJackpotDisplay();
             if (!slotNextSpinFree) {
                 slotPlaysRemaining--; // リプレイは無料なので、残り回数を消費しない
@@ -1490,6 +1492,7 @@
                 const bonusGachaCoins = 30;
                 gachaCoins += bonusGachaCoins;
                 slotJackpotCount++;
+                trackMissionEvent('jackpotsThisWeek', 1);
                 slotShortestJackpotPulls = (slotShortestJackpotPulls == null) ? slotPullsSinceJackpot : Math.min(slotShortestJackpotPulls, slotPullsSinceJackpot);
                 slotLongestJackpotPulls = (slotLongestJackpotPulls == null) ? slotPullsSinceJackpot : Math.max(slotLongestJackpotPulls, slotPullsSinceJackpot);
                 slotPullsSinceJackpot = 0;

@@ -3,6 +3,19 @@
         // 👗 着せ替え部屋：所持アイテムと、今装着中のアイテム（カテゴリごとに1つだけ）
         let ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'] };
         let equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' };
+
+        // 💼 おしごとミッション：進捗カウンター・選ばれているミッション・受け取り済みの管理
+        let missionCounters = {
+            totalTaps: 0, omiyageBoughtTotal: 0, minigamesPlayedTotal: 0,
+            tapsToday: 0, minigamesToday: 0, omiyageBoughtToday: 0, gachaSpinsToday: 0,
+            tapsThisWeek: 0, stampsThisWeek: 0, jackpotsThisWeek: 0, loginDaysThisWeek: 0,
+        };
+        let missionDailyDate = '';       // 最後にデイリーをリセットした日付(YYYY-MM-DD)
+        let missionWeeklyWeekKey = '';   // 最後にウィークリーをリセットした週(YYYY-Www)
+        let missionDailySelected = [];   // 今日選ばれているデイリーミッションのID
+        let missionWeeklySelected = [];  // 今週選ばれているウィークリーミッションのID
+        let missionClaimed = {};         // { [ミッションID]: true } 受け取り済み
+        let tutorialMissionStep = 0;     // チュートリアルミッション、次に見せるステップ番号
         let previewKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' }; // 「決定」を押すまでの試着中の状態
         let prestigeScoreHistory = []; // 各転生の直前に持っていたもち数の記録（将来使う可能性があるので記録だけしておく）
         let prestigePoints = 0;     // 転生ポイント（所持数、将来のショップで消費する予定）
@@ -379,6 +392,7 @@
             collectedStamps[idx] = true;
             isPendingStampMoment = false;
             gachaCoins += GACHA_COIN_PER_STAMP;
+            trackMissionEvent('stampsThisWeek', 1);
             saveGame();
 
             playAudioFile('audio/stamp.mp3'); // 専用のスタンプ音（無ければ用意してください。それまでは無音）
@@ -425,3 +439,66 @@
             }, 900);
         }
 
+        // ===================================================================
+        // 💼 おしごとミッション：進捗の記録・日/週の切り替え・受け取り処理
+        // ===================================================================
+        function trackMissionEvent(key, amount) {
+            if (missionCounters[key] === undefined) return;
+            missionCounters[key] += (amount || 1);
+        }
+        function getWeekKey(d) {
+            // ISO週番号ベースの「年-週」文字列を作る（週の変わり目判定に使う）
+            const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+            const dayNum = (date.getUTCDay() + 6) % 7;
+            date.setUTCDate(date.getUTCDate() - dayNum + 3);
+            const firstThursday = new Date(Date.UTC(date.getUTCFullYear(), 0, 4));
+            const weekNum = 1 + Math.round(((date - firstThursday) / 86400000 - 3 + (firstThursday.getUTCDay() + 6) % 7) / 7);
+            return `${date.getUTCFullYear()}-W${weekNum}`;
+        }
+        function pickRandomMissions(pool, count) {
+            const shuffled = [...pool].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, count).map(m => m.id);
+        }
+        // 日付・週が変わっていたら、カウンターとミッションの選び直しをする（ゲーム起動時に毎回呼ぶ）
+        function checkAndRotateMissions() {
+            const now = new Date();
+            const todayStr = now.toISOString().slice(0, 10);
+            if (missionDailyDate !== todayStr) {
+                missionDailyDate = todayStr;
+                missionCounters.tapsToday = 0;
+                missionCounters.minigamesToday = 0;
+                missionCounters.omiyageBoughtToday = 0;
+                missionCounters.gachaSpinsToday = 0;
+                missionDailySelected = pickRandomMissions(DAILY_MISSION_POOL, DAILY_MISSION_COUNT);
+                trackMissionEvent('loginDaysThisWeek', 1);
+                // 「ログインする」は、日が変わった時点でその日ぶんは自動的に達成扱いにする
+                missionCounters.loginToday = 1;
+            }
+            const weekKey = getWeekKey(now);
+            if (missionWeeklyWeekKey !== weekKey) {
+                missionWeeklyWeekKey = weekKey;
+                missionCounters.tapsThisWeek = 0;
+                missionCounters.stampsThisWeek = 0;
+                missionCounters.jackpotsThisWeek = 0;
+                missionCounters.loginDaysThisWeek = 1; // 週の変わり目＝今日ログインした1日目
+                missionWeeklySelected = pickRandomMissions(WEEKLY_MISSION_POOL, WEEKLY_MISSION_COUNT);
+            }
+        }
+        function getMissionDef(id) {
+            return TUTORIAL_MISSIONS.find(m => m.id === id) || DAILY_MISSION_POOL.find(m => m.id === id) || WEEKLY_MISSION_POOL.find(m => m.id === id);
+        }
+        function getMissionProgress(mission) {
+            return missionCounters[mission.trackKey] || 0;
+        }
+        function isMissionComplete(mission) {
+            return getMissionProgress(mission) >= mission.target;
+        }
+        function claimMission(id) {
+            const mission = getMissionDef(id);
+            if (!mission || missionClaimed[id] || !isMissionComplete(mission)) return false;
+            missionClaimed[id] = true;
+            gachaCoins += mission.reward;
+            if (id.startsWith('tut_') && tutorialMissionStep < TUTORIAL_MISSIONS.length) tutorialMissionStep++;
+            saveGame();
+            return true;
+        }

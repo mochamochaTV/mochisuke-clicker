@@ -204,6 +204,7 @@
                 return;
             }
             if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_SINGLE;
+            trackMissionEvent('gachaSpinsToday', 1);
             saveGame();
             updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
@@ -373,6 +374,7 @@
                 return;
             }
             if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_TEN;
+            trackMissionEvent('gachaSpinsToday', 1);
             saveGame();
             updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
@@ -861,6 +863,7 @@
             const nextPrice = getOmiyagePrice(stage, currentLv);
             if (score >= nextPrice) {
                 score -= nextPrice; purchasedItems[idx] = currentLv + 1;
+                trackMissionEvent('omiyageBoughtTotal', 1); trackMissionEvent('omiyageBoughtToday', 1);
                 playAudioFile('audio/levelup.mp3');
                 showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
                 saveGame(); renderShopList(); updateDisplay(); updateShopTabHighlight();

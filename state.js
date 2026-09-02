@@ -158,7 +158,10 @@
                 prestigeShopLv: prestigeShopLv, gachaCoins: gachaCoins, minigameCoins: minigameCoins, ticketInventory: ticketInventory, slotPlaysRemaining: slotPlaysRemaining, slotBonusZoneSpinsLeft: slotBonusZoneSpinsLeft,
                 slotTotalPulls: slotTotalPulls, slotPullsSinceJackpot: slotPullsSinceJackpot, slotJackpotCount: slotJackpotCount,
                 slotShortestJackpotPulls: slotShortestJackpotPulls, slotLongestJackpotPulls: slotLongestJackpotPulls,
-                ownedKisekaeItems: ownedKisekaeItems, equippedKisekae: equippedKisekae
+                ownedKisekaeItems: ownedKisekaeItems, equippedKisekae: equippedKisekae,
+                missionCounters: missionCounters, missionDailyDate: missionDailyDate, missionWeeklyWeekKey: missionWeeklyWeekKey,
+                missionDailySelected: missionDailySelected, missionWeeklySelected: missionWeeklySelected,
+                missionClaimed: missionClaimed, tutorialMissionStep: tutorialMissionStep
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -232,6 +235,13 @@
                     slotLongestJackpotPulls = state.slotLongestJackpotPulls ?? null;
                     ownedKisekaeItems = state.ownedKisekaeItems ?? { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'] };
                     equippedKisekae = state.equippedKisekae ?? { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' };
+                    missionCounters = { ...missionCounters, ...(state.missionCounters || {}) };
+                    missionDailyDate = state.missionDailyDate ?? '';
+                    missionWeeklyWeekKey = state.missionWeeklyWeekKey ?? '';
+                    missionDailySelected = state.missionDailySelected ?? [];
+                    missionWeeklySelected = state.missionWeeklySelected ?? [];
+                    missionClaimed = state.missionClaimed ?? {};
+                    tutorialMissionStep = state.tutorialMissionStep ?? 0;
                     // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
                     prestigeShopLv = state.prestigeShopLv ?? {
                         offlineCap: state.offlineCapBonusHours ?? 0,
