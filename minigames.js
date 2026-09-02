@@ -229,7 +229,7 @@
             const correctStage = pickRandom(pool);
             const isNameToItem = Math.random() < 0.5; // true: 県名→名産品を当てる／false: 名産品→県名を当てる
             const others = pool.filter(s => s !== correctStage).sort(() => Math.random() - 0.5);
-            const numDistractors = Math.min(2, others.length); // 解放済みが少ない時は2択にフォールバック
+            const numDistractors = Math.min(3, others.length); // 解放済みが少ない時は、それ以下の択数にフォールバック
             let choices = [correctStage, ...others.slice(0, numDistractors)];
             choices = choices.sort(() => Math.random() - 0.5);
             return { correctStage, isNameToItem, choices };
@@ -238,12 +238,16 @@
         function renderQuizQuestion(container, quizState) {
             const q = quizState.questions[quizState.qIndex];
             const questionText = q.isNameToItem ? `${q.correctStage.name}の名産品は？` : `「${q.correctStage.item}」はどこの県の名産品？`;
-            const letters = ['A', 'B', 'C'];
+            // 「名産品→県名を当てる」問題の時だけ、その名産品のイラストを見せる（答えの県名は分からないので成立する）
+            const itemImgHtml = (!q.isNameToItem && q.correctStage.itemImg)
+                ? `<img src="${q.correctStage.itemImg}" alt="${q.correctStage.item}" style="width:90px; height:90px; object-fit:contain; margin:6px auto 10px; display:block; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.2));">`
+                : '';
+            const colors = ['#ff8a65', '#4fc3f7', '#81c784', '#ba68c8']; // 左上・右上・左下・右下、それぞれ別の色
             const choiceButtons = q.choices.map((c, idx) => {
                 const label = q.isNameToItem ? c.item : c.name;
                 const isCorrect = c === q.correctStage;
-                return `<button class="item-action-btn quiz-choice-btn" id="quiz-choice-${idx}" onclick="answerQuizQuestion(${isCorrect}, ${idx})">
-                    <span class="quiz-choice-letter">${letters[idx] || '?'}</span><span class="quiz-choice-label">${label}</span>
+                return `<button class="quiz-choice-btn-grid" id="quiz-choice-${idx}" style="background:${colors[idx % colors.length]};" onclick="answerQuizQuestion(${isCorrect}, ${idx})">
+                    ${label}
                 </button>`;
             }).join('');
             const dots = quizState.questions.map((_, i) => {
@@ -254,10 +258,11 @@
             }).join('');
             container.innerHTML = `
                 <div style="text-align:center; padding:14px; background:radial-gradient(circle at 50% 10%, #e8f5ff, #fbfdff); border-radius:20px;">
-                    <div style="display:flex; justify-content:center; gap:6px; margin-bottom:10px;">${dots}</div>
-                    <div style="font-size:2.2rem; margin-bottom:6px;">🗾</div>
-                    <div style="font-weight:900; font-size:1.1rem; margin-bottom:18px; color:#5d4037;">${questionText}</div>
-                    <div id="quiz-choices-wrap">${choiceButtons}</div>
+                    <div style="display:flex; justify-content:center; gap:6px; margin-bottom:8px;">${dots}</div>
+                    <div style="font-weight:900; font-size:0.8rem; color:#999; margin-bottom:2px;">${quizState.qIndex + 1}問目</div>
+                    <div style="font-weight:900; font-size:1.1rem; margin-bottom:4px; color:#5d4037;">${questionText}</div>
+                    ${itemImgHtml}
+                    <div id="quiz-choices-wrap" style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px;">${choiceButtons}</div>
                 </div>`;
         }
 
@@ -455,9 +460,12 @@
             const cardsHtml = st.cards.map((c, i) => `
                 <div class="concentration-card-outer" onclick="flipConcentrationCard(${i})">
                     <div class="concentration-card-inner" id="concent-inner-${i}">
-                        <div class="concentration-card-face concentration-card-back">🍡</div>
+                        <div class="concentration-card-face concentration-card-back">
+                            <img src="ui_images/concentration/card_back.webp" alt="" style="width:100%; height:100%; object-fit:contain;">
+                        </div>
                         <div class="concentration-card-face concentration-card-front">
-                            <img src="${c.stage.itemImg}" alt="${c.stage.item}">
+                            <img src="ui_images/concentration/card_front.webp" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">
+                            <img src="${c.stage.itemImg}" alt="${c.stage.item}" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:55%; height:55%; object-fit:contain;">
                         </div>
                     </div>
                 </div>
@@ -465,7 +473,7 @@
             container.innerHTML = `
                 <div style="padding:12px; background:radial-gradient(circle at 50% 10%, #fff3e0, #fffdf9); border-radius:20px;">
                     <div style="text-align:center; margin-bottom:10px; font-size:0.9rem; color:#5d4037; font-weight:bold;">🃏 めくった回数: <span id="concent-moves" style="color:#ff9800; font-size:1.1rem;">${st.moves}</span></div>
-                    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:7px; margin-bottom:8px;">${cardsHtml}</div>
+                    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; margin-bottom:8px;">${cardsHtml}</div>
                 </div>`;
         }
 

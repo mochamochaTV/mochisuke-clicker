@@ -286,7 +286,7 @@
         .digit-pop { display: inline-block; animation: digitPop 0.22s ease-out; }
 
         /* 🃏 ご当地神経衰弱：本物のカードめくり風3D回転アニメーション */
-        .concentration-card-outer { aspect-ratio: 1; perspective: 700px; cursor: pointer; }
+        .concentration-card-outer { aspect-ratio: 5 / 7; perspective: 700px; cursor: pointer; }
         .concentration-card-inner {
             position: relative; width: 100%; height: 100%;
             transform-style: preserve-3d; transition: transform 0.45s cubic-bezier(0.4, 0.2, 0.2, 1);
@@ -295,14 +295,12 @@
         .concentration-card-face {
             position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
             display: flex; align-items: center; justify-content: center;
-            border-radius: 8px; border: 2px solid #ffcc80; box-shadow: 0 2px 4px rgba(0,0,0,0.15);
             overflow: hidden; box-sizing: border-box;
         }
-        .concentration-card-back { background: #ff9800; font-size: 1.6rem; }
-        .concentration-card-front { background: #fff; transform: rotateY(180deg); }
-        .concentration-card-front img { width: 100%; height: 100%; object-fit: cover; }
+        .concentration-card-back { }
+        .concentration-card-front { transform: rotateY(180deg); }
         .concentration-card-inner.matched .concentration-card-face {
-            border-color: #4caf50; box-shadow: 0 0 10px rgba(76,175,80,0.7);
+            filter: drop-shadow(0 0 8px rgba(76,175,80,0.8));
         }
         .concentration-card-inner.shake { animation: concentrationShake 0.4s ease; }
         @keyframes concentrationShake {
@@ -982,6 +980,15 @@
         }
 
         /* 🗾 ご当地クイズ：正解/不正解のフィードバック、選択肢ボタン、プログレスドット */
+        .quiz-choice-btn-grid {
+            border: none; border-radius: 14px; padding: 18px 8px; color: #fff; font-weight: 900; font-size: 0.95rem;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.25), 0 6px 10px rgba(0,0,0,0.15);
+            cursor: pointer; transition: transform 0.08s, box-shadow 0.08s;
+        }
+        .quiz-choice-btn-grid:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.15);
+        }
         .quiz-choice-btn {
             width: 100%; margin-bottom: 10px; display: flex; align-items: center; gap: 10px;
             padding: 12px 14px; border-radius: 12px; text-align: left;
