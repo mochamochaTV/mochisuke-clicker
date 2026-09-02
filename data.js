@@ -338,34 +338,34 @@
         // 🚶 移動画面：家4つ・看板4つ・戻る看板1つの座標（すべて#move-menu-stage基準の%指定）
         // ===================================================================
         const MOVE_MENU_PARTS = [
-            { id: 'move-house-warehouse', label: '家（ものおき）',     top: 52, left: 8,  width: 38, height: 26 },
-            { id: 'move-sign-warehouse',  label: '看板（ものおき）',   top: 46, left: 16, width: 20, height: 10 },
-            { id: 'move-house-shop',      label: '家（ショップ）',     top: 36, left: 55, width: 38, height: 26 },
-            { id: 'move-sign-shop',       label: '看板（ショップ）',   top: 30, left: 63, width: 20, height: 10 },
-            { id: 'move-house-arcade',    label: '家（ゲーセン）',     top: 18, left: 8,  width: 38, height: 26 },
-            { id: 'move-sign-arcade',     label: '看板（ゲーセン）',   top: 12, left: 16, width: 20, height: 10 },
-            { id: 'move-house-myroom',    label: '家（マイルーム）',   top: 2,  left: 55, width: 38, height: 26 },
-            { id: 'move-sign-myroom',     label: '看板（マイルーム）', top: -4, left: 63, width: 20, height: 10 },
-            { id: 'move-sign-return',     label: '戻る看板',           top: 74, left: 34, width: 24, height: 12 },
+            { id: 'move-house-warehouse', label: '家（ものおき）',     top: 72.42361,  left: 46.67685,  width: 41.440215, height: 19.095317 },
+            { id: 'move-sign-warehouse',  label: '看板（ものおき）',   top: 82.006069, left: 6.839692,  width: 20,         height: 10 },
+            { id: 'move-house-shop',      label: '家（ショップ）',     top: 53.549175, left: 48.638675, width: 35.201018, height: 18.133128 },
+            { id: 'move-sign-shop',       label: '看板（ショップ）',   top: 58.744338, left: 4.730278,  width: 20,         height: 10 },
+            { id: 'move-house-arcade',    label: '家（ゲーセン）',     top: 34.338885, left: 47.185748, width: 38,         height: 17.225412 },
+            { id: 'move-sign-arcade',     label: '看板（ゲーセン）',   top: 39.08019,  left: 6.585239,  width: 20,         height: 10 },
+            { id: 'move-house-myroom',    label: '家（マイルーム）',   top: 14.708023, left: 46.857502, width: 38,         height: 17.679271 },
+            { id: 'move-sign-myroom',     label: '看板（マイルーム）', top: 21.264749, left: 7.274804,  width: 22.290076, height: 11.059003 },
+            { id: 'move-sign-return',     label: '戻る看板',           top: 6.677758,  left: 7.791342,  width: 24,         height: 12 },
         ];
 
         // ===================================================================
         // 🎮 ゲーセン：5つの筐体イラストの座標（#minigame-tile-view基準の%指定）
         // ===================================================================
         const ARCADE_CABINET_PARTS = [
-            { id: 'arcade-cabinet-quiz',          gameId: 'quiz',          img: 'ui_images/arcade_quiz.webp',          top: 8,  left: 4,  width: 44, height: 38 },
-            { id: 'arcade-cabinet-timeattack',    gameId: 'timeattack',    img: 'ui_images/arcade_timeattack.webp',    top: 8,  left: 52, width: 44, height: 38 },
-            { id: 'arcade-cabinet-concentration', gameId: 'concentration', img: 'ui_images/arcade_concentration.webp', top: 50, left: 4,  width: 44, height: 38 },
-            { id: 'arcade-cabinet-mochitsuki',    gameId: 'mochitsuki',    img: 'ui_images/arcade_mochitsuki.webp',    top: 50, left: 52, width: 44, height: 38 },
-            { id: 'arcade-cabinet-slot',          gameId: 'slot',          img: 'ui_images/arcade_slot.webp',          top: 30, left: 28, width: 44, height: 38 },
+            { id: 'arcade-cabinet-quiz',          gameId: 'quiz',          img: 'ui_images/arcade_quiz.webp',          top: 12.689866, left: -6.432579, width: 52.396949, height: 36.335854 },
+            { id: 'arcade-cabinet-timeattack',    gameId: 'timeattack',    img: 'ui_images/arcade_timeattack.webp',    top: 14.505297, left: 29.099241, width: 44,         height: 34.21785 },
+            { id: 'arcade-cabinet-concentration', gameId: 'concentration', img: 'ui_images/arcade_concentration.webp', top: 15.506797, left: 63.541989, width: 36.36641,  height: 33.158848 },
+            { id: 'arcade-cabinet-mochitsuki',    gameId: 'mochitsuki',    img: 'ui_images/arcade_mochitsuki.webp',    top: 51.210285, left: -1.180664, width: 42.727735, height: 36.48714 },
+            { id: 'arcade-cabinet-slot',          gameId: 'slot',          img: 'ui_images/arcade_slot.webp',          top: 49.969752, left: 30.290074, width: 44,         height: 38 },
         ];
 
         // ===================================================================
         // 📦 ものおき：4つの小物イラストの座標（#warehouse-item-stage基準の%指定）
         // ===================================================================
         const WAREHOUSE_ITEM_PARTS = [
-            { id: 'warehouse-item-trophy',  label: 'トロフィー',   action: 'trophy',  img: 'ui_images/warehouse_trophy.webp',  top: 8,  left: 6,  width: 40, height: 34 },
-            { id: 'warehouse-item-omiyage', label: 'おみやげ',     action: 'omiyage', img: 'ui_images/warehouse_omiyage.webp', top: 8,  left: 54, width: 40, height: 34 },
-            { id: 'warehouse-item-ticket',  label: 'アイテム一覧', action: 'ticket',  img: 'ui_images/warehouse_ticket.webp',  top: 52, left: 6,  width: 40, height: 34 },
-            { id: 'warehouse-item-diary',   label: '絵日記',       action: 'diary',   img: 'ui_images/warehouse_diary.webp',   top: 52, left: 54, width: 40, height: 34 },
+            { id: 'warehouse-item-trophy',  label: 'トロフィー',   action: 'trophy',  img: 'ui_images/warehouse_trophy.webp',  top: 21.767025, left: 7.78117,   width: 40, height: 34 },
+            { id: 'warehouse-item-omiyage', label: 'おみやげ',     action: 'omiyage', img: 'ui_images/warehouse_omiyage.webp', top: 8,         left: 54,        width: 40, height: 34 },
+            { id: 'warehouse-item-ticket',  label: 'アイテム一覧', action: 'ticket',  img: 'ui_images/warehouse_ticket.webp',  top: 61.07716,  left: 7.781172,  width: 40, height: 34 },
+            { id: 'warehouse-item-diary',   label: '絵日記',       action: 'diary',   img: 'ui_images/warehouse_diary.webp',   top: 45.19213,  left: 53.745547, width: 40, height: 34 },
         ];
