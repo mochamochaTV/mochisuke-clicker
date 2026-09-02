@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-135">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-138">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -286,7 +286,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-135</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-138</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -413,7 +413,7 @@
                 <div style="font-size:0.62rem; color:#aaa; margin-top:4px;">このコードを教え合うと、フレンドになれます</div>
             </div>
             <div style="display:flex; gap:6px; margin-bottom:6px;">
-                <input id="friend-code-input" type="text" placeholder="フレンドのコードを入力" maxlength="8" style="flex:1; padding:9px; border-radius:8px; border:1px solid #ddd; font-size:0.85rem; text-transform:uppercase;">
+                <input id="friend-code-input" type="text" placeholder="フレンドのコードを入力" maxlength="8" style="flex:1; padding:9px; border-radius:8px; border:1px solid #ddd; font-size:0.85rem; text-transform:uppercase;" onfocus="setTimeout(() => this.scrollIntoView({block:'center', behavior:'smooth'}), 300)">
                 <button onclick="onAddFriendTap()" style="background:#e91e63; color:#fff; border:none; border-radius:8px; padding:9px 14px; font-weight:900; font-size:0.8rem;">追加</button>
             </div>
             <div id="friend-add-result" style="font-size:0.72rem; text-align:center; min-height:1.2em; margin-bottom:8px;"></div>
@@ -424,12 +424,28 @@
     <div id="move-menu-modal" class="modal">
         <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/move_menu_bg.webp'); background-size:cover; background-position:center;">
             <button class="modal-fullscreen-close" onclick="closeModal('move-menu-modal')">×</button>
-            <div style="position:relative; flex:1; min-height:0;">
-                <button class="move-menu-hotspot" style="top:78%; left:50%;" onclick="moveMenuGoHome()">🏠<span>ホーム</span></button>
-                <button class="move-menu-hotspot" style="top:58%; left:22%;" onclick="moveMenuGoTo(openWarehouse)">📦<span>ものおき</span></button>
-                <button class="move-menu-hotspot" style="top:40%; left:70%;" onclick="closeModal('move-menu-modal'); openShop();">🏪<span>ショップ</span></button>
-                <button class="move-menu-hotspot" style="top:22%; left:28%;" onclick="closeModal('move-menu-modal'); openMinigameCenter();">🎮<span>ゲーセン</span></button>
-                <button class="move-menu-hotspot" style="top:8%; left:65%; opacity:0.6;" onclick="openMyRoomPlaceholder()">🛋️<span>マイルーム</span></button>
+            <div id="move-menu-stage" style="position:relative; flex:1; min-height:0;">
+                <img id="move-house-warehouse" class="move-part-img" src="ui_images/move_house_warehouse.webp" alt="" onclick="moveMenuGoTo(openWarehouse)" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-warehouse" class="move-part-img" src="ui_images/move_sign_warehouse.webp" alt="" onclick="moveMenuGoTo(openWarehouse)" style="position:absolute; cursor:pointer;">
+                <img id="move-house-shop" class="move-part-img" src="ui_images/move_house_shop.webp" alt="" onclick="closeModal('move-menu-modal'); openShop();" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-shop" class="move-part-img" src="ui_images/move_sign_shop.webp" alt="" onclick="closeModal('move-menu-modal'); openShop();" style="position:absolute; cursor:pointer;">
+                <img id="move-house-arcade" class="move-part-img" src="ui_images/move_house_arcade.webp" alt="" onclick="closeModal('move-menu-modal'); openMinigameCenter();" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-arcade" class="move-part-img" src="ui_images/move_sign_arcade.webp" alt="" onclick="closeModal('move-menu-modal'); openMinigameCenter();" style="position:absolute; cursor:pointer;">
+                <img id="move-house-myroom" class="move-part-img" src="ui_images/move_house_myroom.webp" alt="" onclick="openMyRoomPlaceholder()" style="position:absolute; cursor:pointer; opacity:0.75;">
+                <img id="move-sign-myroom" class="move-part-img" src="ui_images/move_sign_myroom.webp" alt="" onclick="openMyRoomPlaceholder()" style="position:absolute; cursor:pointer; opacity:0.75;">
+                <img id="move-sign-return" class="move-part-img" src="ui_images/move_sign_return.webp" alt="" onclick="moveMenuGoHome()" style="position:absolute; cursor:pointer;">
+
+                <div id="move-adjust-panel" style="display:none; position:absolute; top:4px; right:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:170px; font-size:0.6rem;">
+                    <select id="move-adjust-target" style="font-size:0.6rem; width:100%;" onchange="onMoveAdjustTargetChange()"></select>
+                    <button onclick="toggleMoveAdjustMode()" id="move-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">位置調整ON/OFF</button>
+                    <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
+                    <div id="move-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
+                    <button onclick="copyAllMoveCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 全パーツの座標をコピー</button>
+                    <textarea id="move-copy-all-textarea" readonly style="display:none; width:100%; height:120px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
+                </div>
+                <div id="move-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
+                <div id="move-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
+                <div id="move-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
             </div>
         </div>
     </div>
@@ -437,22 +453,20 @@
     <div id="warehouse-modal" class="modal">
         <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/monooki_bg.webp'); background-size:cover; background-position:center;">
             <button class="modal-fullscreen-close" onclick="closeWarehouse()">×</button>
-            <div style="flex:1; min-height:0; overflow-y:auto; padding:calc(50px + env(safe-area-inset-top, 0px)) 16px 16px; display:flex; flex-direction:column; justify-content:center;">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <button class="warehouse-grid-btn" style="background:#795548;" onclick="closeModal('warehouse-modal'); openDiary();">
-                        <span class="warehouse-grid-icon">📔</span><span class="warehouse-grid-label">絵日記</span>
-                    </button>
-                    <button class="warehouse-grid-btn" style="background:#9c27b0;" onclick="openTrophyRoom()">
-                        <span class="warehouse-grid-icon">🏅</span><span class="warehouse-grid-label">都道府県<br>トロフィー</span>
-                    </button>
-                    <button class="warehouse-grid-btn" style="background:#e91e63;" onclick="openOmiyageCollection()">
-                        <span class="warehouse-grid-icon">🍡</span><span class="warehouse-grid-label">お土産一覧</span>
-                        <span id="warehouse-omiyage-badge" class="warehouse-grid-badge"></span>
-                    </button>
-                    <button class="warehouse-grid-btn" style="background:#4caf50;" onclick="openTicketInventory()">
-                        <span class="warehouse-grid-icon">🎫</span><span class="warehouse-grid-label">アイテム一覧</span>
-                    </button>
+            <div id="warehouse-item-stage" style="position:relative; flex:1; min-height:0;">
+                <span id="warehouse-omiyage-badge" class="warehouse-grid-badge" style="position:absolute; z-index:5;"></span>
+
+                <div id="warehouse-adjust-panel" style="display:none; position:absolute; top:4px; right:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:170px; font-size:0.6rem;">
+                    <select id="warehouse-adjust-target" style="font-size:0.6rem; width:100%;" onchange="onWarehouseAdjustTargetChange()"></select>
+                    <button onclick="toggleWarehouseAdjustMode()" id="warehouse-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">位置調整ON/OFF</button>
+                    <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
+                    <div id="warehouse-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
+                    <button onclick="copyAllWarehouseCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 全パーツの座標をコピー</button>
+                    <textarea id="warehouse-copy-all-textarea" readonly style="display:none; width:100%; height:120px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
                 </div>
+                <div id="warehouse-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
+                <div id="warehouse-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
+                <div id="warehouse-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
             </div>
         </div>
     </div>
@@ -632,7 +646,19 @@
     <div id="minigame-center-modal" class="modal">
         <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/minigame_center_bg.webp'); background-size:cover; background-position:center;">
             <button class="modal-fullscreen-close" onclick="closeMinigameCenter()">×</button>
-            <div id="minigame-tile-view" style="position:relative; flex:1; min-height:0;"></div>
+            <div id="minigame-tile-view" style="position:relative; flex:1; min-height:0;">
+                <div id="minigame-adjust-panel" style="display:none; position:absolute; top:4px; right:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:170px; font-size:0.6rem;">
+                    <select id="minigame-adjust-target" style="font-size:0.6rem; width:100%;" onchange="onMinigameAdjustTargetChange()"></select>
+                    <button onclick="toggleMinigameAdjustMode()" id="minigame-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">位置調整ON/OFF</button>
+                    <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
+                    <div id="minigame-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
+                    <button onclick="copyAllMinigameCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 全パーツの座標をコピー</button>
+                    <textarea id="minigame-copy-all-textarea" readonly style="display:none; width:100%; height:120px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
+                </div>
+                <div id="minigame-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
+                <div id="minigame-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
+                <div id="minigame-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
+            </div>
             <div id="minigame-play-view" style="display:none; flex:1; min-height:0; overflow-y:auto; background:rgba(255,248,236,0.95); padding:14px; box-sizing:border-box;"></div>
         </div>
     </div>
@@ -904,13 +930,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-135"></script>
-    <script src="state.js?v=2026-08-05-135"></script>
-    <script src="tap.js?v=2026-08-05-135"></script>
-    <script src="shop.js?v=2026-08-05-135"></script>
-    <script src="progress.js?v=2026-08-05-135"></script>
-    <script src="minigames.js?v=2026-08-05-135"></script>
-    <script src="ui.js?v=2026-08-05-135"></script>
-    <script src="main.js?v=2026-08-05-135"></script>
+    <script src="data.js?v=2026-08-05-138"></script>
+    <script src="state.js?v=2026-08-05-138"></script>
+    <script src="tap.js?v=2026-08-05-138"></script>
+    <script src="shop.js?v=2026-08-05-138"></script>
+    <script src="progress.js?v=2026-08-05-138"></script>
+    <script src="minigames.js?v=2026-08-05-138"></script>
+    <script src="ui.js?v=2026-08-05-138"></script>
+    <script src="main.js?v=2026-08-05-138"></script>
 </body>
 </html>

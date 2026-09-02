@@ -534,7 +534,373 @@
         // 🚧「移動する」の最終的なUIはまだ未定。ひとまず一覧を出す形で仮実装しておく
         function openMoveMenu() {
             openModal('move-menu-modal'); // 移動先を選ぶだけなので、ここではフェードしない（選んだ時にフェードする）
+            renderMoveMenuParts();
+            if (IS_DEV_MODE) renderMoveAdjustPanel();
         }
+        // MOVE_MENU_PARTSの座標を、実際の画像に反映する
+        function renderMoveMenuParts() {
+            MOVE_MENU_PARTS.forEach(p => {
+                const el = document.getElementById(p.id);
+                if (!el) return;
+                el.style.top = p.top + '%';
+                el.style.left = p.left + '%';
+                el.style.width = p.width + '%';
+                el.style.height = p.height + '%';
+            });
+        }
+
+        // 🛠️ 開発者用：移動画面の家・看板の位置調整ツール
+        let moveAdjustMode = false;
+        let moveAdjustDragState = null;
+        function getMoveAdjustTargetEl() {
+            const val = document.getElementById('move-adjust-target').value;
+            return document.getElementById(val);
+        }
+        function renderMoveAdjustPanel() {
+            document.getElementById('move-adjust-panel').style.display = 'block';
+            const select = document.getElementById('move-adjust-target');
+            select.innerHTML = MOVE_MENU_PARTS.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
+            updateMoveAdjustReadout();
+        }
+        function toggleMoveAdjustMode() {
+            moveAdjustMode = !moveAdjustMode;
+            const btn = document.getElementById('move-adjust-toggle-btn');
+            const target = getMoveAdjustTargetEl();
+            if (moveAdjustMode) {
+                target.style.outline = '2px dashed #e91e63';
+                btn.style.background = '#4caf50';
+                setupMoveAdjustDrag();
+                positionMoveHandles();
+            } else {
+                target.style.outline = '';
+                ['move-resize-handle-r', 'move-resize-handle-b', 'move-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
+                btn.style.background = '#e91e63';
+            }
+        }
+        function onMoveAdjustTargetChange() {
+            document.querySelectorAll('.move-part-img').forEach(el => el.style.outline = '');
+            if (!moveAdjustMode) { updateMoveAdjustReadout(); return; }
+            const target = getMoveAdjustTargetEl();
+            target.style.outline = '2px dashed #e91e63';
+            positionMoveHandles();
+            updateMoveAdjustReadout();
+        }
+        function positionMoveHandles() {
+            if (!moveAdjustMode) return;
+            const stage = document.getElementById('move-menu-stage');
+            const target = getMoveAdjustTargetEl();
+            const stageRect = stage.getBoundingClientRect();
+            const tRect = target.getBoundingClientRect();
+            const rightPct = ((tRect.right - stageRect.left) / stageRect.width) * 100;
+            const bottomPct = ((tRect.bottom - stageRect.top) / stageRect.height) * 100;
+            const midYPct = ((tRect.top + tRect.height / 2 - stageRect.top) / stageRect.height) * 100;
+            const midXPct = ((tRect.left + tRect.width / 2 - stageRect.left) / stageRect.width) * 100;
+            const hR = document.getElementById('move-resize-handle-r'), hB = document.getElementById('move-resize-handle-b'), hBr = document.getElementById('move-resize-handle-br');
+            [hR, hB, hBr].forEach(h => h.style.display = 'block');
+            hR.style.left = rightPct + '%'; hR.style.top = midYPct + '%';
+            hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
+            hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
+        }
+        function setupMoveAdjustDrag() {
+            const stage = document.getElementById('move-menu-stage');
+            if (stage.dataset.dragSetup) return;
+            stage.dataset.dragSetup = '1';
+            const startDrag = (e, mode) => {
+                if (!moveAdjustMode) return;
+                e.stopPropagation(); e.preventDefault();
+                const target = getMoveAdjustTargetEl();
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                moveAdjustDragState = { startX: e.clientX, startY: e.clientY, target, mode };
+            };
+            stage.addEventListener('pointerdown', (e) => {
+                if (!moveAdjustMode) return;
+                if (e.target.id === 'move-resize-handle-r') return startDrag(e, 'width');
+                if (e.target.id === 'move-resize-handle-b') return startDrag(e, 'height');
+                if (e.target.id === 'move-resize-handle-br') return startDrag(e, 'both');
+                const target = getMoveAdjustTargetEl();
+                if (e.target !== target) return;
+                startDrag(e, 'move');
+            });
+            stage.addEventListener('pointermove', (e) => {
+                if (!moveAdjustDragState || !moveAdjustMode) return;
+                e.stopPropagation();
+                const stageRect = stage.getBoundingClientRect();
+                const dxPct = ((e.clientX - moveAdjustDragState.startX) / stageRect.width) * 100;
+                const dyPct = ((e.clientY - moveAdjustDragState.startY) / stageRect.height) * 100;
+                const t = moveAdjustDragState.target, mode = moveAdjustDragState.mode;
+                if (mode === 'move') {
+                    t.style.top = (parseFloat(t.style.top) + dyPct) + '%';
+                    t.style.left = (parseFloat(t.style.left) + dxPct) + '%';
+                } else {
+                    if (mode === 'width' || mode === 'both') t.style.width = Math.max(2, parseFloat(t.style.width) + dxPct) + '%';
+                    if (mode === 'height' || mode === 'both') t.style.height = Math.max(2, parseFloat(t.style.height) + dyPct) + '%';
+                }
+                moveAdjustDragState.startX = e.clientX; moveAdjustDragState.startY = e.clientY;
+                // ドラッグした内容を、元データにもその場で反映しておく（パーツを切り替えても・コピーしても消えないように）
+                const val = document.getElementById('move-adjust-target').value;
+                const editingPart = MOVE_MENU_PARTS.find(p => p.id === val);
+                if (editingPart) {
+                    editingPart.top = parseFloat(t.style.top);
+                    editingPart.left = parseFloat(t.style.left);
+                    editingPart.width = parseFloat(t.style.width);
+                    editingPart.height = parseFloat(t.style.height);
+                }
+                positionMoveHandles();
+                updateMoveAdjustReadout();
+            });
+            stage.addEventListener('pointerup', () => { moveAdjustDragState = null; });
+            stage.addEventListener('pointercancel', () => { moveAdjustDragState = null; });
+        }
+        function updateMoveAdjustReadout() {
+            const target = getMoveAdjustTargetEl();
+            const el = document.getElementById('move-adjust-readout');
+            if (!target || !el) return;
+            el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${target.style.height};`;
+        }
+        function copyAllMoveCoords() {
+            const lines = MOVE_MENU_PARTS.map(p => `${p.label}(${p.id}): top:${p.top}%; left:${p.left}%; width:${p.width}%; height:${p.height}%;`);
+            const text = lines.join('\n');
+            const textarea = document.getElementById('move-copy-all-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
+
+        // 🛠️ 開発者用：ゲーセンの筐体イラストの位置調整ツール（moveと同じ仕組み）
+        let minigameAdjustMode = false;
+        let minigameAdjustDragState = null;
+        function getMinigameAdjustTargetEl() {
+            const val = document.getElementById('minigame-adjust-target').value;
+            return document.getElementById(val);
+        }
+        function renderMinigameAdjustPanel() {
+            document.getElementById('minigame-adjust-panel').style.display = 'block';
+            const select = document.getElementById('minigame-adjust-target');
+            select.innerHTML = ARCADE_CABINET_PARTS.map(p => `<option value="${p.id}">${minigames[p.gameId] ? minigames[p.gameId].name : p.id}</option>`).join('');
+            updateMinigameAdjustReadout();
+        }
+        function toggleMinigameAdjustMode() {
+            minigameAdjustMode = !minigameAdjustMode;
+            const btn = document.getElementById('minigame-adjust-toggle-btn');
+            const target = getMinigameAdjustTargetEl();
+            if (minigameAdjustMode) {
+                target.style.outline = '2px dashed #e91e63';
+                btn.style.background = '#4caf50';
+                setupMinigameAdjustDrag();
+                positionMinigameHandles();
+            } else {
+                target.style.outline = '';
+                ['minigame-resize-handle-r', 'minigame-resize-handle-b', 'minigame-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
+                btn.style.background = '#e91e63';
+            }
+        }
+        function onMinigameAdjustTargetChange() {
+            document.querySelectorAll('.arcade-cabinet-wrap').forEach(el => el.style.outline = '');
+            if (!minigameAdjustMode) { updateMinigameAdjustReadout(); return; }
+            const target = getMinigameAdjustTargetEl();
+            target.style.outline = '2px dashed #e91e63';
+            positionMinigameHandles();
+            updateMinigameAdjustReadout();
+        }
+        function positionMinigameHandles() {
+            if (!minigameAdjustMode) return;
+            const stage = document.getElementById('minigame-tile-view');
+            const target = getMinigameAdjustTargetEl();
+            const stageRect = stage.getBoundingClientRect();
+            const tRect = target.getBoundingClientRect();
+            const rightPct = ((tRect.right - stageRect.left) / stageRect.width) * 100;
+            const bottomPct = ((tRect.bottom - stageRect.top) / stageRect.height) * 100;
+            const midYPct = ((tRect.top + tRect.height / 2 - stageRect.top) / stageRect.height) * 100;
+            const midXPct = ((tRect.left + tRect.width / 2 - stageRect.left) / stageRect.width) * 100;
+            const hR = document.getElementById('minigame-resize-handle-r'), hB = document.getElementById('minigame-resize-handle-b'), hBr = document.getElementById('minigame-resize-handle-br');
+            [hR, hB, hBr].forEach(h => h.style.display = 'block');
+            hR.style.left = rightPct + '%'; hR.style.top = midYPct + '%';
+            hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
+            hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
+        }
+        function setupMinigameAdjustDrag() {
+            const stage = document.getElementById('minigame-tile-view');
+            if (stage.dataset.dragSetup) return;
+            stage.dataset.dragSetup = '1';
+            const startDrag = (e, mode) => {
+                if (!minigameAdjustMode) return;
+                e.stopPropagation(); e.preventDefault();
+                const target = getMinigameAdjustTargetEl();
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                minigameAdjustDragState = { startX: e.clientX, startY: e.clientY, target, mode };
+            };
+            stage.addEventListener('pointerdown', (e) => {
+                if (!minigameAdjustMode) return;
+                if (e.target.id === 'minigame-resize-handle-r') return startDrag(e, 'width');
+                if (e.target.id === 'minigame-resize-handle-b') return startDrag(e, 'height');
+                if (e.target.id === 'minigame-resize-handle-br') return startDrag(e, 'both');
+                const target = getMinigameAdjustTargetEl();
+                if (!target.contains(e.target) && e.target !== target) return; // 筐体の中の画像・バッジをタップしても反応するように
+                startDrag(e, 'move');
+            });
+            stage.addEventListener('pointermove', (e) => {
+                if (!minigameAdjustDragState || !minigameAdjustMode) return;
+                e.stopPropagation();
+                const stageRect = stage.getBoundingClientRect();
+                const dxPct = ((e.clientX - minigameAdjustDragState.startX) / stageRect.width) * 100;
+                const dyPct = ((e.clientY - minigameAdjustDragState.startY) / stageRect.height) * 100;
+                const t = minigameAdjustDragState.target, mode = minigameAdjustDragState.mode;
+                if (mode === 'move') {
+                    t.style.top = (parseFloat(t.style.top) + dyPct) + '%';
+                    t.style.left = (parseFloat(t.style.left) + dxPct) + '%';
+                } else {
+                    if (mode === 'width' || mode === 'both') t.style.width = Math.max(2, parseFloat(t.style.width) + dxPct) + '%';
+                    if (mode === 'height' || mode === 'both') t.style.height = Math.max(2, parseFloat(t.style.height) + dyPct) + '%';
+                }
+                minigameAdjustDragState.startX = e.clientX; minigameAdjustDragState.startY = e.clientY;
+                const val = document.getElementById('minigame-adjust-target').value;
+                const editingPart = ARCADE_CABINET_PARTS.find(p => p.id === val);
+                if (editingPart) {
+                    editingPart.top = parseFloat(t.style.top);
+                    editingPart.left = parseFloat(t.style.left);
+                    editingPart.width = parseFloat(t.style.width);
+                    editingPart.height = parseFloat(t.style.height);
+                }
+                positionMinigameHandles();
+                updateMinigameAdjustReadout();
+            });
+            stage.addEventListener('pointerup', () => { minigameAdjustDragState = null; });
+            stage.addEventListener('pointercancel', () => { minigameAdjustDragState = null; });
+        }
+        function updateMinigameAdjustReadout() {
+            const target = getMinigameAdjustTargetEl();
+            const el = document.getElementById('minigame-adjust-readout');
+            if (!target || !el) return;
+            el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${target.style.height};`;
+        }
+        function copyAllMinigameCoords() {
+            const lines = ARCADE_CABINET_PARTS.map(p => `${minigames[p.gameId] ? minigames[p.gameId].name : p.id}(${p.id}): top:${p.top}%; left:${p.left}%; width:${p.width}%; height:${p.height}%;`);
+            const text = lines.join('\n');
+            const textarea = document.getElementById('minigame-copy-all-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
+
+        // 🛠️ 開発者用：ものおきの小物イラストの位置調整ツール（moveと同じ仕組み）
+        let warehouseAdjustMode = false;
+        let warehouseAdjustDragState = null;
+        function getWarehouseAdjustTargetEl() {
+            const val = document.getElementById('warehouse-adjust-target').value;
+            return document.getElementById(val);
+        }
+        function renderWarehouseAdjustPanel() {
+            document.getElementById('warehouse-adjust-panel').style.display = 'block';
+            const select = document.getElementById('warehouse-adjust-target');
+            select.innerHTML = WAREHOUSE_ITEM_PARTS.map(p => `<option value="${p.id}">${p.label}</option>`).join('');
+            updateWarehouseAdjustReadout();
+        }
+        function toggleWarehouseAdjustMode() {
+            warehouseAdjustMode = !warehouseAdjustMode;
+            const btn = document.getElementById('warehouse-adjust-toggle-btn');
+            const target = getWarehouseAdjustTargetEl();
+            if (warehouseAdjustMode) {
+                target.style.outline = '2px dashed #e91e63';
+                btn.style.background = '#4caf50';
+                setupWarehouseAdjustDrag();
+                positionWarehouseHandles();
+            } else {
+                target.style.outline = '';
+                ['warehouse-resize-handle-r', 'warehouse-resize-handle-b', 'warehouse-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
+                btn.style.background = '#e91e63';
+            }
+        }
+        function onWarehouseAdjustTargetChange() {
+            document.querySelectorAll('.warehouse-item-wrap').forEach(el => el.style.outline = '');
+            if (!warehouseAdjustMode) { updateWarehouseAdjustReadout(); return; }
+            const target = getWarehouseAdjustTargetEl();
+            target.style.outline = '2px dashed #e91e63';
+            positionWarehouseHandles();
+            updateWarehouseAdjustReadout();
+        }
+        function positionWarehouseHandles() {
+            if (!warehouseAdjustMode) return;
+            const stage = document.getElementById('warehouse-item-stage');
+            const target = getWarehouseAdjustTargetEl();
+            const stageRect = stage.getBoundingClientRect();
+            const tRect = target.getBoundingClientRect();
+            const rightPct = ((tRect.right - stageRect.left) / stageRect.width) * 100;
+            const bottomPct = ((tRect.bottom - stageRect.top) / stageRect.height) * 100;
+            const midYPct = ((tRect.top + tRect.height / 2 - stageRect.top) / stageRect.height) * 100;
+            const midXPct = ((tRect.left + tRect.width / 2 - stageRect.left) / stageRect.width) * 100;
+            const hR = document.getElementById('warehouse-resize-handle-r'), hB = document.getElementById('warehouse-resize-handle-b'), hBr = document.getElementById('warehouse-resize-handle-br');
+            [hR, hB, hBr].forEach(h => h.style.display = 'block');
+            hR.style.left = rightPct + '%'; hR.style.top = midYPct + '%';
+            hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
+            hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
+        }
+        function setupWarehouseAdjustDrag() {
+            const stage = document.getElementById('warehouse-item-stage');
+            if (stage.dataset.dragSetup) return;
+            stage.dataset.dragSetup = '1';
+            const startDrag = (e, mode) => {
+                if (!warehouseAdjustMode) return;
+                e.stopPropagation(); e.preventDefault();
+                const target = getWarehouseAdjustTargetEl();
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                warehouseAdjustDragState = { startX: e.clientX, startY: e.clientY, target, mode };
+            };
+            stage.addEventListener('pointerdown', (e) => {
+                if (!warehouseAdjustMode) return;
+                if (e.target.id === 'warehouse-resize-handle-r') return startDrag(e, 'width');
+                if (e.target.id === 'warehouse-resize-handle-b') return startDrag(e, 'height');
+                if (e.target.id === 'warehouse-resize-handle-br') return startDrag(e, 'both');
+                const target = getWarehouseAdjustTargetEl();
+                if (e.target !== target) return;
+                startDrag(e, 'move');
+            });
+            stage.addEventListener('pointermove', (e) => {
+                if (!warehouseAdjustDragState || !warehouseAdjustMode) return;
+                e.stopPropagation();
+                const stageRect = stage.getBoundingClientRect();
+                const dxPct = ((e.clientX - warehouseAdjustDragState.startX) / stageRect.width) * 100;
+                const dyPct = ((e.clientY - warehouseAdjustDragState.startY) / stageRect.height) * 100;
+                const t = warehouseAdjustDragState.target, mode = warehouseAdjustDragState.mode;
+                if (mode === 'move') {
+                    t.style.top = (parseFloat(t.style.top) + dyPct) + '%';
+                    t.style.left = (parseFloat(t.style.left) + dxPct) + '%';
+                } else {
+                    if (mode === 'width' || mode === 'both') t.style.width = Math.max(2, parseFloat(t.style.width) + dxPct) + '%';
+                    if (mode === 'height' || mode === 'both') t.style.height = Math.max(2, parseFloat(t.style.height) + dyPct) + '%';
+                }
+                warehouseAdjustDragState.startX = e.clientX; warehouseAdjustDragState.startY = e.clientY;
+                const val = document.getElementById('warehouse-adjust-target').value;
+                const editingPart = WAREHOUSE_ITEM_PARTS.find(p => p.id === val);
+                if (editingPart) {
+                    editingPart.top = parseFloat(t.style.top);
+                    editingPart.left = parseFloat(t.style.left);
+                    editingPart.width = parseFloat(t.style.width);
+                    editingPart.height = parseFloat(t.style.height);
+                }
+                positionWarehouseHandles();
+                updateWarehouseAdjustReadout();
+            });
+            stage.addEventListener('pointerup', () => { warehouseAdjustDragState = null; });
+            stage.addEventListener('pointercancel', () => { warehouseAdjustDragState = null; });
+        }
+        function updateWarehouseAdjustReadout() {
+            const target = getWarehouseAdjustTargetEl();
+            const el = document.getElementById('warehouse-adjust-readout');
+            if (!target || !el) return;
+            el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width}; height:${target.style.height};`;
+        }
+        function copyAllWarehouseCoords() {
+            const lines = WAREHOUSE_ITEM_PARTS.map(p => `${p.label}(${p.id}): top:${p.top}%; left:${p.left}%; width:${p.width}%; height:${p.height}%;`);
+            const text = lines.join('\n');
+            const textarea = document.getElementById('warehouse-copy-all-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
+
         // 移動先が決まった時だけ、ここでフェード＋移動音を鳴らしてから実際に画面を切り替える
         function moveMenuGoTo(fn) {
             const overlay = document.getElementById('fade-overlay');
@@ -559,11 +925,40 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
+        function warehouseItemAction(action) {
+            if (action === 'trophy') openTrophyRoom();
+            else if (action === 'omiyage') openOmiyageCollection();
+            else if (action === 'ticket') openTicketInventory();
+            else if (action === 'diary') { closeModal('warehouse-modal'); openDiary(); }
+        }
+        function renderWarehouseItems() {
+            const stage = document.getElementById('warehouse-item-stage');
+            stage.querySelectorAll('.warehouse-item-wrap').forEach(el => el.remove());
+            WAREHOUSE_ITEM_PARTS.forEach(part => {
+                const img = document.createElement('img');
+                img.className = 'warehouse-item-wrap';
+                img.id = part.id;
+                img.src = part.img;
+                img.alt = part.label;
+                img.style.cssText = `top:${part.top}%; left:${part.left}%; width:${part.width}%; height:${part.height}%; object-fit:contain;`;
+                img.onclick = () => warehouseItemAction(part.action);
+                stage.appendChild(img);
+            });
+            // おみやげの進捗バッジを、おみやげイラストの右上に合わせる
+            const omiyagePart = WAREHOUSE_ITEM_PARTS.find(p => p.action === 'omiyage');
+            const badge = document.getElementById('warehouse-omiyage-badge');
+            if (omiyagePart && badge) {
+                badge.style.top = omiyagePart.top + '%';
+                badge.style.left = (omiyagePart.left + omiyagePart.width - 12) + '%';
+            }
+            if (IS_DEV_MODE) renderWarehouseAdjustPanel();
+        }
         function openWarehouse() {
             let boughtCount = 0;
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
             const badge = document.getElementById('warehouse-omiyage-badge');
             if (badge) badge.textContent = `${boughtCount}/${stages.length}`;
+            renderWarehouseItems();
             openModal('warehouse-modal');
         }
 

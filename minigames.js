@@ -100,37 +100,49 @@
 
         function renderMinigameTiles() {
             const container = document.getElementById('minigame-tile-view');
-            container.innerHTML = '<div id="minigame-button-grid" style="position:absolute; inset:0; display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; align-content:center; justify-items:center; padding:24px; box-sizing:border-box;"></div>';
-            const grid = document.getElementById('minigame-button-grid');
-            Object.values(minigames).forEach(g => {
+            // 調整パネル・ハンドルは残しつつ、筐体イラストだけ作り直す（毎回呼ばれるため、既存の筐体要素は先に消す）
+            container.querySelectorAll('.arcade-cabinet-wrap').forEach(el => el.remove());
+
+            ARCADE_CABINET_PARTS.forEach(part => {
+                const g = minigames[part.gameId];
+                if (!g) return;
                 const locked = currentStageIndex < g.unlockStage;
                 const usedToday = minigamePlaysUsedToday[g.id] || 0;
                 const remaining = getMinigameDailyLimit() - usedToday;
-                const btn = document.createElement('button');
-                btn.style.cssText = 'width:100%; aspect-ratio:1; border-radius:20px; border:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; box-shadow:0 3px 8px rgba(0,0,0,0.25);';
+
+                const wrap = document.createElement('div');
+                wrap.className = 'arcade-cabinet-wrap';
+                wrap.id = part.id;
+                wrap.style.cssText = `position:absolute; top:${part.top}%; left:${part.left}%; width:${part.width}%; height:${part.height}%;`;
+
+                const img = document.createElement('img');
+                img.src = part.img;
+                img.alt = g.name;
+                img.style.cssText = 'width:100%; height:100%; object-fit:contain; display:block;';
+
+                let badgeHtml = '';
                 if (locked) {
                     const reqName = stages[g.unlockStage] ? stages[g.unlockStage].name : "???";
-                    btn.style.background = 'rgba(120,120,120,0.75)'; btn.style.color = '#fff';
-                    btn.disabled = true;
-                    btn.innerHTML = `<div style="font-size:1.8rem;">🔒</div><div style="font-size:0.7rem; font-weight:bold;">${g.name}</div><div style="font-size:0.55rem;">「${reqName}」到達で解放</div>`;
+                    wrap.style.filter = 'grayscale(1) brightness(0.6)';
+                    badgeHtml = `<div class="arcade-cabinet-badge">🔒「${reqName}」到達で解放</div>`;
                 } else if (g.isCoinGame) {
-                    // 🎰 コインを賭けて遊ぶゲームは、1日の回数制限とは別枠（コインが続く限り何度でも遊べる）
-                    btn.style.background = 'rgba(255,248,236,0.92)'; btn.style.color = '#5d4037';
-                    if (!minigameSeenUnlocked[g.id]) btn.classList.add('minigame-recommend-glow');
-                    btn.onclick = () => startMinigame(g.id);
-                    btn.innerHTML = `<div style="font-size:1.8rem;">${g.icon}</div><div style="font-size:0.72rem; font-weight:bold;">${g.name}</div><div style="font-size:0.58rem; color:#7b1fa2;">🪙 ${IS_DEV_MODE ? '∞' : minigameCoins} 所持</div>`;
+                    if (!minigameSeenUnlocked[g.id]) wrap.classList.add('minigame-recommend-glow');
+                    wrap.onclick = () => startMinigame(g.id);
+                    badgeHtml = `<div class="arcade-cabinet-badge" style="color:#7b1fa2;">🪙 ${IS_DEV_MODE ? '∞' : minigameCoins} 所持</div>`;
                 } else if (remaining <= 0) {
-                    btn.style.background = 'rgba(120,120,120,0.75)'; btn.style.color = '#fff';
-                    btn.disabled = true;
-                    btn.innerHTML = `<div style="font-size:1.8rem;">${g.icon}</div><div style="font-size:0.7rem; font-weight:bold;">${g.name}</div><div style="font-size:0.55rem;">本日は終了！</div>`;
+                    wrap.style.filter = 'grayscale(1) brightness(0.75)';
+                    badgeHtml = `<div class="arcade-cabinet-badge">本日は終了！</div>`;
                 } else {
-                    btn.style.background = 'rgba(255,248,236,0.92)'; btn.style.color = '#5d4037';
-                    if (!minigameSeenUnlocked[g.id]) btn.classList.add('minigame-recommend-glow');
-                    btn.onclick = () => startMinigame(g.id);
-                    btn.innerHTML = `<div style="font-size:1.8rem;">${g.icon}</div><div style="font-size:0.72rem; font-weight:bold;">${g.name}</div><div style="font-size:0.58rem; color:#26a69a;">本日 ${usedToday}/${getMinigameDailyLimit()}回</div>`;
+                    if (!minigameSeenUnlocked[g.id]) wrap.classList.add('minigame-recommend-glow');
+                    wrap.onclick = () => startMinigame(g.id);
+                    badgeHtml = `<div class="arcade-cabinet-badge" style="color:#26a69a;">本日 ${usedToday}/${getMinigameDailyLimit()}回</div>`;
                 }
-                grid.appendChild(btn);
+                wrap.appendChild(img);
+                wrap.insertAdjacentHTML('beforeend', badgeHtml);
+                container.appendChild(wrap);
             });
+
+            if (IS_DEV_MODE) renderMinigameAdjustPanel();
         }
 
         function startMinigame(id) {

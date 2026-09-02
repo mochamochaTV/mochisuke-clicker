@@ -336,6 +336,14 @@
             color: #ff5252;
             font-size: 1.25rem;
         }
+        .move-part-img { position: absolute; cursor: pointer; }
+        .arcade-cabinet-wrap { cursor: pointer; }
+        .arcade-cabinet-badge {
+            position: absolute; bottom: 2%; left: 50%; transform: translateX(-50%);
+            background: rgba(255,255,255,0.9); border-radius: 10px; padding: 2px 8px;
+            font-size: 0.6rem; font-weight: 900; color: #5d4037; white-space: nowrap;
+        }
+        .warehouse-item-wrap { position: absolute; cursor: pointer; }
         .move-menu-hotspot {
             position: absolute; transform: translate(-50%, -50%);
             display: flex; flex-direction: column; align-items: center; gap: 2px;
@@ -376,7 +384,7 @@
 
         /* モーダル共通 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: var(--app-height, 100%); background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
-        .modal-content { background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: 75vh; overflow-y: auto; box-sizing: border-box; position: relative; }
+        .modal-content { background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: calc(var(--app-height, 100vh) * 0.75); overflow-y: auto; box-sizing: border-box; position: relative; }
 
         /* ミニゲーム中は連打の勢いで画面がスクロールしてズレてしまわないよう固定する */
         #minigame-center-modal .modal-content { overflow: hidden; touch-action: none; overscroll-behavior: none; }
