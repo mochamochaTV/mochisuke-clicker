@@ -363,6 +363,15 @@
         }
         .move-menu-hotspot span { font-size: 0.62rem; font-weight: 900; color: #5d4037; }
         .move-menu-hotspot:active { transform: translate(-50%, -50%) scale(0.94); }
+        .mission-card {
+            background: #fdf8ee; border-radius: 16px; padding: 12px 14px; margin-bottom: 12px;
+            box-shadow: 4px 4px 8px rgba(0,0,0,0.08), -4px -4px 8px rgba(255,255,255,0.75);
+            transition: background 0.4s, box-shadow 0.4s;
+        }
+        .mission-card-done {
+            background: #d9f0fb;
+            box-shadow: 4px 4px 8px rgba(79,195,247,0.18), -4px -4px 8px rgba(255,255,255,0.85), inset 0 0 0 2px rgba(79,195,247,0.35);
+        }
         .warehouse-grid-btn {
             position: relative; aspect-ratio: 1/0.85; border: none; border-radius: 16px;
             color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;

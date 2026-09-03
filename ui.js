@@ -390,6 +390,14 @@
         function openOshigotoPlaceholder() {
             checkAndRotateMissions(); // 開くたびに、日付/週またぎを最新化する
             openModal('mission-modal');
+            switchMissionTab(currentMissionTab);
+        }
+        let currentMissionTab = 'tutorial';
+        function switchMissionTab(tab) {
+            currentMissionTab = tab;
+            ['tutorial', 'daily', 'weekly'].forEach(t => {
+                document.getElementById(`mission-tab-${t}`).classList.toggle('active', t === tab);
+            });
             renderMissionList();
         }
         function renderMissionRow(mission) {
@@ -406,17 +414,18 @@
             }
             const progressText = `${Math.min(progress, mission.target)}/${mission.target}`;
             const pct = Math.min(100, (progress / mission.target) * 100);
+            const isDone = claimed || complete; // 受取済み・受取可能、どちらも「クリア」扱いで水色にする
             return `
-                <div class="list-item" style="flex-direction:column; align-items:stretch; gap:6px;">
+                <div class="mission-card ${isDone ? 'mission-card-done' : ''}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:0.82rem; font-weight:700; color:#5d4037;">${mission.text}</span>
-                        <span style="font-size:0.68rem; color:#e91e63; font-weight:900;">🪙${mission.reward}</span>
+                        <span style="font-size:0.85rem; font-weight:700; color:#5d4037;">${mission.text}</span>
+                        <span style="font-size:0.7rem; color:#e91e63; font-weight:900; flex-shrink:0; margin-left:8px;">🪙${mission.reward}</span>
                     </div>
-                    <div style="background:#eee; border-radius:6px; height:8px; overflow:hidden;">
-                        <div style="background:#4caf50; height:100%; width:${pct}%;"></div>
+                    <div style="background:#e8e0d5; border-radius:6px; height:8px; overflow:hidden; margin-top:8px;">
+                        <div style="background:${isDone ? '#4fc3f7' : '#4caf50'}; height:100%; width:${pct}%; transition:width 0.3s;"></div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:0.68rem; color:#999;">${progressText}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px;">
+                        <span style="font-size:0.7rem; color:#999;">${progressText}</span>
                         ${btnHtml}
                     </div>
                 </div>
@@ -426,26 +435,23 @@
             const container = document.getElementById('mission-list-container');
             let html = '';
 
-            // チュートリアルミッション：全部終わるまでは、今のステップだけ順番に見せる
-            if (tutorialMissionStep < TUTORIAL_MISSIONS.length) {
-                html += `<h3 style="margin-bottom:6px;">🔰 はじめてのおしごと</h3><div class="list-container" style="margin-bottom:14px;">`;
-                html += renderMissionRow(TUTORIAL_MISSIONS[tutorialMissionStep]);
-                html += `</div>`;
+            if (currentMissionTab === 'tutorial') {
+                if (tutorialMissionStep < TUTORIAL_MISSIONS.length) {
+                    html += renderMissionRow(TUTORIAL_MISSIONS[tutorialMissionStep]);
+                } else {
+                    html += `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:24px;">はじめてのおしごとは、もう全部クリアしたで！</div>`;
+                }
+            } else if (currentMissionTab === 'daily') {
+                missionDailySelected.forEach(id => {
+                    const m = getMissionDef(id);
+                    if (m) html += renderMissionRow(m);
+                });
+            } else if (currentMissionTab === 'weekly') {
+                missionWeeklySelected.forEach(id => {
+                    const m = getMissionDef(id);
+                    if (m) html += renderMissionRow(m);
+                });
             }
-
-            html += `<h3 style="margin-bottom:6px;">📅 デイリーミッション</h3><div class="list-container" style="margin-bottom:14px;">`;
-            missionDailySelected.forEach(id => {
-                const m = getMissionDef(id);
-                if (m) html += renderMissionRow(m);
-            });
-            html += `</div>`;
-
-            html += `<h3 style="margin-bottom:6px;">🗓️ ウィークリーミッション</h3><div class="list-container">`;
-            missionWeeklySelected.forEach(id => {
-                const m = getMissionDef(id);
-                if (m) html += renderMissionRow(m);
-            });
-            html += `</div>`;
 
             container.innerHTML = html;
         }
@@ -642,6 +648,14 @@
         // ===================================================================
         // 🛋️ マイルーム
         // ===================================================================
+        // 🚧 マイルームは仕様検討中のため、いったん開発者モード限定にしておく
+        function openMyRoomEntry() {
+            if (!IS_DEV_MODE) {
+                alert('🛋️ 「マイルーム」は準備中です！\nお楽しみに！');
+                return;
+            }
+            moveMenuGoTo(openMyRoom);
+        }
         let previewMyroom = {};
         function openMyRoom() {
             previewMyroom = { ...equippedMyroom };
