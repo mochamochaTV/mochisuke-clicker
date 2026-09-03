@@ -306,6 +306,26 @@
             setTimeout(revealGachaPrize, 320);
         }
 
+        // 🎰 ガチャ：星ランク別のアイテムプールを取得し、1つ抽選して付与する
+        function getKisekaeItemsByStar(star) {
+            const pool = [];
+            ['hat', 'face', 'clothes', 'back', 'fullbody'].forEach(cat => {
+                KISEKAE_ITEMS[cat].forEach(item => {
+                    if (item.star === star && item.id !== 'clothes_mochisuke_tshirt') pool.push({ ...item, category: cat });
+                });
+            });
+            return pool;
+        }
+        function grantGachaKisekaeItem(star) {
+            const pool = getKisekaeItemsByStar(star);
+            const notOwned = pool.filter(item => !(ownedKisekaeItems[item.category] || []).includes(item.id));
+            const candidates = notOwned.length > 0 ? notOwned : pool; // 全部持っていたら重複当選になる
+            const picked = pickRandom(candidates);
+            if (!ownedKisekaeItems[picked.category]) ownedKisekaeItems[picked.category] = [];
+            const isDuplicate = ownedKisekaeItems[picked.category].includes(picked.id);
+            if (!isDuplicate) ownedKisekaeItems[picked.category].push(picked.id);
+            return { item: picked, isDuplicate };
+        }
         function revealGachaPrize() {
             const prizeReveal = document.getElementById('gacha-prize-reveal');
             const prizeImg = document.getElementById('gacha-prize-img');
@@ -319,13 +339,15 @@
                 prizeImg.src = item.img;
                 prizeImg.style.display = 'block';
                 prizeName.innerHTML = `${rarityTag}${item.name}`;
-            } else {
-                // 🚧 このレア度の景品はまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
-                const gain = Math.floor(Math.random() * 500) + 50;
-                score += gain;
-                updateDisplay(); saveGame();
-                prizeImg.style.display = 'none';
-                prizeName.innerHTML = `${rarityTag}（仮の景品）もち +${formatMochi(gain)}`;
+            } else if (['normalRare', 'rare', 'sr', 'ur'].includes(currentGachaRarity.id)) {
+                const starMap = { normalRare: 1, rare: 2, sr: 3, ur: 4 };
+                const result = grantGachaKisekaeItem(starMap[currentGachaRarity.id]);
+                const starText = '⭐'.repeat(result.item.star);
+                prizeImg.src = result.item.img || (result.item.leftFrames ? result.item.leftFrames[0] : '');
+                prizeImg.style.display = 'block';
+                const dupText = result.isDuplicate ? '<br><span style="font-size:0.7em; color:#999;">（すでに持っています）</span>' : '';
+                prizeName.innerHTML = `${rarityTag}${result.item.name}<br><span style="font-size:0.7em;">${starText}</span>${dupText}`;
+                saveGame(); updateDisplay();
             }
 
             // 🌟 レア度が高いほど、グロー・フラッシュ・振動・文字の大きさが豪華になる
@@ -515,11 +537,13 @@
             if (rarities[index].id === 'normal') {
                 const item = grantRandomNormalConsumable();
                 icon.innerHTML = `<img src="${item.img}" style="width:60%; display:block; margin:0 auto 4px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 ${flair.glow}px ${rarities[index].color});"><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${item.name}</div>`;
-            } else {
-                // 🚧 このレア度の景品はまだ未確定。決まるまでの仮の中身（ランダムにもちを付与）
-                const gain = Math.floor(Math.random() * 500) + 50;
-                score += gain; updateDisplay();
-                icon.querySelector('div:last-child').innerText = `+${formatMochi(gain)}`;
+            } else if (['normalRare', 'rare', 'sr', 'ur'].includes(rarities[index].id)) {
+                const starMap = { normalRare: 1, rare: 2, sr: 3, ur: 4 };
+                const result = grantGachaKisekaeItem(starMap[rarities[index].id]);
+                const starText = '⭐'.repeat(result.item.star);
+                const thumbSrc = result.item.img || (result.item.leftFrames ? result.item.leftFrames[0] : '');
+                icon.innerHTML = `<img src="${thumbSrc}" style="width:60%; display:block; margin:0 auto 4px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 ${flair.glow}px ${rarities[index].color});"><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${result.item.name} ${starText}</div>`;
+                updateDisplay();
             }
 
             // 1連と同じ「上下にパカッと割れて開く」演出

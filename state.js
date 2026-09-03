@@ -234,8 +234,8 @@
                     slotJackpotCount = state.slotJackpotCount ?? 0;
                     slotShortestJackpotPulls = state.slotShortestJackpotPulls ?? null;
                     slotLongestJackpotPulls = state.slotLongestJackpotPulls ?? null;
-                    ownedKisekaeItems = state.ownedKisekaeItems ?? { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'] };
-                    equippedKisekae = state.equippedKisekae ?? { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' };
+                    ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [], ...(state.ownedKisekaeItems || {}) };
+                    equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null, ...(state.equippedKisekae || {}) };
                     missionCounters = { ...missionCounters, ...(state.missionCounters || {}) };
                     missionDailyDate = state.missionDailyDate ?? '';
                     missionWeeklyWeekKey = state.missionWeeklyWeekKey ?? '';

@@ -1,8 +1,8 @@
         let prestigeCount = 0;      // 転生した回数
 
         // 👗 着せ替え部屋：所持アイテムと、今装着中のアイテム（カテゴリごとに1つだけ）
-        let ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'] };
-        let equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' };
+        let ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [] };
+        let equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null };
 
         // 💼 おしごとミッション：進捗カウンター・選ばれているミッション・受け取り済みの管理
         let missionCounters = {

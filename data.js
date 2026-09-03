@@ -284,16 +284,20 @@
                 { id: 'hat_kabuto',         name: 'カブト',            star: 2, img: 'ui_images/kisekae/hat_kabuto.webp',        top: -30.291262, left: -6.470588,  width: 111.176476, height: 81.504865,  locked: true },
                 { id: 'hat_wizard',         name: '魔法使いの帽子',    star: 2, img: 'ui_images/kisekae/hat_wizard.webp',        top: -28.839283, left: 16.216211, width: 59.459471, height: 39.107151, locked: true },
                 { id: 'hat_baby',           name: '赤ん帽',            star: 2, img: 'ui_images/kisekae/hat_baby.webp',          top: -30.291263, left: -42.941172, width: 181.17647,  height: 135.873805, locked: true },
-                { id: 'hat_santa',          name: 'サンタの帽子',      star: 2, img: 'ui_images/kisekae/hat_santa.webp',         top: -23.928569, left: 26.486484, width: 41.081091, height: 31.517859, locked: true },
+                { id: 'hat_santa',          name: 'サンタの帽子',      star: 1, img: 'ui_images/kisekae/hat_santa.webp',         top: -23.928569, left: 26.486484, width: 41.081091, height: 31.517859, locked: true },
                 { id: 'hat_chef',           name: 'コック帽',          star: 1, img: 'ui_images/kisekae/hat_chef.webp',          top: -22.142849, left: 24.864866, width: 42.162169, height: 29.285719, locked: true },
                 { id: 'hat_tophat_black',   name: 'シルクハット（黒）', star: 1, img: 'ui_images/kisekae/hat_tophat_black.webp',  top: -17.67857,  left: 23.243241, width: 44.324333, height: 26.607146, locked: true },
                 { id: 'hat_ribbon',         name: 'リボン',            star: 1, img: 'ui_images/kisekae/hat_ribbon.webp',        top: -11.875006, left: 25.945935, width: 41.621629, height: 22.58929,  locked: true },
                 { id: 'hat_graduate',       name: '学士の帽子',        star: 1, img: 'ui_images/kisekae/hat_graduate.webp',      top: -17.232144, left: 21.621614, width: 49.729738, height: 35.982146, locked: true },
+                { id: 'hat_sankakukin',     name: '三角巾',            star: 1, img: 'ui_images/kisekae/hat_sankakukin.webp',    top: -18,        left: 20,        width: 50,         height: 30,        locked: true },
             ],
             face: [
                 { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'ui_images/kisekae/face_sunglasses.webp',   top: -3.392867, left: -14.972971, width: 124.000039, height: 41.464299, rotation: -5, locked: true },
                 { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'ui_images/kisekae/face_glasses_black.webp', top: -0.267859,  left: -23.081076, width: 141.837891, height: 35.2143,   rotation: -5, locked: true },
                 { id: 'face_3dglasses',     name: '3Dメガネ',          star: 1, img: 'ui_images/kisekae/face_3dglasses.webp',    top: -6.07144,   left: -15.513525, width: 124.000023, height: 48.160733, rotation: -5, locked: true },
+                { id: 'face_white_mask',    name: '白マスク',          star: 1, img: 'ui_images/kisekae/face_white_mask.webp',   top: 10,        left: -5,        width: 110,         height: 45,       rotation: 0,  locked: true },
+                { id: 'face_oni_mask',      name: '鬼のお面',          star: 2, img: 'ui_images/kisekae/face_oni_mask.webp',     top: -10,       left: -10,       width: 120,         height: 60,       rotation: 0,  locked: true },
+                { id: 'face_pilot_goggles', name: 'パイロットゴーグル', star: 2, img: 'ui_images/kisekae/face_pilot_goggles.webp', top: -5,        left: -15,       width: 130,         height: 45,       rotation: 0,  locked: true },
             ],
             clothes: [
                 { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'ui_images/mochisuke/image_0.webp' },
@@ -304,9 +308,33 @@
                 { id: 'clothes_tshirt_blue',  name: 'Tシャツ（青）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_blue.webp' },
                 { id: 'clothes_tshirt_green', name: 'Tシャツ（緑）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_green.webp' },
                 { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'ui_images/kisekae/clothes_apron.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
+                { id: 'clothes_suit',          name: 'スーツ',           star: 1, img: 'ui_images/kisekae/clothes_suit.webp' },
+                { id: 'clothes_white_shirt',   name: '白シャツ',         star: 1, img: 'ui_images/kisekae/clothes_white_shirt.webp' },
+                { id: 'clothes_leather_jacket', name: 'レザージャケット', star: 2, img: 'ui_images/kisekae/clothes_leather_jacket.webp' },
+                { id: 'clothes_pirate_black',  name: '海賊の服（黒）',   star: 2, img: 'ui_images/kisekae/clothes_pirate_black.webp' },
+                { id: 'clothes_pirate_cyan',   name: '海賊の服（水）',   star: 2, img: 'ui_images/kisekae/clothes_pirate_cyan.webp' },
+                { id: 'clothes_kacchu',        name: 'かっちゅう',       star: 2, img: 'ui_images/kisekae/clothes_kacchu.webp' },
+            ],
+            back: [
+                // 🕊️ 翼は左右それぞれ8枚のコマ送りで羽ばたく。位置・大きさは1枚目だけ設定すれば、残り7枚も同じ場所に表示される
+                {
+                    id: 'back_wings_heavenly', name: '天の翼', star: 4, locked: true,
+                    leftFrames: [1,2,3,4,5,6,7,8].map(n => `ui_images/kisekae/wings_left_${n}.webp`),
+                    rightFrames: [1,2,3,4,5,6,7,8].map(n => `ui_images/kisekae/wings_right_${n}.webp`),
+                    leftPos:  { top: -8, left: -32, width: 42, height: 62 },
+                    rightPos: { top: -8, left: 90,  width: 42, height: 62 },
+                },
+            ],
+            fullbody: [
+                // 🤖 全身は他のhat/face/clothesと同時装着不可。しゃべる時だけ口が5コマで開閉する
+                {
+                    id: 'fullbody_robo', name: 'ロボもちすけ', star: 4,
+                    img: 'ui_images/kisekae/fullbody_robo.webp', // 通常時（口閉じ）
+                    mouthFrames: [1,2,3,4,5].map(n => `ui_images/kisekae/fullbody_robo_mouth_${n}.webp`), // 口が開くコマ送り
+                },
             ],
         };
-        const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服' };
+        const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服', back: '背中', fullbody: '全身' };
         const DEFAULT_MOUTH_POSITION = { top: 36.986245, left: 48.44735, width: 17 }; // 服の指定が無い時（初期衣装含む）はこちら
 
         // ===================================================================
