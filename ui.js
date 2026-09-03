@@ -849,15 +849,14 @@
             const fullbodyId = previewKisekae.fullbody;
 
             if (fullbodyId) {
-                // 全身装備中は、服・帽子・顔パーツを全部隠して、全身イラストだけ表示する
+                // 全身装備中は、帽子・顔パーツを隠し、全身イラストを服の上に重ねて覆う（服自体は隠さない：
+                // 服の画像がこの箱の高さの土台になっているため、消すと箱ごと潰れて全身画像も見えなくなってしまう）
                 const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
                 roomFullbody.src = fbItem.img;
                 roomFullbody.style.display = 'block';
-                roomClothes.style.display = 'none';
                 ['hat', 'face'].forEach(cat => { document.getElementById(`kisekae-mochisuke-${cat}`).style.display = 'none'; });
             } else {
                 roomFullbody.style.display = 'none';
-                roomClothes.style.display = 'block';
                 const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === previewKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
                 roomClothes.src = clothesItem.img;
 
@@ -896,6 +895,7 @@
                 const item = KISEKAE_ITEMS.back.find(i => i.id === backId);
                 if (!item) { leftEl.style.display = 'none'; rightEl.style.display = 'none'; stopWingFlapLoop(target); return; }
                 leftEl.style.display = 'block'; rightEl.style.display = 'block';
+                leftEl.style.zIndex = '1'; rightEl.style.zIndex = '1'; // 🐛修正：調整モードで一時的に上げたz-indexを、通常表示時は必ず背面に戻す
                 leftEl.style.top = item.leftPos.top + '%'; leftEl.style.left = item.leftPos.left + '%';
                 leftEl.style.width = item.leftPos.width + '%'; leftEl.style.height = item.leftPos.height + '%';
                 rightEl.style.top = item.rightPos.top + '%'; rightEl.style.left = item.rightPos.left + '%';
@@ -915,7 +915,6 @@
                 wingFlapFrameIndex[target] = (wingFlapFrameIndex[target] + 1) % item.leftFrames.length;
                 leftEl.src = item.leftFrames[wingFlapFrameIndex[target]];
                 rightEl.src = item.rightFrames[wingFlapFrameIndex[target]];
-                if (wingFlapFrameIndex[target] === 0) playAudioFile('audio/kisekae/wing_flap.mp3'); // 1周ごとに羽ばたき音
             }, WING_FLAP_INTERVAL_MS);
         }
         function stopWingFlapLoop(target) {
@@ -962,16 +961,15 @@
             const fullbodyId = equippedKisekae.fullbody;
 
             if (fullbodyId) {
-                // 全身装備中は、服・帽子・顔パーツ・通常の口パーツを全部隠して、全身イラストだけ表示する
+                // 全身装備中は、帽子・顔パーツ・通常の口パーツを隠し、全身イラストをもちすけの上に重ねて覆う
+                // （もちすけ本体の画像がこの箱のサイズの土台になっているため、消すと箱ごと潰れてしまう）
                 const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
                 mainFullbody.src = fbItem.img;
                 mainFullbody.style.display = 'block';
-                mainBtn.style.display = 'none';
                 if (mouthAnchor) mouthAnchor.style.display = 'none';
                 ['hat', 'face'].forEach(cat => { document.getElementById(`mochisuke-kisekae-${cat}`).style.display = 'none'; });
             } else {
                 mainFullbody.style.display = 'none';
-                mainBtn.style.display = 'block';
                 if (mouthAnchor) mouthAnchor.style.display = 'block';
                 const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
                 mainBtn.src = clothesItem.img;
@@ -1155,6 +1153,7 @@
                     target.style.transform = `rotate(${pos.rotation || 0}deg)`;
                 }
                 target.style.outline = '2px dashed #e91e63';
+                target.style.zIndex = '50'; // 🐛修正：翼は普段もちすけより背面のため、調整モード中は一時的に最前面へ（操作できるように）
                 btn.style.background = '#4caf50';
                 setupKisekaeAdjustDrag();
                 positionKisekaeHandles();
