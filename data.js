@@ -309,20 +309,21 @@
                 { id: 'clothes_tshirt_green', name: 'Tシャツ（緑）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_green.webp' },
                 { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'ui_images/kisekae/clothes_apron.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
                 { id: 'clothes_suit',          name: 'スーツ',           star: 1, img: 'ui_images/kisekae/clothes_suit.webp' },
-                { id: 'clothes_white_shirt',   name: '白シャツ',         star: 1, img: 'ui_images/kisekae/clothes_white_shirt.webp' },
+                { id: 'clothes_white_shirt',   name: '白シャツ',         star: 1, img: 'ui_images/kisekae/clothes_white_shirt.webp', mouthOverride: { top: 36.512309, left: 47.270878, width: 17 } },
                 { id: 'clothes_leather_jacket', name: 'レザージャケット', star: 2, img: 'ui_images/kisekae/clothes_leather_jacket.webp' },
                 { id: 'clothes_pirate_black',  name: '海賊の服（黒）',   star: 2, img: 'ui_images/kisekae/clothes_pirate_black.webp' },
                 { id: 'clothes_pirate_cyan',   name: '海賊の服（水）',   star: 2, img: 'ui_images/kisekae/clothes_pirate_cyan.webp' },
                 { id: 'clothes_kacchu',        name: 'かっちゅう',       star: 2, img: 'ui_images/kisekae/clothes_kacchu.webp' },
             ],
             back: [
-                // 🕊️ 翼は左右それぞれ8枚のコマ送りで羽ばたく。位置・大きさは1枚目だけ設定すれば、残り7枚も同じ場所に表示される
+                // 🕊️ 翼は左右それぞれ8枚のコマ送りで羽ばたく。大きさは両翼・全フレーム共通、位置(top/left)だけ1枚ずつ個別に調整できる
                 {
                     id: 'back_wings_heavenly', name: '天の翼', star: 4, locked: true,
                     leftFrames: [1,2,3,4,5,6,7,8].map(n => `ui_images/kisekae/wings_left_${n}.webp`),
                     rightFrames: [1,2,3,4,5,6,7,8].map(n => `ui_images/kisekae/wings_right_${n}.webp`),
-                    leftPos:  { top: -8, left: -32, width: 42, height: 62 },
-                    rightPos: { top: -8, left: 90,  width: 42, height: 62 },
+                    width: 42, height: 62, // 共通の大きさ（両翼・全フレームで共通）
+                    leftFramePos:  [0,1,2,3,4,5,6,7].map(() => ({ top: -8, left: -32 })),
+                    rightFramePos: [0,1,2,3,4,5,6,7].map(() => ({ top: -8, left: 90 })),
                 },
             ],
             fullbody: [

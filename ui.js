@@ -92,6 +92,7 @@
         function updateMouthPatchVisibility() {
             const mouthPatchEl = document.getElementById('mochisuke-mouth-patch');
             if (!mouthPatchEl) return;
+            if (mouthAdjustMode) { mouthPatchEl.style.display = 'block'; return; } // 🐛修正：調整中は、セリフ等で見えなくなるとイライラするので常に表示する
             const balloonEl = document.getElementById('mochi-balloon');
             const isTalking = balloonEl && balloonEl.classList.contains('balloon-show');
             const isHissatsuActive = skills.hissatsu && skills.hissatsu.activeTimer > 0;
@@ -879,7 +880,7 @@
                     }
                 });
             }
-            updateKisekaeWingDisplay('room', previewKisekae.back);
+            updateKisekaeWingDisplay('room', fullbodyId ? null : previewKisekae.back);
             // 🎯「決定」を押すまでは試着中なので、ここではタップ画面には反映しない（applyKisekaeToMainScreenはconfirmKisekaeOutfitからだけ呼ぶ）
         }
 
@@ -895,26 +896,31 @@
                 const item = KISEKAE_ITEMS.back.find(i => i.id === backId);
                 if (!item) { leftEl.style.display = 'none'; rightEl.style.display = 'none'; stopWingFlapLoop(target); return; }
                 leftEl.style.display = 'block'; rightEl.style.display = 'block';
-                leftEl.style.zIndex = '1'; rightEl.style.zIndex = '1'; // 🐛修正：調整モードで一時的に上げたz-indexを、通常表示時は必ず背面に戻す
-                leftEl.style.top = item.leftPos.top + '%'; leftEl.style.left = item.leftPos.left + '%';
-                leftEl.style.width = item.leftPos.width + '%'; leftEl.style.height = item.leftPos.height + '%';
-                rightEl.style.top = item.rightPos.top + '%'; rightEl.style.left = item.rightPos.left + '%';
-                rightEl.style.width = item.rightPos.width + '%'; rightEl.style.height = item.rightPos.height + '%';
+                leftEl.style.zIndex = '1'; rightEl.style.zIndex = '1'; // 調整モードで一時的に上げたz-indexを、通常表示時は必ず背面に戻す
+                leftEl.style.width = item.width + '%'; leftEl.style.height = item.height + '%';
+                rightEl.style.width = item.width + '%'; rightEl.style.height = item.height + '%';
                 startWingFlapLoop(target, item);
             } else {
                 leftEl.style.display = 'none'; rightEl.style.display = 'none';
                 stopWingFlapLoop(target);
             }
         }
+        function applyWingFrame(leftEl, rightEl, item, frameIdx) {
+            leftEl.src = item.leftFrames[frameIdx];
+            rightEl.src = item.rightFrames[frameIdx];
+            const lp = item.leftFramePos[frameIdx], rp = item.rightFramePos[frameIdx];
+            leftEl.style.top = lp.top + '%'; leftEl.style.left = lp.left + '%';
+            rightEl.style.top = rp.top + '%'; rightEl.style.left = rp.left + '%';
+        }
         function startWingFlapLoop(target, item) {
             stopWingFlapLoop(target);
             wingFlapFrameIndex[target] = 0;
             const leftEl = document.getElementById(target === 'room' ? 'kisekae-mochisuke-wing-left' : 'mochisuke-wing-left');
             const rightEl = document.getElementById(target === 'room' ? 'kisekae-mochisuke-wing-right' : 'mochisuke-wing-right');
+            applyWingFrame(leftEl, rightEl, item, 0); // 最初のフレームを即座に反映
             wingFlapTimers[target] = setInterval(() => {
                 wingFlapFrameIndex[target] = (wingFlapFrameIndex[target] + 1) % item.leftFrames.length;
-                leftEl.src = item.leftFrames[wingFlapFrameIndex[target]];
-                rightEl.src = item.rightFrames[wingFlapFrameIndex[target]];
+                applyWingFrame(leftEl, rightEl, item, wingFlapFrameIndex[target]);
             }, WING_FLAP_INTERVAL_MS);
         }
         function stopWingFlapLoop(target) {
@@ -1001,7 +1007,7 @@
                     }
                 });
             }
-            updateKisekaeWingDisplay('main', equippedKisekae.back);
+            updateKisekaeWingDisplay('main', fullbodyId ? null : equippedKisekae.back);
         }
 
         let kisekaeCurrentCategory = 'clothes';
@@ -1063,11 +1069,12 @@
         }
         function equipKisekaeItem(cat, id) {
             if (cat === 'fullbody' && id) {
-                // 全身を装着すると、帽子・顔パーツは自動的に外れる（服は保持したまま、全身解除時に元へ戻る）
+                // 全身を装着すると、帽子・顔パーツ・背中（翼）は自動的に外れる（服は保持したまま、全身解除時に元へ戻る）
                 previewKisekae.hat = null;
                 previewKisekae.face = null;
-            } else if ((cat === 'hat' || cat === 'face') && id && previewKisekae.fullbody) {
-                // 全身装着中に帽子・顔パーツを選んだら、全身を自動的に外す
+                previewKisekae.back = null;
+            } else if ((cat === 'hat' || cat === 'face' || cat === 'back') && id && previewKisekae.fullbody) {
+                // 全身装着中に帽子・顔パーツ・背中を選んだら、全身を自動的に外す
                 previewKisekae.fullbody = null;
             }
             previewKisekae[cat] = id; // 「決定」を押すまでは、試着中の状態を更新するだけ
@@ -1097,21 +1104,30 @@
         function resolveKisekaeAdjustTarget() {
             const val = document.getElementById('kisekae-adjust-target').value;
             if (kisekaeCurrentCategory === 'back') {
-                const sepIdx = val.lastIndexOf('__');
-                const itemId = val.slice(0, sepIdx), side = val.slice(sepIdx + 2);
+                const [itemId, side, frameIdxStr] = val.split('__');
+                const frameIdx = parseInt(frameIdxStr, 10);
                 const item = KISEKAE_ITEMS.back.find(i => i.id === itemId);
                 return {
-                    item, posKey: side === 'left' ? 'leftPos' : 'rightPos',
-                    imgSrc: item ? (side === 'left' ? item.leftFrames[0] : item.rightFrames[0]) : '',
+                    item, side, frameIdx,
+                    imgSrc: item ? (side === 'left' ? item.leftFrames[frameIdx] : item.rightFrames[frameIdx]) : '',
                     el: document.getElementById(side === 'left' ? 'kisekae-mochisuke-wing-left' : 'kisekae-mochisuke-wing-right'),
                 };
             }
             const item = KISEKAE_ITEMS[kisekaeCurrentCategory].find(i => i.id === val);
             return {
-                item, posKey: null,
+                item, side: null, frameIdx: null,
                 imgSrc: item ? item.img : '',
                 el: document.getElementById(`kisekae-mochisuke-${kisekaeCurrentCategory}`),
             };
+        }
+        // 位置(top/left)の読み書き先と、大きさ(width/height)の読み書き先を返す。
+        // backカテゴリだけ「位置はフレーム別・大きさは共通」なので、書き込み先オブジェクトが分かれる
+        function getKisekaeAdjustRefs(resolved) {
+            if (resolved.side) {
+                const posArr = resolved.item[resolved.side + 'FramePos'];
+                return { posObj: posArr[resolved.frameIdx], sizeObj: resolved.item };
+            }
+            return { posObj: resolved.item, sizeObj: resolved.item };
         }
         function getKisekaeAdjustTargetEl() {
             return resolveKisekaeAdjustTarget().el;
@@ -1125,7 +1141,10 @@
                 if (adjustableItems.length === 0) { panel.style.display = 'none'; return; }
                 panel.style.display = 'block';
                 const opts = [];
-                adjustableItems.forEach(i => { opts.push(`<option value="${i.id}__left">${i.name}（左）</option>`); opts.push(`<option value="${i.id}__right">${i.name}（右）</option>`); });
+                adjustableItems.forEach(i => {
+                    for (let f = 0; f < i.leftFrames.length; f++) opts.push(`<option value="${i.id}__left__${f}">${i.name}（左・${f + 1}枚目）</option>`);
+                    for (let f = 0; f < i.rightFrames.length; f++) opts.push(`<option value="${i.id}__right__${f}">${i.name}（右・${f + 1}枚目）</option>`);
+                });
                 select.innerHTML = opts.join('');
                 document.getElementById('kisekae-rotation-controls').style.display = 'none';
                 updateKisekaeAdjustReadout();
@@ -1146,11 +1165,11 @@
             if (kisekaeAdjustMode) {
                 target.style.display = 'block'; // プレビューが無い状態でも調整できるよう、選択中のIDの画像を仮表示する
                 if (resolved.item) {
-                    const pos = resolved.posKey ? resolved.item[resolved.posKey] : resolved.item;
+                    const { posObj, sizeObj } = getKisekaeAdjustRefs(resolved);
                     target.src = resolved.imgSrc;
-                    target.style.top = pos.top + '%'; target.style.left = pos.left + '%';
-                    target.style.width = pos.width + '%'; target.style.height = pos.height + '%';
-                    target.style.transform = `rotate(${pos.rotation || 0}deg)`;
+                    target.style.top = posObj.top + '%'; target.style.left = posObj.left + '%';
+                    target.style.width = sizeObj.width + '%'; target.style.height = sizeObj.height + '%';
+                    target.style.transform = `rotate(${posObj.rotation || 0}deg)`;
                 }
                 target.style.outline = '2px dashed #e91e63';
                 target.style.zIndex = '50'; // 🐛修正：翼は普段もちすけより背面のため、調整モード中は一時的に最前面へ（操作できるように）
@@ -1172,13 +1191,14 @@
             const resolved = resolveKisekaeAdjustTarget();
             const target = resolved.el;
             if (resolved.item) {
-                const pos = resolved.posKey ? resolved.item[resolved.posKey] : resolved.item;
+                const { posObj, sizeObj } = getKisekaeAdjustRefs(resolved);
                 target.src = resolved.imgSrc;
-                target.style.top = pos.top + '%'; target.style.left = pos.left + '%';
-                target.style.width = pos.width + '%'; target.style.height = pos.height + '%';
-                target.style.transform = `rotate(${pos.rotation || 0}deg)`;
+                target.style.top = posObj.top + '%'; target.style.left = posObj.left + '%';
+                target.style.width = sizeObj.width + '%'; target.style.height = sizeObj.height + '%';
+                target.style.transform = `rotate(${posObj.rotation || 0}deg)`;
             }
             target.style.outline = '2px dashed #e91e63';
+            target.style.zIndex = '50';
             positionKisekaeHandles();
             updateKisekaeAdjustReadout();
         }
@@ -1236,11 +1256,11 @@
                 // ドラッグした内容を、元データにもその場で反映しておく（アイテムを切り替えても・コピーしても消えないように）
                 const resolved = resolveKisekaeAdjustTarget();
                 if (resolved.item) {
-                    const posObj = resolved.posKey ? resolved.item[resolved.posKey] : resolved.item;
+                    const { posObj, sizeObj } = getKisekaeAdjustRefs(resolved);
                     posObj.top = parseFloat(t.style.top);
                     posObj.left = parseFloat(t.style.left);
-                    posObj.width = parseFloat(t.style.width);
-                    posObj.height = parseFloat(t.style.height);
+                    sizeObj.width = parseFloat(t.style.width);
+                    sizeObj.height = parseFloat(t.style.height);
                 }
                 positionKisekaeHandles();
                 updateKisekaeAdjustReadout();
@@ -1286,8 +1306,9 @@
             if (backAdjustable.length > 0) {
                 lines.push(`【背中】`);
                 backAdjustable.forEach(item => {
-                    lines.push(`${item.name}（左）(${item.id}__left): top:${item.leftPos.top}%; left:${item.leftPos.left}%; width:${item.leftPos.width}%; height:${item.leftPos.height}%;`);
-                    lines.push(`${item.name}（右）(${item.id}__right): top:${item.rightPos.top}%; left:${item.rightPos.left}%; width:${item.rightPos.width}%; height:${item.rightPos.height}%;`);
+                    lines.push(`${item.name} 共通の大きさ: width:${item.width}%; height:${item.height}%;`);
+                    item.leftFramePos.forEach((pos, i) => lines.push(`${item.name}（左・${i + 1}枚目）: top:${pos.top}%; left:${pos.left}%;`));
+                    item.rightFramePos.forEach((pos, i) => lines.push(`${item.name}（右・${i + 1}枚目）: top:${pos.top}%; left:${pos.left}%;`));
                 });
             }
             const text = lines.join('\n');
