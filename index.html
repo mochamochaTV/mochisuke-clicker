@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-156">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-157">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -286,7 +286,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-156</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-157</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -399,6 +399,7 @@
         <div class="modal-content modal-fullscreen">
             <button class="modal-back-btn" onclick="closeOshigoto()"></button>
 
+            <div style="height: env(safe-area-inset-top, 0px); flex-shrink:0; background:#fff8ec;"></div>
             <div style="width:100%; flex-shrink:0;">
                 <img src="ui_images/backgrounds/mission_banner.webp" alt="おしごと" style="width:100%; aspect-ratio:5/3; object-fit:cover; display:block;">
             </div>
@@ -631,7 +632,7 @@
                     <img id="kisekae-mochisuke-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:4;">
                 </div>
 
-                <div style="position:absolute; top:6%; left:50%; transform:translateX(-50%); display:flex; gap:14px; z-index:10;">
+                <div style="position:absolute; top:calc(6% + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%); display:flex; gap:14px; z-index:10;">
                     <button id="kisekae-cat-btn-hat" onclick="openKisekaeCategory('hat')" style="width:52px; height:52px; border-radius:50%; border:3px solid #fff; background:#ff6fa5; font-size:1.5rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">🧢</button>
                     <button id="kisekae-cat-btn-face" onclick="openKisekaeCategory('face')" style="width:52px; height:52px; border-radius:50%; border:3px solid #fff; background:#42a5f5; font-size:1.5rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">👓</button>
                     <button id="kisekae-cat-btn-clothes" onclick="openKisekaeCategory('clothes')" style="width:52px; height:52px; border-radius:50%; border:3px solid #fff; background:#66bb6a; font-size:1.5rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">👗</button>
@@ -659,16 +660,6 @@
                 <div id="kisekae-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
                 <div id="kisekae-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
                 <div id="kisekae-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
-            </div>
-
-            <div style="width:100%; padding:10px 0 calc(6px + env(safe-area-inset-bottom, 0px)) 0; box-sizing:border-box; display:flex; justify-content:center; flex-shrink:0;">
-                <div class="nav-menu">
-                    <button class="nav-btn" onclick="openOshigotoPlaceholder()" style="background-image: url('ui_images/nav/oshigoto.webp');"></button>
-                    <button class="nav-btn" onclick="openKisekaeRoom()" style="background-image: url('ui_images/nav/kisekae.webp');"></button>
-                    <button class="nav-btn" onclick="openMoveMenu()" style="background-image: url('ui_images/nav/idou.webp');"></button>
-                    <button class="nav-btn" onclick="openFriendPlaceholder()" style="background-image: url('ui_images/nav/friend.webp');"></button>
-                    <button class="nav-btn" onclick="openRanking()" style="background-image: url('ui_images/nav/rank.webp');"></button>
-                </div>
             </div>
         </div>
     </div>
@@ -887,6 +878,7 @@
         <div class="modal-content modal-fullscreen">
             <button class="modal-back-btn" onclick="closeRanking()"></button>
 
+            <div style="height: env(safe-area-inset-top, 0px); flex-shrink:0; background:#fff8ec;"></div>
             <div style="width:100%; flex-shrink:0; position:relative;">
                 <img src="ui_images/backgrounds/ranking_banner.webp" alt="ランキング" style="width:100%; height:auto; display:block;">
                 <button onclick="toggleRankingHelpOverlay()" style="position:absolute; bottom:10px; left:10px; z-index:60; width:34px; height:34px; border-radius:50%; border:none; background:rgba(0,0,0,0.4); color:#fff; font-size:1.1rem; font-weight:bold; display:flex; align-items:center; justify-content:center; cursor:pointer;">？</button>
@@ -949,13 +941,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-156"></script>
-    <script src="state.js?v=2026-08-05-156"></script>
-    <script src="tap.js?v=2026-08-05-156"></script>
-    <script src="shop.js?v=2026-08-05-156"></script>
-    <script src="progress.js?v=2026-08-05-156"></script>
-    <script src="minigames.js?v=2026-08-05-156"></script>
-    <script src="ui.js?v=2026-08-05-156"></script>
-    <script src="main.js?v=2026-08-05-156"></script>
+    <script src="data.js?v=2026-08-05-157"></script>
+    <script src="state.js?v=2026-08-05-157"></script>
+    <script src="tap.js?v=2026-08-05-157"></script>
+    <script src="shop.js?v=2026-08-05-157"></script>
+    <script src="progress.js?v=2026-08-05-157"></script>
+    <script src="minigames.js?v=2026-08-05-157"></script>
+    <script src="ui.js?v=2026-08-05-157"></script>
+    <script src="main.js?v=2026-08-05-157"></script>
 </body>
 </html>

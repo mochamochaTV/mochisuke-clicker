@@ -322,9 +322,27 @@
                     id: 'back_wings_heavenly', name: '天の翼', star: 4, locked: true,
                     leftFrames: [1,2,3,4,5,6,7,8].map(n => `ui_images/kisekae/wings_left_${n}.webp`),
                     rightFrames: [1,2,3,4,5,6,7,8].map(n => `ui_images/kisekae/wings_right_${n}.webp`),
-                    width: 42, height: 62, // 共通の大きさ（両翼・全フレームで共通）
-                    leftFramePos:  [0,1,2,3,4,5,6,7].map(() => ({ top: -8, left: -32 })),
-                    rightFramePos: [0,1,2,3,4,5,6,7].map(() => ({ top: -8, left: 90 })),
+                    width: 73.764705, height: 76.077672, // 共通の大きさ（両翼・全フレームで共通）
+                    leftFramePos: [
+                        { top: 11.417479, left: -53.76471 },
+                        { top: 8.990281,  left: -53.764706 },
+                        { top: -8.970887, left: -54.352946 },
+                        { top: -10.91262, left: -53.764706 },
+                        { top: -10.912629, left: -54.352943 },
+                        { top: 7.533976,  left: -54.352945 },
+                        { top: 11.90291,  left: -54.94118 },
+                        { top: 12.87379,  left: -54.352942 },
+                    ],
+                    rightFramePos: [
+                        { top: 11.417479, left: 80.000005 },
+                        { top: 8.990281,  left: 80.000001 },
+                        { top: -8.970887, left: 80.588241 },
+                        { top: -10.91262, left: 80.000001 },
+                        { top: -10.912629, left: 80.588238 },
+                        { top: 7.533976,  left: 80.58824 },
+                        { top: 11.90291,  left: 81.176475 },
+                        { top: 12.87379,  left: 80.588237 },
+                    ],
                 },
             ],
             fullbody: [
