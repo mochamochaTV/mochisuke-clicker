@@ -1018,6 +1018,7 @@
         // カテゴリを開いて、名前順・Zの字並びで左右にアイテムを並べる
         function openKisekaeCategory(cat) {
             playAudioFile('audio/skill_tap.mp3');
+            if (cat !== 'back') clearWingGhostFrames(); // 背中カテゴリから離れる時は、翼のゴースト表示を片付ける
             kisekaeCurrentCategory = cat;
             const sortedItems = [...KISEKAE_ITEMS[cat]].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
             // 帽子・顔パーツは、一番左上に「外す」ボタンを置く（服は必ず何か着ている状態にするので対象外）
@@ -1173,6 +1174,25 @@
             document.getElementById('kisekae-rotation-controls').style.display = (cat === 'face') ? 'block' : 'none';
             updateKisekaeAdjustReadout();
         }
+        // 👻 翼調整中、今選んでいる1枚以外の7枚を半透明で表示し、全体の流れが見えるようにする
+        function renderWingGhostFrames(item, activeFrameIdx) {
+            clearWingGhostFrames();
+            const stage = document.getElementById('kisekae-mochisuke-wrap');
+            for (let f = 0; f < item.leftFrames.length; f++) {
+                if (f === activeFrameIdx) continue; // 選択中の1枚は、既存のwing-left/wing-right要素で表示するのでゴースト不要
+                [['left', item.leftFrames, item.leftFramePos], ['right', item.rightFrames, item.rightFramePos]].forEach(([side, frames, posArr]) => {
+                    const pos = posArr[f];
+                    const ghost = document.createElement('img');
+                    ghost.className = 'wing-ghost-frame';
+                    ghost.src = frames[f];
+                    ghost.style.cssText = `position:absolute; top:${pos.top}%; left:${pos.left}%; width:${item.width}%; height:${item.height}%; opacity:0.3; pointer-events:none; z-index:49;`;
+                    stage.appendChild(ghost);
+                });
+            }
+        }
+        function clearWingGhostFrames() {
+            document.querySelectorAll('.wing-ghost-frame').forEach(el => el.remove());
+        }
         function toggleKisekaeAdjustMode() {
             kisekaeAdjustMode = !kisekaeAdjustMode;
             const btn = document.getElementById('kisekae-adjust-toggle-btn');
@@ -1191,6 +1211,7 @@
                 }
                 target.style.outline = '2px dashed #e91e63';
                 target.style.zIndex = '50'; // 🐛修正：翼は普段もちすけより背面のため、調整モード中は一時的に最前面へ（操作できるように）
+                if (resolved.item && kisekaeCurrentCategory === 'back') renderWingGhostFrames(resolved.item, resolved.frameIdx);
                 btn.style.background = '#4caf50';
                 setupKisekaeAdjustDrag();
                 positionKisekaeHandles();
@@ -1198,6 +1219,7 @@
                 target.style.outline = '';
                 ['kisekae-resize-handle-r', 'kisekae-resize-handle-b', 'kisekae-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
                 btn.style.background = '#e91e63';
+                clearWingGhostFrames();
                 renderKisekaeMochisuke(); // 実際に装着中のものへ表示を戻す
             }
         }
@@ -1216,6 +1238,7 @@
                 target.style.width = sizeObj.width + '%'; target.style.height = sizeObj.height + '%';
                 target.style.transform = `rotate(${posObj.rotation || 0}deg)`;
                 syncMirroredRightWing(resolved, posObj, sizeObj);
+                if (kisekaeCurrentCategory === 'back') renderWingGhostFrames(resolved.item, resolved.frameIdx);
             }
             target.style.outline = '2px dashed #e91e63';
             target.style.zIndex = '50';
@@ -1286,7 +1309,13 @@
                 positionKisekaeHandles();
                 updateKisekaeAdjustReadout();
             });
-            stage.addEventListener('pointerup', () => { kisekaeAdjustDragState = null; });
+            stage.addEventListener('pointerup', () => {
+                kisekaeAdjustDragState = null;
+                if (kisekaeCurrentCategory === 'back') {
+                    const resolved = resolveKisekaeAdjustTarget();
+                    if (resolved.item) renderWingGhostFrames(resolved.item, resolved.frameIdx);
+                }
+            });
             stage.addEventListener('pointercancel', () => { kisekaeAdjustDragState = null; });
         }
         // 🔄 顔パーツだけ、回転（傾き）も調整できる
