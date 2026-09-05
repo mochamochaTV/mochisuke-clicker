@@ -583,7 +583,9 @@
             } else if (res.reason === 'self') {
                 result.style.color = '#e57373'; result.innerText = '自分のコードは追加できません';
             } else {
-                result.style.color = '#e57373'; result.innerText = `通信エラーが発生しました${res.errorMessage ? '\n(' + res.errorMessage + ')' : ''}`;
+                const errMsg = `通信エラーが発生しました${res.errorMessage ? '\n(' + res.errorMessage + ')' : ''}`;
+                result.style.color = '#e57373'; result.innerText = errMsg;
+                if (res.errorMessage) alert(`⚠️ フレンド追加エラーの詳細：\n${res.errorMessage}`); // 見逃さないよう、確実に表示する
             }
         }
         function toggleFavoriteFriend(uid) {
@@ -789,6 +791,7 @@
             previewMyroom = { ...equippedMyroom };
             renderMyroomLayout();
             openMyroomCategory('wallpaper');
+            applyKisekaeToMyroom();
             openModal('myroom-modal');
         }
         function closeMyRoom() {
@@ -797,6 +800,7 @@
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 closeModal('myroom-modal');
+                stopWingFlapLoop('myroom');
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
@@ -1022,9 +1026,15 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
             alert(`コピーしました\n${text}`);
         }
+        // タップ画面('main')・着せ替え部屋('room')・マイルーム('myroom')、それぞれの要素IDプレフィックスを解決する
+        function kisekaeElPrefix(target) {
+            if (target === 'room') return 'kisekae-mochisuke';
+            if (target === 'myroom') return 'myroom-mochisuke';
+            return 'mochisuke';
+        }
         function updateKisekaeWingDisplay(target, backId) {
-            const leftEl = document.getElementById(target === 'room' ? 'kisekae-mochisuke-wing-left' : 'mochisuke-wing-left');
-            const rightEl = document.getElementById(target === 'room' ? 'kisekae-mochisuke-wing-right' : 'mochisuke-wing-right');
+            const leftEl = document.getElementById(kisekaeElPrefix(target) + '-wing-left');
+            const rightEl = document.getElementById(kisekaeElPrefix(target) + '-wing-right');
             if (!leftEl || !rightEl) return;
             if (backId) {
                 const item = KISEKAE_ITEMS.back.find(i => i.id === backId);
@@ -1056,8 +1066,8 @@
         function startWingFlapLoop(target, item) {
             stopWingFlapLoop(target);
             wingFlapFrameIndex[target] = 0;
-            const leftEl = document.getElementById(target === 'room' ? 'kisekae-mochisuke-wing-left' : 'mochisuke-wing-left');
-            const rightEl = document.getElementById(target === 'room' ? 'kisekae-mochisuke-wing-right' : 'mochisuke-wing-right');
+            const leftEl = document.getElementById(kisekaeElPrefix(target) + '-wing-left');
+            const rightEl = document.getElementById(kisekaeElPrefix(target) + '-wing-right');
             applyWingFrame(leftEl, rightEl, item, 0); // 最初のフレームを即座に反映
             wingFlapTimers[target] = setInterval(() => {
                 wingFlapFrameIndex[target] = (wingFlapFrameIndex[target] + 1) % item.leftFrames.length;
@@ -1152,6 +1162,55 @@
                 });
             }
             updateKisekaeWingDisplay('main', fullbodyId ? null : equippedKisekae.back);
+        }
+        // 🛋️ マイルームのもちすけにも、装備中の着せ替えを反映する
+        function applyKisekaeToMyroom() {
+            const clothesEl = document.getElementById('myroom-mochisuke-clothes');
+            const fullbodyEl = document.getElementById('myroom-mochisuke-fullbody');
+            const mouthAnchor = document.getElementById('myroom-mochisuke-mouth-anchor');
+            const fullbodyId = equippedKisekae.fullbody;
+
+            if (fullbodyId) {
+                const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
+                fullbodyEl.src = fbItem.img;
+                fullbodyEl.style.display = 'block';
+                clothesEl.style.opacity = '0'; // display:noneだと土台が潰れるため、opacityで見た目だけ消す
+                if (mouthAnchor) mouthAnchor.style.display = 'none';
+                ['hat', 'face'].forEach(cat => { document.getElementById(`myroom-mochisuke-${cat}`).style.display = 'none'; });
+            } else {
+                fullbodyEl.style.display = 'none';
+                clothesEl.style.opacity = '1';
+                if (mouthAnchor) mouthAnchor.style.display = 'block';
+                const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
+                clothesEl.src = clothesItem.img;
+
+                if (mouthAnchor) {
+                    const mouthPos = clothesItem.mouthOverride || DEFAULT_MOUTH_POSITION;
+                    mouthAnchor.style.top = mouthPos.top + '%';
+                    mouthAnchor.style.left = mouthPos.left + '%';
+                    mouthAnchor.style.width = mouthPos.width + '%';
+                }
+
+                ['hat', 'face'].forEach(cat => {
+                    const imgEl = document.getElementById(`myroom-mochisuke-${cat}`);
+                    if (!imgEl) return;
+                    const itemId = equippedKisekae[cat];
+                    if (itemId) {
+                        const item = KISEKAE_ITEMS[cat].find(i => i.id === itemId);
+                        imgEl.src = item.img;
+                        imgEl.style.display = 'block';
+                        imgEl.style.top = item.top + '%';
+                        imgEl.style.left = item.left + '%';
+                        imgEl.style.width = item.width + '%';
+                        imgEl.style.height = item.height + '%';
+                        imgEl.style.transform = `rotate(${item.rotation || 0}deg)`;
+                        if (cat === 'hat') imgEl.style.zIndex = '7';
+                    } else {
+                        imgEl.style.display = 'none';
+                    }
+                });
+            }
+            updateKisekaeWingDisplay('myroom', fullbodyId ? null : equippedKisekae.back);
         }
 
         let kisekaeCurrentCategory = 'clothes';
