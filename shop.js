@@ -634,6 +634,96 @@
             switchShopTab('gacha');
         }
 
+        // 🛠️ 開発者用：ガチャのクランク（回す部分）の位置調整ツール
+        let gachaCrankAdjustMode = false;
+        let gachaCrankAdjustDragState = null;
+        function toggleGachaCrankAdjustMode() {
+            gachaCrankAdjustMode = !gachaCrankAdjustMode;
+            const btn = document.getElementById('gacha-adjust-toggle-btn');
+            const target = document.getElementById('gacha-crank');
+            if (gachaCrankAdjustMode) {
+                target.style.outline = '2px dashed #e91e63';
+                btn.style.background = '#4caf50';
+                setupGachaCrankAdjustDrag();
+                positionGachaCrankHandles();
+                updateGachaCrankReadout();
+            } else {
+                target.style.outline = '';
+                ['gacha-resize-handle-r', 'gacha-resize-handle-b', 'gacha-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
+                btn.style.background = '#e91e63';
+            }
+        }
+        function positionGachaCrankHandles() {
+            if (!gachaCrankAdjustMode) return;
+            const stage = document.getElementById('gacha-illustration-wrap');
+            const target = document.getElementById('gacha-crank');
+            const stageRect = stage.getBoundingClientRect();
+            const tRect = target.getBoundingClientRect();
+            const rightPct = ((tRect.right - stageRect.left) / stageRect.width) * 100;
+            const bottomPct = ((tRect.bottom - stageRect.top) / stageRect.height) * 100;
+            const midYPct = ((tRect.top + tRect.height / 2 - stageRect.top) / stageRect.height) * 100;
+            const midXPct = ((tRect.left + tRect.width / 2 - stageRect.left) / stageRect.width) * 100;
+            const hR = document.getElementById('gacha-resize-handle-r'), hB = document.getElementById('gacha-resize-handle-b'), hBr = document.getElementById('gacha-resize-handle-br');
+            [hR, hB, hBr].forEach(h => h.style.display = 'block');
+            hR.style.left = rightPct + '%'; hR.style.top = midYPct + '%';
+            hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
+            hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
+        }
+        function setupGachaCrankAdjustDrag() {
+            const stage = document.getElementById('gacha-illustration-wrap');
+            if (stage.dataset.dragSetup) return;
+            stage.dataset.dragSetup = '1';
+            const target = document.getElementById('gacha-crank');
+            const startDrag = (e, mode) => {
+                if (!gachaCrankAdjustMode) return;
+                e.stopPropagation(); e.preventDefault();
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                gachaCrankAdjustDragState = { startX: e.clientX, startY: e.clientY, mode };
+            };
+            stage.addEventListener('pointerdown', (e) => {
+                if (!gachaCrankAdjustMode) return;
+                if (e.target.id === 'gacha-resize-handle-r') return startDrag(e, 'width');
+                if (e.target.id === 'gacha-resize-handle-b') return startDrag(e, 'height');
+                if (e.target.id === 'gacha-resize-handle-br') return startDrag(e, 'both');
+                if (e.target !== target) return;
+                startDrag(e, 'move');
+            });
+            stage.addEventListener('pointermove', (e) => {
+                if (!gachaCrankAdjustDragState || !gachaCrankAdjustMode) return;
+                e.stopPropagation();
+                const stageRect = stage.getBoundingClientRect();
+                const dxPct = ((e.clientX - gachaCrankAdjustDragState.startX) / stageRect.width) * 100;
+                const dyPct = ((e.clientY - gachaCrankAdjustDragState.startY) / stageRect.height) * 100;
+                const mode = gachaCrankAdjustDragState.mode;
+                if (mode === 'move') {
+                    target.style.top = (parseFloat(target.style.top) + dyPct) + '%';
+                    target.style.left = (parseFloat(target.style.left) + dxPct) + '%';
+                } else {
+                    if (mode === 'width' || mode === 'both') target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
+                }
+                gachaCrankAdjustDragState.startX = e.clientX; gachaCrankAdjustDragState.startY = e.clientY;
+                positionGachaCrankHandles();
+                updateGachaCrankReadout();
+            });
+            stage.addEventListener('pointerup', () => { gachaCrankAdjustDragState = null; });
+            stage.addEventListener('pointercancel', () => { gachaCrankAdjustDragState = null; });
+        }
+        function updateGachaCrankReadout() {
+            const target = document.getElementById('gacha-crank');
+            const el = document.getElementById('gacha-adjust-readout');
+            if (!target || !el) return;
+            el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
+        }
+        function copyGachaCrankCoords() {
+            const target = document.getElementById('gacha-crank');
+            const text = `クランク: top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
+            const textarea = document.getElementById('gacha-adjust-copy-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
+
         function renderShopList() {
             if (currentShopTab === 'omiyage') {
                 renderOmiyageShelf();
@@ -647,6 +737,19 @@
                 listContainer.innerHTML = `
                     <div id="gacha-stage" style="position:relative; width:100%; height:360px;">
                         <div id="gacha-illustration-wrap" style="position:absolute; top:24px; left:0; width:100%; height:340px;">
+                            ${IS_DEV_MODE ? `
+                            <div id="gacha-adjust-panel" style="display:none; position:absolute; top:4px; left:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:150px; font-size:0.6rem;">
+                                <div style="font-size:0.6rem; font-weight:900; margin-bottom:4px;">クランクの位置調整</div>
+                                <button onclick="toggleGachaCrankAdjustMode()" id="gacha-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; width:100%;">位置調整ON/OFF</button>
+                                <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
+                                <div id="gacha-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
+                                <button onclick="copyGachaCrankCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
+                                <textarea id="gacha-adjust-copy-textarea" readonly style="display:none; width:100%; height:60px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
+                            </div>
+                            <div id="gacha-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
+                            <div id="gacha-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
+                            <div id="gacha-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
+                            ` : ''}
                             <img id="gacha-machine-body" src="ui_images/gacha/machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
                             <img id="gacha-crank" src="ui_images/gacha/crank.webp" alt="" style="position:absolute; width:18%; top:62.402035%; left:40.544265%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
 
@@ -688,6 +791,7 @@
                     </div>
                 `;
                 updateGachaCoinDisplay();
+                if (IS_DEV_MODE) { const p = document.getElementById('gacha-adjust-panel'); if (p) p.style.display = 'block'; }
                 return;
             }
 
