@@ -520,7 +520,13 @@
             switchFriendTab('list');
         }
         function closeFriendScreen() {
-            closeModal('friend-modal');
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                closeModal('friend-modal');
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
         }
         let currentFriendTab = 'list';
         function switchFriendTab(tab) {
@@ -532,18 +538,36 @@
             document.getElementById('friend-add-view').style.display = (tab === 'add') ? 'block' : 'none';
             if (tab === 'list' || tab === 'favorite') renderFriendList();
         }
-        function copyMyFriendCode() {
+        async function copyMyFriendCode() {
             const code = document.getElementById('my-friend-code').innerText;
             if (!code || code.includes('（') || code.includes('読み込み')) return;
-            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(code).catch(() => {});
             const result = document.getElementById('friend-add-result');
-            result.style.color = '#4caf50';
-            result.innerText = 'コピーしました！';
+            try {
+                if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('clipboard unsupported');
+                await navigator.clipboard.writeText(code);
+                result.style.color = '#4caf50';
+                result.innerText = 'コピーしました！';
+            } catch (e) {
+                // 🐛修正：自動コピーが失敗しても気づけず「コピーしました」と表示していたため、
+                // 古い内容のままペーストして「コードが見つからない」バグに繋がっていた。
+                // 失敗時は、コードを選択状態にして、長押しで手動コピーできるようにする
+                result.style.color = '#e57373';
+                result.innerText = '自動コピーに失敗しました。コードを長押しして選択・コピーしてください';
+                const codeEl = document.getElementById('my-friend-code');
+                try {
+                    const range = document.createRange();
+                    range.selectNodeContents(codeEl);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (err) {}
+            }
         }
         async function onAddFriendTap() {
             const input = document.getElementById('friend-code-input');
             const result = document.getElementById('friend-add-result');
-            const code = input.value.trim();
+            // 🐛保険：コピペ時に紛れ込む改行・空白などの見えない文字を除去してから照合する
+            const code = input.value.trim().replace(/[^A-Za-z0-9]/g, '');
             if (!code) return;
             if (!window.isRankingReady || !window.isRankingReady()) {
                 result.style.color = '#e57373'; result.innerText = '通信エラー：時間を置いて試してください'; return;
