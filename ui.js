@@ -450,9 +450,12 @@
             }
             const progressText = `${Math.min(progress, mission.target)}/${mission.target}`;
             const pct = Math.min(100, (progress / mission.target) * 100);
-            const isDone = claimed || complete; // 受取済み・受取可能、どちらも「クリア」扱いで水色にする
+            const isDone = claimed || complete; // 進捗バーの色分け用（水色にするかどうか）
+            let cardClass = '';
+            if (claimed) cardClass = 'mission-card-claimed'; // 受取済みだけ、ポケポケ風に薄い灰色にする
+            else if (complete) cardClass = 'mission-card-done';
             return `
-                <div class="mission-card ${isDone ? 'mission-card-done' : ''}">
+                <div class="mission-card ${cardClass}">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-size:0.85rem; font-weight:700; color:#5d4037;">${mission.text}</span>
                         <span style="font-size:0.7rem; color:#e91e63; font-weight:900; flex-shrink:0; margin-left:8px;">🪙${mission.reward}</span>
@@ -855,11 +858,11 @@
                 const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
                 roomFullbody.src = fbItem.img;
                 roomFullbody.style.display = 'block';
-                roomClothes.style.visibility = 'hidden';
+                roomClothes.style.opacity = '0';
                 ['hat', 'face'].forEach(cat => { document.getElementById(`kisekae-mochisuke-${cat}`).style.display = 'none'; });
             } else {
                 roomFullbody.style.display = 'none';
-                roomClothes.style.visibility = 'visible';
+                roomClothes.style.opacity = '1';
                 const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === previewKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
                 roomClothes.src = clothesItem.img;
 
@@ -892,7 +895,9 @@
         let WING_FLAP_INTERVAL_MS = 130; // 8コマ ×130ms ≒ 1040msで1周（実機調整パネルから変更できる）
         // 🚧 速度が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
         const WING_SPEED_TOOL_ENABLED = false;
-        let WING_FLAP_VOLUME = 0.5; // 羽ばたき音の音量（0〜1）。実機調整パネルから変更できる
+        let WING_FLAP_VOLUME = 0.1; // 羽ばたき音の音量（0〜1）。実機調整パネルから変更できる
+        // 🚧 音量が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
+        const WING_VOLUME_TOOL_ENABLED = false;
         function adjustWingFlapVolume(delta) {
             WING_FLAP_VOLUME = Math.max(0, Math.min(1, Math.round((WING_FLAP_VOLUME + delta) * 10) / 10));
             document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
@@ -927,6 +932,13 @@
             leftEl.style.top = lp.top + '%'; leftEl.style.left = lp.left + '%';
             rightEl.style.top = rp.top + '%'; rightEl.style.left = rp.left + '%';
         }
+        // 🐹 もちすけが実際に見えている画面（タップ画面 or 着せ替え部屋）かどうかを判定する
+        function isMochisukeVisible() {
+            const kisekaeModal = document.getElementById('kisekae-room-modal');
+            const isKisekaeOpen = kisekaeModal && kisekaeModal.style.display === 'flex';
+            const isAnyModalOpen = document.body.classList.contains('modal-open');
+            return isKisekaeOpen || !isAnyModalOpen;
+        }
         function startWingFlapLoop(target, item) {
             stopWingFlapLoop(target);
             wingFlapFrameIndex[target] = 0;
@@ -936,7 +948,7 @@
             wingFlapTimers[target] = setInterval(() => {
                 wingFlapFrameIndex[target] = (wingFlapFrameIndex[target] + 1) % item.leftFrames.length;
                 applyWingFrame(leftEl, rightEl, item, wingFlapFrameIndex[target]);
-                if (wingFlapFrameIndex[target] === 0) playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 1周ごとに、動きに合わせて羽ばたき音を鳴らす
+                if (wingFlapFrameIndex[target] === 0 && isMochisukeVisible()) playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 1周ごとに、動きに合わせて羽ばたき音を鳴らす（見えている画面の時だけ）
             }, WING_FLAP_INTERVAL_MS);
         }
         function stopWingFlapLoop(target) {
@@ -988,12 +1000,12 @@
                 const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
                 mainFullbody.src = fbItem.img;
                 mainFullbody.style.display = 'block';
-                mainBtn.style.visibility = 'hidden';
+                mainBtn.style.opacity = '0';
                 if (mouthAnchor) mouthAnchor.style.display = 'none';
                 ['hat', 'face'].forEach(cat => { document.getElementById(`mochisuke-kisekae-${cat}`).style.display = 'none'; });
             } else {
                 mainFullbody.style.display = 'none';
-                mainBtn.style.visibility = 'visible';
+                mainBtn.style.opacity = '1';
                 if (mouthAnchor) mouthAnchor.style.display = 'block';
                 const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
                 mainBtn.src = clothesItem.img;
@@ -1052,7 +1064,7 @@
             const showWingSpeedPanel = WING_SPEED_TOOL_ENABLED && IS_DEV_MODE && cat === 'back';
             document.getElementById('kisekae-wing-speed-panel').style.display = showWingSpeedPanel ? 'block' : 'none';
             if (showWingSpeedPanel) document.getElementById('wing-flap-speed-readout').textContent = WING_FLAP_INTERVAL_MS + 'ms';
-            const showWingVolumePanel = IS_DEV_MODE && cat === 'back';
+            const showWingVolumePanel = WING_VOLUME_TOOL_ENABLED && IS_DEV_MODE && cat === 'back';
             document.getElementById('kisekae-wing-volume-panel').style.display = showWingVolumePanel ? 'block' : 'none';
             if (showWingVolumePanel) document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
             kisekaeCurrentCategory = cat;

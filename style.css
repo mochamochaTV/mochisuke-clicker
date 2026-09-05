@@ -372,6 +372,11 @@
             background: #d9f0fb;
             box-shadow: 4px 4px 8px rgba(79,195,247,0.18), -4px -4px 8px rgba(255,255,255,0.85), inset 0 0 0 2px rgba(79,195,247,0.35);
         }
+        .mission-card-claimed {
+            background: #e3e3e3;
+            box-shadow: none;
+            opacity: 0.6;
+        }
         .warehouse-grid-btn {
             position: relative; aspect-ratio: 1/0.85; border: none; border-radius: 16px;
             color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center;

@@ -424,10 +424,10 @@
         // ===================================================================
         const MYROOM_ITEMS = {
             wallpaper: [
-                { id: 'wallpaper_default', name: 'ふつうの壁', star: 1, img: 'ui_images/myroom/wallpaper_default.webp' },
+                { id: 'wallpaper_default', name: 'シンプルな壁紙（クリーム）', star: 1, img: 'ui_images/myroom/wallpaper_cream_simple.webp' },
             ],
             flooring: [
-                { id: 'flooring_default', name: 'ふつうの床', star: 1, img: 'ui_images/myroom/flooring_default.webp' },
+                { id: 'flooring_default', name: 'ナチュラルなフローリング', star: 1, img: 'ui_images/myroom/flooring_natural.webp' },
             ],
             wall_deco:  [],  // 壁掛け（絵画・時計など）
             big_furniture: [], // 大型家具（ソファ・ベッドなど）
