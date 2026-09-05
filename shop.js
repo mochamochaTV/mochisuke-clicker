@@ -209,7 +209,7 @@
                 return;
             }
             if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_SINGLE;
-            trackMissionEvent('gachaSpinsToday', 1);
+            trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
             saveGame();
             updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
@@ -424,7 +424,7 @@
                 return;
             }
             if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_TEN;
-            trackMissionEvent('gachaSpinsToday', 1);
+            trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
             saveGame();
             updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);

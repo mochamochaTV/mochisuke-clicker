@@ -634,7 +634,8 @@
                 alert("このスキルはまだ獲得していません！\nショップの「✨スキル」タブから獲得できます。");
                 return;
             }
-            if (s.currentCd > 0 || s.activeTimer > 0) return; 
+            if (s.currentCd > 0 || s.activeTimer > 0) return;
+            trackMissionEvent('skillUsedToday', 1); trackMissionEvent('skillUsedThisWeek', 1);
 
             playAudioFile('audio/skill_tap.mp3');
             if (key === 'hissatsu') {

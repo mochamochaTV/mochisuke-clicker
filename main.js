@@ -490,6 +490,11 @@
             loadGame();
             applyKisekaeToMainScreen(); // 🐛修正：確定済みの服装が、ページを開き直すと反映されないままだった
             checkAndRotateMissions(); // 日付・週が変わっていたら、デイリー/ウィークリーミッションを選び直す
+            applyCornerBtnPositions();
+            if (IS_DEV_MODE) {
+                const panel = document.getElementById('corner-btn-adjust-panel');
+                if (panel) { panel.style.display = 'block'; updateCornerBtnReadout(); }
+            }
             setTimeout(checkIncomingGiftsOnLaunch, 2000); // Firebase接続が整うのを少し待ってから確認する
             // 🎫 着せ替えアイテムは、まだガチャ実装前なので、開発者URLの人だけ全部持っている状態にする
             // 🐛修正：loadGame()より前にやると、セーブデータの読み込みで上書きされて消えてしまっていた

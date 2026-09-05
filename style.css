@@ -141,21 +141,21 @@
             50% { opacity: 1; }
         }
 
+        :root {
+            --corner-btn-size: 44px; /* 4隅ボタンの共通の大きさ（管理者調整パネルから変更できる） */
+        }
         #menu-toggle-btn {
             position: fixed;
             top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
             right: 10px;
-            width: 38px; height: 38px;
+            width: var(--corner-btn-size); height: var(--corner-btn-size);
             border-radius: 50%;
-            background: rgba(0,0,0,0.35);
-            color: #fff;
+            background: transparent;
+            background-image: url('ui_images/nav/btn_settings.webp');
+            background-size: contain; background-position: center; background-repeat: no-repeat;
             border: none;
-            font-size: 1.05rem;
-            display: flex; align-items: center; justify-content: center;
             z-index: 50;
             cursor: pointer;
-            -webkit-backdrop-filter: blur(3px);
-            backdrop-filter: blur(3px);
             padding: 0;
         }
 
@@ -163,17 +163,14 @@
             position: fixed;
             top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
             left: 10px;
-            width: 38px; height: 38px;
+            width: var(--corner-btn-size); height: var(--corner-btn-size);
             border-radius: 50%;
-            background: rgba(0,0,0,0.35);
-            color: #fff;
+            background: transparent;
+            background-image: url('ui_images/nav/btn_map.webp');
+            background-size: contain; background-position: center; background-repeat: no-repeat;
             border: none;
-            font-size: 1.05rem;
-            display: flex; align-items: center; justify-content: center;
             z-index: 50;
             cursor: pointer;
-            -webkit-backdrop-filter: blur(3px);
-            backdrop-filter: blur(3px);
             padding: 0;
         }
         #menu-toggle-btn:active { transform: scale(0.9); }
@@ -182,17 +179,14 @@
             position: fixed;
             bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 88px);
             left: 10px;
-            width: 38px; height: 38px;
+            width: var(--corner-btn-size); height: var(--corner-btn-size);
             border-radius: 50%;
-            background: rgba(0,0,0,0.35);
-            color: #fff;
+            background: transparent;
+            background-image: url('ui_images/nav/btn_background.webp');
+            background-size: contain; background-position: center; background-repeat: no-repeat;
             border: none;
-            font-size: 1.05rem;
-            display: flex; align-items: center; justify-content: center;
             z-index: 50;
             cursor: pointer;
-            -webkit-backdrop-filter: blur(3px);
-            backdrop-filter: blur(3px);
             padding: 0;
         }
         #ui-toggle-btn:active { transform: scale(0.9); }
@@ -201,17 +195,14 @@
             position: fixed;
             bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 88px);
             right: 10px;
-            width: 38px; height: 38px;
+            width: var(--corner-btn-size); height: var(--corner-btn-size);
             border-radius: 50%;
-            background: rgba(0,0,0,0.35);
-            color: #fff;
+            background: transparent;
+            background-image: url('ui_images/nav/btn_omiyage_list.webp');
+            background-size: contain; background-position: center; background-repeat: no-repeat;
             border: none;
-            font-size: 1.05rem;
-            display: flex; align-items: center; justify-content: center;
             z-index: 50;
             cursor: pointer;
-            -webkit-backdrop-filter: blur(3px);
-            backdrop-filter: blur(3px);
             padding: 0;
         }
         #feed-toggle-btn:active { transform: scale(0.9); }

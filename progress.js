@@ -488,6 +488,9 @@
                 missionCounters.tapsThisWeek = 0;
                 missionCounters.stampsThisWeek = 0;
                 missionCounters.jackpotsThisWeek = 0;
+                missionCounters.minigamesThisWeek = 0;
+                missionCounters.gachaSpinsThisWeek = 0;
+                missionCounters.skillUsedThisWeek = 0;
                 missionCounters.loginDaysThisWeek = 1; // 週の変わり目＝今日ログインした1日目
                 missionWeeklySelected = pickRandomMissions(WEEKLY_MISSION_POOL, WEEKLY_MISSION_COUNT);
             }

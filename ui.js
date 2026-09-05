@@ -250,6 +250,88 @@
         // 合言葉入力で管理者モードを有効化できるようにする
         let menuBtnTapCount = 0;
         let menuBtnTapTimer = null;
+        // 🗺️⚙️🖼️🍴 4隅ボタンの位置・大きさを反映する
+        function applyCornerBtnPositions() {
+            document.documentElement.style.setProperty('--corner-btn-size', CORNER_BTN_SIZE + 'px');
+            const map = document.getElementById('map-toggle-btn');
+            map.style.top = `calc(8px + env(safe-area-inset-top, 0px) + ${CORNER_BTN_OFFSETS['map-toggle-btn'].vert}px)`;
+            map.style.left = CORNER_BTN_OFFSETS['map-toggle-btn'].horiz + 'px';
+            const menu = document.getElementById('menu-toggle-btn');
+            menu.style.top = `calc(8px + env(safe-area-inset-top, 0px) + ${CORNER_BTN_OFFSETS['menu-toggle-btn'].vert}px)`;
+            menu.style.right = CORNER_BTN_OFFSETS['menu-toggle-btn'].horiz + 'px';
+            const ui = document.getElementById('ui-toggle-btn');
+            ui.style.bottom = `calc(14px + env(safe-area-inset-bottom, 0px) + ${CORNER_BTN_OFFSETS['ui-toggle-btn'].vert}px)`;
+            ui.style.left = CORNER_BTN_OFFSETS['ui-toggle-btn'].horiz + 'px';
+            const feed = document.getElementById('feed-toggle-btn');
+            feed.style.bottom = `calc(14px + env(safe-area-inset-bottom, 0px) + ${CORNER_BTN_OFFSETS['feed-toggle-btn'].vert}px)`;
+            feed.style.right = CORNER_BTN_OFFSETS['feed-toggle-btn'].horiz + 'px';
+        }
+        // 🛠️ 開発者用：4隅ボタンの調整ツール（大きさは共通、位置は個別にドラッグ調整）
+        let cornerBtnAdjustMode = false;
+        let cornerBtnDragState = null;
+        function adjustCornerBtnSize(delta) {
+            CORNER_BTN_SIZE = Math.max(20, CORNER_BTN_SIZE + delta);
+            document.getElementById('corner-btn-size-readout').textContent = CORNER_BTN_SIZE + 'px';
+            applyCornerBtnPositions();
+        }
+        function toggleCornerBtnAdjustMode() {
+            cornerBtnAdjustMode = !cornerBtnAdjustMode;
+            const btn = document.getElementById('corner-btn-adjust-toggle-btn');
+            btn.style.background = cornerBtnAdjustMode ? '#4caf50' : '#e91e63';
+            if (cornerBtnAdjustMode) setupCornerBtnDrag();
+            updateCornerBtnReadout();
+        }
+        function onCornerBtnAdjustTargetChange() {
+            updateCornerBtnReadout();
+        }
+        function setupCornerBtnDrag() {
+            if (document.body.dataset.cornerDragSetup) return;
+            document.body.dataset.cornerDragSetup = '1';
+            ['map-toggle-btn', 'menu-toggle-btn', 'ui-toggle-btn', 'feed-toggle-btn'].forEach(id => {
+                const el = document.getElementById(id);
+                el.addEventListener('pointerdown', (e) => {
+                    if (!cornerBtnAdjustMode) return;
+                    if (document.getElementById('corner-btn-adjust-target').value !== id) return;
+                    e.preventDefault();
+                    try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                    cornerBtnDragState = { id, startX: e.clientX, startY: e.clientY };
+                });
+            });
+            document.body.addEventListener('pointermove', (e) => {
+                if (!cornerBtnDragState || !cornerBtnAdjustMode) return;
+                const dx = e.clientX - cornerBtnDragState.startX;
+                const dy = e.clientY - cornerBtnDragState.startY;
+                const id = cornerBtnDragState.id;
+                const offsets = CORNER_BTN_OFFSETS[id];
+                const isTop = (id === 'map-toggle-btn' || id === 'menu-toggle-btn');
+                const isLeft = (id === 'map-toggle-btn' || id === 'ui-toggle-btn');
+                offsets.vert = Math.max(0, offsets.vert + (isTop ? dy : -dy));
+                offsets.horiz = Math.max(0, offsets.horiz + (isLeft ? dx : -dx));
+                cornerBtnDragState.startX = e.clientX; cornerBtnDragState.startY = e.clientY;
+                applyCornerBtnPositions();
+                updateCornerBtnReadout();
+            });
+            document.body.addEventListener('pointerup', () => { cornerBtnDragState = null; });
+            document.body.addEventListener('pointercancel', () => { cornerBtnDragState = null; });
+        }
+        function updateCornerBtnReadout() {
+            const id = document.getElementById('corner-btn-adjust-target').value;
+            const offsets = CORNER_BTN_OFFSETS[id];
+            document.getElementById('corner-btn-adjust-readout').textContent = `vert:${offsets.vert}px; horiz:${offsets.horiz}px;`;
+        }
+        function copyCornerBtnCoords() {
+            const labels = { 'map-toggle-btn': '地図', 'menu-toggle-btn': '設定', 'ui-toggle-btn': '背景', 'feed-toggle-btn': 'お土産一覧' };
+            const lines = [`大きさ(共通): ${CORNER_BTN_SIZE}px`];
+            Object.keys(CORNER_BTN_OFFSETS).forEach(id => {
+                lines.push(`${labels[id]}(${id}): vert:${CORNER_BTN_OFFSETS[id].vert}px; horiz:${CORNER_BTN_OFFSETS[id].horiz}px;`);
+            });
+            const text = lines.join('\n');
+            const textarea = document.getElementById('corner-btn-copy-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
         function onMenuButtonTap() {
             menuBtnTapCount++;
             clearTimeout(menuBtnTapTimer);
@@ -1951,6 +2033,7 @@
 
             feedBuffActiveUntil = Date.now() + FEED_BUFF_DURATION_MS;
             feedPlaysUsedToday++;
+            trackMissionEvent('feedToday', 1);
             saveGame();
             startFeedBuffIndicator();
 
@@ -2341,13 +2424,29 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         }
         // そのプレイヤーの装着中の服・帽子・顔パーツを、小さいもちすけとして重ねて表示するHTMLを作る
         function renderRankOutfitPreviewHtml(outfit) {
+            const fullbodyId = outfit && outfit.fullbody;
+            if (fullbodyId) {
+                const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
+                if (fbItem) return `<img src="${fbItem.img}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">`;
+            }
             const clothesItem = (outfit && KISEKAE_ITEMS.clothes.find(i => i.id === outfit.clothes)) || KISEKAE_ITEMS.clothes[0];
-            let html = `<img src="${clothesItem.img}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">`;
+            let html = '';
+            // 🕊️ 翼は服より背面に表示する（1枚目のフレームで代表させる）
+            const backId = outfit && outfit.back;
+            if (backId) {
+                const backItem = KISEKAE_ITEMS.back.find(i => i.id === backId);
+                if (backItem) {
+                    const lp = backItem.leftFramePos[0], rp = backItem.rightFramePos[0];
+                    html += `<img src="${backItem.leftFrames[0]}" alt="" style="position:absolute; top:${lp.top}%; left:${lp.left}%; width:${backItem.width}%; height:${backItem.height}%; z-index:1;">`;
+                    html += `<img src="${backItem.rightFrames[0]}" alt="" style="position:absolute; top:${rp.top}%; left:${rp.left}%; width:${backItem.width}%; height:${backItem.height}%; z-index:1;">`;
+                }
+            }
+            html += `<img src="${clothesItem.img}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; z-index:2;">`;
             ['hat', 'face'].forEach(cat => {
                 const itemId = outfit && outfit[cat];
                 const item = itemId ? KISEKAE_ITEMS[cat].find(i => i.id === itemId) : null;
                 if (!item) return;
-                html += `<img src="${item.img}" alt="" style="position:absolute; top:${item.top}%; left:${item.left}%; width:${item.width}%; height:${item.height}%; transform:rotate(${item.rotation || 0}deg);">`;
+                html += `<img src="${item.img}" alt="" style="position:absolute; top:${item.top}%; left:${item.left}%; width:${item.width}%; height:${item.height}%; transform:rotate(${item.rotation || 0}deg); z-index:3;">`;
             });
             return html;
         }

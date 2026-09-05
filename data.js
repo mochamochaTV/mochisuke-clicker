@@ -375,15 +375,24 @@
         const DAILY_MISSION_POOL = [
             { id: 'daily_login', text: 'ログインする', trackKey: 'loginToday', target: 1, reward: 3 },
             { id: 'daily_tap100', text: '100回タップする', trackKey: 'tapsToday', target: 100, reward: 5 },
+            { id: 'daily_tap300', text: '300回タップする', trackKey: 'tapsToday', target: 300, reward: 10 },
             { id: 'daily_minigame1', text: 'ミニゲームを1回遊ぶ', trackKey: 'minigamesToday', target: 1, reward: 5 },
+            { id: 'daily_minigame2', text: 'ミニゲームを2回遊ぶ', trackKey: 'minigamesToday', target: 2, reward: 8 },
             { id: 'daily_buy1', text: 'おみやげを1つ買う', trackKey: 'omiyageBoughtToday', target: 1, reward: 5 },
             { id: 'daily_gacha1', text: 'ガチャ・スロットを1回まわす', trackKey: 'gachaSpinsToday', target: 1, reward: 5 },
+            { id: 'daily_gacha3', text: 'ガチャ・スロットを3回まわす', trackKey: 'gachaSpinsToday', target: 3, reward: 12 },
+            { id: 'daily_skill1', text: 'スキルを1回使う', trackKey: 'skillUsedToday', target: 1, reward: 5 },
+            { id: 'daily_feed1', text: 'もちすけにお土産をあげる', trackKey: 'feedToday', target: 1, reward: 5 },
         ];
         const WEEKLY_MISSION_POOL = [
             { id: 'weekly_login3', text: '3日ログインする', trackKey: 'loginDaysThisWeek', target: 3, reward: 15 },
             { id: 'weekly_stamp3', text: '都道府県を3つ制覇する', trackKey: 'stampsThisWeek', target: 3, reward: 20 },
             { id: 'weekly_jackpot', text: 'スロットで大当たりを出す', trackKey: 'jackpotsThisWeek', target: 1, reward: 25 },
             { id: 'weekly_tap500', text: '合計500回タップする', trackKey: 'tapsThisWeek', target: 500, reward: 15 },
+            { id: 'weekly_tap2000', text: '合計2000回タップする', trackKey: 'tapsThisWeek', target: 2000, reward: 25 },
+            { id: 'weekly_minigame10', text: 'ミニゲームを合計10回遊ぶ', trackKey: 'minigamesThisWeek', target: 10, reward: 20 },
+            { id: 'weekly_gacha5', text: 'ガチャ・スロットを合計5回まわす', trackKey: 'gachaSpinsThisWeek', target: 5, reward: 20 },
+            { id: 'weekly_skill5', text: 'スキルを合計5回使う', trackKey: 'skillUsedThisWeek', target: 5, reward: 15 },
         ];
         const DAILY_MISSION_COUNT = 3; // 毎日、プールの中からこの数だけランダムに選ばれる
         const WEEKLY_MISSION_COUNT = 2;
@@ -467,3 +476,12 @@
         const MYROOM_WALL_ZONE_BOTTOM = 62; // 壁掛けが超えてはいけない下限（壁紙と床の境界と同じ値）
         let MYROOM_MOCHISUKE_SIZE = { width: 22 }; // もちすけ本体の大きさ（管理者が調整）
         const MYROOM_FURNITURE_LIMIT_PER_CATEGORY = 3; // カテゴリごとに置ける最大個数
+
+        // 🗺️⚙️🖼️🍴 タップ画面4隅ボタンの位置・大きさ（管理者が調整）
+        let CORNER_BTN_SIZE = 44; // 共通の大きさ(px)
+        const CORNER_BTN_OFFSETS = {
+            'map-toggle-btn':  { vert: 78, horiz: 10 },  // top: calc(8px+safe-area+vert)px; left: horizpx;
+            'menu-toggle-btn': { vert: 78, horiz: 10 },  // top: calc(8px+safe-area+vert)px; right: horizpx;
+            'ui-toggle-btn':   { vert: 88, horiz: 10 },  // bottom: calc(14px+safe-area+vert)px; left: horizpx;
+            'feed-toggle-btn': { vert: 88, horiz: 10 },  // bottom: calc(14px+safe-area+vert)px; right: horizpx;
+        };
