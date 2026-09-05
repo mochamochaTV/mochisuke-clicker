@@ -246,7 +246,29 @@
             if (!seenButtonHints.map) { seenButtonHints.map = true; saveGame(); showMochiComment('地図で好きな県に飛べるで！'); }
             openMap();
         }
+        // 🔓 隠しコマンド：PWA（ホーム画面）ではURLを直接打てないため、⚙️ボタンを素早く7回タップすると
+        // 合言葉入力で管理者モードを有効化できるようにする
+        let menuBtnTapCount = 0;
+        let menuBtnTapTimer = null;
         function onMenuButtonTap() {
+            menuBtnTapCount++;
+            clearTimeout(menuBtnTapTimer);
+            menuBtnTapTimer = setTimeout(() => { menuBtnTapCount = 0; }, 1500);
+            if (menuBtnTapCount >= 7) {
+                menuBtnTapCount = 0;
+                const key = prompt('合言葉を入力してください');
+                if (key === 'zk9m2xq7wv4p8trh21bs') {
+                    try { localStorage.setItem('punicker_dev_mode', '1'); } catch (e) {}
+                    IS_DEV_MODE = true;
+                    window.IS_DEV_MODE = true;
+                    const section = document.getElementById('dev-tools-section');
+                    if (section) section.style.display = 'block';
+                    alert('🔓 管理者モードが有効になりました！');
+                } else if (key !== null) {
+                    alert('違います');
+                }
+                return;
+            }
             if (!seenButtonHints.menu) { seenButtonHints.menu = true; saveGame(); showMochiComment('設定はここから触れるで！'); }
             openModal('menu-modal'); refreshCloudBackupStatus();
         }
@@ -788,8 +810,22 @@
             moveMenuGoTo(openMyRoom);
         }
         let previewMyroom = {};
+        // 🎨 もようがえモード：通常時はUIを消してすっきり見せ、ボタンを押した時だけ編集UIを出す
+        let myroomIsEditMode = false;
+        function toggleMyroomEditMode() {
+            myroomIsEditMode = !myroomIsEditMode;
+            const editEls = document.querySelectorAll('.myroom-edit-ui');
+            editEls.forEach(el => { el.style.display = myroomIsEditMode ? (el.tagName === 'DIV' ? 'flex' : 'block') : 'none'; });
+            const countLabel = document.getElementById('myroom-placed-count-label');
+            if (countLabel) countLabel.style.display = myroomIsEditMode ? 'block' : 'none';
+            document.getElementById('myroom-decorate-btn').textContent = myroomIsEditMode ? '👁️ プレビュー' : '🎨 もようがえ';
+            renderMyroomLayout(); // 削除ボタンの表示/非表示を確実に同期させる
+        }
         function openMyRoom() {
-            previewMyroom = { ...equippedMyroom };
+            myroomIsEditMode = false;
+            document.querySelectorAll('.myroom-edit-ui').forEach(el => el.style.display = 'none');
+            document.getElementById('myroom-decorate-btn').textContent = '🎨 もようがえ';
+            previewMyroom = JSON.parse(JSON.stringify(equippedMyroom)); // 配列(家具配置)も含めて完全に独立させる
             renderMyroomLayout();
             openMyroomCategory('wallpaper');
             applyKisekaeToMyroom();
@@ -797,7 +833,7 @@
             if (IS_DEV_MODE) {
                 renderMyroomSizeAdjustOptions();
                 document.getElementById('myroom-size-adjust-panel').style.display = 'block';
-                updateMyroomSizeReadout();
+                onMyroomSizeAdjustTargetChange();
             }
         }
         function closeMyRoom() {
@@ -817,31 +853,67 @@
             document.getElementById('myroom-wallpaper-layer').src = wallpaperItem.img;
             document.getElementById('myroom-flooring-layer').src = flooringItem.img;
 
-            Object.keys(MYROOM_SLOT_POSITIONS).forEach(cat => {
-                const el = document.getElementById(`myroom-slot-${cat}`);
-                const itemId = previewMyroom[cat];
-                const defaultPos = MYROOM_SLOT_POSITIONS[cat];
-                const playerPos = previewMyroom[cat + '_pos']; // プレイヤーが動かした位置（{top,left}）。無ければ初期位置
-                const top = playerPos ? playerPos.top : defaultPos.top;
-                const left = playerPos ? playerPos.left : defaultPos.left;
-                if (itemId) {
-                    const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
-                    if (item) {
-                        el.src = item.img;
-                        el.style.display = 'block';
-                        el.style.top = top + '%';
-                        el.style.left = left + '%';
-                        el.style.width = (item.width || defaultPos.width) + '%'; // 大きさはアイテムごとの個別値（管理者が調整）
-                        el.style.height = (item.height || defaultPos.height) + '%';
-                        el.style.transform = previewMyroom[cat + '_flip'] ? 'scaleX(-1)' : 'none';
-                        el.style.cursor = 'grab';
+            const layer = document.getElementById('myroom-furniture-layer');
+            layer.innerHTML = ''; // 一旦全部消してから配置し直す
+
+            ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
+                (previewMyroom[cat] || []).forEach((inst, idx) => {
+                    const item = MYROOM_ITEMS[cat].find(i => i.id === inst.itemId);
+                    if (!item) return;
+                    const el = document.createElement('img');
+                    el.className = 'myroom-slot-img';
+                    el.dataset.cat = cat;
+                    el.dataset.idx = idx;
+                    el.src = item.img;
+                    el.style.cssText = `position:absolute; top:${inst.top}%; left:${inst.left}%; width:${item.width}%; height:${item.height}%; cursor:grab; pointer-events:auto; transform:${inst.flip ? 'scaleX(-1)' : 'none'};`;
+                    layer.appendChild(el);
+
+                    if (item.flippable) {
+                        const flipBtn = document.createElement('button');
+                        flipBtn.textContent = '🔄';
+                        flipBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top)}%; left:${Math.min(94, inst.left + item.width)}%; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.75rem; z-index:20; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                        flipBtn.onclick = (e) => { e.stopPropagation(); toggleMyroomInstanceFlip(cat, idx); };
+                        layer.appendChild(flipBtn);
                     }
-                } else {
-                    el.style.display = 'none';
-                }
+                    // 削除ボタンは「もようがえ」編集モード中だけ表示する
+                    const delBtn = document.createElement('button');
+                    delBtn.className = 'myroom-edit-ui';
+                    delBtn.textContent = '✕';
+                    delBtn.style.cssText = `display:${myroomIsEditMode ? 'block' : 'none'}; position:absolute; top:${Math.max(0, inst.top - 3)}%; left:${Math.max(0, inst.left - 2)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(244,67,54,0.9); color:#fff; font-size:0.7rem; z-index:21; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                    delBtn.onclick = (e) => { e.stopPropagation(); removeMyroomInstance(cat, idx); };
+                    layer.appendChild(delBtn);
+                });
             });
             setupMyroomFurnitureDrag();
-            renderMyroomFlipButtons();
+        }
+        // 🆕 家具を配置に追加する（上限あり）
+        function addMyroomInstance(cat, itemId) {
+            if (!previewMyroom[cat]) previewMyroom[cat] = [];
+            if (previewMyroom[cat].length >= MYROOM_FURNITURE_LIMIT_PER_CATEGORY) {
+                alert(`⚠️ ${MYROOM_CATEGORY_LABELS[cat]}は最大${MYROOM_FURNITURE_LIMIT_PER_CATEGORY}個までしか置けません`);
+                return;
+            }
+            const defaultPos = MYROOM_SLOT_POSITIONS[cat];
+            // 複数個置いた時に完全に重ならないよう、少しずつずらして配置する
+            const offset = previewMyroom[cat].length * 4;
+            previewMyroom[cat].push({ itemId, top: defaultPos.top + offset, left: defaultPos.left + offset, flip: false });
+            renderMyroomLayout();
+            openMyroomCategory(cat);
+            const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
+            const label = document.getElementById('myroom-item-name-label');
+            clearTimeout(myroomNameLabelTimeout);
+            label.textContent = `${item.name}を置いたよ`;
+            label.style.display = 'block';
+            myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
+        }
+        function removeMyroomInstance(cat, idx) {
+            previewMyroom[cat].splice(idx, 1);
+            renderMyroomLayout();
+            if (myroomCurrentCategory === cat) openMyroomCategory(cat);
+        }
+        function toggleMyroomInstanceFlip(cat, idx) {
+            previewMyroom[cat][idx].flip = !previewMyroom[cat][idx].flip;
+            renderMyroomLayout();
         }
         // 📍 配置済みの家具を、プレイヤーが直接ドラッグで動かせるようにする（恒久機能）
         function setupMyroomFurnitureDrag() {
@@ -849,13 +921,11 @@
             if (stage.dataset.furnitureDragSetup) return;
             stage.dataset.furnitureDragSetup = '1';
             let dragState = null;
-            const catOf = (el) => Object.keys(MYROOM_SLOT_POSITIONS).find(c => document.getElementById(`myroom-slot-${c}`) === el);
             stage.addEventListener('pointerdown', (e) => {
-                const cat = catOf(e.target);
-                if (!cat || !previewMyroom[cat]) return;
+                if (!e.target.classList.contains('myroom-slot-img')) return;
                 e.preventDefault();
                 try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
-                dragState = { cat, el: e.target, startX: e.clientX, startY: e.clientY };
+                dragState = { cat: e.target.dataset.cat, idx: parseInt(e.target.dataset.idx, 10), el: e.target, startX: e.clientX, startY: e.clientY };
                 e.target.style.cursor = 'grabbing';
             });
             stage.addEventListener('pointermove', (e) => {
@@ -880,42 +950,18 @@
                 el.style.top = newTop + '%';
                 el.style.left = newLeft + '%';
                 dragState.startX = e.clientX; dragState.startY = e.clientY;
-                previewMyroom[dragState.cat + '_pos'] = { top: newTop, left: newLeft };
-                positionMyroomFlipButton(dragState.cat);
+                const inst = previewMyroom[dragState.cat][dragState.idx];
+                inst.top = newTop; inst.left = newLeft;
             });
-            const endDrag = () => { if (dragState) { dragState.el.style.cursor = 'grab'; dragState = null; } };
+            const endDrag = () => {
+                if (dragState) {
+                    dragState.el.style.cursor = 'grab';
+                    dragState = null;
+                    renderMyroomLayout(); // ボタン(反転・削除)の位置を正しく再計算するため、ドラッグ終了時に作り直す
+                }
+            };
             stage.addEventListener('pointerup', endDrag);
             stage.addEventListener('pointercancel', endDrag);
-        }
-        // 🔄 左右反転ボタン（対応アイテムのみ、恒久機能）
-        function renderMyroomFlipButtons() {
-            Object.keys(MYROOM_SLOT_POSITIONS).forEach(cat => {
-                const itemId = previewMyroom[cat];
-                const item = itemId ? MYROOM_ITEMS[cat].find(i => i.id === itemId) : null;
-                let btn = document.getElementById(`myroom-flip-btn-${cat}`);
-                if (!btn) {
-                    btn = document.createElement('button');
-                    btn.id = `myroom-flip-btn-${cat}`;
-                    btn.textContent = '🔄';
-                    btn.style.cssText = 'position:absolute; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.75rem; z-index:20; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;';
-                    btn.onclick = (e) => { e.stopPropagation(); toggleMyroomFlip(cat); };
-                    document.getElementById('myroom-stage').appendChild(btn);
-                }
-                btn.style.display = (item && item.flippable) ? 'block' : 'none';
-                if (item && item.flippable) positionMyroomFlipButton(cat);
-            });
-        }
-        function positionMyroomFlipButton(cat) {
-            const btn = document.getElementById(`myroom-flip-btn-${cat}`);
-            const el = document.getElementById(`myroom-slot-${cat}`);
-            if (!btn || !el) return;
-            const top = parseFloat(el.style.top), left = parseFloat(el.style.left), width = parseFloat(el.style.width);
-            btn.style.top = Math.max(0, top) + '%';
-            btn.style.left = Math.min(94, left + width) + '%';
-        }
-        function toggleMyroomFlip(cat) {
-            previewMyroom[cat + '_flip'] = !previewMyroom[cat + '_flip'];
-            renderMyroomLayout();
         }
 
         // 🛠️ 開発者用：家具の大きさ調整ツール（位置はプレイヤー機能で調整するので、ここでは大きさのみ）
@@ -924,7 +970,7 @@
         // アイテムごとに調整できるよう、ドロップダウンの選択肢を動的に生成する
         function renderMyroomSizeAdjustOptions() {
             const select = document.getElementById('myroom-size-adjust-target');
-            let html = '';
+            let html = `<optgroup label="もちすけ本体"><option value="mochisuke__mochisuke">もちすけの大きさ</option></optgroup>`;
             ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
                 if (!MYROOM_ITEMS[cat] || MYROOM_ITEMS[cat].length === 0) return;
                 html += `<optgroup label="${MYROOM_CATEGORY_LABELS[cat]}">`;
@@ -938,11 +984,13 @@
         function getMyroomSizeAdjustSelection() {
             const val = document.getElementById('myroom-size-adjust-target').value;
             const [cat, itemId] = val.split('__');
+            if (cat === 'mochisuke') return { cat: 'mochisuke', item: MYROOM_MOCHISUKE_SIZE };
             return { cat, item: MYROOM_ITEMS[cat] ? MYROOM_ITEMS[cat].find(i => i.id === itemId) : null };
         }
         function getMyroomSizeAdjustTargetEl() {
             const { cat } = getMyroomSizeAdjustSelection();
-            return document.getElementById(`myroom-slot-${cat}`);
+            if (cat === 'mochisuke') return document.getElementById('myroom-mochisuke-breathe-wrap');
+            return document.getElementById('myroom-size-preview-img');
         }
         function toggleMyroomSizeAdjustMode() {
             myroomSizeAdjustMode = !myroomSizeAdjustMode;
@@ -961,13 +1009,25 @@
         }
         function onMyroomSizeAdjustTargetChange() {
             document.querySelectorAll('.myroom-slot-img').forEach(el => el.style.outline = '');
+            const mochisukeEl = document.getElementById('myroom-mochisuke-breathe-wrap');
+            if (mochisukeEl) mochisukeEl.style.outline = '';
             const { cat, item } = getMyroomSizeAdjustSelection();
             if (!item) return;
-            // 選んだアイテムを一時的にそのスロットへ試着表示する（見ながら調整できるように）
-            previewMyroom[cat] = item.id;
-            renderMyroomLayout();
+            const previewImg = document.getElementById('myroom-size-preview-img');
+            if (cat !== 'mochisuke') {
+                // 実際の配置データ(previewMyroom)には触れず、専用のプレビュー要素にだけ試着表示する
+                const defaultPos = MYROOM_SLOT_POSITIONS[cat];
+                previewImg.src = item.img;
+                previewImg.style.display = 'block';
+                previewImg.style.top = defaultPos.top + '%';
+                previewImg.style.left = defaultPos.left + '%';
+                previewImg.style.width = item.width + '%';
+                previewImg.style.height = item.height + '%';
+            } else {
+                previewImg.style.display = 'none';
+            }
             if (!myroomSizeAdjustMode) { updateMyroomSizeReadout(); return; }
-            const target = document.getElementById(`myroom-slot-${cat}`);
+            const target = getMyroomSizeAdjustTargetEl();
             target.style.outline = '2px dashed #e91e63';
             positionMyroomSizeHandles();
             updateMyroomSizeReadout();
@@ -1009,17 +1069,24 @@
                 e.stopPropagation();
                 const { cat, item } = getMyroomSizeAdjustSelection();
                 if (!item) return;
-                const target = document.getElementById(`myroom-slot-${cat}`);
+                const target = getMyroomSizeAdjustTargetEl();
                 const stageRect = stage.getBoundingClientRect();
                 const dxPct = ((e.clientX - myroomSizeAdjustDragState.startX) / stageRect.width) * 100;
                 const dyPct = ((e.clientY - myroomSizeAdjustDragState.startY) / stageRect.height) * 100;
                 const mode = myroomSizeAdjustDragState.mode;
-                if (mode === 'width' || mode === 'both') target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
-                if (mode === 'height' || mode === 'both') target.style.height = Math.max(2, parseFloat(target.style.height) + dyPct) + '%';
+                if (cat === 'mochisuke') {
+                    // もちすけはwidthのみ調整（heightは画像の縦横比で自動決定される）
+                    if (mode === 'width' || mode === 'both') {
+                        target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
+                        item.width = parseFloat(target.style.width);
+                    }
+                } else {
+                    if (mode === 'width' || mode === 'both') target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
+                    if (mode === 'height' || mode === 'both') target.style.height = Math.max(2, parseFloat(target.style.height) + dyPct) + '%';
+                    item.width = parseFloat(target.style.width);
+                    item.height = parseFloat(target.style.height);
+                }
                 myroomSizeAdjustDragState.startX = e.clientX; myroomSizeAdjustDragState.startY = e.clientY;
-                // アイテムごとのデータに直接反映する（コピー時に正しい値が出るように）
-                item.width = parseFloat(target.style.width);
-                item.height = parseFloat(target.style.height);
                 positionMyroomSizeHandles();
                 updateMyroomSizeReadout();
             });
@@ -1027,13 +1094,13 @@
             stage.addEventListener('pointercancel', () => { myroomSizeAdjustDragState = null; });
         }
         function updateMyroomSizeReadout() {
-            const { item } = getMyroomSizeAdjustSelection();
+            const { cat, item } = getMyroomSizeAdjustSelection();
             const el = document.getElementById('myroom-size-adjust-readout');
             if (!item || !el) return;
-            el.textContent = `width:${item.width}%; height:${item.height}%;`;
+            el.textContent = (cat === 'mochisuke') ? `width:${item.width}%;` : `width:${item.width}%; height:${item.height}%;`;
         }
         function copyMyroomSizeCoords() {
-            const lines = [];
+            const lines = [`もちすけ本体: width:${MYROOM_MOCHISUKE_SIZE.width}%;`];
             ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
                 (MYROOM_ITEMS[cat] || []).forEach(item => {
                     lines.push(`${item.name}(${item.id}): width:${item.width}%; height:${item.height}%;`);
@@ -1052,14 +1119,31 @@
             playAudioFile('audio/skill_tap.mp3');
             myroomCurrentCategory = cat;
             const sortedItems = [...MYROOM_ITEMS[cat]].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
-            // 壁紙・床は常に何か装着しているので「外す」ボタンは無し。家具4種は「外す」ボタンあり
-            const canRemove = (cat !== 'wallpaper' && cat !== 'flooring');
-            const items = canRemove ? [{ id: null, name: '外す', isRemoveButton: true }, ...sortedItems] : sortedItems;
+            const isFurnitureCat = (cat !== 'wallpaper' && cat !== 'flooring');
+            // 壁紙・床は常に何か装着しているので「外す」ボタンあり。家具は個別の✕ボタンで削除するので一覧には無し
+            const items = isFurnitureCat ? sortedItems : [{ id: null, name: '外す', isRemoveButton: true }, ...sortedItems];
             const owned = ownedMyroomItems[cat] || [];
 
             const leftList = document.getElementById('myroom-item-list-left');
             const rightList = document.getElementById('myroom-item-list-right');
             leftList.innerHTML = ''; rightList.innerHTML = '';
+
+            if (isFurnitureCat) {
+                let countEl = document.getElementById('myroom-placed-count-label');
+                if (!countEl) {
+                    countEl = document.createElement('div');
+                    countEl.id = 'myroom-placed-count-label';
+                    countEl.className = 'myroom-edit-ui';
+                    countEl.style.cssText = 'position:absolute; top:19%; left:50%; transform:translateX(-50%); font-size:0.62rem; color:#8d6e63; font-weight:700; z-index:9; background:rgba(255,255,255,0.9); padding:2px 10px; border-radius:10px;';
+                    document.getElementById('myroom-stage').appendChild(countEl);
+                }
+                const placedCount = (previewMyroom[cat] || []).length;
+                countEl.textContent = `配置中：${placedCount}/${MYROOM_FURNITURE_LIMIT_PER_CATEGORY}個`;
+                if (myroomIsEditMode) countEl.style.display = 'block';
+            } else {
+                const countEl = document.getElementById('myroom-placed-count-label');
+                if (countEl) countEl.style.display = 'none';
+            }
 
             items.forEach((item, i) => {
                 const cell = document.createElement('div');
@@ -1072,13 +1156,15 @@
                     return;
                 }
                 const isOwned = owned.includes(item.id);
-                const isEquipped = previewMyroom[cat] === item.id;
+                const placedCount = isFurnitureCat ? (previewMyroom[cat] || []).filter(inst => inst.itemId === item.id).length : 0;
+                const isEquipped = isFurnitureCat ? placedCount > 0 : previewMyroom[cat] === item.id;
                 cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
-                cell.innerHTML = `<img src="${item.img}" alt="${item.name}" style="width:80%; height:80%; object-fit:contain; ${isOwned ? '' : 'filter:grayscale(1); opacity:0.5;'}">`;
+                const badgeHtml = placedCount > 0 ? `<div style="position:absolute; bottom:2px; right:4px; background:#e91e63; color:#fff; font-size:0.6rem; font-weight:900; padding:1px 5px; border-radius:8px;">×${placedCount}</div>` : '';
+                cell.innerHTML = `<img src="${item.img}" alt="${item.name}" style="width:80%; height:80%; object-fit:contain; ${isOwned ? '' : 'filter:grayscale(1); opacity:0.5;'}">${badgeHtml}`;
                 if (!isOwned) {
                     cell.insertAdjacentHTML('beforeend', `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">🔒</div>`);
                 } else {
-                    cell.onclick = () => equipMyroomItem(cat, item.id);
+                    cell.onclick = () => isFurnitureCat ? addMyroomInstance(cat, item.id) : equipMyroomItem(cat, item.id);
                 }
                 (i % 2 === 0 ? leftList : rightList).appendChild(cell);
             });
@@ -1105,7 +1191,7 @@
             myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
         }
         function confirmMyroomLayout() {
-            equippedMyroom = { ...previewMyroom };
+            equippedMyroom = JSON.parse(JSON.stringify(previewMyroom)); // 配列(家具配置)も含めて完全に独立させる
             saveGame();
             const btn = document.getElementById('myroom-confirm-btn');
             const original = btn.innerText;
@@ -1381,6 +1467,8 @@
         }
         // 🛋️ マイルームのもちすけにも、装備中の着せ替えを反映する
         function applyKisekaeToMyroom() {
+            const breatheWrap = document.getElementById('myroom-mochisuke-breathe-wrap');
+            if (breatheWrap) breatheWrap.style.width = MYROOM_MOCHISUKE_SIZE.width + '%';
             const clothesEl = document.getElementById('myroom-mochisuke-clothes');
             const fullbodyEl = document.getElementById('myroom-mochisuke-fullbody');
             const mouthAnchor = document.getElementById('myroom-mochisuke-mouth-anchor');

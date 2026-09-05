@@ -436,22 +436,22 @@
                 { id: 'flooring_default', name: 'ナチュラルなフローリング', star: 1, img: 'ui_images/myroom/flooring_natural.webp' },
             ],
             wall_deco: [
-                { id: 'furniture_tapestry_hammock', name: 'ハンモックなタペストリー', star: 1, img: 'ui_images/myroom/furniture_tapestry_hammock.webp', flippable: false, width: 26, height: 20 },
-                { id: 'furniture_aircon',          name: 'エアコン',                   star: 1, img: 'ui_images/myroom/furniture_aircon.webp',           flippable: false, width: 26, height: 20 },
+                { id: 'furniture_tapestry_hammock', name: 'ハンモックなタペストリー', star: 1, img: 'ui_images/myroom/furniture_tapestry_hammock.webp', flippable: false, width: 46.610693, height: 22.420576 },
+                { id: 'furniture_aircon',          name: 'エアコン',                   star: 1, img: 'ui_images/myroom/furniture_aircon.webp',           flippable: false, width: 32.870232, height: 12.889559 },
             ],
             big_furniture: [
-                { id: 'furniture_bed_blue',      name: 'シンプルなベッド（青）', star: 1, img: 'ui_images/myroom/furniture_bed_blue.webp',      flippable: true, width: 40, height: 40 },
-                { id: 'furniture_sofa_white',    name: '白いソファ',            star: 1, img: 'ui_images/myroom/furniture_sofa_white.webp',    flippable: true, width: 40, height: 40 },
-                { id: 'furniture_chair_natural', name: 'ナチュラルなチェア',     star: 1, img: 'ui_images/myroom/furniture_chair_natural.webp', flippable: true, width: 40, height: 40 },
-                { id: 'furniture_chair_darkwood',name: 'ダークウッドなチェア',   star: 1, img: 'ui_images/myroom/furniture_chair_darkwood.webp',flippable: true, width: 40, height: 40 },
-                { id: 'furniture_kotatsu',       name: 'こたつ',                star: 1, img: 'ui_images/myroom/furniture_kotatsu.webp',       flippable: true, width: 40, height: 40 },
+                { id: 'furniture_bed_blue',      name: 'シンプルなベッド（青）', star: 1, img: 'ui_images/myroom/furniture_bed_blue.webp',      flippable: true, width: 43.053437, height: 17.458386 },
+                { id: 'furniture_sofa_white',    name: '白いソファ',            star: 1, img: 'ui_images/myroom/furniture_sofa_white.webp',    flippable: true, width: 43.562342, height: 19.727675 },
+                { id: 'furniture_chair_natural', name: 'ナチュラルなチェア',     star: 1, img: 'ui_images/myroom/furniture_chair_natural.webp', flippable: true, width: 20.40712, height: 17.912245 },
+                { id: 'furniture_chair_darkwood',name: 'ダークウッドなチェア',   star: 1, img: 'ui_images/myroom/furniture_chair_darkwood.webp',flippable: true, width: 20.40712, height: 17.912245 },
+                { id: 'furniture_kotatsu',       name: 'こたつ',                star: 1, img: 'ui_images/myroom/furniture_kotatsu.webp',       flippable: true, width: 50.432573, height: 23.812398 },
             ],
             table: [
-                { id: 'furniture_bookshelf_small', name: '小さい本棚',                   star: 1, img: 'ui_images/myroom/furniture_bookshelf_small.webp', flippable: true, width: 30, height: 32 },
-                { id: 'furniture_dining_natural',  name: 'ナチュラルなダイニングテーブル', star: 1, img: 'ui_images/myroom/furniture_dining_natural.webp',  flippable: true, width: 30, height: 32 },
-                { id: 'furniture_dining_darkwood', name: 'ダークウッドなダイニングテーブル', star: 1, img: 'ui_images/myroom/furniture_dining_darkwood.webp', flippable: true, width: 30, height: 32 },
-                { id: 'furniture_desk_study',      name: '勉強机',                       star: 1, img: 'ui_images/myroom/furniture_desk_study.webp',       flippable: true, width: 30, height: 32 },
-                { id: 'furniture_bookshelf_large', name: '大きな本棚',                   star: 1, img: 'ui_images/myroom/furniture_bookshelf_large.webp', flippable: false, width: 30, height: 32 },
+                { id: 'furniture_bookshelf_small', name: '小さい本棚',                   star: 1, img: 'ui_images/myroom/furniture_bookshelf_small.webp', flippable: true, width: 28.218829, height: 19.745834 },
+                { id: 'furniture_dining_natural',  name: 'ナチュラルなダイニングテーブル', star: 1, img: 'ui_images/myroom/furniture_dining_natural.webp',  flippable: true, width: 48.320616, height: 27.46142 },
+                { id: 'furniture_dining_darkwood', name: 'ダークウッドなダイニングテーブル', star: 1, img: 'ui_images/myroom/furniture_dining_darkwood.webp', flippable: true, width: 48.320616, height: 27.46142 },
+                { id: 'furniture_desk_study',      name: '勉強机',                       star: 1, img: 'ui_images/myroom/furniture_desk_study.webp',       flippable: true, width: 41.195932, height: 18.38426 },
+                { id: 'furniture_bookshelf_large', name: '大きな本棚',                   star: 1, img: 'ui_images/myroom/furniture_bookshelf_large.webp', flippable: false, width: 43.486007, height: 26.402417 },
             ],
             small_deco: [],  // 小物（観葉植物・ぬいぐるみなど）
         };
@@ -465,3 +465,5 @@
             small_deco:     { top: 30, left: 68, width: 20, height: 20 },
         };
         const MYROOM_WALL_ZONE_BOTTOM = 62; // 壁掛けが超えてはいけない下限（壁紙と床の境界と同じ値）
+        let MYROOM_MOCHISUKE_SIZE = { width: 22 }; // もちすけ本体の大きさ（管理者が調整）
+        const MYROOM_FURNITURE_LIMIT_PER_CATEGORY = 3; // カテゴリごとに置ける最大個数

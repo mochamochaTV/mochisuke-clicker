@@ -20,9 +20,9 @@
         // 🛋️ マイルーム：所持アイテムと、今の配置状況
         let ownedMyroomItems = { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [] };
         let equippedMyroom = {
-            wallpaper: 'wallpaper_default', flooring: 'flooring_default', wall_deco: null, big_furniture: null, table: null, small_deco: null,
-            wall_deco_flip: false, big_furniture_flip: false, table_flip: false, small_deco_flip: false, // 🔄 左右反転（対応アイテムのみ、恒久機能）
-            wall_deco_pos: null, big_furniture_pos: null, table_pos: null, small_deco_pos: null, // 📍 プレイヤーが動かした位置（null＝初期位置のまま）
+            wallpaper: 'wallpaper_default', flooring: 'flooring_default',
+            // 🛋️ 家具4カテゴリは、複数個の配置インスタンス配列にする： [{ itemId, top, left, flip }, ...]
+            wall_deco: [], big_furniture: [], table: [], small_deco: [],
         };
         let previewKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' }; // 「決定」を押すまでの試着中の状態
         let prestigeScoreHistory = []; // 各転生の直前に持っていたもち数の記録（将来使う可能性があるので記録だけしておく）

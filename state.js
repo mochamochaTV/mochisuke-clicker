@@ -253,11 +253,17 @@
                     tutorialMissionStep = state.tutorialMissionStep ?? 0;
                     ownedMyroomItems = { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [], ...(state.ownedMyroomItems || {}) };
                     equippedMyroom = {
-                        wallpaper: 'wallpaper_default', flooring: 'flooring_default', wall_deco: null, big_furniture: null, table: null, small_deco: null,
-                        wall_deco_flip: false, big_furniture_flip: false, table_flip: false, small_deco_flip: false,
-                        wall_deco_pos: null, big_furniture_pos: null, table_pos: null, small_deco_pos: null,
+                        wallpaper: 'wallpaper_default', flooring: 'flooring_default',
+                        wall_deco: [], big_furniture: [], table: [], small_deco: [],
                         ...(state.equippedMyroom || {}),
                     };
+                    // 🐛互換性：旧セーブ（単一アイテムID形式）が残っていた場合は、配列形式に安全変換する
+                    ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
+                        if (!Array.isArray(equippedMyroom[cat])) {
+                            const oldId = equippedMyroom[cat];
+                            equippedMyroom[cat] = oldId ? [{ itemId: oldId, top: MYROOM_SLOT_POSITIONS[cat].top, left: MYROOM_SLOT_POSITIONS[cat].left, flip: false }] : [];
+                        }
+                    });
                     // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
                     prestigeShopLv = state.prestigeShopLv ?? {
                         offlineCap: state.offlineCapBonusHours ?? 0,
