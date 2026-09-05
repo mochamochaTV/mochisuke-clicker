@@ -595,7 +595,7 @@
             saveGame();
             renderFriendList();
         }
-        let lastGiftSentDateStr = null; // 1日1回までの送信制限（ローカル日付ベース）
+        let lastGiftSentDateStr = null; // 🐛修正：1日1回までの送信制限。セーブデータにも保存し、リロードでリセットされないようにする
         async function sendGachaCoinGift(uid, btnEl) {
             const todayStr = new Date().toISOString().slice(0, 10);
             if (lastGiftSentDateStr === todayStr) {
@@ -612,6 +612,7 @@
                 lastGiftSentDateStr = todayStr;
                 btnEl.innerHTML = '✅';
                 playAudioFile('audio/levelup.mp3');
+                saveGame();
             } else {
                 btnEl.disabled = false;
                 alert('送信できませんでした。時間を置いて試してください');

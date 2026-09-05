@@ -1079,12 +1079,12 @@
             container.style.background = 'transparent'; // 機体イラストの後ろに白い箱が見えないよう、この画面だけ背景を消す
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
-                    <div style="display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 10px; margin-bottom:10px;">
-                        <div style="font-weight:900; color:#7b1fa2; text-shadow:0 1px 3px rgba(255,255,255,0.8);"><img src="ui_images/slot/coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持<span id="slot-plays-remaining" style="font-size:0.7rem; color:#e91e63;"></span></div>
-                        <div id="slot-bonus-zone-text" style="font-weight:900; color:#ffab00; font-size:0.8rem; text-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>
+                    <div style="display:inline-flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 12px; margin-bottom:8px; background:rgba(255,255,255,0.85); border-radius:20px; padding:7px 16px; box-shadow:0 2px 6px rgba(0,0,0,0.12);">
+                        <div style="font-weight:900; color:#7b1fa2;"><img src="ui_images/slot/coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持<span id="slot-plays-remaining" style="font-size:0.7rem; color:#e91e63;"></span></div>
+                        <div id="slot-bonus-zone-text" style="font-weight:900; color:#ffab00; font-size:0.8rem;"></div>
                         <button onclick="toggleSlotHelpOverlay()" style="width:24px; height:24px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900; font-size:0.75rem;">？</button>
                     </div>
-                    <div id="slot-pulls-since-jackpot" style="font-size:0.68rem; color:#8d6e63; text-shadow:0 1px 3px rgba(255,255,255,0.8); margin-bottom:6px;"></div>
+                    <div id="slot-pulls-since-jackpot" style="display:inline-block; font-size:0.7rem; font-weight:700; color:#5d4037; background:rgba(255,255,255,0.85); border-radius:14px; padding:4px 12px; margin-bottom:8px; box-shadow:0 2px 6px rgba(0,0,0,0.1);"></div>
 
                     <div id="slot-machine-stage" style="position:relative; width:100%; max-width:280px; height:280px; margin:0 auto;">
                         ${[0, 1, 2].map(i => `
