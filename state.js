@@ -251,8 +251,13 @@
                     missionWeeklySelected = state.missionWeeklySelected ?? [];
                     missionClaimed = state.missionClaimed ?? {};
                     tutorialMissionStep = state.tutorialMissionStep ?? 0;
-                    ownedMyroomItems = state.ownedMyroomItems ?? { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [] };
-                    equippedMyroom = state.equippedMyroom ?? { wallpaper: 'wallpaper_default', flooring: 'flooring_default', wall_deco: null, big_furniture: null, table: null, small_deco: null };
+                    ownedMyroomItems = { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [], ...(state.ownedMyroomItems || {}) };
+                    equippedMyroom = {
+                        wallpaper: 'wallpaper_default', flooring: 'flooring_default', wall_deco: null, big_furniture: null, table: null, small_deco: null,
+                        wall_deco_flip: false, big_furniture_flip: false, table_flip: false, small_deco_flip: false,
+                        wall_deco_pos: null, big_furniture_pos: null, table_pos: null, small_deco_pos: null,
+                        ...(state.equippedMyroom || {}),
+                    };
                     // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
                     prestigeShopLv = state.prestigeShopLv ?? {
                         offlineCap: state.offlineCapBonusHours ?? 0,

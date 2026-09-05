@@ -794,6 +794,10 @@
             openMyroomCategory('wallpaper');
             applyKisekaeToMyroom();
             openModal('myroom-modal');
+            if (IS_DEV_MODE) {
+                document.getElementById('myroom-size-adjust-panel').style.display = 'block';
+                updateMyroomSizeReadout();
+            }
         }
         function closeMyRoom() {
             const overlay = document.getElementById('fade-overlay');
@@ -815,21 +819,201 @@
             Object.keys(MYROOM_SLOT_POSITIONS).forEach(cat => {
                 const el = document.getElementById(`myroom-slot-${cat}`);
                 const itemId = previewMyroom[cat];
-                const pos = MYROOM_SLOT_POSITIONS[cat];
+                const defaultPos = MYROOM_SLOT_POSITIONS[cat];
+                const playerPos = previewMyroom[cat + '_pos']; // プレイヤーが動かした位置（{top,left}）。無ければ初期位置
+                const top = playerPos ? playerPos.top : defaultPos.top;
+                const left = playerPos ? playerPos.left : defaultPos.left;
                 if (itemId) {
                     const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
                     if (item) {
                         el.src = item.img;
                         el.style.display = 'block';
-                        el.style.top = pos.top + '%';
-                        el.style.left = pos.left + '%';
-                        el.style.width = pos.width + '%';
-                        el.style.height = pos.height + '%';
+                        el.style.top = top + '%';
+                        el.style.left = left + '%';
+                        el.style.width = defaultPos.width + '%'; // 大きさは管理者が設定する共通値（プレイヤーは動かせない）
+                        el.style.height = defaultPos.height + '%';
+                        el.style.transform = previewMyroom[cat + '_flip'] ? 'scaleX(-1)' : 'none';
+                        el.style.cursor = 'grab';
                     }
                 } else {
                     el.style.display = 'none';
                 }
             });
+            setupMyroomFurnitureDrag();
+            renderMyroomFlipButtons();
+        }
+        // 📍 配置済みの家具を、プレイヤーが直接ドラッグで動かせるようにする（恒久機能）
+        function setupMyroomFurnitureDrag() {
+            const stage = document.getElementById('myroom-stage');
+            if (stage.dataset.furnitureDragSetup) return;
+            stage.dataset.furnitureDragSetup = '1';
+            let dragState = null;
+            const catOf = (el) => Object.keys(MYROOM_SLOT_POSITIONS).find(c => document.getElementById(`myroom-slot-${c}`) === el);
+            stage.addEventListener('pointerdown', (e) => {
+                const cat = catOf(e.target);
+                if (!cat || !previewMyroom[cat]) return;
+                e.preventDefault();
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                dragState = { cat, el: e.target, startX: e.clientX, startY: e.clientY };
+                e.target.style.cursor = 'grabbing';
+            });
+            stage.addEventListener('pointermove', (e) => {
+                if (!dragState) return;
+                const stageRect = stage.getBoundingClientRect();
+                const dxPct = ((e.clientX - dragState.startX) / stageRect.width) * 100;
+                const dyPct = ((e.clientY - dragState.startY) / stageRect.height) * 100;
+                const el = dragState.el;
+                const width = parseFloat(el.style.width), height = parseFloat(el.style.height);
+                let newTop = parseFloat(el.style.top) + dyPct;
+                let newLeft = parseFloat(el.style.left) + dxPct;
+
+                if (dragState.cat === 'wall_deco') {
+                    // 🧱 壁掛けは、壁の範囲からはみ出せない
+                    newTop = Math.max(0, Math.min(MYROOM_WALL_ZONE_BOTTOM - height, newTop));
+                    newLeft = Math.max(0, Math.min(100 - width, newLeft));
+                } else {
+                    // 他の家具は、画面の外に完全に消えない程度なら、壁側にはみ出してもよい
+                    newTop = Math.max(-height * 0.3, Math.min(100 - height * 0.5, newTop));
+                    newLeft = Math.max(-width * 0.5, Math.min(100 - width * 0.5, newLeft));
+                }
+                el.style.top = newTop + '%';
+                el.style.left = newLeft + '%';
+                dragState.startX = e.clientX; dragState.startY = e.clientY;
+                previewMyroom[dragState.cat + '_pos'] = { top: newTop, left: newLeft };
+                positionMyroomFlipButton(dragState.cat);
+            });
+            const endDrag = () => { if (dragState) { dragState.el.style.cursor = 'grab'; dragState = null; } };
+            stage.addEventListener('pointerup', endDrag);
+            stage.addEventListener('pointercancel', endDrag);
+        }
+        // 🔄 左右反転ボタン（対応アイテムのみ、恒久機能）
+        function renderMyroomFlipButtons() {
+            Object.keys(MYROOM_SLOT_POSITIONS).forEach(cat => {
+                const itemId = previewMyroom[cat];
+                const item = itemId ? MYROOM_ITEMS[cat].find(i => i.id === itemId) : null;
+                let btn = document.getElementById(`myroom-flip-btn-${cat}`);
+                if (!btn) {
+                    btn = document.createElement('button');
+                    btn.id = `myroom-flip-btn-${cat}`;
+                    btn.textContent = '🔄';
+                    btn.style.cssText = 'position:absolute; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.75rem; z-index:20; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;';
+                    btn.onclick = (e) => { e.stopPropagation(); toggleMyroomFlip(cat); };
+                    document.getElementById('myroom-stage').appendChild(btn);
+                }
+                btn.style.display = (item && item.flippable) ? 'block' : 'none';
+                if (item && item.flippable) positionMyroomFlipButton(cat);
+            });
+        }
+        function positionMyroomFlipButton(cat) {
+            const btn = document.getElementById(`myroom-flip-btn-${cat}`);
+            const el = document.getElementById(`myroom-slot-${cat}`);
+            if (!btn || !el) return;
+            const top = parseFloat(el.style.top), left = parseFloat(el.style.left), width = parseFloat(el.style.width);
+            btn.style.top = Math.max(0, top) + '%';
+            btn.style.left = Math.min(94, left + width) + '%';
+        }
+        function toggleMyroomFlip(cat) {
+            previewMyroom[cat + '_flip'] = !previewMyroom[cat + '_flip'];
+            renderMyroomLayout();
+        }
+
+        // 🛠️ 開発者用：家具の大きさ調整ツール（位置はプレイヤー機能で調整するので、ここでは大きさのみ）
+        let myroomSizeAdjustMode = false;
+        let myroomSizeAdjustDragState = null;
+        function getMyroomSizeAdjustTargetEl() {
+            const cat = document.getElementById('myroom-size-adjust-target').value;
+            return document.getElementById(`myroom-slot-${cat}`);
+        }
+        function toggleMyroomSizeAdjustMode() {
+            myroomSizeAdjustMode = !myroomSizeAdjustMode;
+            const btn = document.getElementById('myroom-size-adjust-toggle-btn');
+            const target = getMyroomSizeAdjustTargetEl();
+            if (myroomSizeAdjustMode) {
+                target.style.outline = '2px dashed #e91e63';
+                btn.style.background = '#4caf50';
+                setupMyroomSizeAdjustDrag();
+                positionMyroomSizeHandles();
+            } else {
+                target.style.outline = '';
+                ['myroom-size-resize-handle-r', 'myroom-size-resize-handle-b', 'myroom-size-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
+                btn.style.background = '#e91e63';
+            }
+        }
+        function onMyroomSizeAdjustTargetChange() {
+            document.querySelectorAll('.myroom-slot-img').forEach(el => el.style.outline = '');
+            if (!myroomSizeAdjustMode) { updateMyroomSizeReadout(); return; }
+            const target = getMyroomSizeAdjustTargetEl();
+            target.style.outline = '2px dashed #e91e63';
+            positionMyroomSizeHandles();
+            updateMyroomSizeReadout();
+        }
+        function positionMyroomSizeHandles() {
+            if (!myroomSizeAdjustMode) return;
+            const stage = document.getElementById('myroom-stage');
+            const target = getMyroomSizeAdjustTargetEl();
+            const stageRect = stage.getBoundingClientRect();
+            const tRect = target.getBoundingClientRect();
+            const rightPct = ((tRect.right - stageRect.left) / stageRect.width) * 100;
+            const bottomPct = ((tRect.bottom - stageRect.top) / stageRect.height) * 100;
+            const midYPct = ((tRect.top + tRect.height / 2 - stageRect.top) / stageRect.height) * 100;
+            const midXPct = ((tRect.left + tRect.width / 2 - stageRect.left) / stageRect.width) * 100;
+            const hR = document.getElementById('myroom-size-resize-handle-r'), hB = document.getElementById('myroom-size-resize-handle-b'), hBr = document.getElementById('myroom-size-resize-handle-br');
+            [hR, hB, hBr].forEach(h => h.style.display = 'block');
+            hR.style.left = rightPct + '%'; hR.style.top = midYPct + '%';
+            hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
+            hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
+        }
+        function setupMyroomSizeAdjustDrag() {
+            const stage = document.getElementById('myroom-stage');
+            if (stage.dataset.sizeDragSetup) return;
+            stage.dataset.sizeDragSetup = '1';
+            const startDrag = (e, mode) => {
+                if (!myroomSizeAdjustMode) return;
+                e.stopPropagation(); e.preventDefault();
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                myroomSizeAdjustDragState = { startX: e.clientX, startY: e.clientY, mode };
+            };
+            stage.addEventListener('pointerdown', (e) => {
+                if (!myroomSizeAdjustMode) return;
+                if (e.target.id === 'myroom-size-resize-handle-r') return startDrag(e, 'width');
+                if (e.target.id === 'myroom-size-resize-handle-b') return startDrag(e, 'height');
+                if (e.target.id === 'myroom-size-resize-handle-br') return startDrag(e, 'both');
+            });
+            stage.addEventListener('pointermove', (e) => {
+                if (!myroomSizeAdjustDragState || !myroomSizeAdjustMode) return;
+                e.stopPropagation();
+                const target = getMyroomSizeAdjustTargetEl();
+                const stageRect = stage.getBoundingClientRect();
+                const dxPct = ((e.clientX - myroomSizeAdjustDragState.startX) / stageRect.width) * 100;
+                const dyPct = ((e.clientY - myroomSizeAdjustDragState.startY) / stageRect.height) * 100;
+                const mode = myroomSizeAdjustDragState.mode;
+                if (mode === 'width' || mode === 'both') target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
+                if (mode === 'height' || mode === 'both') target.style.height = Math.max(2, parseFloat(target.style.height) + dyPct) + '%';
+                myroomSizeAdjustDragState.startX = e.clientX; myroomSizeAdjustDragState.startY = e.clientY;
+                // その場でデータにも反映（コピー時に正しい値が出るように）
+                const cat = document.getElementById('myroom-size-adjust-target').value;
+                MYROOM_SLOT_POSITIONS[cat].width = parseFloat(target.style.width);
+                MYROOM_SLOT_POSITIONS[cat].height = parseFloat(target.style.height);
+                positionMyroomSizeHandles();
+                updateMyroomSizeReadout();
+            });
+            stage.addEventListener('pointerup', () => { myroomSizeAdjustDragState = null; });
+            stage.addEventListener('pointercancel', () => { myroomSizeAdjustDragState = null; });
+        }
+        function updateMyroomSizeReadout() {
+            const target = getMyroomSizeAdjustTargetEl();
+            const el = document.getElementById('myroom-size-adjust-readout');
+            if (!target || !el) return;
+            el.textContent = `width:${target.style.width}; height:${target.style.height};`;
+        }
+        function copyMyroomSizeCoords() {
+            const lines = Object.keys(MYROOM_SLOT_POSITIONS).map(cat => `${MYROOM_CATEGORY_LABELS[cat]}(${cat}): width:${MYROOM_SLOT_POSITIONS[cat].width}%; height:${MYROOM_SLOT_POSITIONS[cat].height}%;`);
+            const text = lines.join('\n');
+            const textarea = document.getElementById('myroom-size-copy-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
         const MYROOM_CATEGORY_ORDER = ['wallpaper', 'flooring', 'wall_deco', 'big_furniture', 'table', 'small_deco'];
         let myroomCurrentCategory = 'wallpaper';

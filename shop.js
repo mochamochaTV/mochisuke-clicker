@@ -643,12 +643,14 @@
             const target = document.getElementById('gacha-crank');
             if (gachaCrankAdjustMode) {
                 target.style.outline = '2px dashed #e91e63';
+                target.style.pointerEvents = 'auto'; // 🐛修正：通常時はpointer-events:noneのため、調整中だけ一時的にクリック判定を復活させる
                 btn.style.background = '#4caf50';
                 setupGachaCrankAdjustDrag();
                 positionGachaCrankHandles();
                 updateGachaCrankReadout();
             } else {
                 target.style.outline = '';
+                target.style.pointerEvents = 'none'; // 通常表示に戻す
                 ['gacha-resize-handle-r', 'gacha-resize-handle-b', 'gacha-resize-handle-br'].forEach(id => document.getElementById(id).style.display = 'none');
                 btn.style.background = '#e91e63';
             }

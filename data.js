@@ -435,16 +435,33 @@
             flooring: [
                 { id: 'flooring_default', name: 'ナチュラルなフローリング', star: 1, img: 'ui_images/myroom/flooring_natural.webp' },
             ],
-            wall_deco:  [],  // 壁掛け（絵画・時計など）
-            big_furniture: [], // 大型家具（ソファ・ベッドなど）
-            table: [],       // 机・棚
+            wall_deco: [
+                { id: 'furniture_tapestry_hammock', name: 'ハンモックなタペストリー', star: 1, img: 'ui_images/myroom/furniture_tapestry_hammock.webp', flippable: false },
+                { id: 'furniture_aircon',          name: 'エアコン',                   star: 1, img: 'ui_images/myroom/furniture_aircon.webp',           flippable: false },
+            ],
+            big_furniture: [
+                { id: 'furniture_bed_blue',      name: 'シンプルなベッド（青）', star: 1, img: 'ui_images/myroom/furniture_bed_blue.webp',      flippable: true },
+                { id: 'furniture_sofa_white',    name: '白いソファ',            star: 1, img: 'ui_images/myroom/furniture_sofa_white.webp',    flippable: true },
+                { id: 'furniture_chair_natural', name: 'ナチュラルなチェア',     star: 1, img: 'ui_images/myroom/furniture_chair_natural.webp', flippable: true },
+                { id: 'furniture_chair_darkwood',name: 'ダークウッドなチェア',   star: 1, img: 'ui_images/myroom/furniture_chair_darkwood.webp',flippable: true },
+                { id: 'furniture_kotatsu',       name: 'こたつ',                star: 1, img: 'ui_images/myroom/furniture_kotatsu.webp',       flippable: true },
+            ],
+            table: [
+                { id: 'furniture_bookshelf_small', name: '小さい本棚',                   star: 1, img: 'ui_images/myroom/furniture_bookshelf_small.webp', flippable: true },
+                { id: 'furniture_dining_natural',  name: 'ナチュラルなダイニングテーブル', star: 1, img: 'ui_images/myroom/furniture_dining_natural.webp',  flippable: true },
+                { id: 'furniture_dining_darkwood', name: 'ダークウッドなダイニングテーブル', star: 1, img: 'ui_images/myroom/furniture_dining_darkwood.webp', flippable: true },
+                { id: 'furniture_desk_study',      name: '勉強机',                       star: 1, img: 'ui_images/myroom/furniture_desk_study.webp',       flippable: true },
+                { id: 'furniture_bookshelf_large', name: '大きな本棚',                   star: 1, img: 'ui_images/myroom/furniture_bookshelf_large.webp', flippable: false },
+            ],
             small_deco: [],  // 小物（観葉植物・ぬいぐるみなど）
         };
         const MYROOM_CATEGORY_LABELS = { wallpaper: '壁紙', flooring: '床', wall_deco: '壁掛け', big_furniture: '大型家具', table: '机・棚', small_deco: '小物' };
-        // 家具4カテゴリは、部屋の中の決まった位置（%指定）に置かれる。壁紙・床は部屋全体を覆うので座標不要
+        // 家具4カテゴリの初期位置（プレイヤーが動かした後は、equippedMyroomの方の座標が優先される）
+        // wall_decoだけ、壁の範囲(0〜62%)からはみ出せないよう制限する。他は床にさえ着いていれば壁側にはみ出してもよい
         const MYROOM_SLOT_POSITIONS = {
             wall_deco:      { top: 8,  left: 30, width: 26, height: 20 },
             big_furniture:  { top: 48, left: 4,  width: 40, height: 40 },
             table:          { top: 52, left: 56, width: 30, height: 32 },
             small_deco:     { top: 30, left: 68, width: 20, height: 20 },
         };
+        const MYROOM_WALL_ZONE_BOTTOM = 62; // 壁掛けが超えてはいけない下限（壁紙と床の境界と同じ値）

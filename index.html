@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-173">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-174">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -329,7 +329,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-173</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-174</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -462,6 +462,23 @@
         <div class="modal-content modal-fullscreen">
             <button class="modal-back-btn" onclick="closeMyRoom()"></button>
             <div id="myroom-stage" style="position:relative; flex:1; min-height:0; overflow:hidden;">
+                <div id="myroom-size-adjust-panel" style="display:none; position:absolute; top:4px; right:4px; z-index:60; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:160px; font-size:0.6rem;">
+                    <div style="font-size:0.6rem; font-weight:900; margin-bottom:4px;">家具の大きさ調整（管理者限定）</div>
+                    <select id="myroom-size-adjust-target" style="font-size:0.6rem; width:100%;" onchange="onMyroomSizeAdjustTargetChange()">
+                        <option value="wall_deco">壁掛け</option>
+                        <option value="big_furniture">大型家具</option>
+                        <option value="table">机・棚</option>
+                        <option value="small_deco">小物</option>
+                    </select>
+                    <button onclick="toggleMyroomSizeAdjustMode()" id="myroom-size-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">大きさ調整ON/OFF</button>
+                    <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
+                    <div id="myroom-size-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
+                    <button onclick="copyMyroomSizeCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
+                    <textarea id="myroom-size-copy-textarea" readonly style="display:none; width:100%; height:80px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
+                </div>
+                <div id="myroom-size-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
+                <div id="myroom-size-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
+                <div id="myroom-size-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
                 <img id="myroom-wallpaper-layer" src="" alt="" style="position:absolute; top:0; left:0; width:100%; height:62%; object-fit:cover; object-position:bottom; z-index:1;">
                 <img id="myroom-flooring-layer" src="" alt="" style="position:absolute; bottom:0; left:0; width:100%; height:38%; object-fit:cover; object-position:top; z-index:1;">
 
@@ -1028,13 +1045,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-173"></script>
-    <script src="state.js?v=2026-08-05-173"></script>
-    <script src="tap.js?v=2026-08-05-173"></script>
-    <script src="shop.js?v=2026-08-05-173"></script>
-    <script src="progress.js?v=2026-08-05-173"></script>
-    <script src="minigames.js?v=2026-08-05-173"></script>
-    <script src="ui.js?v=2026-08-05-173"></script>
-    <script src="main.js?v=2026-08-05-173"></script>
+    <script src="data.js?v=2026-08-05-174"></script>
+    <script src="state.js?v=2026-08-05-174"></script>
+    <script src="tap.js?v=2026-08-05-174"></script>
+    <script src="shop.js?v=2026-08-05-174"></script>
+    <script src="progress.js?v=2026-08-05-174"></script>
+    <script src="minigames.js?v=2026-08-05-174"></script>
+    <script src="ui.js?v=2026-08-05-174"></script>
+    <script src="main.js?v=2026-08-05-174"></script>
 </body>
 </html>
