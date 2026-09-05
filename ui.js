@@ -583,7 +583,7 @@
             } else if (res.reason === 'self') {
                 result.style.color = '#e57373'; result.innerText = '自分のコードは追加できません';
             } else {
-                result.style.color = '#e57373'; result.innerText = '通信エラーが発生しました';
+                result.style.color = '#e57373'; result.innerText = `通信エラーが発生しました${res.errorMessage ? '\n(' + res.errorMessage + ')' : ''}`;
             }
         }
         function toggleFavoriteFriend(uid) {
