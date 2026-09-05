@@ -253,18 +253,20 @@
         // 🗺️⚙️🖼️🍴 4隅ボタンの位置・大きさを反映する
         function applyCornerBtnPositions() {
             document.documentElement.style.setProperty('--corner-btn-size', CORNER_BTN_SIZE + 'px');
+            const isPwa = isRunningStandalone();
+            const getOffsets = (id) => (isPwa && CORNER_BTN_OFFSETS_PWA_OVERRIDE[id]) ? CORNER_BTN_OFFSETS_PWA_OVERRIDE[id] : CORNER_BTN_OFFSETS[id];
             const map = document.getElementById('map-toggle-btn');
-            map.style.top = `calc(8px + env(safe-area-inset-top, 0px) + ${CORNER_BTN_OFFSETS['map-toggle-btn'].vert}px)`;
-            map.style.left = CORNER_BTN_OFFSETS['map-toggle-btn'].horiz + 'px';
+            map.style.top = `calc(8px + env(safe-area-inset-top, 0px) + ${getOffsets('map-toggle-btn').vert}px)`;
+            map.style.left = getOffsets('map-toggle-btn').horiz + 'px';
             const menu = document.getElementById('menu-toggle-btn');
-            menu.style.top = `calc(8px + env(safe-area-inset-top, 0px) + ${CORNER_BTN_OFFSETS['menu-toggle-btn'].vert}px)`;
-            menu.style.right = CORNER_BTN_OFFSETS['menu-toggle-btn'].horiz + 'px';
+            menu.style.top = `calc(8px + env(safe-area-inset-top, 0px) + ${getOffsets('menu-toggle-btn').vert}px)`;
+            menu.style.right = getOffsets('menu-toggle-btn').horiz + 'px';
             const ui = document.getElementById('ui-toggle-btn');
-            ui.style.bottom = `calc(14px + env(safe-area-inset-bottom, 0px) + ${CORNER_BTN_OFFSETS['ui-toggle-btn'].vert}px)`;
-            ui.style.left = CORNER_BTN_OFFSETS['ui-toggle-btn'].horiz + 'px';
+            ui.style.bottom = `calc(14px + env(safe-area-inset-bottom, 0px) + ${getOffsets('ui-toggle-btn').vert}px)`;
+            ui.style.left = getOffsets('ui-toggle-btn').horiz + 'px';
             const feed = document.getElementById('feed-toggle-btn');
-            feed.style.bottom = `calc(14px + env(safe-area-inset-bottom, 0px) + ${CORNER_BTN_OFFSETS['feed-toggle-btn'].vert}px)`;
-            feed.style.right = CORNER_BTN_OFFSETS['feed-toggle-btn'].horiz + 'px';
+            feed.style.bottom = `calc(14px + env(safe-area-inset-bottom, 0px) + ${getOffsets('feed-toggle-btn').vert}px)`;
+            feed.style.right = getOffsets('feed-toggle-btn').horiz + 'px';
         }
         // 🛠️ 開発者用：4隅ボタンの調整ツール（大きさは共通、位置は個別にドラッグ調整）
         let cornerBtnAdjustMode = false;
@@ -284,6 +286,10 @@
         function onCornerBtnAdjustTargetChange() {
             updateCornerBtnReadout();
         }
+        // PWA(ホーム画面)かどうかで、参照・更新すべきオフセットのデータを切り替える
+        function getCornerBtnOffsetsRef(id) {
+            return (isRunningStandalone() && CORNER_BTN_OFFSETS_PWA_OVERRIDE[id]) ? CORNER_BTN_OFFSETS_PWA_OVERRIDE[id] : CORNER_BTN_OFFSETS[id];
+        }
         function setupCornerBtnDrag() {
             if (document.body.dataset.cornerDragSetup) return;
             document.body.dataset.cornerDragSetup = '1';
@@ -302,7 +308,7 @@
                 const dx = e.clientX - cornerBtnDragState.startX;
                 const dy = e.clientY - cornerBtnDragState.startY;
                 const id = cornerBtnDragState.id;
-                const offsets = CORNER_BTN_OFFSETS[id];
+                const offsets = getCornerBtnOffsetsRef(id);
                 const isTop = (id === 'map-toggle-btn' || id === 'menu-toggle-btn');
                 const isLeft = (id === 'map-toggle-btn' || id === 'ui-toggle-btn');
                 offsets.vert = Math.max(0, offsets.vert + (isTop ? dy : -dy));
@@ -316,14 +322,17 @@
         }
         function updateCornerBtnReadout() {
             const id = document.getElementById('corner-btn-adjust-target').value;
-            const offsets = CORNER_BTN_OFFSETS[id];
-            document.getElementById('corner-btn-adjust-readout').textContent = `vert:${offsets.vert}px; horiz:${offsets.horiz}px;`;
+            const offsets = getCornerBtnOffsetsRef(id);
+            const envLabel = isRunningStandalone() ? '（PWA）' : '（通常URL）';
+            document.getElementById('corner-btn-adjust-readout').textContent = `${envLabel} vert:${offsets.vert}px; horiz:${offsets.horiz}px;`;
         }
         function copyCornerBtnCoords() {
             const labels = { 'map-toggle-btn': '地図', 'menu-toggle-btn': '設定', 'ui-toggle-btn': '背景', 'feed-toggle-btn': 'お土産一覧' };
-            const lines = [`大きさ(共通): ${CORNER_BTN_SIZE}px`];
-            Object.keys(CORNER_BTN_OFFSETS).forEach(id => {
-                lines.push(`${labels[id]}(${id}): vert:${CORNER_BTN_OFFSETS[id].vert}px; horiz:${CORNER_BTN_OFFSETS[id].horiz}px;`);
+            const envLabel = isRunningStandalone() ? '【PWA(ホーム画面)】' : '【通常URL】';
+            const lines = [envLabel, `大きさ(共通): ${CORNER_BTN_SIZE}px`];
+            ['map-toggle-btn', 'menu-toggle-btn', 'ui-toggle-btn', 'feed-toggle-btn'].forEach(id => {
+                const offsets = getCornerBtnOffsetsRef(id);
+                lines.push(`${labels[id]}(${id}): vert:${offsets.vert}px; horiz:${offsets.horiz}px;`);
             });
             const text = lines.join('\n');
             const textarea = document.getElementById('corner-btn-copy-textarea');

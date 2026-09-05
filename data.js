@@ -479,11 +479,16 @@
 
         // 🗺️⚙️🖼️🍴 タップ画面4隅ボタンの位置・大きさ（管理者が調整）
         // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
-        const CORNER_BTN_ADJUST_TOOL_ENABLED = true;
+        const CORNER_BTN_ADJUST_TOOL_ENABLED = false;
         let CORNER_BTN_SIZE = 50; // 共通の大きさ(px)
         const CORNER_BTN_OFFSETS = {
             'map-toggle-btn':  { vert: 1,  horiz: 12 },  // top: calc(8px+safe-area+vert)px; left: horizpx;
             'menu-toggle-btn': { vert: 0,  horiz: 12 },  // top: calc(8px+safe-area+vert)px; right: horizpx;
             'ui-toggle-btn':   { vert: 88, horiz: 10 },  // bottom: calc(14px+safe-area+vert)px; left: horizpx;
             'feed-toggle-btn': { vert: 88, horiz: 10 },  // bottom: calc(14px+safe-area+vert)px; right: horizpx;
+        };
+        // 📱 PWA（ホーム画面に追加した版）だけ、下2つのボタンの位置を別途上書きする
+        const CORNER_BTN_OFFSETS_PWA_OVERRIDE = {
+            'ui-toggle-btn':   { vert: 50, horiz: 11 },
+            'feed-toggle-btn': { vert: 51, horiz: 10 },
         };
