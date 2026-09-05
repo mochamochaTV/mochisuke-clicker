@@ -889,7 +889,20 @@
         // 🕊️ 背中(翼)の表示・羽ばたきアニメーションループ。target: 'room'（着せ替え部屋）か 'main'（タップ画面）
         let wingFlapTimers = { room: null, main: null };
         let wingFlapFrameIndex = { room: 0, main: 0 };
-        let WING_FLAP_INTERVAL_MS = 90; // 8コマ ×90ms ≒ 720msで1周（実機調整パネルから変更できる）
+        let WING_FLAP_INTERVAL_MS = 130; // 8コマ ×130ms ≒ 1040msで1周（実機調整パネルから変更できる）
+        // 🚧 速度が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
+        const WING_SPEED_TOOL_ENABLED = false;
+        let WING_FLAP_VOLUME = 0.5; // 羽ばたき音の音量（0〜1）。実機調整パネルから変更できる
+        function adjustWingFlapVolume(delta) {
+            WING_FLAP_VOLUME = Math.max(0, Math.min(1, Math.round((WING_FLAP_VOLUME + delta) * 10) / 10));
+            document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
+            playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 押した音量でその場で試し鳴らしする
+        }
+        function copyWingFlapVolume() {
+            const text = `羽ばたき音量: ${WING_FLAP_VOLUME}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+            alert(`コピーしました\n${text}`);
+        }
         function updateKisekaeWingDisplay(target, backId) {
             const leftEl = document.getElementById(target === 'room' ? 'kisekae-mochisuke-wing-left' : 'mochisuke-wing-left');
             const rightEl = document.getElementById(target === 'room' ? 'kisekae-mochisuke-wing-right' : 'mochisuke-wing-right');
@@ -923,6 +936,7 @@
             wingFlapTimers[target] = setInterval(() => {
                 wingFlapFrameIndex[target] = (wingFlapFrameIndex[target] + 1) % item.leftFrames.length;
                 applyWingFrame(leftEl, rightEl, item, wingFlapFrameIndex[target]);
+                if (wingFlapFrameIndex[target] === 0) playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 1周ごとに、動きに合わせて羽ばたき音を鳴らす
             }, WING_FLAP_INTERVAL_MS);
         }
         function stopWingFlapLoop(target) {
@@ -1035,9 +1049,12 @@
         function openKisekaeCategory(cat) {
             playAudioFile('audio/skill_tap.mp3');
             if (cat !== 'back') clearWingGhostFrames(); // 背中カテゴリから離れる時は、翼のゴースト表示を片付ける
-            const showWingSpeedPanel = IS_DEV_MODE && cat === 'back';
+            const showWingSpeedPanel = WING_SPEED_TOOL_ENABLED && IS_DEV_MODE && cat === 'back';
             document.getElementById('kisekae-wing-speed-panel').style.display = showWingSpeedPanel ? 'block' : 'none';
             if (showWingSpeedPanel) document.getElementById('wing-flap-speed-readout').textContent = WING_FLAP_INTERVAL_MS + 'ms';
+            const showWingVolumePanel = IS_DEV_MODE && cat === 'back';
+            document.getElementById('kisekae-wing-volume-panel').style.display = showWingVolumePanel ? 'block' : 'none';
+            if (showWingVolumePanel) document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
             kisekaeCurrentCategory = cat;
             const sortedItems = [...KISEKAE_ITEMS[cat]].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
             // 帽子・顔パーツは、一番左上に「外す」ボタンを置く（服は必ず何か着ている状態にするので対象外）
