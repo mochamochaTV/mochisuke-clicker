@@ -234,6 +234,12 @@
             void mochiDeformWrap.offsetWidth;
             mochiDeformWrap.classList.add('mochi-scream'); // 拡大・シェイクは、帽子・顔パーツも道連れの入れ物にかける
             mochiBtnElement.src = 'ui_images/mochisuke/image_scream.webp';
+            // 🤖 ロボもちすけ装備中は、叫ぶ間だけロボを隠して、下の素の叫び顔を見せる
+            if (typeof equippedKisekae !== 'undefined' && equippedKisekae.fullbody) {
+                mochiBtnElement.style.opacity = '1';
+                const fbEl = document.getElementById('mochisuke-fullbody');
+                if (fbEl) fbEl.style.display = 'none';
+            }
             flyOffKisekaeOverlays(); // 🎩💨 叫びの勢いで、帽子・顔パーツが吹っ飛ぶ
             updateMouthPatchVisibility();
 
@@ -246,6 +252,12 @@
             isScreamActive = false;
             mochiBtnElement.src = getMochisukeBaseImg();
             mochiDeformWrap.classList.remove('mochi-scream');
+            // 🤖 ロボもちすけ装備中なら、叫び終わったのでロボの表示に戻す
+            if (typeof equippedKisekae !== 'undefined' && equippedKisekae.fullbody) {
+                mochiBtnElement.style.opacity = '0';
+                const fbEl = document.getElementById('mochisuke-fullbody');
+                if (fbEl) fbEl.style.display = 'block';
+            }
             flyBackKisekaeOverlays(); // 🎩 通常に戻ったら、飛んでいった帽子・顔パーツをまた着け直す
             if (!isMochiPressed) mochiBreatheWrapEl.classList.add('breathe-idle');
             updateMouthPatchVisibility();

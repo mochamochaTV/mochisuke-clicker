@@ -316,6 +316,7 @@
             });
             return pool;
         }
+        const DUPLICATE_REFUND_BY_STAR = { 1: 3, 2: 8, 3: 20, 4: 50 }; // 重複時は、レア度に応じてガチャコインを還元する
         function grantGachaKisekaeItem(star) {
             const pool = getKisekaeItemsByStar(star);
             const notOwned = pool.filter(item => !(ownedKisekaeItems[item.category] || []).includes(item.id));
@@ -323,8 +324,14 @@
             const picked = pickRandom(candidates);
             if (!ownedKisekaeItems[picked.category]) ownedKisekaeItems[picked.category] = [];
             const isDuplicate = ownedKisekaeItems[picked.category].includes(picked.id);
-            if (!isDuplicate) ownedKisekaeItems[picked.category].push(picked.id);
-            return { item: picked, isDuplicate };
+            let refundCoins = 0;
+            if (!isDuplicate) {
+                ownedKisekaeItems[picked.category].push(picked.id);
+            } else {
+                refundCoins = DUPLICATE_REFUND_BY_STAR[star] || 0;
+                gachaCoins += refundCoins;
+            }
+            return { item: picked, isDuplicate, refundCoins };
         }
         function revealGachaPrize() {
             const prizeReveal = document.getElementById('gacha-prize-reveal');
@@ -345,7 +352,7 @@
                 const starText = '⭐'.repeat(result.item.star);
                 prizeImg.src = result.item.img || (result.item.leftFrames ? result.item.leftFrames[0] : '');
                 prizeImg.style.display = 'block';
-                const dupText = result.isDuplicate ? '<br><span style="font-size:0.7em; color:#999;">（すでに持っています）</span>' : '';
+                const dupText = result.isDuplicate ? `<br><span style="font-size:0.7em; color:#999;">（すでに持っています・🪙${result.refundCoins}還元）</span>` : '';
                 prizeName.innerHTML = `${rarityTag}${result.item.name}<br><span style="font-size:0.7em;">${starText}</span>${dupText}`;
                 saveGame(); updateDisplay();
             }
@@ -541,8 +548,9 @@
                 const starMap = { normalRare: 1, rare: 2, sr: 3, ur: 4 };
                 const result = grantGachaKisekaeItem(starMap[rarities[index].id]);
                 const starText = '⭐'.repeat(result.item.star);
+                const dupText = result.isDuplicate ? ` <span style="opacity:0.8;">(🪙${result.refundCoins})</span>` : '';
                 const thumbSrc = result.item.img || (result.item.leftFrames ? result.item.leftFrames[0] : '');
-                icon.innerHTML = `<img src="${thumbSrc}" style="width:60%; display:block; margin:0 auto 4px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 ${flair.glow}px ${rarities[index].color});"><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${result.item.name} ${starText}</div>`;
+                icon.innerHTML = `<img src="${thumbSrc}" style="width:60%; display:block; margin:0 auto 4px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 ${flair.glow}px ${rarities[index].color});"><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${result.item.name} ${starText}${dupText}</div>`;
                 updateDisplay();
             }
 
