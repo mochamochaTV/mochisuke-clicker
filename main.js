@@ -356,7 +356,16 @@
         let IS_DEV_MODE = false;
         function initDevMode() {
             // 推測されないよう、単純な値ではなく長いランダムな文字列をキーにしている
-            const isDev = new URLSearchParams(location.search).get('dev') === 'zk9m2xq7wv4p8trh21bs';
+            const isDevParam = new URLSearchParams(location.search).get('dev') === 'zk9m2xq7wv4p8trh21bs';
+            // 🐛修正：PWAとしてホーム画面に追加すると、manifest.jsonの固定start_urlが使われ、
+            // クエリパラメータが失われてしまう。一度でも管理者URLでアクセスしたら、
+            // localStorageに記憶しておき、以後クエリパラメータが無くてもdevモードを維持する
+            if (isDevParam) {
+                try { localStorage.setItem('punicker_dev_mode', '1'); } catch (e) {}
+            }
+            let isDevStored = false;
+            try { isDevStored = localStorage.getItem('punicker_dev_mode') === '1'; } catch (e) {}
+            const isDev = isDevParam || isDevStored;
             if (!isDev) return;
             IS_DEV_MODE = true;
             window.IS_DEV_MODE = true; // Firebase送信は別のtype="module"スクリプトにあるため、windowを通して橋渡しする
