@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-157">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-158">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -286,7 +286,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-157</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-158</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -645,6 +645,16 @@
                 <div id="kisekae-item-list-left" style="position:absolute; left:2%; top:20%; bottom:4%; width:21%; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; display:flex; flex-direction:column; gap:8px; z-index:8;"></div>
                 <div id="kisekae-item-list-right" style="position:absolute; right:2%; top:20%; bottom:4%; width:21%; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; display:flex; flex-direction:column; gap:8px; z-index:8;"></div>
 
+                <div id="kisekae-wing-speed-panel" style="display:none; position:absolute; top:4px; left:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:150px; font-size:0.6rem;">
+                    <div style="font-size:0.6rem; font-weight:900; margin-bottom:4px;">翼の羽ばたき速度</div>
+                    <div style="display:flex; align-items:center; gap:6px; justify-content:center;">
+                        <button onclick="adjustWingFlapSpeed(-10)" style="background:#e91e63; color:#fff; border:none; border-radius:5px; width:26px; height:26px; font-weight:900;">−</button>
+                        <span id="wing-flap-speed-readout" style="font-weight:900;">90ms</span>
+                        <button onclick="adjustWingFlapSpeed(10)" style="background:#4caf50; color:#fff; border:none; border-radius:5px; width:26px; height:26px; font-weight:900;">＋</button>
+                    </div>
+                    <p style="font-size:0.52rem; color:#999; margin:4px 0 0;">数字が小さいほど速く羽ばたく</p>
+                    <button onclick="copyWingFlapSpeed()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 速度をコピー</button>
+                </div>
                 <div id="kisekae-adjust-panel" style="display:none; position:absolute; top:4px; right:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:170px; font-size:0.6rem;">
                     <select id="kisekae-adjust-target" style="font-size:0.6rem; width:100%;" onchange="onKisekaeAdjustTargetChange()"></select>
                     <button onclick="toggleKisekaeAdjustMode()" id="kisekae-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">位置調整ON/OFF</button>
@@ -941,13 +951,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-157"></script>
-    <script src="state.js?v=2026-08-05-157"></script>
-    <script src="tap.js?v=2026-08-05-157"></script>
-    <script src="shop.js?v=2026-08-05-157"></script>
-    <script src="progress.js?v=2026-08-05-157"></script>
-    <script src="minigames.js?v=2026-08-05-157"></script>
-    <script src="ui.js?v=2026-08-05-157"></script>
-    <script src="main.js?v=2026-08-05-157"></script>
+    <script src="data.js?v=2026-08-05-158"></script>
+    <script src="state.js?v=2026-08-05-158"></script>
+    <script src="tap.js?v=2026-08-05-158"></script>
+    <script src="shop.js?v=2026-08-05-158"></script>
+    <script src="progress.js?v=2026-08-05-158"></script>
+    <script src="minigames.js?v=2026-08-05-158"></script>
+    <script src="ui.js?v=2026-08-05-158"></script>
+    <script src="main.js?v=2026-08-05-158"></script>
 </body>
 </html>
