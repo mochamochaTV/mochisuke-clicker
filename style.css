@@ -150,7 +150,7 @@
             right: 10px;
             width: var(--corner-btn-size); height: var(--corner-btn-size);
             border-radius: 50%;
-            background: transparent;
+            background-color: rgba(120,120,120,0.25);
             background-image: url('ui_images/nav/btn_settings.webp');
             background-size: contain; background-position: center; background-repeat: no-repeat;
             border: none;
@@ -165,7 +165,7 @@
             left: 10px;
             width: var(--corner-btn-size); height: var(--corner-btn-size);
             border-radius: 50%;
-            background: transparent;
+            background-color: rgba(120,120,120,0.25);
             background-image: url('ui_images/nav/btn_map.webp');
             background-size: contain; background-position: center; background-repeat: no-repeat;
             border: none;
@@ -181,7 +181,7 @@
             left: 10px;
             width: var(--corner-btn-size); height: var(--corner-btn-size);
             border-radius: 50%;
-            background: transparent;
+            background-color: rgba(120,120,120,0.25);
             background-image: url('ui_images/nav/btn_background.webp');
             background-size: contain; background-position: center; background-repeat: no-repeat;
             border: none;
@@ -197,7 +197,7 @@
             right: 10px;
             width: var(--corner-btn-size); height: var(--corner-btn-size);
             border-radius: 50%;
-            background: transparent;
+            background-color: rgba(120,120,120,0.25);
             background-image: url('ui_images/nav/btn_omiyage_list.webp');
             background-size: contain; background-position: center; background-repeat: no-repeat;
             border: none;

@@ -491,7 +491,8 @@
             applyKisekaeToMainScreen(); // 🐛修正：確定済みの服装が、ページを開き直すと反映されないままだった
             checkAndRotateMissions(); // 日付・週が変わっていたら、デイリー/ウィークリーミッションを選び直す
             applyCornerBtnPositions();
-            if (IS_DEV_MODE) {
+            // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時はCORNER_BTN_ADJUST_TOOL_ENABLEDをtrueに戻すだけでOK
+            if (IS_DEV_MODE && CORNER_BTN_ADJUST_TOOL_ENABLED) {
                 const panel = document.getElementById('corner-btn-adjust-panel');
                 if (panel) { panel.style.display = 'block'; updateCornerBtnReadout(); }
             }
