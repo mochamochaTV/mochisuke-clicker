@@ -144,6 +144,10 @@
 
         // 🎁 ノーマル（灰）が出た時：3種類の消耗品からランダムに1つ選んで、その場で効果を発動する
         let ticketInventory = { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 }; // 🎫 ガチャで手に入れたチケットの所持数（すぐ使わず倉庫にためておける）
+        let sprayInventory = { spray_normalRare: 0, spray_rare: 0 }; // ✨ ガチャで手に入れたスプレーの所持数
+        let activeSprayId = null;    // 今かかっているスプレーのID
+        let sprayBuffActiveUntil = 0; // このタイムスタンプまで、自動増加バフ＋見た目エフェクトが有効
+        let favoriteFriendIds = []; // ⭐ お気に入りに登録したフレンドのuid一覧
 
         function grantRandomNormalConsumable() {
             const item = pickRandom(NORMAL_CONSUMABLE_ITEMS);
@@ -317,6 +321,15 @@
             return pool;
         }
         const DUPLICATE_REFUND_BY_STAR = { 1: 3, 2: 8, 3: 20, 4: 50 }; // 重複時は、レア度に応じてガチャコインを還元する
+        // ✨ ノーマルレア・レアだけ、衣装かスプレーかを半々で抽選する（スーパーレア・ウルトラレアは衣装のみ）
+        function grantGachaNormalRareOrRareReward(star) {
+            const sprayItem = SPRAY_ITEMS.find(i => i.star === star);
+            if (sprayItem && Math.random() < 0.5) {
+                sprayInventory[sprayItem.id] = (sprayInventory[sprayItem.id] || 0) + 1;
+                return { item: sprayItem, isSpray: true, isDuplicate: false, refundCoins: 0 };
+            }
+            return grantGachaKisekaeItem(star);
+        }
         function grantGachaKisekaeItem(star) {
             const pool = getKisekaeItemsByStar(star);
             const notOwned = pool.filter(item => !(ownedKisekaeItems[item.category] || []).includes(item.id));
@@ -348,12 +361,19 @@
                 prizeName.innerHTML = `${rarityTag}${item.name}`;
             } else if (['normalRare', 'rare', 'sr', 'ur'].includes(currentGachaRarity.id)) {
                 const starMap = { normalRare: 1, rare: 2, sr: 3, ur: 4 };
-                const result = grantGachaKisekaeItem(starMap[currentGachaRarity.id]);
+                const useSprayPool = ['normalRare', 'rare'].includes(currentGachaRarity.id);
+                const result = useSprayPool ? grantGachaNormalRareOrRareReward(starMap[currentGachaRarity.id]) : grantGachaKisekaeItem(starMap[currentGachaRarity.id]);
                 const starText = '⭐'.repeat(result.item.star);
-                prizeImg.src = result.item.img || (result.item.leftFrames ? result.item.leftFrames[0] : '');
-                prizeImg.style.display = 'block';
-                const dupText = result.isDuplicate ? `<br><span style="font-size:0.7em; color:#999;">（すでに持っています・🪙${result.refundCoins}還元）</span>` : '';
-                prizeName.innerHTML = `${rarityTag}${result.item.name}<br><span style="font-size:0.7em;">${starText}</span>${dupText}`;
+                if (result.isSpray) {
+                    prizeImg.style.display = 'none';
+                    const emoji = result.item.effectId === 'sparkle' ? '✨' : '🌟';
+                    prizeName.innerHTML = `${rarityTag}<div style="font-size:2.5rem;">${emoji}</div>${result.item.name}<br><span style="font-size:0.7em;">${starText}</span>`;
+                } else {
+                    prizeImg.src = result.item.img || (result.item.leftFrames ? result.item.leftFrames[0] : '');
+                    prizeImg.style.display = 'block';
+                    const dupText = result.isDuplicate ? `<br><span style="font-size:0.7em; color:#999;">（すでに持っています・🪙${result.refundCoins}還元）</span>` : '';
+                    prizeName.innerHTML = `${rarityTag}${result.item.name}<br><span style="font-size:0.7em;">${starText}</span>${dupText}`;
+                }
                 saveGame(); updateDisplay();
             }
 
@@ -546,11 +566,17 @@
                 icon.innerHTML = `<img src="${item.img}" style="width:60%; display:block; margin:0 auto 4px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 ${flair.glow}px ${rarities[index].color});"><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${item.name}</div>`;
             } else if (['normalRare', 'rare', 'sr', 'ur'].includes(rarities[index].id)) {
                 const starMap = { normalRare: 1, rare: 2, sr: 3, ur: 4 };
-                const result = grantGachaKisekaeItem(starMap[rarities[index].id]);
+                const useSprayPool = ['normalRare', 'rare'].includes(rarities[index].id);
+                const result = useSprayPool ? grantGachaNormalRareOrRareReward(starMap[rarities[index].id]) : grantGachaKisekaeItem(starMap[rarities[index].id]);
                 const starText = '⭐'.repeat(result.item.star);
-                const dupText = result.isDuplicate ? ` <span style="opacity:0.8;">(🪙${result.refundCoins})</span>` : '';
-                const thumbSrc = result.item.img || (result.item.leftFrames ? result.item.leftFrames[0] : '');
-                icon.innerHTML = `<img src="${thumbSrc}" style="width:60%; display:block; margin:0 auto 4px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 ${flair.glow}px ${rarities[index].color});"><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${result.item.name} ${starText}${dupText}</div>`;
+                if (result.isSpray) {
+                    const emoji = result.item.effectId === 'sparkle' ? '✨' : '🌟';
+                    icon.innerHTML = `<div style="font-size:2.2rem;">${emoji}</div><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${result.item.name} ${starText}</div>`;
+                } else {
+                    const dupText = result.isDuplicate ? ` <span style="opacity:0.8;">(🪙${result.refundCoins})</span>` : '';
+                    const thumbSrc = result.item.img || (result.item.leftFrames ? result.item.leftFrames[0] : '');
+                    icon.innerHTML = `<img src="${thumbSrc}" style="width:60%; display:block; margin:0 auto 4px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 ${flair.glow}px ${rarities[index].color});"><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${result.item.name} ${starText}${dupText}</div>`;
+                }
                 updateDisplay();
             }
 
@@ -605,10 +631,6 @@
         }
 
         function onGachaTabTap() {
-            if (!IS_DEV_MODE) {
-                alert('🎰 ガチャは近日公開予定です！\nお楽しみに！');
-                return;
-            }
             switchShopTab('gacha');
         }
 

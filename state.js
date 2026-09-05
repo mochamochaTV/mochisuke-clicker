@@ -156,6 +156,8 @@
                 prefTaps: prefTaps, lastActiveTimestamp: lastActiveTimestamp,
                 prestigeCount: prestigeCount, prestigePoints: prestigePoints, prestigeScoreHistory: prestigeScoreHistory,
                 prestigeShopLv: prestigeShopLv, gachaCoins: gachaCoins, minigameCoins: minigameCoins, ticketInventory: ticketInventory, slotPlaysRemaining: slotPlaysRemaining, slotBonusZoneSpinsLeft: slotBonusZoneSpinsLeft,
+                sprayInventory: sprayInventory, activeSprayId: activeSprayId, sprayBuffActiveUntil: sprayBuffActiveUntil,
+                favoriteFriendIds: favoriteFriendIds,
                 slotTotalPulls: slotTotalPulls, slotPullsSinceJackpot: slotPullsSinceJackpot, slotJackpotCount: slotJackpotCount,
                 slotShortestJackpotPulls: slotShortestJackpotPulls, slotLongestJackpotPulls: slotLongestJackpotPulls,
                 ownedKisekaeItems: ownedKisekaeItems, equippedKisekae: equippedKisekae,
@@ -227,6 +229,10 @@
                     gachaCoins = state.gachaCoins ?? 0;
                     minigameCoins = state.minigameCoins ?? 0;
                     ticketInventory = state.ticketInventory ?? { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 };
+                    sprayInventory = state.sprayInventory ?? { spray_normalRare: 0, spray_rare: 0 };
+                    activeSprayId = state.activeSprayId ?? null;
+                    sprayBuffActiveUntil = state.sprayBuffActiveUntil ?? 0;
+                    favoriteFriendIds = state.favoriteFriendIds ?? [];
                     slotPlaysRemaining = state.slotPlaysRemaining ?? 0;
                     slotBonusZoneSpinsLeft = state.slotBonusZoneSpinsLeft ?? 0;
                     slotTotalPulls = state.slotTotalPulls ?? 0;

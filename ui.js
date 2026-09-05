@@ -517,7 +517,20 @@
             } else {
                 codeEl.innerText = '（オフラインです）';
             }
-            renderFriendList();
+            switchFriendTab('list');
+        }
+        function closeFriendScreen() {
+            closeModal('friend-modal');
+        }
+        let currentFriendTab = 'list';
+        function switchFriendTab(tab) {
+            currentFriendTab = tab;
+            ['list', 'favorite', 'add'].forEach(t => {
+                document.getElementById(`friend-tab-${t}`).classList.toggle('active', t === tab);
+            });
+            document.getElementById('friend-list-view').style.display = (tab === 'add') ? 'none' : 'block';
+            document.getElementById('friend-add-view').style.display = (tab === 'add') ? 'block' : 'none';
+            if (tab === 'list' || tab === 'favorite') renderFriendList();
         }
         function copyMyFriendCode() {
             const code = document.getElementById('my-friend-code').innerText;
@@ -541,7 +554,6 @@
                 result.style.color = '#4caf50';
                 result.innerText = `${res.name}さんとフレンドになりました！`;
                 input.value = '';
-                renderFriendList();
             } else if (res.reason === 'not_found') {
                 result.style.color = '#e57373'; result.innerText = 'そのコードは見つかりませんでした';
             } else if (res.reason === 'self') {
@@ -550,32 +562,85 @@
                 result.style.color = '#e57373'; result.innerText = '通信エラーが発生しました';
             }
         }
+        function toggleFavoriteFriend(uid) {
+            const idx = favoriteFriendIds.indexOf(uid);
+            if (idx >= 0) favoriteFriendIds.splice(idx, 1);
+            else favoriteFriendIds.push(uid);
+            saveGame();
+            renderFriendList();
+        }
+        let lastGiftSentDateStr = null; // 1日1回までの送信制限（ローカル日付ベース）
+        async function sendGachaCoinGift(uid, btnEl) {
+            const todayStr = new Date().toISOString().slice(0, 10);
+            if (lastGiftSentDateStr === todayStr) {
+                alert('🪙 今日はもう送りました。また明日！');
+                return;
+            }
+            if (!window.isRankingReady || !window.isRankingReady()) {
+                alert('通信エラー：時間を置いて試してください');
+                return;
+            }
+            btnEl.disabled = true;
+            const res = await window.sendGiftCoin(uid);
+            if (res.success) {
+                lastGiftSentDateStr = todayStr;
+                btnEl.innerHTML = '✅';
+                playAudioFile('audio/levelup.mp3');
+            } else {
+                btnEl.disabled = false;
+                alert('送信できませんでした。時間を置いて試してください');
+            }
+        }
         async function renderFriendList() {
-            const listEl = document.getElementById('friend-list');
+            const listEl = document.getElementById('friend-list-view');
             listEl.innerHTML = `<div style="text-align:center; color:#aaa; padding:14px;">読み込み中...</div>`;
             if (!window.isRankingReady || !window.isRankingReady()) {
                 listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:14px;">通信エラーのため、フレンド一覧を表示できません</div>`;
                 return;
             }
-            const friends = await window.fetchFriendList();
-            if (!friends || friends.length === 0) {
-                listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:14px;">まだフレンドがいません。<br>コードを教え合って追加してみましょう！</div>`;
+            let friends = await window.fetchFriendList();
+            if (!friends) friends = [];
+            if (currentFriendTab === 'favorite') friends = friends.filter(f => favoriteFriendIds.includes(f.uid));
+
+            if (friends.length === 0) {
+                listEl.innerHTML = currentFriendTab === 'favorite'
+                    ? `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:14px;">まだお気に入りがいません。<br>フレンド一覧の⭐を押して登録してみましょう！</div>`
+                    : `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:14px;">まだフレンドがいません。<br>「追加」タブから、コードを教え合って追加してみましょう！</div>`;
                 return;
             }
             listEl.innerHTML = '';
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const alreadySentToday = lastGiftSentDateStr === todayStr;
             friends.sort((a, b) => b.score - a.score);
             friends.forEach(f => {
+                const isFav = favoriteFriendIds.includes(f.uid);
                 const row = document.createElement('div');
-                row.style.cssText = `display:flex; align-items:center; gap:10px; padding:9px 8px; margin-bottom:6px; border-radius:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.08);`;
+                row.style.cssText = `display:flex; align-items:center; gap:8px; padding:9px 8px; margin-bottom:6px; border-radius:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.08);`;
                 row.innerHTML = `
-                    <div style="flex-shrink:0; position:relative; width:40px; height:40px;">${renderRankOutfitPreviewHtml(f.outfit)}</div>
-                    <div style="flex:1; min-width:0;">
-                        <div style="font-size:0.8rem; color:#5d4037; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(f.name)}</div>
-                        <div style="font-size:0.68rem; color:#e91e63; font-weight:900;">${formatMochi(f.score)} もち</div>
+                    <div style="flex-shrink:0; position:relative; width:44px; height:44px;">${renderRankOutfitPreviewHtml(f.outfit)}</div>
+                    <div style="flex-shrink:0; align-self:stretch; width:1px; background:#e0d5c5;"></div>
+                    <div style="flex:1; min-width:0; padding-left:4px;">
+                        <div style="font-size:0.88rem; color:#5d4037; font-weight:900; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(f.name)}</div>
+                        <div style="font-size:0.62rem; color:#aaa; margin-top:2px;">ID: ${f.friendCode}</div>
                     </div>
+                    <button onclick="toggleFavoriteFriend('${f.uid}')" style="flex-shrink:0; background:none; border:none; font-size:1.2rem; padding:4px;">${isFav ? '⭐' : '☆'}</button>
+                    <button onclick="sendGachaCoinGift('${f.uid}', this)" ${alreadySentToday ? 'disabled' : ''} style="flex-shrink:0; background:${alreadySentToday ? '#ccc' : '#ff9800'}; color:#fff; border:none; border-radius:50%; width:38px; height:38px; font-size:1.2rem; font-weight:900;">🪙</button>
                 `;
                 listEl.appendChild(row);
             });
+        }
+        // 🎁 起動時に、自分宛の未受領ギフトが無いか確認する
+        async function checkIncomingGiftsOnLaunch() {
+            if (!window.isRankingReady || !window.isRankingReady()) return;
+            const gifts = await window.checkIncomingGifts();
+            if (!gifts || gifts.length === 0) return;
+            const totalAmount = gifts.reduce((sum, g) => sum + (g.amount || 0), 0);
+            gachaCoins += totalAmount;
+            saveGame(); updateDisplay();
+            const names = [...new Set(gifts.map(g => g.fromName))].join('、');
+            setTimeout(() => {
+                alert(`🎁 ${names}さんから、ガチャコインを${totalAmount}枚もらいました！`);
+            }, 800);
         }
 
         // 🚧「移動する」の最終的なUIはまだ未定。ひとまず一覧を出す形で仮実装しておく
@@ -824,7 +889,32 @@
                 row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🎫 ${item.name}　<span style="color:#ff9800; font-weight:900;">×${count}</span></span><span class="item-desc">${item.desc}</span></div></div><button class="item-action-btn btn-shop" ${count > 0 ? '' : 'disabled'} onclick="useTicket('${item.id}')" style="background:#4caf50; color:white;">使う</button>`;
                 list.appendChild(row);
             });
+            SPRAY_ITEMS.forEach(item => {
+                const count = sprayInventory[item.id] || 0;
+                const isActive = activeSprayId === item.id && Date.now() < sprayBuffActiveUntil;
+                const emoji = item.effectId === 'sparkle' ? '✨' : '🌟';
+                const row = document.createElement('div');
+                row.className = "list-item";
+                let btnHtml;
+                if (isActive) {
+                    const hoursLeft = Math.ceil((sprayBuffActiveUntil - Date.now()) / 3600000);
+                    btnHtml = `<button class="item-action-btn" disabled style="background:#bbb; color:#fff;">効果中(残り${hoursLeft}h)</button>`;
+                } else {
+                    btnHtml = `<button class="item-action-btn btn-shop" ${count > 0 ? '' : 'disabled'} onclick="useSpray('${item.id}')" style="background:#e91e63; color:white;">使う</button>`;
+                }
+                row.innerHTML = `<div class="item-info-row"><div class="item-thumb" style="display:flex; align-items:center; justify-content:center; font-size:1.6rem;">${emoji}</div><div class="item-info"><span class="item-title">✨ ${item.name}　<span style="color:#ff9800; font-weight:900;">×${count}</span></span><span class="item-desc">${item.desc}</span></div></div>${btnHtml}`;
+                list.appendChild(row);
+            });
             openModal('ticket-inventory-modal');
+        }
+        // ✨ スプレーを使う：1日だけ自動増加バフ＋見た目エフェクトが有効になる
+        function useSpray(itemId) {
+            if ((sprayInventory[itemId] || 0) <= 0) return;
+            sprayInventory[itemId]--;
+            activeSprayId = itemId;
+            sprayBuffActiveUntil = Date.now() + 24 * 60 * 60 * 1000;
+            saveGame(); updateDisplay(); updateSprayEffectDisplay();
+            openTicketInventory(); // 一覧を開いている場合、表示を更新する
         }
 
         // ===================================================================
@@ -1756,10 +1846,44 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             }
             return false;
         }
+        // ✨ スプレーの見た目エフェクト（キラキラ・オーラ）を、バフの有無に応じて切り替える
+        let sprayParticleTimer = null;
+        function updateSprayEffectDisplay() {
+            const isActive = Date.now() < sprayBuffActiveUntil && activeSprayId;
+            const auraEl = document.getElementById('spray-aura-effect');
+            if (!isActive) {
+                if (auraEl) auraEl.style.display = 'none';
+                clearInterval(sprayParticleTimer);
+                sprayParticleTimer = null;
+                return;
+            }
+            const item = SPRAY_ITEMS.find(i => i.id === activeSprayId);
+            if (!item) return;
+            if (auraEl) auraEl.style.display = (item.effectId === 'aura') ? 'block' : 'none';
+            if (item.effectId === 'sparkle' && !sprayParticleTimer) {
+                sprayParticleTimer = setInterval(spawnSparkleParticle, 700);
+            } else if (item.effectId !== 'sparkle' && sprayParticleTimer) {
+                clearInterval(sprayParticleTimer);
+                sprayParticleTimer = null;
+            }
+        }
+        function spawnSparkleParticle() {
+            if (Date.now() >= sprayBuffActiveUntil) { updateSprayEffectDisplay(); return; }
+            if (!isMochisukeVisible()) return; // 見えている画面の時だけ生成する
+            const wrap = document.getElementById('mochisuke-deform-wrap');
+            if (!wrap) return;
+            const rect = wrap.getBoundingClientRect();
+            const particle = document.createElement('div');
+            particle.textContent = '✨';
+            particle.style.cssText = `position:fixed; left:${rect.left + rect.width * Math.random()}px; top:${rect.top + rect.height * Math.random()}px; font-size:1.3rem; pointer-events:none; z-index:9999; animation: sprayParticleFloat 1.2s ease-out forwards;`;
+            document.body.appendChild(particle);
+            setTimeout(() => particle.remove(), 1300);
+        }
         function updateDisplay() {
             updateRecommendedActionHighlight();
             const prestigeBtn = document.getElementById('main-prestige-btn');
             if (prestigeBtn) prestigeBtn.style.display = canPrestige() ? 'block' : 'none';
+            updateSprayEffectDisplay(); // バフが切れていたら、ここで自動的にエフェクトも止まる
             const scoreFormatted = formatMochi(score) + " もち";
             const scoreEl = document.getElementById('score-text');
             const fullText = isFever ? `🔥 5倍中 (${feverTimeLeft}s) ${scoreFormatted}` : scoreFormatted;

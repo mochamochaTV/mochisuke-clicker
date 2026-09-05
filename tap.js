@@ -95,6 +95,10 @@
             mps *= 1.5; // 🔧 自動増加の恩恵を全体的に強化（プレイヤーからの要望を受けて底上げ）
             mps *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
             if (Date.now() < feedBuffActiveUntil) mps *= 2; // もちすけにお土産をあげた効果（一時的）
+            if (Date.now() < sprayBuffActiveUntil && activeSprayId) {
+                const sprayItem = SPRAY_ITEMS.find(i => i.id === activeSprayId);
+                if (sprayItem) mps *= sprayItem.mpsMultiplier; // ✨ スプレーの自動増加バフ（1日）
+            }
             return mps;
         }
 

@@ -246,6 +246,12 @@
             { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'ui_images/item/mochi30min_ticket.webp', desc: '今の自動増加×30分ぶんのもちを獲得' },
         ];
 
+        // ✨ ガチャのノーマルレア・レアで排出される、1日だけ自動増加がアップするスプレー（見た目エフェクトつき）
+        const SPRAY_ITEMS = [
+            { id: 'spray_normalRare', name: 'キラキラスプレー', star: 1, mpsMultiplier: 1.2, effectId: 'sparkle', desc: '自動増加+20%＆キラキラエフェクト（1日）' },
+            { id: 'spray_rare',       name: 'オーラスプレー',   star: 2, mpsMultiplier: 1.5, effectId: 'aura',    desc: '自動増加+50%＆光るオーラエフェクト（1日）' },
+        ];
+
         const GACHA_RARITIES = [
             { id: 'normal',      label: 'ノーマル',     weight: 90,  filter: 'grayscale(0.7) brightness(0.95)',                              color: '#9e9e9e', desc: '消耗品（ミニゲーム追加券・スキルクールタイム短縮チケット・もち30分ぶんチケット）',
               flair: { flash: 0.2, glow: 0, vibrate: [10, 15], nameScale: 1.0, rays: false } }, // 灰

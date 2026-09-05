@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-161">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-163">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -250,13 +250,43 @@
                     const fDoc = await getDoc(doc(db, "rankings", uid));
                     if (fDoc.exists()) {
                         const d = fDoc.data();
-                        friends.push({ uid, name: d.name || '名無しさん', score: d.score || 0, outfit: d.outfit || null });
+                        friends.push({ uid, name: d.name || '名無しさん', score: d.score || 0, outfit: d.outfit || null, friendCode: d.friendCode || '--------' });
                     }
                 }
                 return friends;
             } catch (e) {
                 console.error("フレンド一覧取得エラー:", e);
                 return null;
+            }
+        };
+        // 🪙 フレンドに、無料のガチャコインを1枚送る
+        window.sendGiftCoin = async function (toUid) {
+            if (!fbReady || !db || !currentUid) return { success: false };
+            try {
+                const myDoc = await getDoc(doc(db, "rankings", currentUid));
+                const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';
+                await addDoc(collection(db, "gifts"), {
+                    toUid, fromUid: currentUid, fromName: myName, amount: 1, createdAt: Date.now(), claimed: false
+                });
+                return { success: true };
+            } catch (e) {
+                console.error("ギフト送信エラー:", e);
+                return { success: false };
+            }
+        };
+        // 🎁 自分宛の未受領ギフトを確認し、その場で受領済みにする
+        window.checkIncomingGifts = async function () {
+            if (!fbReady || !db || !currentUid) return [];
+            try {
+                const q = await getDocs(query(collection(db, "gifts"), where("toUid", "==", currentUid), where("claimed", "==", false)));
+                const gifts = q.docs.map(d => ({ id: d.id, ...d.data() }));
+                for (const d of q.docs) {
+                    await setDoc(doc(db, "gifts", d.id), { claimed: true }, { merge: true });
+                }
+                return gifts;
+            } catch (e) {
+                console.error("ギフト受信確認エラー:", e);
+                return [];
             }
         };
 
@@ -286,7 +316,7 @@
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる">🍴</button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー">⚙️</button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図">🗺️</button>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-161</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-163</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -346,6 +376,7 @@
                 <div id="mochisuke-img-frame" style="position:relative; display:inline-block;">
                     <div id="mochisuke-breathe-wrap" class="breathe-idle" style="position:relative; display:inline-block; transform-origin:center bottom;">
                         <div id="mochisuke-deform-wrap" style="position:relative; display:inline-block; transform-origin:center bottom;">
+                            <div id="spray-aura-effect" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:140%; height:140%; border-radius:50%; z-index:0; pointer-events:none;"></div>
                             <img id="mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                             <img id="mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                             <img id="mochisuke-btn" src="ui_images/mochisuke/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)); display:block; position:relative; z-index:2;">
@@ -448,23 +479,35 @@
     </div>
 
     <div id="friend-modal" class="modal">
-        <div class="modal-content">
-            <button class="modal-close-x" onclick="closeModal('friend-modal')">×</button>
-            <h2>🤝 フレンド</h2>
-            <div style="background:#fff3e0; border-radius:12px; padding:12px; text-align:center; margin-bottom:12px;">
-                <div style="font-size:0.7rem; color:#8d6e63; margin-bottom:4px;">あなたのフレンドコード</div>
-                <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
-                    <div id="my-friend-code" style="font-size:1.3rem; font-weight:900; letter-spacing:2px; color:#5d4037;">----------</div>
-                    <button onclick="copyMyFriendCode()" style="background:#ff9800; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:0.7rem; font-weight:900;">コピー</button>
+        <div class="modal-content modal-fullscreen">
+            <button class="modal-back-btn" onclick="closeFriendScreen()"></button>
+            <div style="height: env(safe-area-inset-top, 0px); flex-shrink:0; background:#fff8ec;"></div>
+            <div style="width:100%; flex-shrink:0;">
+                <img src="ui_images/backgrounds/friend_banner.webp" alt="フレンド" style="width:100%; aspect-ratio:5/3; object-fit:cover; display:block;">
+            </div>
+            <div style="display:flex; gap:6px; padding:8px 10px; flex-shrink:0; background:#fff8ec; overflow-x:auto;">
+                <button id="friend-tab-list" class="rank-tab-btn active" onclick="switchFriendTab('list')">🤝 フレンド</button>
+                <button id="friend-tab-favorite" class="rank-tab-btn" onclick="switchFriendTab('favorite')">⭐ お気に入り</button>
+                <button id="friend-tab-add" class="rank-tab-btn" onclick="switchFriendTab('add')">➕ 追加</button>
+            </div>
+
+            <div id="friend-list-view" style="flex:1; min-height:0; overflow-y:auto; padding:10px 10px calc(10px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; background:#fff8ec;"></div>
+
+            <div id="friend-add-view" style="display:none; flex:1; min-height:0; overflow-y:auto; padding:16px 16px calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; background:#fff8ec;">
+                <div style="background:#fff3e0; border-radius:12px; padding:12px; text-align:center; margin-bottom:12px;">
+                    <div style="font-size:0.7rem; color:#8d6e63; margin-bottom:4px;">あなたのフレンドコード</div>
+                    <div style="display:flex; align-items:center; justify-content:center; gap:8px;">
+                        <div id="my-friend-code" style="font-size:1.3rem; font-weight:900; letter-spacing:2px; color:#5d4037;">----------</div>
+                        <button onclick="copyMyFriendCode()" style="background:#ff9800; color:#fff; border:none; border-radius:8px; padding:6px 10px; font-size:0.7rem; font-weight:900;">コピー</button>
+                    </div>
+                    <div style="font-size:0.62rem; color:#aaa; margin-top:4px;">このコードを教え合うと、フレンドになれます</div>
                 </div>
-                <div style="font-size:0.62rem; color:#aaa; margin-top:4px;">このコードを教え合うと、フレンドになれます</div>
+                <div style="display:flex; gap:6px; margin-bottom:6px;">
+                    <input id="friend-code-input" type="text" placeholder="フレンドのコードを入力" maxlength="8" style="flex:1; padding:9px; border-radius:8px; border:1px solid #ddd; font-size:0.85rem; text-transform:uppercase;" onfocus="setTimeout(() => this.scrollIntoView({block:'center', behavior:'smooth'}), 300)">
+                    <button onclick="onAddFriendTap()" style="background:#e91e63; color:#fff; border:none; border-radius:8px; padding:9px 14px; font-weight:900; font-size:0.8rem;">追加</button>
+                </div>
+                <div id="friend-add-result" style="font-size:0.72rem; text-align:center; min-height:1.2em;"></div>
             </div>
-            <div style="display:flex; gap:6px; margin-bottom:6px;">
-                <input id="friend-code-input" type="text" placeholder="フレンドのコードを入力" maxlength="8" style="flex:1; padding:9px; border-radius:8px; border:1px solid #ddd; font-size:0.85rem; text-transform:uppercase;" onfocus="setTimeout(() => this.scrollIntoView({block:'center', behavior:'smooth'}), 300)">
-                <button onclick="onAddFriendTap()" style="background:#e91e63; color:#fff; border:none; border-radius:8px; padding:9px 14px; font-weight:900; font-size:0.8rem;">追加</button>
-            </div>
-            <div id="friend-add-result" style="font-size:0.72rem; text-align:center; min-height:1.2em; margin-bottom:8px;"></div>
-            <div id="friend-list" class="list-container"></div>
         </div>
     </div>
 
@@ -960,13 +1003,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-161"></script>
-    <script src="state.js?v=2026-08-05-161"></script>
-    <script src="tap.js?v=2026-08-05-161"></script>
-    <script src="shop.js?v=2026-08-05-161"></script>
-    <script src="progress.js?v=2026-08-05-161"></script>
-    <script src="minigames.js?v=2026-08-05-161"></script>
-    <script src="ui.js?v=2026-08-05-161"></script>
-    <script src="main.js?v=2026-08-05-161"></script>
+    <script src="data.js?v=2026-08-05-163"></script>
+    <script src="state.js?v=2026-08-05-163"></script>
+    <script src="tap.js?v=2026-08-05-163"></script>
+    <script src="shop.js?v=2026-08-05-163"></script>
+    <script src="progress.js?v=2026-08-05-163"></script>
+    <script src="minigames.js?v=2026-08-05-163"></script>
+    <script src="ui.js?v=2026-08-05-163"></script>
+    <script src="main.js?v=2026-08-05-163"></script>
 </body>
 </html>
