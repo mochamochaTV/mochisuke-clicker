@@ -894,6 +894,36 @@
         let previewMyroom = {};
         // 🎨 もようがえモード：通常時はUIを消してすっきり見せ、ボタンを押した時だけ編集UIを出す
         let myroomIsEditMode = false;
+        // 🖐️ 大きさ調整パネル自体を、ドラッグで自由に動かせるようにする（「もようがえ」ボタン等と重ならないように避難できる）
+        function setupMyroomSizePanelDrag() {
+            const handle = document.getElementById('myroom-size-adjust-drag-handle');
+            const panel = document.getElementById('myroom-size-adjust-panel');
+            if (!handle || handle.dataset.dragSetup) return;
+            handle.dataset.dragSetup = '1';
+            let dragState = null;
+            handle.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+                const rect = panel.getBoundingClientRect();
+                dragState = { startX: e.clientX, startY: e.clientY, startTop: rect.top, startLeft: rect.left };
+                handle.style.cursor = 'grabbing';
+            });
+            handle.addEventListener('pointermove', (e) => {
+                if (!dragState) return;
+                const stage = document.getElementById('myroom-stage');
+                const stageRect = stage.getBoundingClientRect();
+                let newTop = dragState.startTop + (e.clientY - dragState.startY) - stageRect.top;
+                let newLeft = dragState.startLeft + (e.clientX - dragState.startX) - stageRect.left;
+                newTop = Math.max(0, Math.min(stageRect.height - 40, newTop));
+                newLeft = Math.max(0, Math.min(stageRect.width - 40, newLeft));
+                panel.style.top = newTop + 'px';
+                panel.style.left = newLeft + 'px';
+                panel.style.right = 'auto';
+            });
+            const endDrag = () => { dragState = null; handle.style.cursor = 'grab'; };
+            handle.addEventListener('pointerup', endDrag);
+            handle.addEventListener('pointercancel', endDrag);
+        }
         function toggleMyroomEditMode() {
             myroomIsEditMode = !myroomIsEditMode;
             const editEls = document.querySelectorAll('.myroom-edit-ui');
@@ -916,6 +946,7 @@
                 renderMyroomSizeAdjustOptions();
                 document.getElementById('myroom-size-adjust-panel').style.display = 'block';
                 onMyroomSizeAdjustTargetChange();
+                setupMyroomSizePanelDrag();
             }
         }
         function closeMyRoom() {

@@ -479,7 +479,7 @@
 
         // 🗺️⚙️🖼️🍴 タップ画面4隅ボタンの位置・大きさ（管理者が調整）
         // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
-        const CORNER_BTN_ADJUST_TOOL_ENABLED = false;
+        const CORNER_BTN_ADJUST_TOOL_ENABLED = true;
         let CORNER_BTN_SIZE = 50; // 共通の大きさ(px)
         const CORNER_BTN_OFFSETS = {
             'map-toggle-btn':  { vert: 1,  horiz: 12 },  // top: calc(8px+safe-area+vert)px; left: horizpx;
