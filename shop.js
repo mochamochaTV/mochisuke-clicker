@@ -753,7 +753,7 @@
                             <div id="gacha-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
                             ` : ''}
                             <img id="gacha-machine-body" src="ui_images/gacha/machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
-                            <img id="gacha-crank" src="ui_images/gacha/crank.webp" alt="" style="position:absolute; width:18%; top:62.402035%; left:40.544265%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
+                            <img id="gacha-crank" src="ui_images/gacha/crank.webp" alt="" style="position:absolute; width:19.031814%; top:62.402035%; left:40.200326%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
 
                             <div id="gacha-capsule-wrap-mini" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
                                 <img src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">

@@ -795,6 +795,7 @@
             applyKisekaeToMyroom();
             openModal('myroom-modal');
             if (IS_DEV_MODE) {
+                renderMyroomSizeAdjustOptions();
                 document.getElementById('myroom-size-adjust-panel').style.display = 'block';
                 updateMyroomSizeReadout();
             }
@@ -830,8 +831,8 @@
                         el.style.display = 'block';
                         el.style.top = top + '%';
                         el.style.left = left + '%';
-                        el.style.width = defaultPos.width + '%'; // 大きさは管理者が設定する共通値（プレイヤーは動かせない）
-                        el.style.height = defaultPos.height + '%';
+                        el.style.width = (item.width || defaultPos.width) + '%'; // 大きさはアイテムごとの個別値（管理者が調整）
+                        el.style.height = (item.height || defaultPos.height) + '%';
                         el.style.transform = previewMyroom[cat + '_flip'] ? 'scaleX(-1)' : 'none';
                         el.style.cursor = 'grab';
                     }
@@ -920,8 +921,27 @@
         // 🛠️ 開発者用：家具の大きさ調整ツール（位置はプレイヤー機能で調整するので、ここでは大きさのみ）
         let myroomSizeAdjustMode = false;
         let myroomSizeAdjustDragState = null;
+        // アイテムごとに調整できるよう、ドロップダウンの選択肢を動的に生成する
+        function renderMyroomSizeAdjustOptions() {
+            const select = document.getElementById('myroom-size-adjust-target');
+            let html = '';
+            ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
+                if (!MYROOM_ITEMS[cat] || MYROOM_ITEMS[cat].length === 0) return;
+                html += `<optgroup label="${MYROOM_CATEGORY_LABELS[cat]}">`;
+                MYROOM_ITEMS[cat].forEach(item => {
+                    html += `<option value="${cat}__${item.id}">${item.name}</option>`;
+                });
+                html += `</optgroup>`;
+            });
+            select.innerHTML = html;
+        }
+        function getMyroomSizeAdjustSelection() {
+            const val = document.getElementById('myroom-size-adjust-target').value;
+            const [cat, itemId] = val.split('__');
+            return { cat, item: MYROOM_ITEMS[cat] ? MYROOM_ITEMS[cat].find(i => i.id === itemId) : null };
+        }
         function getMyroomSizeAdjustTargetEl() {
-            const cat = document.getElementById('myroom-size-adjust-target').value;
+            const { cat } = getMyroomSizeAdjustSelection();
             return document.getElementById(`myroom-slot-${cat}`);
         }
         function toggleMyroomSizeAdjustMode() {
@@ -941,8 +961,13 @@
         }
         function onMyroomSizeAdjustTargetChange() {
             document.querySelectorAll('.myroom-slot-img').forEach(el => el.style.outline = '');
+            const { cat, item } = getMyroomSizeAdjustSelection();
+            if (!item) return;
+            // 選んだアイテムを一時的にそのスロットへ試着表示する（見ながら調整できるように）
+            previewMyroom[cat] = item.id;
+            renderMyroomLayout();
             if (!myroomSizeAdjustMode) { updateMyroomSizeReadout(); return; }
-            const target = getMyroomSizeAdjustTargetEl();
+            const target = document.getElementById(`myroom-slot-${cat}`);
             target.style.outline = '2px dashed #e91e63';
             positionMyroomSizeHandles();
             updateMyroomSizeReadout();
@@ -982,7 +1007,9 @@
             stage.addEventListener('pointermove', (e) => {
                 if (!myroomSizeAdjustDragState || !myroomSizeAdjustMode) return;
                 e.stopPropagation();
-                const target = getMyroomSizeAdjustTargetEl();
+                const { cat, item } = getMyroomSizeAdjustSelection();
+                if (!item) return;
+                const target = document.getElementById(`myroom-slot-${cat}`);
                 const stageRect = stage.getBoundingClientRect();
                 const dxPct = ((e.clientX - myroomSizeAdjustDragState.startX) / stageRect.width) * 100;
                 const dyPct = ((e.clientY - myroomSizeAdjustDragState.startY) / stageRect.height) * 100;
@@ -990,10 +1017,9 @@
                 if (mode === 'width' || mode === 'both') target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
                 if (mode === 'height' || mode === 'both') target.style.height = Math.max(2, parseFloat(target.style.height) + dyPct) + '%';
                 myroomSizeAdjustDragState.startX = e.clientX; myroomSizeAdjustDragState.startY = e.clientY;
-                // その場でデータにも反映（コピー時に正しい値が出るように）
-                const cat = document.getElementById('myroom-size-adjust-target').value;
-                MYROOM_SLOT_POSITIONS[cat].width = parseFloat(target.style.width);
-                MYROOM_SLOT_POSITIONS[cat].height = parseFloat(target.style.height);
+                // アイテムごとのデータに直接反映する（コピー時に正しい値が出るように）
+                item.width = parseFloat(target.style.width);
+                item.height = parseFloat(target.style.height);
                 positionMyroomSizeHandles();
                 updateMyroomSizeReadout();
             });
@@ -1001,13 +1027,18 @@
             stage.addEventListener('pointercancel', () => { myroomSizeAdjustDragState = null; });
         }
         function updateMyroomSizeReadout() {
-            const target = getMyroomSizeAdjustTargetEl();
+            const { item } = getMyroomSizeAdjustSelection();
             const el = document.getElementById('myroom-size-adjust-readout');
-            if (!target || !el) return;
-            el.textContent = `width:${target.style.width}; height:${target.style.height};`;
+            if (!item || !el) return;
+            el.textContent = `width:${item.width}%; height:${item.height}%;`;
         }
         function copyMyroomSizeCoords() {
-            const lines = Object.keys(MYROOM_SLOT_POSITIONS).map(cat => `${MYROOM_CATEGORY_LABELS[cat]}(${cat}): width:${MYROOM_SLOT_POSITIONS[cat].width}%; height:${MYROOM_SLOT_POSITIONS[cat].height}%;`);
+            const lines = [];
+            ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
+                (MYROOM_ITEMS[cat] || []).forEach(item => {
+                    lines.push(`${item.name}(${item.id}): width:${item.width}%; height:${item.height}%;`);
+                });
+            });
             const text = lines.join('\n');
             const textarea = document.getElementById('myroom-size-copy-textarea');
             textarea.value = text;

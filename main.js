@@ -499,6 +499,12 @@
                         if (!ownedKisekaeItems[cat].includes(item.id)) ownedKisekaeItems[cat].push(item.id);
                     });
                 });
+                // 🛋️ マイルームの家具も、管理者URLの人だけ全部持っている状態にする
+                Object.keys(MYROOM_ITEMS).forEach(cat => {
+                    MYROOM_ITEMS[cat].forEach(item => {
+                        if (!ownedMyroomItems[cat].includes(item.id)) ownedMyroomItems[cat].push(item.id);
+                    });
+                });
             }
             checkForCloudRestoreOnLoad();
             checkOfflineEarnings();
