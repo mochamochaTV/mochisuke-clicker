@@ -632,6 +632,159 @@
             }
             switchFriendTab('list');
         }
+        // 🏠 誰でも、フレンドコード・ランキングを問わず、他の人の部屋を見に行ける（読み取り専用）
+        let visitingUid = null;
+        async function visitMyroomOf(uid, showBoth) {
+            if (!window.fetchMyroomData) return;
+            const data = await window.fetchMyroomData(uid);
+            if (!data || !data.myroom) {
+                alert('🏠 まだお部屋が公開されていません');
+                return;
+            }
+            visitingUid = uid;
+            document.getElementById('visit-myroom-name-label').textContent = showBoth ? `🏠 ${data.name}さんの部屋にお邪魔中` : `🏠 ${data.name}さんの部屋`;
+            renderVisitMyroomLayout(data.myroom);
+            applyVisitOutfit(data.outfit, 'visit-myroom-mochisuke');
+            const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
+            if (showBoth) {
+                // 🚶 フレンド訪問時は、自分（今の着せ替え）も一緒に部屋に立って歩き回る
+                myselfWrap.style.display = 'block';
+                applyVisitOutfit(equippedKisekae, 'visit-myroom-myself');
+            } else {
+                myselfWrap.style.display = 'none';
+            }
+            openModal('visit-myroom-modal');
+            startVisitMochisukeWalk('visit-myroom-mochisuke-breathe-wrap', 'visitHost');
+            if (showBoth) startVisitMochisukeWalk('visit-myroom-myself-breathe-wrap', 'visitSelf');
+            // ❤️ 既にいいね済みかどうか確認して、ボタンの状態を反映する
+            const likeBtn = document.getElementById('visit-like-btn');
+            likeBtn.disabled = false;
+            likeBtn.textContent = '❤️ いいね';
+            likeBtn.style.background = '#e91e63';
+            if (window.checkRoomLiked) {
+                const alreadyLiked = await window.checkRoomLiked(uid);
+                if (alreadyLiked) {
+                    likeBtn.disabled = true;
+                    likeBtn.textContent = '❤️ いいね済み';
+                    likeBtn.style.background = '#ccc';
+                }
+            }
+        }
+        async function onLikeRoomTap() {
+            if (!visitingUid || !window.likeRoom) return;
+            const likeBtn = document.getElementById('visit-like-btn');
+            likeBtn.disabled = true;
+            const res = await window.likeRoom(visitingUid);
+            if (res.success) {
+                likeBtn.textContent = '❤️ いいね済み';
+                likeBtn.style.background = '#ccc';
+                playAudioFile('audio/levelup.mp3');
+                alert('❤️ いいねしました！お互いにガチャコインを1枚もらいました！');
+            } else if (res.reason === 'already') {
+                likeBtn.textContent = '❤️ いいね済み';
+                likeBtn.style.background = '#ccc';
+            } else {
+                likeBtn.disabled = false;
+                if (res.reason !== 'self') alert('いいねできませんでした。時間を置いて試してください');
+            }
+        }
+        function closeVisitMyroom() {
+            closeModal('visit-myroom-modal');
+            visitingUid = null;
+            stopVisitMochisukeWalk('visitHost');
+            stopVisitMochisukeWalk('visitSelf');
+        }
+        // 🚶 部屋訪問中も、ホスト・自分それぞれ独立してランダムに歩き回らせる
+        const visitWalkTimers = { visitHost: null, visitSelf: null };
+        function startVisitMochisukeWalk(wrapId, key) {
+            stopVisitMochisukeWalk(key);
+            scheduleNextVisitWalk(wrapId, key);
+        }
+        function stopVisitMochisukeWalk(key) {
+            clearTimeout(visitWalkTimers[key]);
+            visitWalkTimers[key] = null;
+        }
+        function scheduleNextVisitWalk(wrapId, key) {
+            const pauseDuration = 1500 + Math.random() * 3000;
+            visitWalkTimers[key] = setTimeout(() => walkVisitMochisukeToRandomSpot(wrapId, key), pauseDuration);
+        }
+        function walkVisitMochisukeToRandomSpot(wrapId, key) {
+            const wrap = document.getElementById(wrapId);
+            if (!wrap || wrap.style.display === 'none') return;
+            const newLeftPct = 12 + Math.random() * 76;
+            const newBottomPct = 1 + Math.random() * 8;
+            const moveDuration = (1.5 + Math.random()).toFixed(2);
+            wrap.style.transition = `left ${moveDuration}s ease-in-out, bottom ${moveDuration}s ease-in-out`;
+            wrap.style.left = newLeftPct + '%';
+            wrap.style.bottom = newBottomPct + '%';
+            scheduleNextVisitWalk(wrapId, key);
+        }
+        function renderVisitMyroomLayout(myroomData) {
+            const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === myroomData.wallpaper) || MYROOM_ITEMS.wallpaper[0];
+            const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === myroomData.flooring) || MYROOM_ITEMS.flooring[0];
+            document.getElementById('visit-myroom-wallpaper').src = wallpaperItem.img;
+            document.getElementById('visit-myroom-flooring').src = flooringItem.img;
+            const layer = document.getElementById('visit-myroom-furniture-layer');
+            layer.innerHTML = '';
+            ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
+                (myroomData[cat] || []).forEach(inst => {
+                    const item = MYROOM_ITEMS[cat] && MYROOM_ITEMS[cat].find(i => i.id === inst.itemId);
+                    if (!item) return;
+                    const el = document.createElement('img');
+                    el.src = item.img;
+                    el.style.cssText = `position:absolute; top:${inst.top}%; left:${inst.left}%; width:${item.width}%; height:${item.height}%; transform:${inst.flip ? 'scaleX(-1)' : 'none'}; z-index:${inst.zIndex || 10};`;
+                    layer.appendChild(el);
+                });
+            });
+        }
+        function applyVisitOutfit(outfit, prefix) {
+            const fullbodyId = outfit && outfit.fullbody;
+            const clothesEl = document.getElementById(`${prefix}-clothes`);
+            const fullbodyEl = document.getElementById(`${prefix}-fullbody`);
+            if (fullbodyId) {
+                const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
+                if (fbItem) { fullbodyEl.src = fbItem.img; fullbodyEl.style.display = 'block'; }
+                clothesEl.style.opacity = '0';
+                ['hat', 'face'].forEach(cat => { document.getElementById(`${prefix}-${cat}`).style.display = 'none'; });
+            } else {
+                fullbodyEl.style.display = 'none';
+                clothesEl.style.opacity = '1';
+                const clothesItem = (outfit && KISEKAE_ITEMS.clothes.find(i => i.id === outfit.clothes)) || KISEKAE_ITEMS.clothes[0];
+                clothesEl.src = clothesItem.img;
+                ['hat', 'face'].forEach(cat => {
+                    const el = document.getElementById(`${prefix}-${cat}`);
+                    const itemId = outfit && outfit[cat];
+                    const item = itemId ? KISEKAE_ITEMS[cat].find(i => i.id === itemId) : null;
+                    if (item) {
+                        el.src = item.img;
+                        el.style.display = 'block';
+                        el.style.top = item.top + '%'; el.style.left = item.left + '%';
+                        el.style.width = item.width + '%'; el.style.height = item.height + '%';
+                        el.style.transform = `rotate(${item.rotation || 0}deg)`;
+                    } else {
+                        el.style.display = 'none';
+                    }
+                });
+            }
+            const backId = (outfit && !fullbodyId) ? outfit.back : null;
+            const leftEl = document.getElementById(`${prefix}-wing-left`);
+            const rightEl = document.getElementById(`${prefix}-wing-right`);
+            const backItem = backId ? KISEKAE_ITEMS.back.find(i => i.id === backId) : null;
+            if (backItem) {
+                leftEl.style.display = 'block'; rightEl.style.display = 'block';
+                leftEl.src = backItem.leftFrames[0]; rightEl.src = backItem.rightFrames[0];
+                const lp = backItem.leftFramePos[0], rp = backItem.rightFramePos[0];
+                leftEl.style.top = lp.top + '%'; leftEl.style.left = lp.left + '%';
+                leftEl.style.width = backItem.width + '%'; leftEl.style.height = backItem.height + '%';
+                rightEl.style.top = rp.top + '%'; rightEl.style.left = rp.left + '%';
+                rightEl.style.width = backItem.width + '%'; rightEl.style.height = backItem.height + '%';
+            } else {
+                leftEl.style.display = 'none'; rightEl.style.display = 'none';
+            }
+        }
+        function sendVisitStamp(text) {
+            alert(`「${text}」を送りました！`);
+        }
         function closeFriendScreen() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
@@ -764,6 +917,7 @@
                         <div style="font-size:0.62rem; color:#aaa; margin-top:2px;">ID: ${f.friendCode}</div>
                     </div>
                     <button onclick="toggleFavoriteFriend('${f.uid}')" style="flex-shrink:0; background:none; border:none; font-size:1.2rem; padding:4px;">${isFav ? '⭐' : '☆'}</button>
+                    <button onclick="visitMyroomOf('${f.uid}', true)" style="flex-shrink:0; background:#8d6e63; color:#fff; border:none; border-radius:50%; width:34px; height:34px; font-size:1rem;">🏠</button>
                     <button onclick="sendGachaCoinGift('${f.uid}', this)" ${alreadySentToday ? 'disabled' : ''} style="flex-shrink:0; background:${alreadySentToday ? '#ccc' : '#ff9800'}; color:#fff; border:none; border-radius:50%; width:38px; height:38px; font-size:1.2rem; font-weight:900;">🪙</button>
                 `;
                 listEl.appendChild(row);
@@ -971,6 +1125,17 @@
             wrap.style.left = newLeftPct + '%';
             wrap.style.bottom = newBottomPct + '%';
             scheduleNextMyroomWalk();
+        }
+        // 👆 マイルームでは、もちは出ないが、もちすけをタップすると反応してくれる
+        function onMyroomMochisukeTap() {
+            if (myroomIsEditMode) return; // もようがえモード中は、ドラッグ操作を優先する
+            const wrap = document.getElementById('myroom-mochisuke-breathe-wrap');
+            if (!wrap) return;
+            playAudioFile('audio/tap.mp3');
+            wrap.animate(
+                [{ transform: 'translateX(-50%) scale(1)' }, { transform: 'translateX(-50%) scale(0.88)' }, { transform: 'translateX(-50%) scale(1)' }],
+                { duration: 220, easing: 'ease-out' }
+            );
         }
         function openMyRoom() {
             myroomIsEditMode = false;
@@ -1433,6 +1598,7 @@
         function confirmMyroomLayout() {
             equippedMyroom = JSON.parse(JSON.stringify(previewMyroom)); // 配列(家具配置)も含めて完全に独立させる
             saveGame();
+            if (window.submitMyroomData) window.submitMyroomData(equippedMyroom); // 誰でも部屋を見られるよう、クラウドにも送っておく
             const btn = document.getElementById('myroom-confirm-btn');
             const original = btn.innerText;
             btn.innerText = '✅ 決定しました！';
@@ -2568,6 +2734,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             document.getElementById('rank-tab-score').classList.toggle('active', tab === 'score');
             document.getElementById('rank-tab-taps').classList.toggle('active', tab === 'taps');
             document.getElementById('rank-tab-prestige').classList.toggle('active', tab === 'prestige');
+            document.getElementById('rank-tab-room').classList.toggle('active', tab === 'room');
             renderRankingList();
         }
 
@@ -2615,6 +2782,32 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             const listContainer = document.getElementById('ranking-list');
             listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
 
+            if (currentRankingTab === 'room') {
+                const ready = window.isRankingReady && window.isRankingReady();
+                const list = ready ? await window.fetchRoomLikeRanking() : null;
+                if (!list) {
+                    listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:10px;">部屋ランキングサーバーに接続できませんでした。</div>`;
+                    return;
+                }
+                listContainer.innerHTML = '';
+                list.forEach((player, index) => {
+                    const rank = index + 1;
+                    const rs = rankNumberStyle(rank);
+                    const row = document.createElement('div');
+                    row.style.cssText = `display:flex; align-items:center; gap:10px; padding:10px 8px; margin-bottom:6px; border-radius:12px; background:${player.isMe ? '#fff9c4' : '#fff'}; box-shadow:0 1px 4px rgba(0,0,0,0.08);`;
+                    row.innerHTML = `
+                        <div style="flex-shrink:0; width:34px; height:34px; border-radius:50%; background:${rs.bg}; color:${rs.color}; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:0.85rem;">${rank}</div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:0.78rem; color:#5d4037; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(player.name)}${player.isMe ? '（自分）' : ''}</div>
+                            <div style="font-size:1.0rem; color:#e91e63; font-weight:900;">❤️ ${player.roomLikeCount || 0}</div>
+                        </div>
+                        ${(!player.isMe && player.myroom) ? `<button onclick="visitMyroomOf('${player.uid}')" style="flex-shrink:0; background:#8d6e63; color:#fff; border:none; border-radius:50%; width:38px; height:38px; font-size:1.1rem;">🏠</button>` : ''}
+                    `;
+                    listContainer.appendChild(row);
+                });
+                return;
+            }
+
             const tab = currentRankingTab; // 'score' | 'taps' | 'prestige'
             const ready = window.isRankingReady && window.isRankingReady();
             const fetchFn = tab === 'taps' ? window.fetchTapRankingList : tab === 'prestige' ? window.fetchPrestigeRankingList : window.fetchRankingList;
@@ -2659,6 +2852,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
                         <div style="font-size:1.05rem; color:#e91e63; font-weight:900;">${formatValue(getValue(player))} ${unit}</div>
                     </div>
                     <div style="flex-shrink:0; position:relative; width:46px; height:46px;">${renderRankOutfitPreviewHtml(player.outfit)}</div>
+                    ${(!player.isMe && player.uid) ? `<button onclick="visitMyroomOf('${player.uid}')" style="flex-shrink:0; background:#8d6e63; color:#fff; border:none; border-radius:50%; width:32px; height:32px; font-size:0.9rem;">🏠</button>` : ''}
                 `;
                 listContainer.appendChild(row);
             });

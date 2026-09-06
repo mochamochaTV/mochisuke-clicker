@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-186">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-188">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -65,7 +65,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
         const firebaseConfig = {
@@ -184,7 +184,62 @@
             } catch (e) { console.error("ランキング取得エラー:", e); return null; }
         };
 
+        // 🏠❤️ 部屋にいいねする：押した側・押された側、両方にガチャコイン1枚。1部屋につき1回まで
+        window.likeRoom = async function (ownerUid) {
+            if (!fbReady || !db || !currentUid) return { success: false, reason: 'offline' };
+            if (ownerUid === currentUid) return { success: false, reason: 'self' };
+            try {
+                const likeDocId = `${currentUid}_${ownerUid}`;
+                const existing = await getDoc(doc(db, "roomLikes", likeDocId));
+                if (existing.exists()) return { success: false, reason: 'already' };
+                await setDoc(doc(db, "roomLikes", likeDocId), { likerUid: currentUid, ownerUid, createdAt: Date.now() });
+                await setDoc(doc(db, "rankings", ownerUid), { roomLikeCount: increment(1) }, { merge: true });
+                // 🎁 相手にもガチャコインを1枚届ける（既存のgiftsの仕組みをそのまま使う）
+                const myDoc = await getDoc(doc(db, "rankings", currentUid));
+                const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';
+                await addDoc(collection(db, "gifts"), {
+                    toUid: ownerUid, fromUid: currentUid, fromName: myName, amount: 1, createdAt: Date.now(), claimed: false, reason: 'roomLike'
+                });
+                return { success: true };
+            } catch (e) { console.error("いいねエラー:", e); return { success: false, reason: 'error' }; }
+        };
+        window.checkRoomLiked = async function (ownerUid) {
+            if (!fbReady || !db || !currentUid) return false;
+            try {
+                const likeDocId = `${currentUid}_${ownerUid}`;
+                const d = await getDoc(doc(db, "roomLikes", likeDocId));
+                return d.exists();
+            } catch (e) { return false; }
+        };
+        // 🏠 部屋ランキング：いいねが多い順に並べる
+        window.fetchRoomLikeRanking = async function () {
+            if (!db) return null;
+            try {
+                const q = query(collection(db, "rankings"), orderBy("roomLikeCount", "desc"), limit(20));
+                const snap = await getDocs(q);
+                const list = [];
+                snap.forEach((d) => list.push({ ...d.data(), uid: d.id, isMe: d.id === currentUid }));
+                return list;
+            } catch (e) { console.error("部屋ランキング取得エラー:", e); return null; }
+        };
         window.isRankingReady = function () { return fbReady; };
+        window.submitMyroomData = async function (myroomData) {
+            if (!fbReady || !db || !currentUid) return false;
+            try {
+                await setDoc(doc(db, "rankings", currentUid), { myroom: myroomData }, { merge: true });
+                return true;
+            } catch (e) { console.error("マイルームデータ送信エラー:", e); return false; }
+        };
+        // 🏠 指定uidの人のマイルームデータを取得する（フレンドに限らず、誰の部屋でも見られる）
+        window.fetchMyroomData = async function (uid) {
+            if (!fbReady || !db) return null;
+            try {
+                const d = await getDoc(doc(db, "rankings", uid));
+                if (!d.exists()) return null;
+                const data = d.data();
+                return { myroom: data.myroom || null, name: data.name || '名無しさん', outfit: data.outfit || null };
+            } catch (e) { console.error("マイルーム取得エラー:", e); return null; }
+        };
 
         // ===================================================================
         // 🤝 フレンド機能：8桁のフレンドコードで、承認なしの即時相互フレンドになる方式
@@ -349,7 +404,7 @@
             <button onclick="copyCornerBtnCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
             <textarea id="corner-btn-copy-textarea" readonly style="display:none; width:100%; height:100px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
         </div>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-186</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-188</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -502,7 +557,7 @@
                 <img id="myroom-wallpaper-layer" src="" alt="" style="position:absolute; top:0; left:0; width:100%; height:62%; object-fit:cover; object-position:bottom; z-index:1;">
                 <img id="myroom-flooring-layer" src="" alt="" style="position:absolute; bottom:0; left:0; width:100%; height:38%; object-fit:cover; object-position:top; z-index:1;">
 
-                <div id="myroom-mochisuke-breathe-wrap" class="breathe-idle" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999;">
+                <div id="myroom-mochisuke-breathe-wrap" class="breathe-idle" onclick="onMyroomMochisukeTap()" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999; cursor:pointer;">
                     <div style="position:relative;">
                         <img id="myroom-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="myroom-mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
@@ -552,6 +607,44 @@
                 <div id="furniture-preview-name" style="font-weight:900; color:#5d4037; margin-bottom:2px;"></div>
                 <div id="furniture-preview-price" style="color:#e91e63; font-weight:900; font-size:0.9rem;"></div>
                 <p style="font-size:0.62rem; color:#aaa; margin:4px 0 0;">実際の壁紙・床の上に、大きさ・向きを確認できます</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="visit-myroom-modal" class="modal">
+        <div class="modal-content modal-fullscreen">
+            <button class="modal-back-btn" onclick="closeVisitMyroom()"></button>
+            <div id="visit-myroom-name-label" style="position:absolute; top:calc(6px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%); z-index:15; background:rgba(255,255,255,0.9); color:#5d4037; font-weight:900; font-size:0.85rem; padding:6px 16px; border-radius:16px; box-shadow:0 2px 6px rgba(0,0,0,0.2);"></div>
+            <div id="visit-myroom-stage" style="position:relative; flex:1; min-height:0; overflow:hidden;">
+                <img id="visit-myroom-wallpaper" src="" alt="" style="position:absolute; top:0; left:0; width:100%; height:62%; object-fit:cover;">
+                <img id="visit-myroom-flooring" src="" alt="" style="position:absolute; top:62%; left:0; width:100%; height:38%; object-fit:cover;">
+                <div id="visit-myroom-furniture-layer" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
+                <div id="visit-myroom-mochisuke-breathe-wrap" class="breathe-idle" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999;">
+                    <div style="position:relative;">
+                        <img id="visit-myroom-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
+                        <img id="visit-myroom-mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
+                        <img id="visit-myroom-mochisuke-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
+                        <img id="visit-myroom-mochisuke-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
+                        <img id="visit-myroom-mochisuke-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:9;">
+                        <img id="visit-myroom-mochisuke-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
+                    </div>
+                </div>
+                <div id="visit-myroom-myself-breathe-wrap" class="breathe-idle" style="display:none; position:absolute; bottom:2%; left:30%; transform:translateX(-50%); width:22%; z-index:998;">
+                    <div style="position:relative;">
+                        <img id="visit-myroom-myself-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
+                        <img id="visit-myroom-myself-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
+                        <img id="visit-myroom-myself-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
+                        <img id="visit-myroom-myself-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
+                        <img id="visit-myroom-myself-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:9;">
+                        <img id="visit-myroom-myself-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
+                    </div>
+                </div>
+            </div>
+            <div style="padding:calc(10px + env(safe-area-inset-bottom, 0px)) 10px 10px; background:#fff8ec; flex-shrink:0; display:flex; gap:6px; overflow-x:auto;">
+                <button id="visit-like-btn" onclick="onLikeRoomTap()" style="flex-shrink:0; background:#e91e63; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">❤️ いいね</button>
+                <button onclick="sendVisitStamp('素敵な部屋だね！')" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">素敵な部屋だね！</button>
+                <button onclick="sendVisitStamp('お邪魔します')" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">お邪魔します</button>
+                <button onclick="sendVisitStamp('また来るね！')" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">また来るね！</button>
             </div>
         </div>
     </div>
@@ -1028,6 +1121,7 @@
                 <button id="rank-tab-score" class="rank-tab-btn active" onclick="switchRankingTab('score')">🍡 もち数</button>
                 <button id="rank-tab-taps" class="rank-tab-btn" onclick="switchRankingTab('taps')">👆 タップ数</button>
                 <button id="rank-tab-prestige" class="rank-tab-btn" onclick="switchRankingTab('prestige')">🔄 転生回数</button>
+                <button id="rank-tab-room" class="rank-tab-btn" onclick="switchRankingTab('room')">🏠 部屋</button>
             </div>
 
             <div id="ranking-list" style="flex:1; min-height:0; overflow-y:auto; padding:6px 10px calc(10px + env(safe-area-inset-bottom, 0px)); box-sizing:border-box; background:#fff8ec;"></div>
@@ -1081,13 +1175,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-186"></script>
-    <script src="state.js?v=2026-08-05-186"></script>
-    <script src="tap.js?v=2026-08-05-186"></script>
-    <script src="shop.js?v=2026-08-05-186"></script>
-    <script src="progress.js?v=2026-08-05-186"></script>
-    <script src="minigames.js?v=2026-08-05-186"></script>
-    <script src="ui.js?v=2026-08-05-186"></script>
-    <script src="main.js?v=2026-08-05-186"></script>
+    <script src="data.js?v=2026-08-05-188"></script>
+    <script src="state.js?v=2026-08-05-188"></script>
+    <script src="tap.js?v=2026-08-05-188"></script>
+    <script src="shop.js?v=2026-08-05-188"></script>
+    <script src="progress.js?v=2026-08-05-188"></script>
+    <script src="minigames.js?v=2026-08-05-188"></script>
+    <script src="ui.js?v=2026-08-05-188"></script>
+    <script src="main.js?v=2026-08-05-188"></script>
 </body>
 </html>
