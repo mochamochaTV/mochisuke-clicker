@@ -710,11 +710,12 @@
             if (!IS_DEV_MODE && score < item.price) return;
             if (!IS_DEV_MODE) score -= item.price;
             if (!ownedMyroomItems[cat]) ownedMyroomItems[cat] = [];
-            if (!ownedMyroomItems[cat].includes(itemId)) ownedMyroomItems[cat].push(itemId);
+            ownedMyroomItems[cat].push(itemId); // 複数個買えるよう、重複を許可する（所持数は個数で管理）
             saveGame();
             updateDisplay();
             renderShopList();
-            alert(`🛋️ ${item.name}を購入しました！\nマイルームで配置できます。`);
+            const count = ownedMyroomItems[cat].filter(id => id === itemId).length;
+            alert(`🛋️ ${item.name}を購入しました！（所持数：${count}個）\nマイルームで配置できます。`);
         }
         function previewShopFurniture(cat, itemId) {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
@@ -724,19 +725,33 @@
             document.getElementById('furniture-preview-wallpaper').src = wallpaperItem.img;
             document.getElementById('furniture-preview-flooring').src = flooringItem.img;
             const itemEl = document.getElementById('furniture-preview-item');
-            const defaultPos = MYROOM_SLOT_POSITIONS[cat];
+            // 実際の配置と同じ考え方で、なるべく画面中央（壁掛けは壁の中央）に表示する
+            let top, left;
+            if (cat === 'wall_deco') {
+                top = (MYROOM_WALL_ZONE_BOTTOM - item.height) / 2;
+                left = (100 - item.width) / 2;
+            } else {
+                top = 50 - item.height / 2;
+                left = 50 - item.width / 2;
+                if (top + item.height <= MYROOM_WALL_ZONE_BOTTOM) top = MYROOM_WALL_ZONE_BOTTOM - item.height + 0.1;
+            }
             itemEl.src = item.img;
-            itemEl.style.top = defaultPos.top + '%';
-            itemEl.style.left = defaultPos.left + '%';
+            itemEl.style.top = top + '%';
+            itemEl.style.left = left + '%';
             itemEl.style.width = item.width + '%';
             itemEl.style.height = item.height + '%';
             document.getElementById('furniture-preview-name').textContent = `👁️ ${item.name}（プレビュー）`;
-            const isOwned = (ownedMyroomItems[cat] || []).includes(itemId);
-            document.getElementById('furniture-preview-price').textContent = isOwned ? '購入済' : `${formatMochi(item.price)}もち`;
+            const ownedCount = (ownedMyroomItems[cat] || []).filter(id => id === itemId).length;
+            document.getElementById('furniture-preview-price').textContent = ownedCount > 0 ? `所持:${ownedCount}個 ／ 追加：${formatMochi(item.price)}もち` : `${formatMochi(item.price)}もち`;
             openModal('furniture-preview-modal');
         }
         function closeFurniturePreview() {
             closeModal('furniture-preview-modal');
+            // 🐛修正：closeModalがbodyのmodal-openクラスを消してしまうため、ショップがまだ開いたままなら付け直す
+            const shopModal = document.getElementById('shop-modal');
+            if (shopModal && shopModal.style.display === 'flex') {
+                document.body.classList.add('modal-open');
+            }
         }
 
         // 🛠️ 開発者用：ガチャのクランク（回す部分）の位置調整ツール
@@ -912,17 +927,13 @@
                     heading.textContent = `${MYROOM_CATEGORY_LABELS[cat]}`;
                     listContainer.appendChild(heading);
                     MYROOM_ITEMS[cat].forEach(item => {
-                        const isOwned = (ownedMyroomItems[cat] || []).includes(item.id);
+                        const ownedCount = (ownedMyroomItems[cat] || []).filter(id => id === item.id).length;
                         const row = document.createElement('div');
                         row.className = 'list-item';
-                        let btnHtml;
-                        if (isOwned) {
-                            btnHtml = `<button class="item-action-btn" disabled>購入済</button>`;
-                        } else {
-                            const canBuy = score >= item.price;
-                            btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyFurnitureItem('${cat}','${item.id}')" style="background:#ff9800; color:white;">${formatMochi(item.price)}もち</button>`;
-                        }
-                        row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🛋️ ${item.name}</span></div></div><div style="display:flex; flex-direction:column; gap:4px;"><button onclick="previewShopFurniture('${cat}','${item.id}')" style="background:#8d6e63; color:#fff; border:none; border-radius:8px; padding:4px 8px; font-size:0.65rem; font-weight:900;">👁️ プレビュー</button>${btnHtml}</div>`;
+                        const canBuy = score >= item.price;
+                        const countBadge = ownedCount > 0 ? `<span style="color:#4caf50; font-weight:900; font-size:0.68rem;">所持:${ownedCount}個</span>` : '';
+                        const btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyFurnitureItem('${cat}','${item.id}')" style="background:#ff9800; color:white;">${formatMochi(item.price)}もち</button>`;
+                        row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🛋️ ${item.name}</span><span class="item-desc">${countBadge}</span></div></div><div style="display:flex; flex-direction:column; gap:4px;"><button onclick="previewShopFurniture('${cat}','${item.id}')" style="background:#8d6e63; color:#fff; border:none; border-radius:8px; padding:4px 8px; font-size:0.65rem; font-weight:900;">👁️ プレビュー</button>${btnHtml}</div>`;
                         listContainer.appendChild(row);
                     });
                 });

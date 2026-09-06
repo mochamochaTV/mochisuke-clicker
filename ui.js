@@ -938,8 +938,7 @@
             myroomIsEditMode = !myroomIsEditMode;
             const editEls = document.querySelectorAll('.myroom-edit-ui');
             editEls.forEach(el => { el.style.display = myroomIsEditMode ? (el.tagName === 'DIV' ? 'flex' : 'block') : 'none'; });
-            const countLabel = document.getElementById('myroom-placed-count-label');
-            if (countLabel) countLabel.style.display = myroomIsEditMode ? 'block' : 'none';
+            closeMyroomItemList(); // モード切替時は、必ずアイテム一覧を閉じた状態にする
             if (IS_DEV_MODE) {
                 const sizePanel = document.getElementById('myroom-size-adjust-panel');
                 if (sizePanel) sizePanel.style.display = myroomIsEditMode ? 'block' : 'none';
@@ -949,11 +948,14 @@
         }
         function openMyRoom() {
             myroomIsEditMode = false;
+            myroomCurrentCategory = 'wallpaper';
+            myroomItemListVisible = false;
             document.querySelectorAll('.myroom-edit-ui').forEach(el => el.style.display = 'none');
+            document.getElementById('myroom-item-list-left').style.display = 'none';
+            document.getElementById('myroom-item-list-right').style.display = 'none';
             document.getElementById('myroom-decorate-btn').textContent = '🎨 もようがえ';
             previewMyroom = JSON.parse(JSON.stringify(equippedMyroom)); // 配列(家具配置)も含めて完全に独立させる
             renderMyroomLayout();
-            openMyroomCategory('wallpaper');
             applyKisekaeToMyroom();
             openModal('myroom-modal');
             playBgmLoop('audio/bgm/bgm_myroom.mp3'); // マイルーム専用BGMに切り替え
@@ -994,26 +996,48 @@
                     el.dataset.cat = cat;
                     el.dataset.idx = idx;
                     el.src = item.img;
-                    el.style.cssText = `position:absolute; top:${inst.top}%; left:${inst.left}%; width:${item.width}%; height:${item.height}%; cursor:${myroomIsEditMode ? 'grab' : 'default'}; pointer-events:auto; transform:${inst.flip ? 'scaleX(-1)' : 'none'};`;
+                    el.style.cssText = `position:absolute; top:${inst.top}%; left:${inst.left}%; width:${item.width}%; height:${item.height}%; cursor:${myroomIsEditMode ? 'grab' : 'default'}; pointer-events:auto; transform:${inst.flip ? 'scaleX(-1)' : 'none'}; z-index:${inst.zIndex || 10};`;
                     layer.appendChild(el);
 
                     if (item.flippable && myroomIsEditMode) {
                         const flipBtn = document.createElement('button');
                         flipBtn.textContent = '🔄';
-                        flipBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top)}%; left:${Math.min(94, inst.left + item.width)}%; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.75rem; z-index:20; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                        flipBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top)}%; left:${Math.min(94, inst.left + item.width)}%; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.75rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
                         flipBtn.onclick = (e) => { e.stopPropagation(); toggleMyroomInstanceFlip(cat, idx); };
                         layer.appendChild(flipBtn);
                     }
-                    // 削除ボタンは「もようがえ」編集モード中だけ表示する
+                    // 削除・前面/背面ボタンは「もようがえ」編集モード中だけ表示する
                     const delBtn = document.createElement('button');
                     delBtn.className = 'myroom-edit-ui';
                     delBtn.textContent = '✕';
-                    delBtn.style.cssText = `display:${myroomIsEditMode ? 'block' : 'none'}; position:absolute; top:${Math.max(0, inst.top - 3)}%; left:${Math.max(0, inst.left - 2)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(244,67,54,0.9); color:#fff; font-size:0.7rem; z-index:21; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                    delBtn.style.cssText = `display:${myroomIsEditMode ? 'block' : 'none'}; position:absolute; top:${Math.max(0, inst.top - 3)}%; left:${Math.max(0, inst.left - 2)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(244,67,54,0.9); color:#fff; font-size:0.7rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
                     delBtn.onclick = (e) => { e.stopPropagation(); removeMyroomInstance(cat, idx); };
                     layer.appendChild(delBtn);
+
+                    if (myroomIsEditMode) {
+                        const frontBtn = document.createElement('button');
+                        frontBtn.textContent = '⬆️';
+                        frontBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top + item.height - 12)}%; left:${Math.min(90, inst.left + item.width)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.65rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                        frontBtn.title = '前面へ';
+                        frontBtn.onclick = (e) => { e.stopPropagation(); moveMyroomInstanceLayer(cat, idx, 1); };
+                        layer.appendChild(frontBtn);
+
+                        const backBtn = document.createElement('button');
+                        backBtn.textContent = '⬇️';
+                        backBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top + item.height)}%; left:${Math.min(90, inst.left + item.width)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.65rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                        backBtn.title = '背面へ';
+                        backBtn.onclick = (e) => { e.stopPropagation(); moveMyroomInstanceLayer(cat, idx, -1); };
+                        layer.appendChild(backBtn);
+                    }
                 });
             });
             setupMyroomFurnitureDrag();
+        }
+        // ⬆️⬇️ 家具の重なり順（前面・背面）を調整する
+        function moveMyroomInstanceLayer(cat, idx, delta) {
+            const inst = previewMyroom[cat][idx];
+            inst.zIndex = (inst.zIndex || 10) + delta;
+            renderMyroomLayout();
         }
         // 🆕 家具を配置に追加する（上限あり）
         function addMyroomInstance(cat, itemId) {
@@ -1022,17 +1046,28 @@
                 alert(`⚠️ ${MYROOM_CATEGORY_LABELS[cat]}は最大${MYROOM_FURNITURE_LIMIT_PER_CATEGORY}個までしか置けません`);
                 return;
             }
-            const defaultPos = MYROOM_SLOT_POSITIONS[cat];
-            const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
-            // 複数個置いた時に完全に重ならないよう、少しずつずらして配置する
-            const offset = previewMyroom[cat].length * 4;
-            let top = defaultPos.top + offset;
-            if (cat !== 'wall_deco' && item && top + item.height <= MYROOM_WALL_ZONE_BOTTOM) {
-                top = MYROOM_WALL_ZONE_BOTTOM - item.height + 0.1; // 床置き家具は、少しでも床に重なるよう強制する
+            const ownedCount = (ownedMyroomItems[cat] || []).filter(id => id === itemId).length;
+            const placedCount = previewMyroom[cat].filter(inst => inst.itemId === itemId).length;
+            if (!IS_DEV_MODE && placedCount >= ownedCount) {
+                alert(`⚠️ 所持している数（${ownedCount}個）より多くは配置できません。\nショップで追加購入できます。`);
+                return;
             }
-            previewMyroom[cat].push({ itemId, top, left: defaultPos.left + offset, flip: false });
+            const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
+            // 最初はなるべく画面の中央（壁掛けは壁の中央）に配置する
+            let top, left;
+            if (cat === 'wall_deco') {
+                top = (MYROOM_WALL_ZONE_BOTTOM - item.height) / 2;
+                left = (100 - item.width) / 2;
+            } else {
+                top = 50 - item.height / 2;
+                left = 50 - item.width / 2;
+                if (top + item.height <= MYROOM_WALL_ZONE_BOTTOM) {
+                    top = MYROOM_WALL_ZONE_BOTTOM - item.height + 0.1; // 床置き家具は、少しでも床に重なるよう強制する
+                }
+            }
+            previewMyroom[cat].push({ itemId, top, left, flip: false });
             renderMyroomLayout();
-            openMyroomCategory(cat);
+            closeMyroomItemList();
             const label = document.getElementById('myroom-item-name-label');
             clearTimeout(myroomNameLabelTimeout);
             label.textContent = `${item.name}を置いたよ`;
@@ -1255,8 +1290,22 @@
         }
         const MYROOM_CATEGORY_ORDER = ['wallpaper', 'flooring', 'wall_deco', 'big_furniture', 'table', 'small_deco'];
         let myroomCurrentCategory = 'wallpaper';
+        let myroomItemListVisible = false; // アイテム一覧が今表示されているか
+        function closeMyroomItemList() {
+            myroomItemListVisible = false;
+            document.getElementById('myroom-item-list-left').style.display = 'none';
+            document.getElementById('myroom-item-list-right').style.display = 'none';
+            const countLabel = document.getElementById('myroom-placed-count-label');
+            if (countLabel) countLabel.style.display = 'none';
+        }
         function openMyroomCategory(cat) {
             playAudioFile('audio/skill_tap.mp3');
+            // 同じカテゴリボタンをもう一度押したら、トグルで一覧を閉じる
+            if (myroomCurrentCategory === cat && myroomItemListVisible) {
+                closeMyroomItemList();
+                return;
+            }
+            myroomItemListVisible = true;
             myroomCurrentCategory = cat;
             const sortedItems = [...MYROOM_ITEMS[cat]].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
             const isFurnitureCat = (cat !== 'wallpaper' && cat !== 'flooring');
@@ -1266,6 +1315,8 @@
 
             const leftList = document.getElementById('myroom-item-list-left');
             const rightList = document.getElementById('myroom-item-list-right');
+            leftList.style.display = 'flex';
+            rightList.style.display = 'flex';
             leftList.innerHTML = ''; rightList.innerHTML = '';
 
             if (isFurnitureCat) {
