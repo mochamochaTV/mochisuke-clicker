@@ -1124,21 +1124,32 @@
             wrap.style.transition = `left ${moveDuration}s linear, bottom ${moveDuration}s linear`;
             wrap.style.left = newLeftPct + '%';
             wrap.style.bottom = newBottomPct + '%';
-            wrap.classList.add('myroom-walking'); // 🚶 スーッと滑るのではなく、とことこ歩いて見えるようにする
+            const inner = document.getElementById('myroom-mochisuke-inner');
+            if (inner) inner.classList.add('myroom-walking'); // 🚶 スーッと滑るのではなく、とことこ歩いて見えるようにする（内側要素だけをアニメーションさせ、外側の中央寄せtransformとぶつからないようにする）
             playAudioFile('audio/move_small.mp3', 0.12); // 歩く音を小さめにつける
-            setTimeout(() => { wrap.classList.remove('myroom-walking'); }, moveDuration * 1000);
+            setTimeout(() => { if (inner) inner.classList.remove('myroom-walking'); }, moveDuration * 1000);
             scheduleNextMyroomWalk();
         }
         // 👆 マイルームでは、もちは出ないが、もちすけをタップすると反応してくれる
         function onMyroomMochisukeTap() {
             if (myroomIsEditMode) return; // もようがえモード中は、ドラッグ操作を優先する
-            const wrap = document.getElementById('myroom-mochisuke-breathe-wrap');
-            if (!wrap) return;
+            const inner = document.getElementById('myroom-mochisuke-inner');
+            if (!inner) return;
             playAudioFile('audio/tap.mp3');
-            wrap.animate(
-                [{ transform: 'translateX(-50%) scale(1)' }, { transform: 'translateX(-50%) scale(0.88)' }, { transform: 'translateX(-50%) scale(1)' }],
+            inner.animate(
+                [{ transform: 'scale(1)' }, { transform: 'scale(0.88)' }, { transform: 'scale(1)' }],
                 { duration: 220, easing: 'ease-out' }
             );
+        }
+        // 🐛修正：PWA環境ではonclick属性が不安定になることがあるため、pointerupで明示的に判定する
+        function setupMyroomMochisukeTapHandler() {
+            const wrap = document.getElementById('myroom-mochisuke-breathe-wrap');
+            if (!wrap || wrap.dataset.tapSetup) return;
+            wrap.dataset.tapSetup = '1';
+            wrap.addEventListener('pointerup', (e) => {
+                e.stopPropagation();
+                onMyroomMochisukeTap();
+            });
         }
         function openMyRoom() {
             myroomIsEditMode = false;
@@ -1157,6 +1168,7 @@
             const mochisukeWrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (mochisukeWrap) { mochisukeWrap.style.transition = 'none'; mochisukeWrap.style.left = '50%'; mochisukeWrap.style.bottom = '2%'; }
             startMyroomMochisukeWalk();
+            setupMyroomMochisukeTapHandler();
             if (IS_DEV_MODE) {
                 renderMyroomSizeAdjustOptions();
                 document.getElementById('myroom-size-adjust-panel').style.display = 'none'; // もようがえモードに入った時だけ表示する

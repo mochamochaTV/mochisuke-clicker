@@ -1135,10 +1135,10 @@
             touch-action: manipulation;
         }
         @keyframes myroomWalkBob {
-            0%, 100% { transform: translateX(-50%) translateY(0) rotate(0deg); }
-            25% { transform: translateX(-50%) translateY(-3%) rotate(-3deg); }
-            50% { transform: translateX(-50%) translateY(0) rotate(0deg); }
-            75% { transform: translateX(-50%) translateY(-3%) rotate(3deg); }
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-3%) rotate(-3deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(-3%) rotate(3deg); }
         }
         .myroom-walking { animation: myroomWalkBob 0.4s ease-in-out infinite; }
         @keyframes breathe {
