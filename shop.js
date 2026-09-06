@@ -258,6 +258,7 @@
         const GACHA_COST_SINGLE = 10;
         const GACHA_COST_TEN = 90; // 1回x10より少しお得な価格設定
 
+        let pendingGachaResult = null; // 🐛修正：コイン消費と同時に確定させ、演出中に中断されてもコインだけ失うことが無いようにする
         function startGachaSpin() {
             const spinBtn = document.getElementById('gacha-spin-btn');
             if (spinBtn.disabled) return;
@@ -267,7 +268,10 @@
             }
             if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_SINGLE;
             trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
-            saveGame();
+
+            currentGachaRarity = pickGachaRarity(); // 🎨 この回で出るレア度を先に決めておく（カプセルの色に反映する）
+            pendingGachaResult = grantGachaPrizeForRarity(currentGachaRarity); // 🐛修正：景品もこの時点で確定・付与してしまう
+            saveGame(); // コイン消費と景品付与を同時に保存する（演出は見た目だけ、後から再生する）
             updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
 
@@ -403,6 +407,18 @@
             }
             return { item: picked, isDuplicate, refundCoins };
         }
+        // 🎰 レア度から、実際の景品を確定・付与する（コイン消費と同時に呼ぶ）
+        function grantGachaPrizeForRarity(rarity) {
+            if (rarity.id === 'normal') {
+                return { kind: 'normal', item: grantRandomNormalConsumable() };
+            } else if (['normalRare', 'rare', 'sr', 'ur'].includes(rarity.id)) {
+                const starMap = { normalRare: 1, rare: 2, sr: 3, ur: 4 };
+                const useSprayPool = ['normalRare', 'rare'].includes(rarity.id);
+                const result = useSprayPool ? grantGachaNormalRareOrRareReward(starMap[rarity.id]) : grantGachaKisekaeItem(starMap[rarity.id]);
+                return { kind: 'kisekae', result };
+            }
+            return null;
+        }
         function revealGachaPrize() {
             const prizeReveal = document.getElementById('gacha-prize-reveal');
             const prizeImg = document.getElementById('gacha-prize-img');
@@ -411,15 +427,15 @@
             const sparkle = flair.rays ? '✨ ' : '';
             const rarityTag = `<span style="color:${currentGachaRarity.color}; text-shadow:0 1px 2px rgba(0,0,0,0.4);">【${sparkle}${currentGachaRarity.label}${sparkle}】</span><br>`;
 
-            if (currentGachaRarity.id === 'normal') {
-                const item = grantRandomNormalConsumable();
+            // 🐛修正：景品は既にstartGachaSpinの時点で確定・保存済み。ここでは表示するだけ（再抽選しない）
+            const pending = pendingGachaResult;
+            if (pending && pending.kind === 'normal') {
+                const item = pending.item;
                 prizeImg.src = item.img;
                 prizeImg.style.display = 'block';
                 prizeName.innerHTML = `${rarityTag}${item.name}`;
-            } else if (['normalRare', 'rare', 'sr', 'ur'].includes(currentGachaRarity.id)) {
-                const starMap = { normalRare: 1, rare: 2, sr: 3, ur: 4 };
-                const useSprayPool = ['normalRare', 'rare'].includes(currentGachaRarity.id);
-                const result = useSprayPool ? grantGachaNormalRareOrRareReward(starMap[currentGachaRarity.id]) : grantGachaKisekaeItem(starMap[currentGachaRarity.id]);
+            } else if (pending && pending.kind === 'kisekae') {
+                const result = pending.result;
                 const starText = '⭐'.repeat(result.item.star);
                 if (result.isSpray) {
                     prizeImg.style.display = 'none';
@@ -431,8 +447,8 @@
                     const dupText = result.isDuplicate ? `<br><span style="font-size:0.7em; color:#999;">（すでに持っています・🪙${result.refundCoins}還元）</span>` : '';
                     prizeName.innerHTML = `${rarityTag}${result.item.name}<br><span style="font-size:0.7em;">${starText}</span>${dupText}`;
                 }
-                saveGame(); updateDisplay();
             }
+            updateDisplay();
 
             // 🌟 レア度が高いほど、グロー・フラッシュ・振動・文字の大きさが豪華になる
             prizeImg.style.filter = `drop-shadow(0 4px 10px rgba(0,0,0,0.4)) drop-shadow(0 0 ${flair.glow}px ${currentGachaRarity.color})`;
@@ -473,6 +489,7 @@
         }
 
         // ===== 10連：レバーは1回、カプセル10個が続けて出て、全部落ちてから順番にパカパカ開いていく =====
+        let pendingGachaResults10 = null; // 🐛修正：10連分も、コイン消費と同時に確定させる
         function startGachaSpin10() {
             const spin10Btn = document.getElementById('gacha-spin10-btn');
             if (spin10Btn.disabled) return;
@@ -482,7 +499,10 @@
             }
             if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_TEN;
             trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
-            saveGame();
+            const rarities10 = [];
+            for (let i = 0; i < 10; i++) rarities10.push(pickGachaRarity());
+            pendingGachaResults10 = rarities10.map(r => grantGachaPrizeForRarity(r)); // 🐛修正：この時点で10個分すべて確定・付与する
+            saveGame(); // コイン消費と10個分の景品、全部同時に保存する
             updateGachaCoinDisplay();
             setGachaButtonsDisabled(true);
 
@@ -499,9 +519,7 @@
             if (oldHint) oldHint.remove();
 
             playGachaCrankSequence().then(() => {
-                const rarities = [];
-                for (let i = 0; i < 10; i++) rarities.push(pickGachaRarity());
-                dropGachaCapsuleOneByOne(rarities, 0);
+                dropGachaCapsuleOneByOne(rarities10, 0);
             });
         }
 
@@ -618,13 +636,13 @@
             vibrate(flair.vibrate);
             if (flair.glow > 0) screenFlash(rarities[index].color, flair.flash * 0.6); // 10連は連続で光ると煩わしいので、1連より控えめに
 
-            if (rarities[index].id === 'normal') {
-                const item = grantRandomNormalConsumable();
+            // 🐛修正：景品は既にstartGachaSpin10の時点で確定・保存済み。ここでは表示するだけ（再抽選しない）
+            const pending = pendingGachaResults10[index];
+            if (pending && pending.kind === 'normal') {
+                const item = pending.item;
                 icon.innerHTML = `<img src="${item.img}" style="width:60%; display:block; margin:0 auto 4px; filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 ${flair.glow}px ${rarities[index].color});"><div style="display:inline-block; font-size:0.68rem; font-weight:900; color:#fff; background:${rarities[index].color}; padding:2px 8px; border-radius:10px; line-height:1.3; box-shadow:0 2px 4px rgba(0,0,0,0.3);">${item.name}</div>`;
-            } else if (['normalRare', 'rare', 'sr', 'ur'].includes(rarities[index].id)) {
-                const starMap = { normalRare: 1, rare: 2, sr: 3, ur: 4 };
-                const useSprayPool = ['normalRare', 'rare'].includes(rarities[index].id);
-                const result = useSprayPool ? grantGachaNormalRareOrRareReward(starMap[rarities[index].id]) : grantGachaKisekaeItem(starMap[rarities[index].id]);
+            } else if (pending && pending.kind === 'kisekae') {
+                const result = pending.result;
                 const starText = '⭐'.repeat(result.item.star);
                 if (result.isSpray) {
                     const emoji = result.item.effectId === 'sparkle' ? '✨' : '🌟';
