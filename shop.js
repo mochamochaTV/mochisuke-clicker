@@ -58,6 +58,7 @@
             currentShopTab = tab;
             updateShopTabHighlight();
             document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
+            document.getElementById('shop-tab-furniture').classList.toggle('tab-active', tab === 'furniture');
             document.getElementById('shop-tab-skills').classList.toggle('tab-active', tab === 'skills');
             document.getElementById('shop-tab-gacha').classList.toggle('tab-active', tab === 'gacha');
             // 棚イラスト自体は常に全画面表示のまま。おみやげ以外のタブでは、上に半透明パネルを重ねるだけ。
@@ -261,7 +262,7 @@
             const spinBtn = document.getElementById('gacha-spin-btn');
             if (spinBtn.disabled) return;
             if (!IS_DEV_MODE && gachaCoins < GACHA_COST_SINGLE) {
-                alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_SINGLE - gachaCoins}枚必要です）\n\nスタンプを押したり、日本制覇・転生をすると手に入ります！`);
+                alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_SINGLE - gachaCoins}枚必要です）\n\nステージクリア（スタンプ）やおしごとミッションのクリア、日本制覇・転生でも手に入ります！`);
                 return;
             }
             if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_SINGLE;
@@ -476,7 +477,7 @@
             const spin10Btn = document.getElementById('gacha-spin10-btn');
             if (spin10Btn.disabled) return;
             if (!IS_DEV_MODE && gachaCoins < GACHA_COST_TEN) {
-                alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_TEN - gachaCoins}枚必要です）\n\nスタンプを押したり、日本制覇・転生をすると手に入ります！`);
+                alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_TEN - gachaCoins}枚必要です）\n\nステージクリア（スタンプ）やおしごとミッションのクリア、日本制覇・転生でも手に入ります！`);
                 return;
             }
             if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_TEN;
@@ -702,6 +703,41 @@
         function onGachaTabTap() {
             switchShopTab('gacha');
         }
+        // 🛋️ 家具の購入・プレビュー
+        function buyFurnitureItem(cat, itemId) {
+            const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
+            if (!item) return;
+            if (!IS_DEV_MODE && score < item.price) return;
+            if (!IS_DEV_MODE) score -= item.price;
+            if (!ownedMyroomItems[cat]) ownedMyroomItems[cat] = [];
+            if (!ownedMyroomItems[cat].includes(itemId)) ownedMyroomItems[cat].push(itemId);
+            saveGame();
+            updateDisplay();
+            renderShopList();
+            alert(`🛋️ ${item.name}を購入しました！\nマイルームで配置できます。`);
+        }
+        function previewShopFurniture(cat, itemId) {
+            const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
+            if (!item) return;
+            const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === equippedMyroom.wallpaper) || MYROOM_ITEMS.wallpaper[0];
+            const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === equippedMyroom.flooring) || MYROOM_ITEMS.flooring[0];
+            document.getElementById('furniture-preview-wallpaper').src = wallpaperItem.img;
+            document.getElementById('furniture-preview-flooring').src = flooringItem.img;
+            const itemEl = document.getElementById('furniture-preview-item');
+            const defaultPos = MYROOM_SLOT_POSITIONS[cat];
+            itemEl.src = item.img;
+            itemEl.style.top = defaultPos.top + '%';
+            itemEl.style.left = defaultPos.left + '%';
+            itemEl.style.width = item.width + '%';
+            itemEl.style.height = item.height + '%';
+            document.getElementById('furniture-preview-name').textContent = `👁️ ${item.name}（プレビュー）`;
+            const isOwned = (ownedMyroomItems[cat] || []).includes(itemId);
+            document.getElementById('furniture-preview-price').textContent = isOwned ? '購入済' : `${formatMochi(item.price)}もち`;
+            openModal('furniture-preview-modal');
+        }
+        function closeFurniturePreview() {
+            closeModal('furniture-preview-modal');
+        }
 
         // 🛠️ 開発者用：ガチャのクランク（回す部分）の位置調整ツール
         let gachaCrankAdjustMode = false;
@@ -840,7 +876,6 @@
                             <div id="gacha-item-rate-list"></div>
                         </div>
                     </div>
-                    <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 ただいま準備中：景品の内容は近日調整予定です</p>
                     <div id="gacha-coin-display" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#fff8ec,#ffe9c2); border:2px solid #e8c88a; border-radius:20px; padding:6px 16px; font-weight:900; color:#8d6e63; margin-bottom:10px; box-shadow:0 2px 4px rgba(0,0,0,0.08);">🪙 <span id="gacha-coin-value">0</span> コイン</div>
                     <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#ff6fa5,#e91e63); color:#fff; border-radius:24px; box-shadow:0 3px 0 #b0184a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin()">🎰 1回まわす（${GACHA_COST_SINGLE}枚）</button>
                     <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#c162e8,#9c27b0); color:#fff; margin-top:10px; border-radius:24px; box-shadow:0 3px 0 #6a1b7a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin10()">🎰 10連まとめて（${GACHA_COST_TEN}枚）</button>
@@ -870,6 +905,29 @@
                 return;
             }
 
+            if (currentShopTab === 'furniture') {
+                ['wall_deco', 'big_furniture', 'table'].forEach(cat => {
+                    const heading = document.createElement('div');
+                    heading.style.cssText = 'font-size:0.75rem; font-weight:900; color:#8d6e63; margin:10px 0 4px;';
+                    heading.textContent = `${MYROOM_CATEGORY_LABELS[cat]}`;
+                    listContainer.appendChild(heading);
+                    MYROOM_ITEMS[cat].forEach(item => {
+                        const isOwned = (ownedMyroomItems[cat] || []).includes(item.id);
+                        const row = document.createElement('div');
+                        row.className = 'list-item';
+                        let btnHtml;
+                        if (isOwned) {
+                            btnHtml = `<button class="item-action-btn" disabled>購入済</button>`;
+                        } else {
+                            const canBuy = score >= item.price;
+                            btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyFurnitureItem('${cat}','${item.id}')" style="background:#ff9800; color:white;">${formatMochi(item.price)}もち</button>`;
+                        }
+                        row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🛋️ ${item.name}</span></div></div><div style="display:flex; flex-direction:column; gap:4px;"><button onclick="previewShopFurniture('${cat}','${item.id}')" style="background:#8d6e63; color:#fff; border:none; border-radius:8px; padding:4px 8px; font-size:0.65rem; font-weight:900;">👁️ プレビュー</button>${btnHtml}</div>`;
+                        listContainer.appendChild(row);
+                    });
+                });
+                return;
+            }
             if (currentShopTab === 'skills') {
                 // ✨ スキルタブ：ステージ進行に応じて段階的に解放される
                 Object.keys(skills).forEach(key => {

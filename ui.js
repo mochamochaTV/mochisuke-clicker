@@ -1079,8 +1079,10 @@
                 } else {
                     // 他の家具は、画面の外に完全に消えない程度なら、壁側にはみ出してもよいが、
                     // 床置きの家具なので、少しでも床(壁紙と床の境界より下)に重なっている必要がある
-                    newTop = Math.max(-height * 0.3, Math.min(100 - height * 0.5, newTop));
-                    newLeft = Math.max(-width * 0.5, Math.min(100 - width * 0.5, newLeft));
+                    // 🐛修正：はみ出し量が大きすぎると、画面端に近づいた時にスマホのOSジェスチャー(戻る操作等)に
+                    // 割り込まれてドラッグが強制中断され、身動きが取れなくなるバグがあったため、はみ出し量を小さくした
+                    newTop = Math.max(-height * 0.1, Math.min(100 - height * 0.85, newTop));
+                    newLeft = Math.max(-width * 0.15, Math.min(100 - width * 0.85, newLeft));
                     if (newTop + height <= MYROOM_WALL_ZONE_BOTTOM) {
                         newTop = MYROOM_WALL_ZONE_BOTTOM - height + 0.1; // ほんの少しだけ床に触れる位置まで押し下げる
                     }
@@ -1714,6 +1716,8 @@
                 cell.innerHTML = `<img src="${thumbImg}" alt="${item.name}" style="width:78%; height:78%; object-fit:contain; ${isOwned ? '' : 'filter:grayscale(1); opacity:0.5;'}">${starHtml}`;
                 if (!isOwned) {
                     cell.insertAdjacentHTML('beforeend', `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.3rem;">🔒</div>`);
+                    cell.style.cursor = 'pointer';
+                    cell.onclick = () => alert(`🔒 ${item.name}\n\nショップの「ガチャ」で手に入るよ！`);
                 } else {
                     cell.onclick = () => equipKisekaeItem(cat, item.id);
                 }
