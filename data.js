@@ -64,11 +64,6 @@
         // ===================================================================
         const clothesData = [
             { id: "normal", name: "いつもの姿", price: 0, desc: "標準のもちすけスタイル", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15))", tapBonus: 0, mpsBonus: 0 },
-            { id: "happi", name: "お祭りはっぴ", price: 500, desc: "モチベーション全開！タップ力 +3", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) hue-rotate(130deg) saturate(1.8)", tapBonus: 3, mpsBonus: 0 },
-            { id: "crown", name: "王様の冠", price: 3000, desc: "気品溢れる姿。自動増加 +12もち/秒", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(1.2) sepia(0.5) saturate(2.5)", tapBonus: 0, mpsBonus: 12 },
-            { id: "ninja", name: "忍びの服", price: 15000, desc: "影からもち増産。タップ力+10 / 自動+40", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15)) brightness(0.4) contrast(1.5)", tapBonus: 10, mpsBonus: 40 }
-            // 👇 追加する時はこんな感じでコピペして書き換えてください（画像ありパターンの例）
-            // , { id: "yukata", name: "浴衣すがた", price: 30000, img: "ui_images/costume/yukata.webp", desc: "夏祭り気分。タップ力+20 / 自動+80", tapBonus: 20, mpsBonus: 80 }
         ];
 
         // スキル総合コアシステムデータ

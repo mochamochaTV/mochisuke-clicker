@@ -128,7 +128,7 @@
             if (!item || !mainImg) return;
             const frames = item.mouthFrames;
             clearInterval(roboMouthAnimTimer);
-            playAudioFile('audio/kisekae/robo_whir.mp3'); // ウィーン音（開閉どちらも同じ音）
+            if (isMochisukeVisible()) playAudioFile('audio/kisekae/robo_whir.mp3'); // ウィーン音（開閉どちらも同じ音、見えている画面の時だけ）
             let i = open ? 0 : frames.length - 1;
             const step = open ? 1 : -1;
             roboMouthAnimTimer = setInterval(() => {
@@ -858,6 +858,7 @@
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 closeModal('warehouse-modal');
+                playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
@@ -955,6 +956,7 @@
             openMyroomCategory('wallpaper');
             applyKisekaeToMyroom();
             openModal('myroom-modal');
+            playBgmLoop('audio/bgm/bgm_myroom.mp3'); // マイルーム専用BGMに切り替え
             if (IS_DEV_MODE) {
                 renderMyroomSizeAdjustOptions();
                 document.getElementById('myroom-size-adjust-panel').style.display = 'none'; // もようがえモードに入った時だけ表示する
@@ -969,6 +971,7 @@
             setTimeout(() => {
                 closeModal('myroom-modal');
                 stopWingFlapLoop('myroom');
+                playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
@@ -991,7 +994,7 @@
                     el.dataset.cat = cat;
                     el.dataset.idx = idx;
                     el.src = item.img;
-                    el.style.cssText = `position:absolute; top:${inst.top}%; left:${inst.left}%; width:${item.width}%; height:${item.height}%; cursor:grab; pointer-events:auto; transform:${inst.flip ? 'scaleX(-1)' : 'none'};`;
+                    el.style.cssText = `position:absolute; top:${inst.top}%; left:${inst.left}%; width:${item.width}%; height:${item.height}%; cursor:${myroomIsEditMode ? 'grab' : 'default'}; pointer-events:auto; transform:${inst.flip ? 'scaleX(-1)' : 'none'};`;
                     layer.appendChild(el);
 
                     if (item.flippable && myroomIsEditMode) {
@@ -1020,12 +1023,16 @@
                 return;
             }
             const defaultPos = MYROOM_SLOT_POSITIONS[cat];
+            const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             // 複数個置いた時に完全に重ならないよう、少しずつずらして配置する
             const offset = previewMyroom[cat].length * 4;
-            previewMyroom[cat].push({ itemId, top: defaultPos.top + offset, left: defaultPos.left + offset, flip: false });
+            let top = defaultPos.top + offset;
+            if (cat !== 'wall_deco' && item && top + item.height <= MYROOM_WALL_ZONE_BOTTOM) {
+                top = MYROOM_WALL_ZONE_BOTTOM - item.height + 0.1; // 床置き家具は、少しでも床に重なるよう強制する
+            }
+            previewMyroom[cat].push({ itemId, top, left: defaultPos.left + offset, flip: false });
             renderMyroomLayout();
             openMyroomCategory(cat);
-            const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             const label = document.getElementById('myroom-item-name-label');
             clearTimeout(myroomNameLabelTimeout);
             label.textContent = `${item.name}を置いたよ`;
@@ -1048,6 +1055,7 @@
             stage.dataset.furnitureDragSetup = '1';
             let dragState = null;
             stage.addEventListener('pointerdown', (e) => {
+                if (!myroomIsEditMode) return; // 🎨 もようがえモード中だけ動かせる
                 if (!e.target.classList.contains('myroom-slot-img')) return;
                 e.preventDefault();
                 try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
@@ -1069,9 +1077,13 @@
                     newTop = Math.max(0, Math.min(MYROOM_WALL_ZONE_BOTTOM - height, newTop));
                     newLeft = Math.max(0, Math.min(100 - width, newLeft));
                 } else {
-                    // 他の家具は、画面の外に完全に消えない程度なら、壁側にはみ出してもよい
+                    // 他の家具は、画面の外に完全に消えない程度なら、壁側にはみ出してもよいが、
+                    // 床置きの家具なので、少しでも床(壁紙と床の境界より下)に重なっている必要がある
                     newTop = Math.max(-height * 0.3, Math.min(100 - height * 0.5, newTop));
                     newLeft = Math.max(-width * 0.5, Math.min(100 - width * 0.5, newLeft));
+                    if (newTop + height <= MYROOM_WALL_ZONE_BOTTOM) {
+                        newTop = MYROOM_WALL_ZONE_BOTTOM - height + 0.1; // ほんの少しだけ床に触れる位置まで押し下げる
+                    }
                 }
                 el.style.top = newTop + '%';
                 el.style.left = newLeft + '%';
@@ -1332,6 +1344,7 @@
             if (badge) badge.textContent = `${boughtCount}/${stages.length}`;
             renderWarehouseItems();
             openModal('warehouse-modal');
+            playBgmLoop('audio/bgm/bgm_warehouse.mp3'); // ものおき専用BGMに切り替え
         }
 
         // 🎫 ガチャで手に入れたチケットの一覧。個数を確認しながら、好きなタイミングで使える

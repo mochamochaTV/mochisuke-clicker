@@ -58,7 +58,6 @@
             currentShopTab = tab;
             updateShopTabHighlight();
             document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
-            document.getElementById('shop-tab-kisekae').classList.toggle('tab-active', tab === 'kisekae');
             document.getElementById('shop-tab-skills').classList.toggle('tab-active', tab === 'skills');
             document.getElementById('shop-tab-gacha').classList.toggle('tab-active', tab === 'gacha');
             // 棚イラスト自体は常に全画面表示のまま。おみやげ以外のタブでは、上に半透明パネルを重ねるだけ。
@@ -830,10 +829,10 @@
                             </div>
                         </div>
 
-                        <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:calc(4px + env(safe-area-inset-top, 0px)); right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
+                        <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:4px; right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
 
-                        <div id="gacha-rates-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:20px; overflow-y:auto; box-sizing:border-box;">
-                            <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
+                        <div id="gacha-rates-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:calc(20px + env(safe-area-inset-top, 0px)) 20px 20px; overflow-y:auto; box-sizing:border-box;">
+                            <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:calc(8px + env(safe-area-inset-top, 0px)); right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
                             <h3 style="margin:0 0 10px; color:#5d4037;">🎰 排出率</h3>
                             <div id="gacha-rates-list"></div>
                             <h3 style="margin:16px 0 8px; color:#5d4037;">🎁 各アイテムの排出率</h3>
@@ -871,24 +870,7 @@
                 return;
             }
 
-            if (currentShopTab === 'kisekae') {
-                clothesData.forEach(c => {
-                    if (c.id === 'normal') return; 
-                    const isBought = purchasedClothes[c.id];
-                    let btnHtml = "";
-                    if (isBought) { btnHtml = `<button class="item-action-btn" disabled>購入済</button>`; }
-                    else {
-                        const canBuy = score >= c.price;
-                        btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyKisekae('${c.id}')" style="background:#ff9800; color:white;">${formatMochi(c.price)}もち</button>`;
-                    }
-                    const row = document.createElement('div');
-                    row.className = "list-item";
-                    const thumbSrc = c.img || 'ui_images/mochisuke/image_0.webp';
-                    const thumbFilter = c.img ? 'none' : (c.filter || 'none');
-                    row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${thumbSrc}" style="filter:${thumbFilter};" alt="${c.name}"><div class="item-info"><span class="item-title">👕 ${c.name}</span><span class="item-desc">${c.desc}</span></div></div>${btnHtml}`;
-                    listContainer.appendChild(row);
-                });
-            } else {
+            if (currentShopTab === 'skills') {
                 // ✨ スキルタブ：ステージ進行に応じて段階的に解放される
                 Object.keys(skills).forEach(key => {
                     const s = skills[key];
