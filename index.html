@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-190">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-191">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -404,7 +404,7 @@
             <button onclick="copyCornerBtnCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
             <textarea id="corner-btn-copy-textarea" readonly style="display:none; width:100%; height:100px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
         </div>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-190</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-191</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -537,6 +537,18 @@
         <div class="modal-content modal-fullscreen">
             <button class="modal-back-btn" onclick="closeMyRoom()"></button>
             <div id="myroom-stage" style="position:relative; flex:1; min-height:0; overflow:hidden;">
+                <div id="myroom-switcher-overlay" style="display:none; position:absolute; inset:0; z-index:70; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; flex-direction:column;">
+                    <div id="myroom-switcher-label" style="font-weight:900; color:#fff; margin-bottom:10px; font-size:1rem;">部屋1</div>
+                    <div style="display:flex; align-items:center; gap:16px;">
+                        <button onclick="switchMyroomSlotPreview(-1)" style="background:#fff; border:none; border-radius:50%; width:44px; height:44px; font-size:1.3rem; font-weight:900; flex-shrink:0;">＜</button>
+                        <div id="myroom-switcher-thumbnail" style="width:150px; height:170px; border-radius:12px; overflow:hidden; position:relative; background:#eee; box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>
+                        <button onclick="switchMyroomSlotPreview(1)" style="background:#fff; border:none; border-radius:50%; width:44px; height:44px; font-size:1.3rem; font-weight:900; flex-shrink:0;">＞</button>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-top:16px;">
+                        <button onclick="closeMyroomSwitcher()" style="background:#e57373; color:#fff; border:none; border-radius:16px; padding:8px 18px; font-weight:900; font-size:0.8rem;">キャンセル</button>
+                        <button onclick="confirmMyroomSlotSwitch()" style="background:#4caf50; color:#fff; border:none; border-radius:16px; padding:8px 18px; font-weight:900; font-size:0.8rem;">この部屋に移動</button>
+                    </div>
+                </div>
                 <div id="myroom-size-adjust-panel" style="display:none; position:absolute; top:60px; right:4px; z-index:60; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:160px; font-size:0.6rem;">
                     <div id="myroom-size-adjust-drag-handle" style="font-size:0.6rem; font-weight:900; margin-bottom:4px; cursor:grab; background:#eee; margin:-8px -8px 4px; padding:6px 8px; border-radius:8px 8px 0 0;">↕️ 家具の大きさ調整（ドラッグで移動可）</div>
                     <select id="myroom-size-adjust-target" style="font-size:0.6rem; width:100%;" onchange="onMyroomSizeAdjustTargetChange()">
@@ -590,7 +602,11 @@
                 <div id="myroom-item-list-left" style="display:none; position:absolute; left:2%; top:24%; bottom:16%; width:21%; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; flex-direction:column; gap:8px; z-index:8;"></div>
                 <div id="myroom-item-list-right" style="display:none; position:absolute; right:2%; top:24%; bottom:16%; width:21%; overflow-y:auto; overflow-x:hidden; touch-action:pan-y; flex-direction:column; gap:8px; z-index:8;"></div>
 
-                <button id="myroom-confirm-btn" class="myroom-edit-ui" onclick="confirmMyroomLayout()" style="display:none; position:absolute; bottom:2%; left:50%; transform:translateX(-50%); z-index:10; background:linear-gradient(135deg,#ff9800,#ff6fa5); color:#fff; border:none; border-radius:24px; padding:10px 28px; font-weight:900; font-size:0.95rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">✅ この部屋に決定</button>
+                <div class="myroom-edit-ui" style="display:none; position:absolute; bottom:2%; left:50%; transform:translateX(-50%); z-index:10; gap:8px; align-items:center;">
+                    <button onclick="openMyroomSwitcher()" style="background:#8d6e63; color:#fff; border:none; border-radius:20px; padding:8px 12px; font-weight:900; font-size:0.72rem; box-shadow:0 3px 8px rgba(0,0,0,0.25); white-space:nowrap;">🔀 部屋移動</button>
+                    <button id="myroom-confirm-btn" onclick="confirmMyroomLayout()" style="background:linear-gradient(135deg,#ff9800,#ff6fa5); color:#fff; border:none; border-radius:24px; padding:10px 24px; font-weight:900; font-size:0.9rem; box-shadow:0 3px 8px rgba(0,0,0,0.25); white-space:nowrap;">✅ この部屋に決定</button>
+                    <button onclick="onPublishMyroomTap()" style="background:#4caf50; color:#fff; border:none; border-radius:20px; padding:8px 12px; font-weight:900; font-size:0.72rem; box-shadow:0 3px 8px rgba(0,0,0,0.25); white-space:nowrap;">🌐 公開する</button>
+                </div>
             </div>
         </div>
     </div>
@@ -620,7 +636,7 @@
                 <img id="visit-myroom-flooring" src="" alt="" style="position:absolute; top:62%; left:0; width:100%; height:38%; object-fit:cover;">
                 <div id="visit-myroom-furniture-layer" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
                 <div id="visit-myroom-mochisuke-breathe-wrap" class="breathe-idle" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999;">
-                    <div style="position:relative;">
+                    <div id="visit-myroom-mochisuke-inner" style="position:relative;">
                         <img id="visit-myroom-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="visit-myroom-mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="visit-myroom-mochisuke-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
@@ -630,7 +646,7 @@
                     </div>
                 </div>
                 <div id="visit-myroom-myself-breathe-wrap" class="breathe-idle" style="display:none; position:absolute; bottom:2%; left:30%; transform:translateX(-50%); width:22%; z-index:998;">
-                    <div style="position:relative;">
+                    <div id="visit-myroom-myself-inner" style="position:relative;">
                         <img id="visit-myroom-myself-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="visit-myroom-myself-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="visit-myroom-myself-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
@@ -1175,13 +1191,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-190"></script>
-    <script src="state.js?v=2026-08-05-190"></script>
-    <script src="tap.js?v=2026-08-05-190"></script>
-    <script src="shop.js?v=2026-08-05-190"></script>
-    <script src="progress.js?v=2026-08-05-190"></script>
-    <script src="minigames.js?v=2026-08-05-190"></script>
-    <script src="ui.js?v=2026-08-05-190"></script>
-    <script src="main.js?v=2026-08-05-190"></script>
+    <script src="data.js?v=2026-08-05-191"></script>
+    <script src="state.js?v=2026-08-05-191"></script>
+    <script src="tap.js?v=2026-08-05-191"></script>
+    <script src="shop.js?v=2026-08-05-191"></script>
+    <script src="progress.js?v=2026-08-05-191"></script>
+    <script src="minigames.js?v=2026-08-05-191"></script>
+    <script src="ui.js?v=2026-08-05-191"></script>
+    <script src="main.js?v=2026-08-05-191"></script>
 </body>
 </html>

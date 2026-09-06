@@ -679,7 +679,10 @@
                 likeBtn.textContent = '❤️ いいね済み';
                 likeBtn.style.background = '#ccc';
                 playAudioFile('audio/levelup.mp3');
-                alert('❤️ いいねしました！お互いにガチャコインを1枚もらいました！');
+                gachaCoins += 1; // 🪙 いいねを送った自分も、ガチャコインを1枚もらう
+                saveGame();
+                updateGachaCoinDisplay();
+                showLikeCoinPopup(likeBtn);
             } else if (res.reason === 'already') {
                 likeBtn.textContent = '❤️ いいね済み';
                 likeBtn.style.background = '#ccc';
@@ -688,11 +691,32 @@
                 if (res.reason !== 'self') alert('いいねできませんでした。時間を置いて試してください');
             }
         }
+        // 🪙 いいねを送った瞬間、ボタンの近くに「+1」がふわっと浮かんで消える演出
+        function showLikeCoinPopup(anchorEl) {
+            const rect = anchorEl.getBoundingClientRect();
+            const popup = document.createElement('div');
+            popup.textContent = '🪙 +1';
+            popup.style.cssText = `position:fixed; left:${rect.left + rect.width / 2}px; top:${rect.top}px; transform:translateX(-50%); font-size:1.15rem; font-weight:900; color:#ff9800; z-index:9999; pointer-events:none; animation: likeCoinPopupFloat 1.2s ease-out forwards;`;
+            document.body.appendChild(popup);
+            setTimeout(() => popup.remove(), 1300);
+        }
         function closeVisitMyroom() {
-            closeModal('visit-myroom-modal');
-            visitingUid = null;
-            stopVisitMochisukeWalk('visitHost');
-            stopVisitMochisukeWalk('visitSelf');
+            const overlay = document.getElementById('fade-overlay');
+            playAudioFile('audio/move.mp3');
+            overlay.classList.add('fade-black');
+            setTimeout(() => {
+                closeModal('visit-myroom-modal');
+                visitingUid = null;
+                stopVisitMochisukeWalk('visitHost');
+                stopVisitMochisukeWalk('visitSelf');
+                // 🐛修正：下に隠れているランキング・フレンド画面がまだ開いたままなら、modal-openクラスを維持する
+                const rankingModal = document.getElementById('ranking-modal');
+                const friendModal = document.getElementById('friend-modal');
+                if ((rankingModal && rankingModal.style.display === 'flex') || (friendModal && friendModal.style.display === 'flex')) {
+                    document.body.classList.add('modal-open');
+                }
+                setTimeout(() => overlay.classList.remove('fade-black'), 150);
+            }, 300);
         }
         // 🚶 部屋訪問中も、ホスト・自分それぞれ独立してランダムに歩き回らせる
         const visitWalkTimers = { visitHost: null, visitSelf: null };
@@ -705,18 +729,24 @@
             visitWalkTimers[key] = null;
         }
         function scheduleNextVisitWalk(wrapId, key) {
-            const pauseDuration = 1500 + Math.random() * 3000;
+            const pauseDuration = 3000 + Math.random() * 4000; // 3〜7秒くらい、その場に立ち止まる
             visitWalkTimers[key] = setTimeout(() => walkVisitMochisukeToRandomSpot(wrapId, key), pauseDuration);
         }
         function walkVisitMochisukeToRandomSpot(wrapId, key) {
             const wrap = document.getElementById(wrapId);
             if (!wrap || wrap.style.display === 'none') return;
+            const currentLeft = parseFloat(wrap.style.left) || 50;
             const newLeftPct = 12 + Math.random() * 76;
             const newBottomPct = 1 + Math.random() * 8;
-            const moveDuration = (1.5 + Math.random()).toFixed(2);
-            wrap.style.transition = `left ${moveDuration}s ease-in-out, bottom ${moveDuration}s ease-in-out`;
+            const distance = Math.abs(newLeftPct - currentLeft);
+            const moveDuration = Math.max(0.5, distance / MYROOM_WALK_SPEED_PCT_PER_SEC).toFixed(2); // 一定速度になるよう距離から逆算
+            wrap.style.transition = `left ${moveDuration}s linear, bottom ${moveDuration}s linear`;
             wrap.style.left = newLeftPct + '%';
             wrap.style.bottom = newBottomPct + '%';
+            const inner = document.getElementById(wrapId.replace('-breathe-wrap', '-inner'));
+            if (inner) inner.classList.add('myroom-walking');
+            playAudioFile('audio/move_small.mp3', 0.12);
+            setTimeout(() => { if (inner) inner.classList.remove('myroom-walking'); }, moveDuration * 1000);
             scheduleNextVisitWalk(wrapId, key);
         }
         function renderVisitMyroomLayout(myroomData) {
@@ -931,9 +961,22 @@
             const totalAmount = gifts.reduce((sum, g) => sum + (g.amount || 0), 0);
             gachaCoins += totalAmount;
             saveGame(); updateDisplay();
-            const names = [...new Set(gifts.map(g => g.fromName))].join('、');
+
+            // 🏠❤️ 部屋のいいね由来と、フレンドからの直接送付を分けて、分かりやすく通知する
+            const likeGifts = gifts.filter(g => g.reason === 'roomLike');
+            const friendGifts = gifts.filter(g => g.reason !== 'roomLike');
+            const messages = [];
+            if (likeGifts.length > 0) {
+                const likeAmount = likeGifts.reduce((sum, g) => sum + (g.amount || 0), 0);
+                messages.push(`🏠 マイルームにいいね${likeGifts.length}個もらえた！ガチャコイン${likeAmount}枚ゲット！`);
+            }
+            if (friendGifts.length > 0) {
+                const friendAmount = friendGifts.reduce((sum, g) => sum + (g.amount || 0), 0);
+                const names = [...new Set(friendGifts.map(g => g.fromName))].join('、');
+                messages.push(`🎁 ${names}さんから、ガチャコインを${friendAmount}枚もらいました！`);
+            }
             setTimeout(() => {
-                alert(`🎁 ${names}さんから、ガチャコインを${totalAmount}枚もらいました！`);
+                alert(messages.join('\n\n'));
             }, 800);
         }
 
@@ -1090,6 +1133,7 @@
             const editEls = document.querySelectorAll('.myroom-edit-ui');
             editEls.forEach(el => { el.style.display = myroomIsEditMode ? (el.tagName === 'DIV' ? 'flex' : 'block') : 'none'; });
             closeMyroomItemList(); // モード切替時は、必ずアイテム一覧を閉じた状態にする
+            closeMyroomSwitcher(); // 部屋切り替えパネルも必ず閉じておく
             if (IS_DEV_MODE) {
                 const sizePanel = document.getElementById('myroom-size-adjust-panel');
                 if (sizePanel) sizePanel.style.display = myroomIsEditMode ? 'block' : 'none';
@@ -1156,6 +1200,9 @@
             selectedMyroomInstance = null;
             myroomCurrentCategory = 'wallpaper';
             myroomItemListVisible = false;
+            document.getElementById('myroom-switcher-overlay').style.display = 'none';
+            // 🔀 部屋1がまだ無ければ、今のequippedMyroomをそのまま部屋1として引き継ぐ（既存プレイヤー対応）
+            if (!myroomSlots[currentMyroomSlotIndex]) myroomSlots[currentMyroomSlotIndex] = JSON.parse(JSON.stringify(equippedMyroom));
             document.querySelectorAll('.myroom-edit-ui').forEach(el => el.style.display = 'none');
             document.getElementById('myroom-item-list-left').style.display = 'none';
             document.getElementById('myroom-item-list-right').style.display = 'none';
@@ -1610,14 +1657,82 @@
             label.style.display = 'block';
             myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
         }
+        // 🔀 最大3部屋まで持てる。切り替えパネル
+        let myroomSwitcherPreviewIndex = 0; // パネル内で＜＞で選んでいる番号（まだ確定していない）
+        function openMyroomSwitcher() {
+            myroomSwitcherPreviewIndex = currentMyroomSlotIndex;
+            updateMyroomSwitcherView();
+            document.getElementById('myroom-switcher-overlay').style.display = 'flex';
+        }
+        function closeMyroomSwitcher() {
+            document.getElementById('myroom-switcher-overlay').style.display = 'none';
+        }
+        function switchMyroomSlotPreview(delta) {
+            myroomSwitcherPreviewIndex = (myroomSwitcherPreviewIndex + delta + 3) % 3;
+            updateMyroomSwitcherView();
+        }
+        function updateMyroomSwitcherView() {
+            const isCurrent = myroomSwitcherPreviewIndex === currentMyroomSlotIndex;
+            document.getElementById('myroom-switcher-label').textContent = `部屋${myroomSwitcherPreviewIndex + 1}${isCurrent ? '（今の部屋）' : ''}`;
+            renderMyroomSwitcherThumbnail(myroomSwitcherPreviewIndex);
+        }
+        function renderMyroomSwitcherThumbnail(slotIndex) {
+            const thumb = document.getElementById('myroom-switcher-thumbnail');
+            // 今編集中の部屋を見ている場合は、保存前の最新状態(previewMyroom)を反映する
+            const slot = (slotIndex === currentMyroomSlotIndex) ? previewMyroom : myroomSlots[slotIndex];
+            if (!slot) {
+                thumb.innerHTML = `<div style="display:flex; align-items:center; justify-content:center; height:100%; color:#999; font-size:0.75rem; text-align:center; padding:8px; box-sizing:border-box;">まだ作られて<br>いません<br>（移動すると新規作成）</div>`;
+                return;
+            }
+            const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === slot.wallpaper) || MYROOM_ITEMS.wallpaper[0];
+            const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === slot.flooring) || MYROOM_ITEMS.flooring[0];
+            let html = `<img src="${wallpaperItem.img}" style="position:absolute; top:0; left:0; width:100%; height:62%; object-fit:cover;">`;
+            html += `<img src="${flooringItem.img}" style="position:absolute; top:62%; left:0; width:100%; height:38%; object-fit:cover;">`;
+            ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
+                (slot[cat] || []).forEach(inst => {
+                    const item = MYROOM_ITEMS[cat] && MYROOM_ITEMS[cat].find(i => i.id === inst.itemId);
+                    if (!item) return;
+                    html += `<img src="${item.img}" style="position:absolute; top:${inst.top}%; left:${inst.left}%; width:${item.width}%; height:${item.height}%; transform:${inst.flip ? 'scaleX(-1)' : 'none'};">`;
+                });
+            });
+            thumb.innerHTML = html;
+        }
+        function confirmMyroomSlotSwitch() {
+            if (myroomSwitcherPreviewIndex === currentMyroomSlotIndex) { closeMyroomSwitcher(); return; }
+            // 今編集中の部屋を、抜ける前にスロットへ保存しておく
+            myroomSlots[currentMyroomSlotIndex] = JSON.parse(JSON.stringify(previewMyroom));
+            currentMyroomSlotIndex = myroomSwitcherPreviewIndex;
+            if (!myroomSlots[currentMyroomSlotIndex]) {
+                // 新規部屋は、デフォルトの壁紙・床だけの状態で作る
+                myroomSlots[currentMyroomSlotIndex] = {
+                    wallpaper: 'wallpaper_default', flooring: 'flooring_default',
+                    wall_deco: [], big_furniture: [], table: [], small_deco: [],
+                };
+            }
+            previewMyroom = JSON.parse(JSON.stringify(myroomSlots[currentMyroomSlotIndex]));
+            equippedMyroom = JSON.parse(JSON.stringify(myroomSlots[currentMyroomSlotIndex]));
+            selectedMyroomInstance = null;
+            renderMyroomLayout();
+            saveGame();
+            closeMyroomSwitcher();
+        }
         function confirmMyroomLayout() {
             equippedMyroom = JSON.parse(JSON.stringify(previewMyroom)); // 配列(家具配置)も含めて完全に独立させる
             saveGame();
-            if (window.submitMyroomData) window.submitMyroomData(equippedMyroom); // 誰でも部屋を見られるよう、クラウドにも送っておく
             const btn = document.getElementById('myroom-confirm-btn');
             const original = btn.innerText;
             btn.innerText = '✅ 決定しました！';
             setTimeout(() => { btn.innerText = original; }, 1200);
+        }
+        // 🌐 「決定」とは別に、実際にランキング・フレンドから見られるようにするには「公開する」を押す必要がある
+        function onPublishMyroomTap() {
+            if (!confirm('この部屋を公開しますか？\nランキング・フレンドから見られるようになります。')) return;
+            equippedMyroom = JSON.parse(JSON.stringify(previewMyroom)); // 公開時点の内容を、決定扱いにもしておく
+            saveGame();
+            if (window.submitMyroomData) {
+                window.submitMyroomData(equippedMyroom);
+                alert('🌐 部屋を公開しました！');
+            }
         }
 
         function openWarehouse() {

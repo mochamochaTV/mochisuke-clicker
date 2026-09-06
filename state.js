@@ -165,7 +165,8 @@
                 missionCounters: missionCounters, missionDailyDate: missionDailyDate, missionWeeklyWeekKey: missionWeeklyWeekKey,
                 missionDailySelected: missionDailySelected, missionWeeklySelected: missionWeeklySelected,
                 missionClaimed: missionClaimed, tutorialMissionStep: tutorialMissionStep,
-                ownedMyroomItems: ownedMyroomItems, equippedMyroom: equippedMyroom
+                ownedMyroomItems: ownedMyroomItems, equippedMyroom: equippedMyroom,
+                myroomSlots: myroomSlots, currentMyroomSlotIndex: currentMyroomSlotIndex
             };
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
@@ -264,6 +265,8 @@
                             equippedMyroom[cat] = oldId ? [{ itemId: oldId, top: MYROOM_SLOT_POSITIONS[cat].top, left: MYROOM_SLOT_POSITIONS[cat].left, flip: false }] : [];
                         }
                     });
+                    myroomSlots = state.myroomSlots ?? [null, null, null];
+                    currentMyroomSlotIndex = state.currentMyroomSlotIndex ?? 0;
                     // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
                     prestigeShopLv = state.prestigeShopLv ?? {
                         offlineCap: state.offlineCapBonusHours ?? 0,

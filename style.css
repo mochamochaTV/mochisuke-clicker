@@ -373,6 +373,11 @@
             0%, 100% { box-shadow: 0 0 20px 10px rgba(255,215,0,0.4); }
             50% { box-shadow: 0 0 35px 18px rgba(255,215,0,0.6); }
         }
+        @keyframes likeCoinPopupFloat {
+            0% { transform: translateX(-50%) translateY(0); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateX(-50%) translateY(-40px); opacity: 0; }
+        }
         @keyframes sprayParticleFloat {
             0% { transform: translateY(0) scale(0.6); opacity: 0; }
             20% { opacity: 1; }
@@ -410,6 +415,7 @@
         /* モーダル共通 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: var(--app-height, 100%); background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         #furniture-preview-modal { z-index: 1200; }
+        #visit-myroom-modal { z-index: 1200; }
         .modal-content { background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: calc(var(--app-height, 100vh) * 0.75); overflow-y: auto; box-sizing: border-box; position: relative; }
 
         /* ミニゲーム中は連打の勢いで画面がスクロールしてズレてしまわないよう固定する */

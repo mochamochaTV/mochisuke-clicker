@@ -24,6 +24,9 @@
             // 🛋️ 家具4カテゴリは、複数個の配置インスタンス配列にする： [{ itemId, top, left, flip }, ...]
             wall_deco: [], big_furniture: [], table: [], small_deco: [],
         };
+        // 🔀 最大3部屋まで持てる。equippedMyroomは「今表示・編集中の部屋」を指す
+        let myroomSlots = [null, null, null];
+        let currentMyroomSlotIndex = 0;
         let previewKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' }; // 「決定」を押すまでの試着中の状態
         let prestigeScoreHistory = []; // 各転生の直前に持っていたもち数の記録（将来使う可能性があるので記録だけしておく）
         let prestigePoints = 0;     // 転生ポイント（所持数、将来のショップで消費する予定）
