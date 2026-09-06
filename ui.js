@@ -661,14 +661,15 @@
             likeBtn.disabled = false;
             likeBtn.textContent = '❤️ いいね';
             likeBtn.style.background = '#e91e63';
-            if (window.checkRoomLiked) {
-                const alreadyLiked = await window.checkRoomLiked(uid);
-                if (alreadyLiked) {
-                    likeBtn.disabled = true;
-                    likeBtn.textContent = '❤️ いいね済み';
-                    likeBtn.style.background = '#ccc';
-                }
-            }
+            // 🚧テスト用：いったん「いいね済み」判定も無効化しています（確認できたら元に戻します）
+            // if (window.checkRoomLiked) {
+            //     const alreadyLiked = await window.checkRoomLiked(uid);
+            //     if (alreadyLiked) {
+            //         likeBtn.disabled = true;
+            //         likeBtn.textContent = '❤️ いいね済み';
+            //         likeBtn.style.background = '#ccc';
+            //     }
+            // }
         }
         async function onLikeRoomTap() {
             if (!visitingUid || !window.likeRoom) return;
