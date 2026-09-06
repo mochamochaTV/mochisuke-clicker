@@ -1049,10 +1049,6 @@
         // ===================================================================
         // 🚧 マイルームは仕様検討中のため、いったん開発者モード限定にしておく
         function openMyRoomEntry() {
-            if (!IS_DEV_MODE) {
-                alert('🛋️ 「マイルーム」は準備中です！\nお楽しみに！');
-                return;
-            }
             moveMenuGoTo(openMyRoom);
         }
         let previewMyroom = {};
@@ -1111,19 +1107,26 @@
             clearTimeout(myroomWalkTimer);
             myroomWalkTimer = null;
         }
+        const MYROOM_WALK_SPEED_PCT_PER_SEC = 22; // もちすけの歩く速さ（%/秒、一定）
         function scheduleNextMyroomWalk() {
-            const pauseDuration = 1500 + Math.random() * 3000; // 1.5〜4.5秒くらい、その場に立ち止まる
+            const pauseDuration = 3000 + Math.random() * 4000; // 3〜7秒くらい、その場に立ち止まる（前より少し頻度を減らした）
             myroomWalkTimer = setTimeout(walkMyroomMochisukeToRandomSpot, pauseDuration);
         }
         function walkMyroomMochisukeToRandomSpot() {
             const wrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (!wrap) return;
+            const currentLeft = parseFloat(wrap.style.left) || 50;
             const newLeftPct = 12 + Math.random() * 76; // 端に寄りすぎないよう12〜88%の範囲で歩く
             const newBottomPct = 1 + Math.random() * 8; // 床の中で少し前後にも動く
-            const moveDuration = (1.5 + Math.random()).toFixed(2); // 1.5〜2.5秒くらいかけて歩く
-            wrap.style.transition = `left ${moveDuration}s ease-in-out, bottom ${moveDuration}s ease-in-out`;
+            // 🐛修正：距離に関わらず速度が一定になるよう、移動時間を距離から逆算する（前は時間固定で、距離次第で速さがバラついていた）
+            const distance = Math.abs(newLeftPct - currentLeft);
+            const moveDuration = Math.max(0.5, distance / MYROOM_WALK_SPEED_PCT_PER_SEC).toFixed(2);
+            wrap.style.transition = `left ${moveDuration}s linear, bottom ${moveDuration}s linear`;
             wrap.style.left = newLeftPct + '%';
             wrap.style.bottom = newBottomPct + '%';
+            wrap.classList.add('myroom-walking'); // 🚶 スーッと滑るのではなく、とことこ歩いて見えるようにする
+            playAudioFile('audio/move_small.mp3', 0.12); // 歩く音を小さめにつける
+            setTimeout(() => { wrap.classList.remove('myroom-walking'); }, moveDuration * 1000);
             scheduleNextMyroomWalk();
         }
         // 👆 マイルームでは、もちは出ないが、もちすけをタップすると反応してくれる
