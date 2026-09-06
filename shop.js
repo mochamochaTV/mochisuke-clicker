@@ -729,11 +729,10 @@
             if (!IS_DEV_MODE) score -= item.price;
             if (!ownedMyroomItems[cat]) ownedMyroomItems[cat] = [];
             ownedMyroomItems[cat].push(itemId); // 複数個買えるよう、重複を許可する（所持数は個数で管理）
+            playAudioFile('audio/levelup.mp3');
             saveGame();
             updateDisplay();
             renderShopList();
-            const count = ownedMyroomItems[cat].filter(id => id === itemId).length;
-            alert(`🛋️ ${item.name}を購入しました！（所持数：${count}個）\nマイルームで配置できます。`);
         }
         function previewShopFurniture(cat, itemId) {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);

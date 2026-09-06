@@ -688,7 +688,7 @@
                 likeBtn.style.background = '#ccc';
             } else {
                 likeBtn.disabled = false;
-                if (res.reason !== 'self') alert('いいねできませんでした。時間を置いて試してください');
+                if (res.reason !== 'self') alert(`いいねできませんでした。\n${res.errorMessage ? '詳細: ' + res.errorMessage : '時間を置いて試してください'}`);
             }
         }
         // 🪙 いいねを送った瞬間、ボタンの近くに「+1」がふわっと浮かんで消える演出
@@ -1171,7 +1171,12 @@
             const inner = document.getElementById('myroom-mochisuke-inner');
             if (inner) inner.classList.add('myroom-walking'); // 🚶 スーッと滑るのではなく、とことこ歩いて見えるようにする（内側要素だけをアニメーションさせ、外側の中央寄せtransformとぶつからないようにする）
             playAudioFile('audio/move_small.mp3', 0.12); // 歩く音を小さめにつける
-            setTimeout(() => { if (inner) inner.classList.remove('myroom-walking'); }, moveDuration * 1000);
+            const mouthAnchor = document.getElementById('myroom-mochisuke-mouth-anchor');
+            if (mouthAnchor && !equippedKisekae.fullbody) mouthAnchor.style.display = 'none'; // 👄 歩いている間は口を開ける（口閉じパーツを隠す。全身衣装中は触らない）
+            setTimeout(() => {
+                if (inner) inner.classList.remove('myroom-walking');
+                if (mouthAnchor && !equippedKisekae.fullbody) mouthAnchor.style.display = 'block'; // 止まったら口を閉じる
+            }, moveDuration * 1000);
             scheduleNextMyroomWalk();
         }
         // 👆 マイルームでは、もちは出ないが、もちすけをタップすると反応してくれる
@@ -1352,6 +1357,7 @@
             let dragState = null;
             stage.addEventListener('pointerdown', (e) => {
                 if (!myroomIsEditMode) return; // 🎨 もようがえモード中だけ動かせる
+                if (e.target.tagName === 'BUTTON') return; // 🐛修正：✕・🔄・⬆️⬇️ボタンを押した時、先に選択解除→再描画が走ってボタン自体が消え、押した処理が実行されなくなっていた
                 if (!e.target.classList.contains('myroom-slot-img')) {
                     // 家具以外の場所をタップしたら、選択を解除する
                     if (selectedMyroomInstance) { selectedMyroomInstance = null; renderMyroomLayout(); }
@@ -2914,11 +2920,12 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
 
             if (currentRankingTab === 'room') {
                 const ready = window.isRankingReady && window.isRankingReady();
-                const list = ready ? await window.fetchRoomLikeRanking() : null;
-                if (!list) {
-                    listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:10px;">部屋ランキングサーバーに接続できませんでした。</div>`;
+                const result = ready ? await window.fetchRoomLikeRanking() : { list: null, error: 'offline' };
+                if (!result.list) {
+                    listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.75rem; padding:10px;">部屋ランキングを取得できませんでした。<br>${escapeHtml(result.error || '')}</div>`;
                     return;
                 }
+                const list = result.list;
                 listContainer.innerHTML = '';
                 list.forEach((player, index) => {
                     const rank = index + 1;
