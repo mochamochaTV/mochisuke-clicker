@@ -194,7 +194,64 @@
                     </div>
                 </div>
             `).join('');
+            renderGachaRateTabs();
             overlay.style.display = 'block';
+        }
+        // 🎁 レア度ごとに、実際に排出されるアイテムと確率を一覧表示する
+        const GACHA_RATE_TAB_LABELS = { normal: 'ノーマル', normalRare: 'ノーマルレア', rare: 'レア', sr: 'スーパーレア', ur: 'ウルトラレア' };
+        let currentGachaRateTab = 'normal';
+        function renderGachaRateTabs() {
+            const tabsEl = document.getElementById('gacha-rate-tabs');
+            tabsEl.innerHTML = Object.keys(GACHA_RATE_TAB_LABELS).map(id => {
+                const rarity = GACHA_RARITIES.find(r => r.id === id);
+                const active = currentGachaRateTab === id;
+                return `<button onclick="switchGachaRateTab('${id}')" style="flex:1; min-width:70px; padding:6px 4px; border-radius:10px; border:2px solid ${active ? rarity.color : '#ddd'}; background:${active ? rarity.color : '#fff'}; color:${active ? '#fff' : '#5d4037'}; font-weight:900; font-size:0.68rem;">${GACHA_RATE_TAB_LABELS[id]}</button>`;
+            }).join('');
+            switchGachaRateTab(currentGachaRateTab);
+        }
+        function switchGachaRateTab(tabId) {
+            currentGachaRateTab = tabId;
+            const tabsEl = document.getElementById('gacha-rate-tabs');
+            [...tabsEl.children].forEach((btn, i) => {
+                const id = Object.keys(GACHA_RATE_TAB_LABELS)[i];
+                const rarity = GACHA_RARITIES.find(r => r.id === id);
+                const active = id === tabId;
+                btn.style.border = `2px solid ${active ? rarity.color : '#ddd'}`;
+                btn.style.background = active ? rarity.color : '#fff';
+                btn.style.color = active ? '#fff' : '#5d4037';
+            });
+            const rarity = GACHA_RARITIES.find(r => r.id === tabId);
+            const listEl = document.getElementById('gacha-item-rate-list');
+            let rows = [];
+            if (tabId === 'normal') {
+                const per = (rarity.weight / NORMAL_CONSUMABLE_ITEMS.length).toFixed(2);
+                rows = NORMAL_CONSUMABLE_ITEMS.map(item => ({ img: item.img, name: item.name, rate: per }));
+            } else if (tabId === 'sr' || tabId === 'ur') {
+                const star = { sr: 3, ur: 4 }[tabId];
+                const pool = getKisekaeItemsByStar(star);
+                const per = (rarity.weight / pool.length).toFixed(2);
+                rows = pool.map(item => ({ img: item.img || (item.leftFrames ? item.leftFrames[0] : ''), name: item.name, rate: per }));
+            } else {
+                // normalRare / rare：衣装とスプレーが半々
+                const star = { normalRare: 1, rare: 2 }[tabId];
+                const pool = getKisekaeItemsByStar(star);
+                const sprayItem = SPRAY_ITEMS.find(i => i.star === star);
+                const costumeRate = (rarity.weight * 0.5 / pool.length).toFixed(2);
+                rows = pool.map(item => ({ img: item.img || (item.leftFrames ? item.leftFrames[0] : ''), name: item.name, rate: costumeRate }));
+                if (sprayItem) {
+                    const emoji = sprayItem.effectId === 'sparkle' ? '✨' : '🌟';
+                    rows.push({ emoji, name: sprayItem.name, rate: (rarity.weight * 0.5).toFixed(2) });
+                }
+            }
+            listEl.innerHTML = rows.map(row => `
+                <div style="display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid #f0f0f0;">
+                    ${row.img ? `<img src="${row.img}" style="width:36px; height:36px; object-fit:contain; flex-shrink:0;">` : `<div style="width:36px; height:36px; display:flex; align-items:center; justify-content:center; font-size:1.4rem; flex-shrink:0;">${row.emoji}</div>`}
+                    <div style="flex:1;">
+                        <div style="font-size:0.78rem; color:#5d4037; font-weight:700;">${row.name}</div>
+                        <div style="font-size:0.68rem; color:#e91e63; font-weight:900;">${row.rate}%</div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         // ===== 1連：カプセルが落ちてきて、タップすると開く =====
@@ -630,6 +687,19 @@
             if (spinAgain) startGachaSpin10();
         }
 
+        // 🎰 クランクの位置：通常URLとPWA(ホーム画面)で見え方が変わるため、別々の座標を持つ
+        const GACHA_CRANK_POS = { top: 62.402035, left: 40.200326, width: 19.031814 };
+        const GACHA_CRANK_POS_PWA = { top: 63.284389, left: 40.200326, width: 19.031814 };
+        // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
+        const GACHA_CRANK_ADJUST_TOOL_ENABLED = false;
+        function applyGachaCrankPosition() {
+            const crank = document.getElementById('gacha-crank');
+            if (!crank) return;
+            const pos = isRunningStandalone() ? GACHA_CRANK_POS_PWA : GACHA_CRANK_POS;
+            crank.style.top = pos.top + '%';
+            crank.style.left = pos.left + '%';
+            crank.style.width = pos.width + '%';
+        }
         function onGachaTabTap() {
             switchShopTab('gacha');
         }
@@ -760,12 +830,15 @@
                             </div>
                         </div>
 
-                        <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:4px; right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
+                        <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:calc(4px + env(safe-area-inset-top, 0px)); right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
 
                         <div id="gacha-rates-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:20px; overflow-y:auto; box-sizing:border-box;">
                             <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
                             <h3 style="margin:0 0 10px; color:#5d4037;">🎰 排出率</h3>
                             <div id="gacha-rates-list"></div>
+                            <h3 style="margin:16px 0 8px; color:#5d4037;">🎁 各アイテムの排出率</h3>
+                            <div id="gacha-rate-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
+                            <div id="gacha-item-rate-list"></div>
                         </div>
                     </div>
                     <p style="font-size:0.7rem; color:#5d4037; margin:2px 0 10px;">🚧 ただいま準備中：景品の内容は近日調整予定です</p>
@@ -793,7 +866,8 @@
                     </div>
                 `;
                 updateGachaCoinDisplay();
-                if (IS_DEV_MODE) { const p = document.getElementById('gacha-adjust-panel'); if (p) p.style.display = 'block'; }
+                applyGachaCrankPosition();
+                if (IS_DEV_MODE && GACHA_CRANK_ADJUST_TOOL_ENABLED) { const p = document.getElementById('gacha-adjust-panel'); if (p) p.style.display = 'block'; }
                 return;
             }
 

@@ -939,6 +939,10 @@
             editEls.forEach(el => { el.style.display = myroomIsEditMode ? (el.tagName === 'DIV' ? 'flex' : 'block') : 'none'; });
             const countLabel = document.getElementById('myroom-placed-count-label');
             if (countLabel) countLabel.style.display = myroomIsEditMode ? 'block' : 'none';
+            if (IS_DEV_MODE) {
+                const sizePanel = document.getElementById('myroom-size-adjust-panel');
+                if (sizePanel) sizePanel.style.display = myroomIsEditMode ? 'block' : 'none';
+            }
             document.getElementById('myroom-decorate-btn').textContent = myroomIsEditMode ? '👁️ プレビュー' : '🎨 もようがえ';
             renderMyroomLayout(); // 削除ボタンの表示/非表示を確実に同期させる
         }
@@ -953,7 +957,7 @@
             openModal('myroom-modal');
             if (IS_DEV_MODE) {
                 renderMyroomSizeAdjustOptions();
-                document.getElementById('myroom-size-adjust-panel').style.display = 'block';
+                document.getElementById('myroom-size-adjust-panel').style.display = 'none'; // もようがえモードに入った時だけ表示する
                 onMyroomSizeAdjustTargetChange();
                 setupMyroomSizePanelDrag();
             }
@@ -990,7 +994,7 @@
                     el.style.cssText = `position:absolute; top:${inst.top}%; left:${inst.left}%; width:${item.width}%; height:${item.height}%; cursor:grab; pointer-events:auto; transform:${inst.flip ? 'scaleX(-1)' : 'none'};`;
                     layer.appendChild(el);
 
-                    if (item.flippable) {
+                    if (item.flippable && myroomIsEditMode) {
                         const flipBtn = document.createElement('button');
                         flipBtn.textContent = '🔄';
                         flipBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top)}%; left:${Math.min(94, inst.left + item.width)}%; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.75rem; z-index:20; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
