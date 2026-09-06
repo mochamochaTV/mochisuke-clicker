@@ -747,7 +747,12 @@
             const inner = document.getElementById(wrapId.replace('-breathe-wrap', '-inner'));
             if (inner) inner.classList.add('myroom-walking');
             playAudioFile('audio/move_small.mp3', 0.12);
-            setTimeout(() => { if (inner) inner.classList.remove('myroom-walking'); }, moveDuration * 1000);
+            const mouthAnchor = document.getElementById(wrapId.replace('-breathe-wrap', '-mouth-anchor'));
+            if (mouthAnchor && mouthAnchor.dataset.fullbody !== '1') mouthAnchor.style.display = 'none'; // 👄 歩いている間は口を開ける（全身衣装中は触らない）
+            setTimeout(() => {
+                if (inner) inner.classList.remove('myroom-walking');
+                if (mouthAnchor && mouthAnchor.dataset.fullbody !== '1') mouthAnchor.style.display = 'block'; // 止まったら口を閉じる
+            }, moveDuration * 1000);
             scheduleNextVisitWalk(wrapId, key);
         }
         function renderVisitMyroomLayout(myroomData) {
@@ -777,9 +782,13 @@
                 if (fbItem) { fullbodyEl.src = fbItem.img; fullbodyEl.style.display = 'block'; }
                 clothesEl.style.opacity = '0';
                 ['hat', 'face'].forEach(cat => { document.getElementById(`${prefix}-${cat}`).style.display = 'none'; });
+                const mouthAnchorEl = document.getElementById(`${prefix}-mouth-anchor`);
+                if (mouthAnchorEl) { mouthAnchorEl.style.display = 'none'; mouthAnchorEl.dataset.fullbody = '1'; }
             } else {
                 fullbodyEl.style.display = 'none';
                 clothesEl.style.opacity = '1';
+                const mouthAnchorEl2 = document.getElementById(`${prefix}-mouth-anchor`);
+                if (mouthAnchorEl2) { mouthAnchorEl2.style.display = 'block'; mouthAnchorEl2.dataset.fullbody = '0'; }
                 const clothesItem = (outfit && KISEKAE_ITEMS.clothes.find(i => i.id === outfit.clothes)) || KISEKAE_ITEMS.clothes[0];
                 clothesEl.src = clothesItem.img;
                 ['hat', 'face'].forEach(cat => {
@@ -813,8 +822,35 @@
                 leftEl.style.display = 'none'; rightEl.style.display = 'none';
             }
         }
-        function sendVisitStamp(text) {
-            alert(`「${text}」を送りました！`);
+        // 🚫🚨 訪問中の相手をブロック・通報する
+        async function sendVisitStamp(text) {
+            if (!visitingUid || !window.sendVisitStampMsg) return;
+            const res = await window.sendVisitStampMsg(visitingUid, text);
+            if (res.success) {
+                alert(`「${text}」を送りました！`);
+            } else {
+                alert('送信できませんでした。時間を置いて試してください');
+            }
+        }
+        function onBlockUserTap() {
+            if (!visitingUid) return;
+            const label = document.getElementById('visit-myroom-name-label').textContent;
+            if (!confirm(`${label}\n\nこの人をブロックしますか？\n今後、この人からの招待・スタンプが届かなくなります。`)) return;
+            if (!blockedUserIds.includes(visitingUid)) blockedUserIds.push(visitingUid);
+            saveGame();
+            alert('🚫 ブロックしました');
+            closeVisitMyroom();
+        }
+        async function onReportUserTap() {
+            if (!visitingUid) return;
+            const reason = prompt('通報の理由を教えてください（任意）');
+            if (reason === null) return; // キャンセル
+            const label = document.getElementById('visit-myroom-name-label').textContent;
+            if (window.reportUser) {
+                const res = await window.reportUser(visitingUid, label, reason);
+                if (res.success) alert('🚨 通報しました。ご協力ありがとうございます。');
+                else alert('通報を送信できませんでした。時間を置いて試してください');
+            }
         }
         function closeFriendScreen() {
             const overlay = document.getElementById('fade-overlay');
@@ -955,8 +991,16 @@
             });
         }
         // 🎁 起動時に、自分宛の未受領ギフトが無いか確認する
+        // ⚠️ 招待する・される時、一度だけ注意喚起を表示する
+        let hasSeenInviteEtiquetteNotice = false;
+        function showInviteEtiquetteNotice() {
+            if (hasSeenInviteEtiquetteNotice) return;
+            hasSeenInviteEtiquetteNotice = true;
+            alert('✉️ お部屋への招待について\n\n相手を不快にさせる行動・言動はお控えください。悪質な行為が確認された場合、アカウントのご利用を制限することがあります。\n\nユーザー間のトラブルについて、運営は責任を負いかねます。困ったことがあれば、ブロック・通報機能をご利用ください。');
+        }
         // ✉️ フレンドをマイルームに招待する
         function openMyroomInvitePanel() {
+            showInviteEtiquetteNotice();
             document.getElementById('myroom-invite-panel').style.display = 'flex';
             renderMyroomInviteFriendList();
         }
@@ -970,7 +1014,8 @@
                 listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:10px;">通信エラーです</div>`;
                 return;
             }
-            const friends = await window.fetchFriendList();
+            let friends = await window.fetchFriendList();
+            friends = (friends || []).filter(f => !blockedUserIds.includes(f.uid)); // 🚫 ブロックした相手は一覧から除外
             if (!friends || friends.length === 0) {
                 listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:10px;">まだフレンドがいません</div>`;
                 return;
@@ -996,16 +1041,35 @@
             } else {
                 btnEl.disabled = false;
                 btnEl.textContent = '招待';
-                alert('招待を送信できませんでした。時間を置いて試してください');
+                if (res.reason === 'offline_target') {
+                    alert('🔴 相手は今オフラインのようです。オンラインの時にまた誘ってみてください');
+                } else {
+                    alert('招待を送信できませんでした。時間を置いて試してください');
+                }
             }
+        }
+        // 💌 起動時・定期的に、自分宛の未確認のスタンプが無いか確認する
+        async function checkIncomingVisitStampsOnLaunch() {
+            if (!window.isRankingReady || !window.isRankingReady()) return;
+            const stamps = await window.checkIncomingVisitStamps();
+            if (!stamps || stamps.length === 0) return;
+            const validStamps = stamps.filter(s => !blockedUserIds.includes(s.fromUid)); // 🚫 ブロックした相手からは無視する
+            if (validStamps.length === 0) return;
+            const latest = validStamps[validStamps.length - 1];
+            setTimeout(() => {
+                alert(`💌 ${latest.fromName}さんから：「${latest.text}」`);
+            }, 500);
         }
         // ✉️ 起動時に、自分宛の未確認の招待が無いか確認する
         async function checkIncomingRoomInvitesOnLaunch() {
             if (!window.isRankingReady || !window.isRankingReady()) return;
             const invites = await window.checkIncomingRoomInvites();
             if (!invites || invites.length === 0) return;
-            const latest = invites[invites.length - 1]; // 複数来ていても、直近1件だけ案内する
+            const validInvites = invites.filter(inv => !blockedUserIds.includes(inv.fromUid)); // 🚫 ブロックした相手からは無視する
+            if (validInvites.length === 0) return;
+            const latest = validInvites[validInvites.length - 1]; // 複数来ていても、直近1件だけ案内する
             setTimeout(() => {
+                showInviteEtiquetteNotice();
                 if (confirm(`✉️ ${latest.fromName}さんが、あなたをお部屋に招待してくれたよ！\n見に行く？`)) {
                     visitMyroomOf(latest.fromUid, true);
                 }

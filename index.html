@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-08-05-194">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-195">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -227,10 +227,61 @@
             }
         };
         window.isRankingReady = function () { return fbReady; };
+        // 🟢 オンライン状態の管理：定期的に自分の最終アクティブ時刻を送り、招待前に相手がオンラインか確認する
+        window.sendHeartbeat = async function () {
+            if (!fbReady || !db || !currentUid) return;
+            try {
+                await setDoc(doc(db, "rankings", currentUid), { lastActiveAt: Date.now() }, { merge: true });
+            } catch (e) { console.error("ハートビート送信エラー:", e); }
+        };
+        window.checkUserOnline = async function (uid) {
+            if (!fbReady || !db) return false;
+            try {
+                const d = await getDoc(doc(db, "rankings", uid));
+                if (!d.exists()) return false;
+                const lastActive = d.data().lastActiveAt || 0;
+                return (Date.now() - lastActive) < 3 * 60 * 1000; // 3分以内ならオンライン扱い
+            } catch (e) { return false; }
+        };
+        // 🚨 ユーザーを通報する（開発者がコンソールから直接確認する）
+        window.reportUser = async function (targetUid, targetName, reasonText) {
+            if (!fbReady || !db || !currentUid) return { success: false };
+            try {
+                await addDoc(collection(db, "userReports"), {
+                    reporterUid: currentUid, targetUid, targetName: targetName || '', reasonText: String(reasonText || '').slice(0, 500), createdAt: Date.now()
+                });
+                return { success: true };
+            } catch (e) { console.error("通報送信エラー:", e); return { success: false }; }
+        };
+        // 💌 部屋訪問中のスタンプ送受信
+        window.sendVisitStampMsg = async function (toUid, text) {
+            if (!fbReady || !db || !currentUid) return { success: false };
+            try {
+                const myDoc = await getDoc(doc(db, "rankings", currentUid));
+                const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';
+                await addDoc(collection(db, "visitStamps"), {
+                    toUid, fromUid: currentUid, fromName: myName, text: String(text).slice(0, 30), createdAt: Date.now(), claimed: false
+                });
+                return { success: true };
+            } catch (e) { console.error("スタンプ送信エラー:", e); return { success: false }; }
+        };
+        window.checkIncomingVisitStamps = async function () {
+            if (!fbReady || !db || !currentUid) return [];
+            try {
+                const q = await getDocs(query(collection(db, "visitStamps"), where("toUid", "==", currentUid), where("claimed", "==", false)));
+                const stamps = q.docs.map(d => ({ id: d.id, ...d.data() }));
+                for (const d of q.docs) {
+                    await setDoc(doc(db, "visitStamps", d.id), { claimed: true }, { merge: true });
+                }
+                return stamps;
+            } catch (e) { console.error("スタンプ確認エラー:", e); return []; }
+        };
         // 🏠✉️ フレンドをマイルームに招待する
         window.sendRoomInvite = async function (toUid) {
             if (!fbReady || !db || !currentUid) return { success: false };
             try {
+                const isOnline = await window.checkUserOnline(toUid);
+                if (!isOnline) return { success: false, reason: 'offline_target' };
                 const myDoc = await getDoc(doc(db, "rankings", currentUid));
                 const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';
                 await addDoc(collection(db, "roomInvites"), {
@@ -432,7 +483,7 @@
             <button onclick="copyCornerBtnCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
             <textarea id="corner-btn-copy-textarea" readonly style="display:none; width:100%; height:100px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
         </div>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-194</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-08-05-195</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -617,7 +668,7 @@
                 <div id="myroom-item-name-label" style="display:none; position:absolute; top:17%; left:50%; transform:translateX(-50%); z-index:9; background:rgba(255,255,255,0.95); color:#5d4037; font-weight:900; font-size:0.85rem; padding:5px 14px; border-radius:16px; box-shadow:0 2px 6px rgba(0,0,0,0.2); white-space:nowrap;"></div>
 
                 <button id="myroom-decorate-btn" onclick="toggleMyroomEditMode()" style="position:absolute; top:calc(6px + env(safe-area-inset-top, 0px)); right:8px; z-index:15; background:linear-gradient(135deg,#ff9800,#ff6fa5); color:#fff; border:none; border-radius:20px; padding:8px 16px; font-weight:900; font-size:0.8rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">🎨 もようがえ</button>
-                <button onclick="openMyroomInvitePanel()" style="position:absolute; top:calc(6px + env(safe-area-inset-top, 0px)); left:8px; z-index:15; background:#42a5f5; color:#fff; border:none; border-radius:20px; padding:8px 14px; font-weight:900; font-size:0.78rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">✉️ 招待する</button>
+                <button onclick="openMyroomInvitePanel()" style="position:absolute; top:calc(60px + env(safe-area-inset-top, 0px)); left:4px; z-index:15; background:#42a5f5; color:#fff; border:none; border-radius:20px; padding:8px 14px; font-weight:900; font-size:0.78rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">✉️ 招待する</button>
 
                 <div id="myroom-invite-panel" style="display:none; position:absolute; inset:0; z-index:80; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; flex-direction:column;">
                     <div style="background:#fff8ec; border-radius:16px; padding:16px; width:80%; max-height:70%; overflow-y:auto; box-sizing:border-box;">
@@ -679,6 +730,9 @@
                         <img id="visit-myroom-mochisuke-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
                         <img id="visit-myroom-mochisuke-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
                         <img id="visit-myroom-mochisuke-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:9;">
+                        <div id="visit-myroom-mochisuke-mouth-anchor" style="position:absolute; top:36.986245%; left:48.44735%; width:17%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
+                            <img src="ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
+                        </div>
                         <img id="visit-myroom-mochisuke-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
                     </div>
                 </div>
@@ -689,11 +743,18 @@
                         <img id="visit-myroom-myself-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
                         <img id="visit-myroom-myself-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
                         <img id="visit-myroom-myself-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:9;">
+                        <div id="visit-myroom-myself-mouth-anchor" style="position:absolute; top:36.986245%; left:48.44735%; width:17%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
+                            <img src="ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
+                        </div>
                         <img id="visit-myroom-myself-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
                     </div>
                 </div>
             </div>
-            <div style="padding:calc(10px + env(safe-area-inset-bottom, 0px)) 10px 10px; background:#fff8ec; flex-shrink:0; display:flex; gap:6px; overflow-x:auto;">
+            <div style="padding:6px 10px 0; background:#fff8ec; flex-shrink:0; display:flex; gap:6px; justify-content:flex-end;">
+                <button onclick="onBlockUserTap()" style="flex-shrink:0; background:#78909c; color:#fff; border:none; border-radius:14px; padding:5px 10px; font-size:0.65rem; font-weight:900;">🚫 ブロック</button>
+                <button onclick="onReportUserTap()" style="flex-shrink:0; background:#e53935; color:#fff; border:none; border-radius:14px; padding:5px 10px; font-size:0.65rem; font-weight:900;">🚨 通報</button>
+            </div>
+            <div style="padding:6px 10px calc(10px + env(safe-area-inset-bottom, 0px)); background:#fff8ec; flex-shrink:0; display:flex; gap:6px; overflow-x:auto;">
                 <button id="visit-like-btn" onclick="onLikeRoomTap()" style="flex-shrink:0; background:#e91e63; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">❤️ いいね</button>
                 <button onclick="sendVisitStamp('素敵な部屋だね！')" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">素敵な部屋だね！</button>
                 <button onclick="sendVisitStamp('お邪魔します')" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">お邪魔します</button>
@@ -1228,13 +1289,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-08-05-194"></script>
-    <script src="state.js?v=2026-08-05-194"></script>
-    <script src="tap.js?v=2026-08-05-194"></script>
-    <script src="shop.js?v=2026-08-05-194"></script>
-    <script src="progress.js?v=2026-08-05-194"></script>
-    <script src="minigames.js?v=2026-08-05-194"></script>
-    <script src="ui.js?v=2026-08-05-194"></script>
-    <script src="main.js?v=2026-08-05-194"></script>
+    <script src="data.js?v=2026-08-05-195"></script>
+    <script src="state.js?v=2026-08-05-195"></script>
+    <script src="tap.js?v=2026-08-05-195"></script>
+    <script src="shop.js?v=2026-08-05-195"></script>
+    <script src="progress.js?v=2026-08-05-195"></script>
+    <script src="minigames.js?v=2026-08-05-195"></script>
+    <script src="ui.js?v=2026-08-05-195"></script>
+    <script src="main.js?v=2026-08-05-195"></script>
 </body>
 </html>

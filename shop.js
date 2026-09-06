@@ -148,6 +148,7 @@
         let activeSprayId = null;    // 今かかっているスプレーのID
         let sprayBuffActiveUntil = 0; // このタイムスタンプまで、自動増加バフ＋見た目エフェクトが有効
         let favoriteFriendIds = []; // ⭐ お気に入りに登録したフレンドのuid一覧
+        let blockedUserIds = []; // 🚫 ブロックしたユーザーのuid一覧（この人からの招待・スタンプは今後無視する）
 
         function grantRandomNormalConsumable() {
             const item = pickRandom(NORMAL_CONSUMABLE_ITEMS);
