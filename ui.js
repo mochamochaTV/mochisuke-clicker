@@ -955,6 +955,62 @@
             });
         }
         // 🎁 起動時に、自分宛の未受領ギフトが無いか確認する
+        // ✉️ フレンドをマイルームに招待する
+        function openMyroomInvitePanel() {
+            document.getElementById('myroom-invite-panel').style.display = 'flex';
+            renderMyroomInviteFriendList();
+        }
+        function closeMyroomInvitePanel() {
+            document.getElementById('myroom-invite-panel').style.display = 'none';
+        }
+        async function renderMyroomInviteFriendList() {
+            const listEl = document.getElementById('myroom-invite-friend-list');
+            listEl.innerHTML = `<div style="text-align:center; color:#aaa; padding:10px;">読み込み中...</div>`;
+            if (!window.isRankingReady || !window.isRankingReady()) {
+                listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:10px;">通信エラーです</div>`;
+                return;
+            }
+            const friends = await window.fetchFriendList();
+            if (!friends || friends.length === 0) {
+                listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:10px;">まだフレンドがいません</div>`;
+                return;
+            }
+            listEl.innerHTML = '';
+            friends.forEach(f => {
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px; margin-bottom:6px; border-radius:10px; background:#fff;';
+                row.innerHTML = `
+                    <div style="flex-shrink:0; position:relative; width:36px; height:36px;">${renderRankOutfitPreviewHtml(f.outfit)}</div>
+                    <div style="flex:1; min-width:0; font-size:0.8rem; color:#5d4037; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(f.name)}</div>
+                    <button onclick="onSendRoomInviteTap('${f.uid}', this)" style="flex-shrink:0; background:#42a5f5; color:#fff; border:none; border-radius:10px; padding:6px 12px; font-size:0.72rem; font-weight:900;">招待</button>
+                `;
+                listEl.appendChild(row);
+            });
+        }
+        async function onSendRoomInviteTap(uid, btnEl) {
+            btnEl.disabled = true;
+            btnEl.textContent = '...';
+            const res = await window.sendRoomInvite(uid);
+            if (res.success) {
+                btnEl.textContent = '✅送信済';
+            } else {
+                btnEl.disabled = false;
+                btnEl.textContent = '招待';
+                alert('招待を送信できませんでした。時間を置いて試してください');
+            }
+        }
+        // ✉️ 起動時に、自分宛の未確認の招待が無いか確認する
+        async function checkIncomingRoomInvitesOnLaunch() {
+            if (!window.isRankingReady || !window.isRankingReady()) return;
+            const invites = await window.checkIncomingRoomInvites();
+            if (!invites || invites.length === 0) return;
+            const latest = invites[invites.length - 1]; // 複数来ていても、直近1件だけ案内する
+            setTimeout(() => {
+                if (confirm(`✉️ ${latest.fromName}さんが、あなたをお部屋に招待してくれたよ！\n見に行く？`)) {
+                    visitMyroomOf(latest.fromUid, true);
+                }
+            }, 1200);
+        }
         async function checkIncomingGiftsOnLaunch() {
             if (!window.isRankingReady || !window.isRankingReady()) return;
             const gifts = await window.checkIncomingGifts();
