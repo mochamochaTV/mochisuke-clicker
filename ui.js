@@ -1329,6 +1329,7 @@
             const hatEl = document.getElementById(prefix + '-hat');
             const faceEl = document.getElementById(prefix + '-face');
             const fullbodyEl = document.getElementById(prefix + '-fullbody');
+            const mouthAnchorEl = document.getElementById(prefix + '-mouth-anchor');
             let state = myroomScreamState[prefix];
             if (state) {
                 clearTimeout(state.revertTimeout); // 連続で叫んだ場合、古いタイマーに巻き戻されないようにする
@@ -1338,7 +1339,8 @@
                     prevClothesOpacity: clothesEl.style.opacity,
                     prevHatDisplay: hatEl ? hatEl.style.display : '',
                     prevFaceDisplay: faceEl ? faceEl.style.display : '',
-                    prevFullbodyDisplay: fullbodyEl ? fullbodyEl.style.display : ''
+                    prevFullbodyDisplay: fullbodyEl ? fullbodyEl.style.display : '',
+                    prevMouthAnchorDisplay: mouthAnchorEl ? mouthAnchorEl.style.display : ''
                 };
                 myroomScreamState[prefix] = state;
             }
@@ -1347,6 +1349,8 @@
             if (hatEl) hatEl.style.display = 'none';
             if (faceEl) faceEl.style.display = 'none';
             if (fullbodyEl) fullbodyEl.style.display = 'none';
+            // 👄 歩く時と同様、叫んでいる間は口を閉じたパーツ(mouth-anchor)を消す（全身衣装中は触らない）
+            if (mouthAnchorEl && mouthAnchorEl.dataset.fullbody !== '1') mouthAnchorEl.style.display = 'none';
             // 🐛修正：タップ画面用の.mochi-screamはscale(1.5)固定で、部屋の中では小さいもちすけが
             // 急に大きくなりすぎて浮いて見える（他の一人と重なることもある）ため、拡大率を控えめにした
             // マイルーム専用クラスを使う（見た目の大きさへの配慮）
@@ -1375,11 +1379,13 @@
             const hatEl = document.getElementById(prefix + '-hat');
             const faceEl = document.getElementById(prefix + '-face');
             const fullbodyEl = document.getElementById(prefix + '-fullbody');
+            const mouthAnchorEl = document.getElementById(prefix + '-mouth-anchor');
             if (inner) inner.classList.remove('myroom-avatar-scream');
             if (clothesEl) { clothesEl.src = state.prevClothesSrc; clothesEl.style.opacity = state.prevClothesOpacity; }
             if (hatEl) hatEl.style.display = state.prevHatDisplay;
             if (faceEl) faceEl.style.display = state.prevFaceDisplay;
             if (fullbodyEl) fullbodyEl.style.display = state.prevFullbodyDisplay;
+            if (mouthAnchorEl) mouthAnchorEl.style.display = state.prevMouthAnchorDisplay;
             delete myroomScreamState[prefix];
         }
         function playMyroomFeedEffect(prefix, idx) {

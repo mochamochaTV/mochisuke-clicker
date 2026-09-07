@@ -338,23 +338,25 @@
         .myroom-slot-img:active { transform: scale(0.96); }
 
         /* 📱🐛修正：PWA(ホーム画面追加)化すると、マイルーム下部の履歴・アクション・チャットボタンが
-           ブラウザ版よりも上にずれて見える現象があったため、PWA時だけ余分に下げるオフセットを用意する。
+           ブラウザ版よりも上にずれて見える現象があったため、PWA時だけ下にずらすオフセットを用意する。
+           🐛修正2：bottomの値を「足す」実装だと逆に上へ動いてしまう（bottomは下端からの距離なので、
+           増やすほど要素は上がる）ミスがあったため、transformでのtranslateY（正の値＝下方向）に変更した。
            <head>のスクリプトが、ブラウザのタブ表示なら<html>に'browser-mode'クラスを付ける
            （＝付いていない＝PWAとして起動している、とみなせる）ので、それを目印に切り替える */
-        :root { --pwa-bottom-btn-extra: 0px; }
-        html:not(.browser-mode) { --pwa-bottom-btn-extra: 24px; }
+        :root { --pwa-bottom-btn-shift: 0px; }
+        html:not(.browser-mode) { --pwa-bottom-btn-shift: 24px; }
 
         /* 🎭 マイルーム中央下のアクションボタン（丸・絵文字）。押すと叫ぶ/ごはんなどのサブボタンが横に開く。
            🐛修正：z-index:40のままだともちすけ本体(z-index:999/998)の下に隠れてタップできなかったため、1000に引き上げる */
         .myroom-action-btn {
-            position: absolute; bottom: calc(12px + var(--pwa-bottom-btn-extra) + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%) scale(1);
+            position: absolute; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translate(-50%, var(--pwa-bottom-btn-shift)) scale(1);
             width: 52px; height: 52px; border-radius: 50%; border: 3px solid #fff; background: linear-gradient(135deg, #ff6fa5, #ff9800);
             font-size: 1.5rem; box-shadow: 0 3px 10px rgba(0,0,0,0.3); z-index: 1000; cursor: pointer; transition: transform 0.15s ease-out;
             display: flex; align-items: center; justify-content: center; padding: 0;
         }
-        .myroom-action-btn:active { transform: translateX(-50%) scale(0.92); }
+        .myroom-action-btn:active { transform: translate(-50%, var(--pwa-bottom-btn-shift)) scale(0.92); }
         .myroom-action-submenu {
-            position: absolute; bottom: calc(70px + var(--pwa-bottom-btn-extra) + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%);
+            position: absolute; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translate(-50%, var(--pwa-bottom-btn-shift));
             display: none; gap: 10px; z-index: 1000;
         }
         .myroom-action-submenu.show { display: flex; }
@@ -1110,16 +1112,17 @@
         }
         /* 😱 マイルーム版の叫び演出。タップ画面の.mochi-scream(scale 1.5)をそのまま使うと、
            もともと小さい(部屋の22%幅)もちすけがさらに大きくなりすぎて部屋からはみ出したり、
-           もう1人のもちすけと重なったりするため、拡大率だけ控えめ(1.18)にした専用版 */
+           もう1人のもちすけと重なったりするため、拡大率を控えめ(1.32)にした専用版
+           （ご要望により1.18→1.32に拡大。1.5に近づけすぎるとはみ出しリスクが増すため中間的な値に調整） */
         .myroom-avatar-scream { animation: myroomAvatarScreamShake 0.5s ease-in-out; }
         @keyframes myroomAvatarScreamShake {
-            0%, 100% { transform: translate(0, 0) rotate(0) scale(1.18); }
-            10% { transform: translate(-4px, -2px) rotate(-3deg) scale(1.18); }
-            25% { transform: translate(4px, 1px) rotate(3deg) scale(1.18); }
-            40% { transform: translate(-3px, -3px) rotate(-2deg) scale(1.18); }
-            55% { transform: translate(3px, 2px) rotate(2deg) scale(1.18); }
-            70% { transform: translate(-3px, -1px) rotate(-1deg) scale(1.18); }
-            85% { transform: translate(3px, 1px) rotate(1deg) scale(1.18); }
+            0%, 100% { transform: translate(0, 0) rotate(0) scale(1.32); }
+            10% { transform: translate(-4px, -2px) rotate(-3deg) scale(1.32); }
+            25% { transform: translate(4px, 1px) rotate(3deg) scale(1.32); }
+            40% { transform: translate(-3px, -3px) rotate(-2deg) scale(1.32); }
+            55% { transform: translate(3px, 2px) rotate(2deg) scale(1.32); }
+            70% { transform: translate(-3px, -1px) rotate(-1deg) scale(1.32); }
+            85% { transform: translate(3px, 1px) rotate(1deg) scale(1.32); }
         }
         @keyframes feedBuffPulse {
             from { box-shadow: 0 3px 10px rgba(255,152,0,0.5); }
