@@ -899,7 +899,7 @@
             openModal('visit-chat-history-modal');
         }
 
-        function sendFreeChatMessage() {
+        async function sendFreeChatMessage() {
             if (!activeChatRoomId) return;
             const input = document.getElementById('visit-chat-input');
             const text = input.value.trim();
@@ -908,8 +908,17 @@
             if (now - lastChatSendAt < CHAT_SEND_COOLDOWN_MS) return; // 連投防止
             if (containsNgWord(text)) { alert('⚠️ その言葉は送信できません'); return; }
             lastChatSendAt = now;
-            input.value = '';
-            window.sendRoomChatMessage(activeChatRoomId, text.slice(0, CHAT_MAX_LEN));
+            // 🐛修正：以前は送信結果を確認せず即座に入力欄を空にしていたため、送信に失敗しても
+            // 見た目上は「送れたように」見えてしまっていた（実際には届いていなかった）。
+            // 結果を確認し、失敗時は入力内容を残したまま理由を知らせる
+            const res = await window.sendRoomChatMessage(activeChatRoomId, text.slice(0, CHAT_MAX_LEN));
+            if (res && res.success) {
+                input.value = '';
+            } else {
+                const codeText = res && res.code ? `（${res.code}）` : '';
+                alert(`⚠️ メッセージを送信できませんでした${codeText}\nお手数ですが、この内容をスクリーンショットして開発者に伝えてください。`);
+                console.error("チャット送信失敗の詳細:", res);
+            }
         }
 
         // ⌨️ Enterキーで送信できるようにする（起動時に1回だけ登録）
@@ -1138,12 +1147,19 @@
         }
         // 🚫🚨 訪問中の相手をブロック・通報する
         async function sendVisitStamp(text) {
-            // 💬 ライブチャット中は、定型文もそのままチャットへ即送信する（相手にリアルタイムで届く）
+            // 💬 ライブチャット中は、定型文もそのままチャットへ即送信する（相手にリアルタイムで届く）。
+            // 🐛修正：isStamp=trueで送ることで、13歳未満が関わり自由文チャットが無効なペアでも
+            // 定型スタンプだけは送れるようにする（Firestoreルール側もこのフラグを見て許可する）。
+            // また送信結果を確認せず「送れたつもり」にしていたのも直し、失敗時は知らせる
             if (activeChatRoomId) {
                 const now = Date.now();
                 if (now - lastChatSendAt < CHAT_SEND_COOLDOWN_MS) return;
                 lastChatSendAt = now;
-                window.sendRoomChatMessage(activeChatRoomId, text);
+                const res = await window.sendRoomChatMessage(activeChatRoomId, text, true);
+                if (!res || !res.success) {
+                    alert('⚠️ 送信できませんでした。時間を置いて試してください');
+                    console.error("スタンプ送信失敗の詳細:", res);
+                }
                 return;
             }
             if (!visitingUid || !window.sendVisitStampMsg) return;
@@ -1356,12 +1372,25 @@
                 const row = document.createElement('div');
                 row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:8px; margin-bottom:6px; border-radius:10px; background:#fff;';
                 row.innerHTML = `
-                    <div style="flex-shrink:0; position:relative; width:36px; height:36px;">${renderRankOutfitPreviewHtml(f.outfit)}</div>
+                    <div style="flex-shrink:0; position:relative; width:36px; height:36px;">
+                        ${renderRankOutfitPreviewHtml(f.outfit)}
+                        <span class="friend-online-dot" data-uid="${f.uid}" style="position:absolute; right:-2px; bottom:-2px; width:12px; height:12px; border-radius:50%; background:#bbb; border:2px solid #fff; box-shadow:0 0 2px rgba(0,0,0,0.3);" title="確認中…"></span>
+                    </div>
                     <div style="flex:1; min-width:0; font-size:0.8rem; color:#5d4037; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(f.name)}</div>
                     <button onclick="onSendRoomInviteTap('${f.uid}', this)" data-friend-name="${escapeHtml(f.name)}" style="flex-shrink:0; background:#42a5f5; color:#fff; border:none; border-radius:10px; padding:6px 12px; font-size:0.72rem; font-weight:900;">招待</button>
                 `;
                 listEl.appendChild(row);
             });
+            // 🟢🔴 オンライン/オフラインは判明した端から非同期に丸の色を更新する（一覧の表示自体は待たせない）
+            if (window.checkUserOnline) {
+                friends.forEach(async (f) => {
+                    const online = await window.checkUserOnline(f.uid);
+                    const dot = listEl.querySelector(`.friend-online-dot[data-uid="${f.uid}"]`);
+                    if (!dot) return;
+                    dot.style.background = online ? '#4caf50' : '#e53935';
+                    dot.title = online ? 'オンライン' : 'オフライン';
+                });
+            }
         }
         async function onSendRoomInviteTap(uid, btnEl) {
             const guestName = btnEl.dataset.friendName || '名無しさん';

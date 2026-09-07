@@ -183,7 +183,11 @@ service cloud.firestore {
         // 🎂 修正：セッションのchatEnabledがtrueの時しか自由文メッセージを作成できないようにする。
         // 13歳未満が関わるペアはUI側でもボタンを隠しているが、UIは回避できるため
         // ここ（サーバー側）で確実に止める。年齢を偽っていない限り、双方13歳以上のペアの
-        // やり取りには影響しない
+        // やり取りには影響しない。
+        // 🐛修正：↑の制限は「自由文」だけにかけるべきところ、以前はmessagesコレクションへの
+        // create自体を一律禁止していたため、13歳未満が関わるペアは定型スタンプ（決まり文句）
+        // すら送れなくなっていた。isStamp==trueかつ、送信内容が定型スタンプの文言そのもの
+        // （改変不可）の場合は、chatEnabledに関わらず送信を許可する
         allow create: if request.auth != null
                     && request.resource.data.fromUid == request.auth.uid
                     && request.resource.data.text is string
@@ -191,7 +195,12 @@ service cloud.firestore {
                     && request.resource.data.text.size() <= 200
                     && (get(/databases/$(database)/documents/roomSessions/$(roomId)).data.hostUid == request.auth.uid
                         || get(/databases/$(database)/documents/roomSessions/$(roomId)).data.guestUid == request.auth.uid)
-                    && get(/databases/$(database)/documents/roomSessions/$(roomId)).data.get('chatEnabled', false) == true;
+                    && (
+                         get(/databases/$(database)/documents/roomSessions/$(roomId)).data.get('chatEnabled', false) == true
+                         ||
+                         (request.resource.data.get('isStamp', false) == true
+                          && request.resource.data.text in ['素敵な部屋だね！', 'お邪魔します', 'また来るね！'])
+                       );
         allow update, delete: if false;
       }
     }

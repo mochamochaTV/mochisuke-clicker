@@ -76,7 +76,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-09-07-002">
+    <link rel="stylesheet" href="style.css?v=2026-09-07-003">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -447,8 +447,9 @@
             } catch (e) { console.error("退室エラー:", e); }
         };
 
-        // 💬 自由入力チャットメッセージを送信する
-        window.sendRoomChatMessage = async function (roomId, text) {
+        // 💬 チャットメッセージを送信する（isStamp=trueの時は定型スタンプ扱い。
+        // 13歳未満が関わる等でchatEnabledがfalseのペアでも、スタンプだけは送れるようにするための区別）
+        window.sendRoomChatMessage = async function (roomId, text, isStamp) {
             if (!fbReady || !db || !currentUid || !roomId) return { success: false };
             const clean = String(text || '').trim().slice(0, 200);
             if (!clean) return { success: false };
@@ -456,10 +457,16 @@
                 const myDoc = await getDoc(doc(db, "rankings", currentUid));
                 const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';
                 await addDoc(collection(db, "roomSessions", roomId, "messages"), {
-                    fromUid: currentUid, fromName: myName, text: clean, createdAt: Date.now()
+                    fromUid: currentUid, fromName: myName, text: clean, createdAt: Date.now(), isStamp: !!isStamp
                 });
                 return { success: true };
-            } catch (e) { console.error("チャット送信エラー:", e); return { success: false }; }
+            } catch (e) {
+                // 🐛修正：以前は失敗してもコンソールに出すだけで、呼び出し側は結果を確認せず
+                // 「送れたつもり」になっていた。理由(especially permission-denied＝Firestoreルールで
+                // 弾かれた)を呼び出し側に返して、原因が分かるようにする
+                console.error("チャット送信エラー:", e);
+                return { success: false, reason: 'error', code: (e && e.code) || null, errorMessage: (e && e.message) ? e.message : String(e) };
+            }
         };
 
         // 👂 チャットメッセージをリアルタイム監視する（新着が来るたびonMessagesに全件が渡される）。戻り値は監視解除用の関数
@@ -1512,13 +1519,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-09-07-002"></script>
-    <script src="state.js?v=2026-09-07-002"></script>
-    <script src="tap.js?v=2026-09-07-002"></script>
-    <script src="shop.js?v=2026-09-07-002"></script>
-    <script src="progress.js?v=2026-09-07-002"></script>
-    <script src="minigames.js?v=2026-09-07-002"></script>
-    <script src="ui.js?v=2026-09-07-002"></script>
-    <script src="main.js?v=2026-09-07-002"></script>
+    <script src="data.js?v=2026-09-07-003"></script>
+    <script src="state.js?v=2026-09-07-003"></script>
+    <script src="tap.js?v=2026-09-07-003"></script>
+    <script src="shop.js?v=2026-09-07-003"></script>
+    <script src="progress.js?v=2026-09-07-003"></script>
+    <script src="minigames.js?v=2026-09-07-003"></script>
+    <script src="ui.js?v=2026-09-07-003"></script>
+    <script src="main.js?v=2026-09-07-003"></script>
 </body>
 </html>
