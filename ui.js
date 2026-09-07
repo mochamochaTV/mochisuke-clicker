@@ -826,7 +826,12 @@
             const inputBar = document.getElementById('visit-chat-input-bar');
             if (toggleBtn) toggleBtn.style.display = visible ? 'flex' : 'none';
             if (historyBtn) historyBtn.style.display = visible ? 'flex' : 'none';
-            if (inputBar) inputBar.style.display = 'none';
+            // 🐛修正：ここが常に'none'を代入していたため、この関数が呼ばれるたび
+            // （15秒ごとの生存確認ハートビートで相手のセッションが更新される度）に
+            // 入力バーが強制的に閉じられ、入力中のキーボードまで閉じてしまっていた。
+            // chatEnabled=falseの時だけ強制的に閉じ、trueの時は現在の開閉状態（💬ボタンでの
+            // 開閉）に触れないようにする。
+            if (inputBar && !visible) inputBar.style.display = 'none';
         }
 
         // 🏠 自分の部屋をホスト中は、他人の部屋にしか意味のないボタン（いいね・スタンプ行）を隠す
@@ -1347,12 +1352,31 @@
             pendingRoomChatTermsAction = null;
         }
         // ✉️ フレンドをマイルームに招待する
+        // 🐛修正：オンライン/オフラインの丸は開いた瞬間の一度きりの判定だったため、パネルを開いたまま
+        // 待っていると、相手が後からオンラインになっても丸の色が変わらず「時間差がある」ように見えていた。
+        // パネルを開いている間だけ、定期的に丸だけを再判定するタイマーを回す（リストの作り直しはしない）
+        let inviteFriendDotRefreshTimer = null;
         function openMyroomInvitePanel() {
             document.getElementById('myroom-invite-panel').style.display = 'flex';
             renderMyroomInviteFriendList();
+            clearInterval(inviteFriendDotRefreshTimer);
+            inviteFriendDotRefreshTimer = setInterval(refreshMyroomInviteFriendDots, 10000);
         }
         function closeMyroomInvitePanel() {
             document.getElementById('myroom-invite-panel').style.display = 'none';
+            clearInterval(inviteFriendDotRefreshTimer);
+            inviteFriendDotRefreshTimer = null;
+        }
+        async function refreshMyroomInviteFriendDots() {
+            if (!window.checkUserOnline) return;
+            const dots = document.querySelectorAll('#myroom-invite-friend-list .friend-online-dot');
+            for (const dot of dots) {
+                const uid = dot.dataset.uid;
+                if (!uid) continue;
+                const online = await window.checkUserOnline(uid);
+                dot.style.background = online ? '#4caf50' : '#e53935';
+                dot.title = online ? 'オンライン' : 'オフライン';
+            }
         }
         async function renderMyroomInviteFriendList() {
             const listEl = document.getElementById('myroom-invite-friend-list');
@@ -1414,36 +1438,43 @@
                 }
             });
         }
-        // 💌 起動時・定期的に、自分宛の未確認のスタンプが無いか確認する
-        async function checkIncomingVisitStampsOnLaunch() {
-            if (!window.isRankingReady || !window.isRankingReady()) return;
-            const stamps = await window.checkIncomingVisitStamps();
-            if (!stamps || stamps.length === 0) return;
-            const validStamps = stamps.filter(s => !blockedUserIds.includes(s.fromUid)); // 🚫 ブロックした相手からは無視する
-            if (validStamps.length === 0) return;
-            const latest = validStamps[validStamps.length - 1];
-            setTimeout(() => {
-                alert(`💌 ${latest.fromName}さんから：「${latest.text}」`);
-            }, 500);
+        // 💌🐛修正：以前は45秒(招待)/20秒(スタンプ)おきにgetDocsで問い合わせる「ポーリング」方式だったため、
+        // 実際に届くまで最大で数十秒の時間差があった。onSnapshotによるリアルタイム監視に切り替えることで、
+        // Firestore側の書き込みとほぼ同時に検知できるようにする。
+        function startIncomingVisitStampWatch() {
+            if (!window.isRankingReady || !window.isRankingReady()) { setTimeout(startIncomingVisitStampWatch, 500); return; }
+            if (!window.listenIncomingVisitStamps) return; // 旧バージョンのindex.html併用時など、関数が無ければ何もしない
+            window.listenIncomingVisitStamps((stamps) => {
+                // 見つかった時点で（見るかどうかに関わらず）既読化するのは、ポーリング時代の挙動を踏襲
+                stamps.forEach(s => { if (window.markVisitStampClaimed) window.markVisitStampClaimed(s.id); });
+                const validStamps = stamps.filter(s => !blockedUserIds.includes(s.fromUid)); // 🚫 ブロックした相手からは無視する
+                if (validStamps.length === 0) return;
+                const latest = validStamps[validStamps.length - 1];
+                setTimeout(() => {
+                    alert(`💌 ${latest.fromName}さんから：「${latest.text}」`);
+                }, 500);
+            });
         }
-        // ✉️ 起動時に、自分宛の未確認の招待が無いか確認する
-        async function checkIncomingRoomInvitesOnLaunch() {
-            if (!window.isRankingReady || !window.isRankingReady()) return;
-            const invites = await window.checkIncomingRoomInvites();
-            if (!invites || invites.length === 0) return;
-            const validInvites = invites.filter(inv => !blockedUserIds.includes(inv.fromUid)); // 🚫 ブロックした相手からは無視する
-            if (validInvites.length === 0) return;
-            const latest = validInvites[validInvites.length - 1]; // 複数来ていても、直近1件だけ案内する
-            setTimeout(() => {
-                if (confirm(`✉️ ${latest.fromName}さんが、あなたをお部屋に招待してくれたよ！\n見に行く？`)) {
-                    (async () => {
-                        await ensureChatEligibilityAnswered(); // 🎂 招待される側：初回だけ生年月日を確認する
-                        showRoomChatTermsModal(() => {
-                            joinFriendRoomAndChat(latest.fromUid, latest.fromName);
-                        });
-                    })();
-                }
-            }, 1200);
+        // ✉️ 自分宛の招待をリアルタイム監視する（起動時に一度だけ呼べば、以後は届いた瞬間に検知される）
+        function startIncomingRoomInviteWatch() {
+            if (!window.isRankingReady || !window.isRankingReady()) { setTimeout(startIncomingRoomInviteWatch, 500); return; }
+            if (!window.listenIncomingRoomInvites) return;
+            window.listenIncomingRoomInvites((invites) => {
+                invites.forEach(inv => { if (window.markRoomInviteClaimed) window.markRoomInviteClaimed(inv.id); });
+                const validInvites = invites.filter(inv => !blockedUserIds.includes(inv.fromUid)); // 🚫 ブロックした相手からは無視する
+                if (validInvites.length === 0) return;
+                const latest = validInvites[validInvites.length - 1]; // 複数来ていても、直近1件だけ案内する
+                setTimeout(() => {
+                    if (confirm(`✉️ ${latest.fromName}さんが、あなたをお部屋に招待してくれたよ！\n見に行く？`)) {
+                        (async () => {
+                            await ensureChatEligibilityAnswered(); // 🎂 招待される側：初回だけ生年月日を確認する
+                            showRoomChatTermsModal(() => {
+                                joinFriendRoomAndChat(latest.fromUid, latest.fromName);
+                            });
+                        })();
+                    }
+                }, 400);
+            });
         }
         async function checkIncomingGiftsOnLaunch() {
             if (!window.isRankingReady || !window.isRankingReady()) return;

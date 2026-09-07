@@ -497,9 +497,10 @@
                 if (panel) { panel.style.display = 'block'; updateCornerBtnReadout(); }
             }
             setTimeout(checkIncomingGiftsOnLaunch, 2000); // Firebase接続が整うのを少し待ってから確認する
-            setTimeout(checkIncomingRoomInvitesOnLaunch, 3500); // ギフト通知と重ならないよう、少し後にずらす
-            setInterval(checkIncomingRoomInvitesOnLaunch, 45000); // 🐛修正：どの画面にいても届くよう、45秒おきに定期確認する
-            setInterval(checkIncomingVisitStampsOnLaunch, 20000); // 💌 スタンプは反応性が大事なので、少し短め間隔で確認する
+            // 🐛修正：招待・スタンプの検知は、以前は45秒/20秒おきのポーリングだったため届くまで
+            // 数十秒の時間差があった。onSnapshotによるリアルタイム監視に変更（起動時に1回だけ開始すればよい）
+            setTimeout(startIncomingRoomInviteWatch, 3500); // ギフト通知と重ならないよう、少し後にずらす
+            setTimeout(startIncomingVisitStampWatch, 3500);
             if (window.sendHeartbeat) { window.sendHeartbeat(); setInterval(window.sendHeartbeat, 60000); } // 🟢 60秒おきに、自分がオンラインであることを知らせる
             // 🎫 着せ替えアイテムは、まだガチャ実装前なので、開発者URLの人だけ全部持っている状態にする
             // 🐛修正：loadGame()より前にやると、セーブデータの読み込みで上書きされて消えてしまっていた
