@@ -13,7 +13,9 @@
     </script>
 
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 🐛修正：Android Chromeでキーボード表示時にvisualViewportではなくレイアウト全体が
+         リサイズされるよう明示（interactive-widget=resizes-content）。古いブラウザは無視するだけなので害はない -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>ぷにっかー -日本縦断編-</title>
     <meta property="og:title" content="ぷにっかー -日本縦断編-">
     <meta property="og:description" content="もちすけと一緒に、鹿児島から沖縄まで47都道府県を旅するタップゲーム。気楽にスキマ時間で遊べます！">
@@ -31,20 +33,38 @@
                 var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
                 document.documentElement.style.setProperty('--app-height', h + 'px');
             }
-            setAppHeight();
-            window.addEventListener('resize', setAppHeight);
+            // 🐛修正：キーボード表示時、iOS Safariは「表示領域(visualViewport)」を高さだけでなく
+            // 上下にもズラすことがある。--app-heightの高さ自体は正しく縮んでいても、
+            // position:fixedの要素（各モーダル含む）はレイアウトビューポート基準で動かないため、
+            // 実際に見えている画面だけが上にズレて、下側（入力バー等）が隠れてしまっていた。
+            // visualViewport.offsetTopぶんbody全体を平行移動して、見えている範囲とズレないようにする。
+            function syncViewportOffset() {
+                // このスクリプトは<head>内で最初に同期実行されるため、その時点ではまだ<body>が
+                // 存在しない（document.bodyがnull）。存在確認してから触る。
+                if (!window.visualViewport || !document.body) return;
+                var offsetTop = window.visualViewport.offsetTop || 0;
+                document.body.style.transform = offsetTop > 0.5 ? 'translateY(' + (-offsetTop) + 'px)' : '';
+            }
+            function onViewportChange() { setAppHeight(); syncViewportOffset(); }
+            onViewportChange();
+            window.addEventListener('resize', onViewportChange);
             // ホーム画面追加(スタンドアロン)かどうかを早い段階で判定し、html要素にクラスを付ける。
             // ブラウザのタブのまま開いている場合は、Safariの上下UIぶん実際の高さが減るため、
             // CSS側でレイアウトの余白を調整するための目印にする。
             var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
             if (!isStandalone) document.documentElement.classList.add('browser-mode');
-            window.addEventListener('orientationchange', setAppHeight);
-            window.addEventListener('pageshow', setAppHeight);
-            document.addEventListener('visibilitychange', setAppHeight);
-            window.addEventListener('load', setAppHeight);
+            window.addEventListener('orientationchange', onViewportChange);
+            window.addEventListener('pageshow', onViewportChange);
+            document.addEventListener('visibilitychange', onViewportChange);
+            window.addEventListener('load', onViewportChange);
             // 起動直後の値が確定しきっていないケースへの保険（数回だけ再計測）
-            [50, 150, 300, 600, 1200].forEach((ms) => setTimeout(setAppHeight, ms));
-            if (window.visualViewport) window.visualViewport.addEventListener('resize', setAppHeight);
+            [50, 150, 300, 600, 1200].forEach((ms) => setTimeout(onViewportChange, ms));
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', onViewportChange);
+                // 🐛修正：offsetTopの変化(=表示位置のズレ)は高さが変わらないscrollイベントでも起きるため、
+                // resizeだけでなくscrollでも同期する
+                window.visualViewport.addEventListener('scroll', onViewportChange);
+            }
         })();
     </script>
 
@@ -65,7 +85,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
         const firebaseConfig = {
@@ -189,12 +209,22 @@
             if (!fbReady || !db || !currentUid) return { success: false, reason: 'offline' };
             if (ownerUid === currentUid) return { success: false, reason: 'self' };
             try {
-                const likeDocId = `${currentUid}_${ownerUid}_${Date.now()}`; // 🚧テスト用：毎回別IDにして、何度でも新規作成できるようにする
-                // 🚧テスト用：動作確認がしやすいよう、いったん重複チェックを無効化しています（確認できたら元に戻します）
-                // const existing = await getDoc(doc(db, "roomLikes", likeDocId));
-                // if (existing.exists()) return { success: false, reason: 'already' };
-                await setDoc(doc(db, "roomLikes", likeDocId), { likerUid: currentUid, ownerUid, createdAt: Date.now() });
-                await setDoc(doc(db, "rankings", ownerUid), { roomLikeCount: increment(1) }, { merge: true });
+                // 🐛修正：テスト用にID末尾へDate.now()を足して毎回別ドキュメント化＋重複チェックを
+                // 無効化したままになっていたため、いいねボタン連打でroomLikeCountとガチャコインが
+                // 無限に増やせてしまっていた。checkRoomLiked()が前提とする`${liker}_${owner}`という
+                // 固定IDに戻し、重複チェックも復活させる（Firestoreルール側でも1組につき1回に制限する）
+                const likeDocId = `${currentUid}_${ownerUid}`;
+                const likeRef = doc(db, "roomLikes", likeDocId);
+                const existing = await getDoc(likeRef);
+                if (existing.exists()) return { success: false, reason: 'already' };
+                // 🐛修正：いいねドキュメントの新規作成とroomLikeCountの+1を、別々の書き込みではなく
+                // 1つのバッチにまとめる。Firestoreルール側でgetAfter()を使い「このバッチで
+                // いいねドキュメントが新規作成された時だけ+1を許可する」ように連動させるための対応
+                // （別々の書き込みのままだと、いいねドキュメント作成をすり抜けてカウントだけ連打できてしまう）
+                const batch = writeBatch(db);
+                batch.set(likeRef, { likerUid: currentUid, ownerUid, createdAt: Date.now() });
+                batch.set(doc(db, "rankings", ownerUid), { roomLikeCount: increment(1) }, { merge: true });
+                await batch.commit();
                 // 🎁 相手にもガチャコインを1枚届ける（既存のgiftsの仕組みをそのまま使う）
                 const myDoc = await getDoc(doc(db, "rankings", currentUid));
                 const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';
@@ -333,14 +363,43 @@
             return [uidA, uidB].sort().join('_');
         }
 
+        // 🎂 チャット年齢ゲート：自分のchatEligible（13歳以上かどうか）をFirestoreから取得/保存する
+        window.getMyChatEligibility = async function () {
+            if (!fbReady || !db || !currentUid) return null;
+            try {
+                const d = await getDoc(doc(db, "rankings", currentUid));
+                if (d.exists() && typeof d.data().chatEligible === 'boolean') return d.data().chatEligible;
+            } catch (e) { console.error("年齢確認の取得エラー:", e); }
+            return null; // 未回答
+        };
+        window.setMyChatEligibility = async function (eligible) {
+            if (!fbReady || !db || !currentUid) return false;
+            try {
+                await setDoc(doc(db, "rankings", currentUid), { chatEligible: !!eligible }, { merge: true });
+                return true;
+            } catch (e) { console.error("年齢確認の保存エラー:", e); return false; }
+        };
+        // 二人の現在のchatEligibleが両方trueかどうかを判定する（未回答/未成立はfalse扱い＝安全側）
+        async function computeChatEnabled(uidA, uidB) {
+            try {
+                const [a, b] = await Promise.all([getDoc(doc(db, "rankings", uidA)), getDoc(doc(db, "rankings", uidB))]);
+                return !!(a.exists() && a.data().chatEligible === true && b.exists() && b.data().chatEligible === true);
+            } catch (e) { return false; }
+        }
+
         // 🚪🟢 招待を送った側(ホスト)が、ゲストを待つ部屋セッションを開始する
         window.startRoomHostSession = async function (guestUid) {
             if (!fbReady || !db || !currentUid) return null;
             const roomId = getRoomSessionId(currentUid, guestUid);
             try {
+                // 🎂 13歳未満が関わるペアでは自由文チャットを無効化する（スタンプのみ）。
+                // 実際の可否はFirestoreルール側でも同じ条件をget()で再計算して検証するので、
+                // ここで送る値を偽ってもチャット送信は許可されない
+                const chatEnabled = await computeChatEnabled(currentUid, guestUid);
                 await setDoc(doc(db, "roomSessions", roomId), {
                     hostUid: currentUid, guestUid,
                     hostPresentAt: Date.now(), guestPresentAt: null, endedAt: null,
+                    chatEnabled,
                 }, { merge: true });
                 return roomId;
             } catch (e) { console.error("ホストセッション開始エラー:", e); return null; }
@@ -351,9 +410,12 @@
             if (!fbReady || !db || !currentUid) return null;
             const roomId = getRoomSessionId(hostUid, currentUid);
             try {
+                // 🎂 招待時点ではゲスト側がまだ年齢確認に答えていないことがあるため、入室時にも再計算して送り直す
+                const chatEnabled = await computeChatEnabled(hostUid, currentUid);
                 await setDoc(doc(db, "roomSessions", roomId), {
                     hostUid, guestUid: currentUid,
                     guestPresentAt: Date.now(), endedAt: null,
+                    chatEnabled,
                 }, { merge: true });
                 return roomId;
             } catch (e) { console.error("入室エラー:", e); return null; }
@@ -469,9 +531,14 @@
                 if (targetUid === currentUid) return { success: false, reason: 'self' };
 
                 const pairId = [currentUid, targetUid].sort().join('_');
+                // 🐛修正：以前はコードの一致確認がクライアント側だけだったため、ルール上は
+                // 相手のフレンドコードを知らなくても uids に相手のuidを直接指定すれば
+                // 一方的にフレンド関係を作成できてしまっていた。usedFriendCodeを一緒に送り、
+                // ルール側で「相手の現在のfriendCodeと一致するか」をget()で検証できるようにする
                 await setDoc(doc(db, "friendships", pairId), {
                     uids: [currentUid, targetUid],
-                    createdAt: Date.now()
+                    createdAt: Date.now(),
+                    usedFriendCode: trimmed
                 });
                 return { success: true, name: targetDoc.data().name || '名無しさん' };
             } catch (e) {
@@ -847,13 +914,14 @@
                 <!-- 🕐 ゲスト到着待ちの間だけ表示するインジケーター -->
                 <div id="visit-waiting-indicator" style="display:none; position:absolute; bottom:14%; left:50%; transform:translateX(-50%); z-index:16; background:rgba(93,64,55,0.88); color:#fff; font-weight:700; font-size:0.78rem; padding:8px 16px; border-radius:16px; white-space:nowrap;">⏳ お部屋に来るのを待っています…</div>
                 <!-- 💬 メッセージ入力バー：💬ボタンを押すと開く -->
-                <div id="visit-chat-input-bar" style="display:none; position:absolute; left:8px; right:8px; bottom:calc(72px + env(safe-area-inset-bottom, 0px)); z-index:21; background:#fff; border-radius:22px; box-shadow:0 3px 12px rgba(0,0,0,0.3); padding:6px; gap:6px; align-items:center;">
+                <div id="visit-chat-input-bar" style="display:none; position:absolute; left:8px; right:8px; bottom:calc(72px + env(safe-area-inset-bottom, 0px)); z-index:1001; background:#fff; border-radius:22px; box-shadow:0 3px 12px rgba(0,0,0,0.3); padding:6px; gap:6px; align-items:center;">
                     <input id="visit-chat-input" type="text" maxlength="200" placeholder="メッセージを入力…" autocomplete="off" style="flex:1; min-width:0; border:none; outline:none; padding:9px 12px; font-size:0.85rem; border-radius:18px; background:#f5f0e8; color:#5d4037;">
                     <button onclick="sendFreeChatMessage()" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:18px; padding:9px 16px; font-size:0.8rem; font-weight:900;">送信</button>
                 </div>
                 <!-- 📜 履歴ボタン（左下）・💬 メッセージボタン（右下）：ライブチャット中だけ表示 -->
-                <button id="visit-chat-history-btn" onclick="openChatHistoryModal()" style="display:none; position:absolute; left:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:20; width:50px; height:50px; border-radius:50%; background:#795548; border:none; box-shadow:0 3px 10px rgba(0,0,0,0.3); font-size:1.4rem; align-items:center; justify-content:center;">📜</button>
-                <button id="visit-chat-toggle-btn" onclick="toggleChatInputBar()" style="display:none; position:absolute; right:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:20; width:50px; height:50px; border-radius:50%; background:#ff9800; border:none; box-shadow:0 3px 10px rgba(0,0,0,0.3); font-size:1.4rem; align-items:center; justify-content:center;">💬</button>
+                <!-- 🐛修正：z-indexが20のままだと、もちすけ本体(z-index:999/998)の下に隠れてタップできないことがあった。1000超に引き上げる -->
+                <button id="visit-chat-history-btn" onclick="openChatHistoryModal()" style="display:none; position:absolute; left:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:1000; width:50px; height:50px; border-radius:50%; background:#795548; border:none; box-shadow:0 3px 10px rgba(0,0,0,0.3); font-size:1.4rem; align-items:center; justify-content:center;">📜</button>
+                <button id="visit-chat-toggle-btn" onclick="toggleChatInputBar()" style="display:none; position:absolute; right:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:1000; width:50px; height:50px; border-radius:50%; background:#ff9800; border:none; box-shadow:0 3px 10px rgba(0,0,0,0.3); font-size:1.4rem; align-items:center; justify-content:center;">💬</button>
             </div>
             <div id="visit-action-buttons-row" style="padding:6px 10px 0; background:#fff8ec; flex-shrink:0; display:flex; gap:6px; justify-content:flex-end;">
                 <button onclick="onBlockUserTap()" style="flex-shrink:0; background:#78909c; color:#fff; border:none; border-radius:14px; padding:5px 10px; font-size:0.65rem; font-weight:900;">🚫 ブロック</button>
@@ -896,6 +964,29 @@
             </div>
         </div>
     </div>
+
+    <!-- 🎂 チャット年齢確認：招待する/されるときに、まだ回答していなければ最初の1回だけ表示する。
+         13歳未満の場合は自由文チャットを使わせず、定型スタンプのみで会話してもらう -->
+    <div id="birthdate-gate-modal" class="modal">
+        <div class="modal-content" style="max-width:360px;">
+            <h2 style="font-size:1rem;">🎂 チャットのご利用について</h2>
+            <p style="font-size:0.75rem; color:#4a3622; line-height:1.6; text-align:left;">
+                お部屋での自由入力チャットをご利用いただくには、生年月日の入力が必要です。<br>
+                13歳未満の方は、安全のため自由入力チャットの代わりに定型スタンプでお相手とやり取りいただきます。
+            </p>
+            <div style="display:flex; gap:6px; justify-content:center; margin:10px 0;">
+                <select id="birthdate-gate-year" style="padding:8px; border-radius:8px; border:1px solid #ddd;"></select>
+                <select id="birthdate-gate-month" style="padding:8px; border-radius:8px; border:1px solid #ddd;"></select>
+                <select id="birthdate-gate-day" style="padding:8px; border-radius:8px; border:1px solid #ddd;"></select>
+            </div>
+            <button onclick="onConfirmBirthdateGate()" style="width:100%; background:#4caf50; color:#fff; border:none; border-radius:14px; padding:10px; font-weight:900; font-size:0.85rem;">決定</button>
+            <div style="font-size:0.62rem; color:#aaa; margin-top:8px;">※一度回答すると変更できません</div>
+        </div>
+    </div>
+
+    <!-- 🤝 フレンド画面：この外枠(id=friend-modal, class=modal)が抜けていたため、
+         .modalクラスのdisplay:none/position:fixedが効かず、常時・画面下半分に表示されてしまっていた -->
+    <div id="friend-modal" class="modal">
         <div class="modal-content modal-fullscreen">
             <button class="modal-back-btn" onclick="closeFriendScreen()"></button>
             <div style="height: env(safe-area-inset-top, 0px); flex-shrink:0; background:#fff8ec;"></div>

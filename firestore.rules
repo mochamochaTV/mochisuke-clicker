@@ -1,0 +1,199 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ペアの「相手側」のuidを返す小さなヘルパー（friendshipsのuids配列などで使う）
+    function otherUidOf(uids, me) {
+      return uids[0] == me ? uids[1] : uids[0];
+    }
+
+    match /rankings/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.data.score is number
+                   && request.resource.data.score >= 0
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() < 30
+                   && request.resource.data.totalTaps is number
+                   && request.resource.data.totalTaps >= 0;
+      allow update: if request.auth != null
+                    && (
+                      // 🏠❤️ 他人からのroomLikeCount+1。
+                      // 🐛修正：以前はカウント+1の条件しか見ておらず、対応するroomLikesドキュメントの
+                      // 実在を確認していなかったため、いいねボタンを実際に押さなくても連打でカウントだけ
+                      // 水増しできてしまっていた。likeRoom()側でroomLikesの新規作成とこの更新を
+                      // 同じバッチにまとめるようにし、ここではgetAfter()で「このバッチで実際に
+                      // いいねドキュメントが新規作成された」ことを検証する（既存のいいねを使い回した
+                      // 連打では !exists() が false になるので通らない＝1組につき生涯1回だけ加算できる）
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['roomLikeCount'])
+                       && request.resource.data.roomLikeCount == resource.data.get('roomLikeCount', 0) + 1
+                       && !exists(/databases/$(database)/documents/roomLikes/$(request.auth.uid + '_' + userId))
+                       && getAfter(/databases/$(database)/documents/roomLikes/$(request.auth.uid + '_' + userId)).data.likerUid == request.auth.uid
+                       && getAfter(/databases/$(database)/documents/roomLikes/$(request.auth.uid + '_' + userId)).data.ownerUid == userId)
+                      ||
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastActiveAt'])
+                       && request.auth.uid == userId)
+                      ||
+                      // 🎂 チャット年齢ゲート：本人だけが自分のchatEligibleを書ける。
+                      // 一度決まったら変更不可（何歳と偽って何度も答え直すことを防ぐ）
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['chatEligible'])
+                       && request.auth.uid == userId
+                       && request.resource.data.chatEligible is bool
+                       && (!('chatEligible' in resource.data) || resource.data.chatEligible == request.resource.data.chatEligible))
+                    );
+    }
+
+    match /visitStamps/{stampId} {
+      allow read: if request.auth != null && resource.data.toUid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
+      allow update: if request.auth != null && resource.data.toUid == request.auth.uid
+                    && request.resource.data.claimed == true;
+      allow delete: if false;
+    }
+    match /userReports/{reportId} {
+      allow read: if false;
+      allow create: if request.auth != null && request.resource.data.reporterUid == request.auth.uid;
+      allow update, delete: if false;
+    }
+    match /feedback/{feedbackId} {
+      allow read: if false;
+      allow create: if request.auth != null
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() < 1000;
+      allow update, delete: if false;
+    }
+    match /saveBackups/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.data.data is string
+                   && request.resource.data.data.size() < 500000;
+    }
+
+    match /friendships/{pairId} {
+      // 🐛修正：以前は「ログイン済みなら誰でも」読めたため、全ユーザーのフレンド関係が
+      // 第三者から見えてしまっていた。自分が当事者のドキュメントだけ読めるようにする
+      // （fetchFriendList()は元々 where("uids","array-contains",自分のuid) で絞り込んでいるので、
+      // アプリ側の挙動は変わらない）
+      allow read: if request.auth != null && request.auth.uid in resource.data.uids;
+      // 🐛修正：以前は「自分のuidが含まれる2人組であること」しか確認しておらず、相手の同意
+      // （フレンドコードを実際に知っていること）を検証していなかったため、相手のuidを直接指定
+      // するだけで一方的にフレンド関係を作成できてしまっていた。usedFriendCodeが相手の
+      // 現在のfriendCodeと一致することをget()で確認する（＝相手からコードを教えてもらっていない
+      // 限り作成できない）
+      allow create: if request.auth != null
+                    && request.auth.uid in request.resource.data.uids
+                    && request.resource.data.uids.size() == 2
+                    && request.resource.data.uids[0] != request.resource.data.uids[1]
+                    && request.resource.data.usedFriendCode is string
+                    && get(/databases/$(database)/documents/rankings/$(otherUidOf(request.resource.data.uids, request.auth.uid))).data.get('friendCode', null) == request.resource.data.usedFriendCode;
+      allow update, delete: if false;
+    }
+
+    match /gifts/{giftId} {
+      allow read: if request.auth != null && resource.data.toUid == request.auth.uid;
+      allow create: if request.auth != null
+                    && request.resource.data.fromUid == request.auth.uid
+                    && request.resource.data.amount is number
+                    && request.resource.data.amount > 0
+                    && request.resource.data.amount <= 10;
+      allow update: if request.auth != null && resource.data.toUid == request.auth.uid
+                    && request.resource.data.claimed == true;
+      allow delete: if false;
+    }
+
+    match /roomLikes/{likeId} {
+      // 🐛修正：以前は「ログイン済みなら誰でも」読めた。当事者(いいねした側/された側)だけに絞る
+      allow read: if request.auth != null
+                  && (request.auth.uid == resource.data.likerUid || request.auth.uid == resource.data.ownerUid);
+      // 🐛修正：ドキュメントIDを「いいねした人_いいねされた人」の固定形式に強制する。
+      // これにより同じペアのいいねドキュメントは生涯1つしか作成できなくなる
+      // （2回目以降はcreateではなくupdate扱いになり、update自体を禁止しているので必ず弾かれる）
+      allow create: if request.auth != null
+                    && request.resource.data.likerUid == request.auth.uid
+                    && request.resource.data.ownerUid is string
+                    && request.resource.data.ownerUid != request.auth.uid
+                    && likeId == request.auth.uid + '_' + request.resource.data.ownerUid;
+      allow update, delete: if false;
+    }
+
+    match /roomInvites/{inviteId} {
+      allow read: if request.auth != null && (resource.data.toUid == request.auth.uid || resource.data.fromUid == request.auth.uid);
+      allow create: if request.auth != null && request.resource.data.fromUid == request.auth.uid;
+      allow update: if request.auth != null && resource.data.toUid == request.auth.uid
+                    && request.resource.data.claimed == true;
+      allow delete: if false;
+    }
+
+    // 💬🏠 マイルーム1対1ライブチャット：招待ペアごとのセッションと、その配下のメッセージ
+    match /roomSessions/{roomId} {
+      allow read: if request.auth != null
+                  && (resource.data.hostUid == request.auth.uid || resource.data.guestUid == request.auth.uid);
+
+      // 🎂 chatEnabledは、ホスト・ゲスト双方のrankings.chatEligibleが両方trueの時だけtrueを許可する。
+      // クライアントが送ってきた値をそのまま信用せず、ここで独自にget()して照合するので、
+      // 値を偽って送っても弾かれる
+      allow create: if request.auth != null
+                  && (request.resource.data.hostUid == request.auth.uid || request.resource.data.guestUid == request.auth.uid)
+                  && request.resource.data.hostUid is string
+                  && request.resource.data.guestUid is string
+                  && request.resource.data.hostUid != request.resource.data.guestUid
+                  && request.resource.data.chatEnabled == (
+                       exists(/databases/$(database)/documents/rankings/$(request.resource.data.hostUid))
+                       && get(/databases/$(database)/documents/rankings/$(request.resource.data.hostUid)).data.get('chatEligible', false) == true
+                       && exists(/databases/$(database)/documents/rankings/$(request.resource.data.guestUid))
+                       && get(/databases/$(database)/documents/rankings/$(request.resource.data.guestUid)).data.get('chatEligible', false) == true
+                     );
+
+      // 🐛修正：以前は「更新後にhostUid/guestUidのどちらかが自分になっていればOK」としか
+      // 見ておらず、もう一方(相手側)のuidを自分が勝手に別人へ書き換えることを止められていなかった
+      // （招待を経ずにセッションの相手をすり替えて、第三者を部屋に引き込める穴があった）。
+      // hostUid/guestUidの「組み合わせ」自体は作成後も変わらないようにしつつ、同じ2人の間で
+      // 後日ホスト役とゲスト役が入れ替わって再度招待し合うケース（roomIdは2人のuidから
+      // 決定的に決まるため、同じドキュメントが再利用される）は許可する。第三者が紛れ込む
+      // パターンだけを塞ぐのが目的なので「元のペアと完全に同じ2人か」だけを見る。
+      // 更新できるフィールドも明示的に絞る。chatEnabledは既存の値のままか、
+      // create時と同じ計算式で「双方が本当に13歳以上か」を再計算した値と一致する場合のみ
+      // 変更を許可する（招待時点でまだ相手が年齢確認に答えていなかった場合、入室時に
+      // 改めて再計算されてチャットが有効になれるようにするため）
+      allow update: if request.auth != null
+                  && (resource.data.hostUid == request.auth.uid || resource.data.guestUid == request.auth.uid)
+                  && (
+                       (request.resource.data.hostUid == resource.data.hostUid && request.resource.data.guestUid == resource.data.guestUid)
+                       ||
+                       (request.resource.data.hostUid == resource.data.guestUid && request.resource.data.guestUid == resource.data.hostUid)
+                     )
+                  && (
+                       request.resource.data.chatEnabled == resource.data.get('chatEnabled', false)
+                       ||
+                       request.resource.data.chatEnabled == (
+                         exists(/databases/$(database)/documents/rankings/$(request.resource.data.hostUid))
+                         && get(/databases/$(database)/documents/rankings/$(request.resource.data.hostUid)).data.get('chatEligible', false) == true
+                         && exists(/databases/$(database)/documents/rankings/$(request.resource.data.guestUid))
+                         && get(/databases/$(database)/documents/rankings/$(request.resource.data.guestUid)).data.get('chatEligible', false) == true
+                       )
+                     )
+                  && request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['hostUid', 'guestUid', 'hostPresentAt', 'guestPresentAt', 'hostLastSeenAt', 'guestLastSeenAt', 'endedAt', 'chatEnabled']);
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if request.auth != null
+                    && (get(/databases/$(database)/documents/roomSessions/$(roomId)).data.hostUid == request.auth.uid
+                        || get(/databases/$(database)/documents/roomSessions/$(roomId)).data.guestUid == request.auth.uid);
+        // 🎂 修正：セッションのchatEnabledがtrueの時しか自由文メッセージを作成できないようにする。
+        // 13歳未満が関わるペアはUI側でもボタンを隠しているが、UIは回避できるため
+        // ここ（サーバー側）で確実に止める。年齢を偽っていない限り、双方13歳以上のペアの
+        // やり取りには影響しない
+        allow create: if request.auth != null
+                    && request.resource.data.fromUid == request.auth.uid
+                    && request.resource.data.text is string
+                    && request.resource.data.text.size() > 0
+                    && request.resource.data.text.size() <= 200
+                    && (get(/databases/$(database)/documents/roomSessions/$(roomId)).data.hostUid == request.auth.uid
+                        || get(/databases/$(database)/documents/roomSessions/$(roomId)).data.guestUid == request.auth.uid)
+                    && get(/databases/$(database)/documents/roomSessions/$(roomId)).data.get('chatEnabled', false) == true;
+        allow update, delete: if false;
+      }
+    }
+  }
+}

@@ -642,6 +642,54 @@
             return CHAT_NG_WORDS.some(w => text.includes(w));
         }
 
+        // 🎂 チャット年齢ゲート：招待する/されるとき、まだ回答していなければ生年月日を聞く（初回のみ）
+        function calcAgeFromBirthdate(y, m, d) {
+            const today = new Date();
+            let age = today.getFullYear() - y;
+            const hadBirthdayThisYear = (today.getMonth() + 1 > m) || (today.getMonth() + 1 === m && today.getDate() >= d);
+            if (!hadBirthdayThisYear) age--;
+            return age;
+        }
+        let birthdateGateResolver = null;
+        function populateBirthdateGateSelects() {
+            const yearSel = document.getElementById('birthdate-gate-year');
+            if (!yearSel || yearSel.options.length > 0) return; // 初回だけ作る
+            const nowY = new Date().getFullYear();
+            for (let y = nowY; y >= nowY - 100; y--) {
+                const opt = document.createElement('option'); opt.value = y; opt.textContent = y + '年'; yearSel.appendChild(opt);
+            }
+            const monthSel = document.getElementById('birthdate-gate-month');
+            for (let m = 1; m <= 12; m++) { const opt = document.createElement('option'); opt.value = m; opt.textContent = m + '月'; monthSel.appendChild(opt); }
+            const daySel = document.getElementById('birthdate-gate-day');
+            for (let d = 1; d <= 31; d++) { const opt = document.createElement('option'); opt.value = d; opt.textContent = d + '日'; daySel.appendChild(opt); }
+        }
+        function openBirthdateGateModal() {
+            return new Promise((resolve) => {
+                birthdateGateResolver = resolve;
+                populateBirthdateGateSelects();
+                openModal('birthdate-gate-modal');
+            });
+        }
+        async function onConfirmBirthdateGate() {
+            const y = parseInt(document.getElementById('birthdate-gate-year').value, 10);
+            const m = parseInt(document.getElementById('birthdate-gate-month').value, 10);
+            const d = parseInt(document.getElementById('birthdate-gate-day').value, 10);
+            if (!y || !m || !d) { alert('生年月日を選んでください'); return; }
+            const eligible = calcAgeFromBirthdate(y, m, d) >= 13;
+            if (window.setMyChatEligibility) await window.setMyChatEligibility(eligible);
+            closeModal('birthdate-gate-modal');
+            const resolver = birthdateGateResolver;
+            birthdateGateResolver = null;
+            if (!eligible) alert('13歳未満の方は、安全のため自由入力のチャットはご利用いただけません。定型スタンプでお相手とやり取りできます。');
+            if (resolver) resolver(eligible);
+        }
+        // 既に回答済みならすぐ戻り、未回答ならモーダルで聞いてから戻る（何度招待しても2回目以降は聞かない）
+        async function ensureChatEligibilityAnswered() {
+            if (!window.getMyChatEligibility || !window.isRankingReady || !window.isRankingReady()) return;
+            const known = await window.getMyChatEligibility();
+            if (known === null) await openBirthdateGateModal();
+        }
+
         // 🕐 招待を送った側(ホスト)：ゲストを待つ部屋を開く
         async function openHostWaitingRoom(guestUid, guestName) {
             if (!window.startRoomHostSession) { alert('通信環境を確認して、もう一度試してください'); return; }
@@ -695,7 +743,9 @@
             applyVisitOutfit(equippedKisekae, 'visit-myroom-myself');
 
             setVisitActionButtonsForHosting(false);
-            setChatUiVisible(true);
+            // 🎂 チャットを表示してよいかは、セッションのchatEnabled（双方13歳以上か）に従う。
+            // 実際の値はstartRoomSessionWatch()の監視コールバックが届き次第すぐ反映される
+            setChatUiVisible(false);
             document.getElementById('visit-waiting-indicator').style.display = 'none';
             const likeBtn = document.getElementById('visit-like-btn');
             likeBtn.disabled = false;
@@ -717,6 +767,9 @@
                     handleRoomSessionEnded(otherName);
                     return;
                 }
+                // 🎂 chatEnabled（双方が13歳以上と確認できたペアかどうか）に応じて、
+                // チャット用ボタン/入力欄の表示・非表示をここで一元的に切り替える
+                setChatUiVisible(data.chatEnabled === true);
                 if (activeChatIsHost && data.guestPresentAt) {
                     const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
                     if (!myselfWrap.dataset.shown) onGuestArrived(otherName);
@@ -745,7 +798,7 @@
             myselfWrap.style.display = 'block';
             document.getElementById('visit-waiting-indicator').style.display = 'none';
             document.getElementById('visit-myroom-name-label').textContent = `🏠 ${guestName}さんと一緒にお部屋タイム`;
-            setChatUiVisible(true);
+            // 🎂 チャットの表示可否はstartRoomSessionWatch()の監視コールバック側(chatEnabled)に任せる
             playAudioFile('audio/levelup.mp3');
             if (activeChatOtherUid && window.fetchMyroomData) {
                 const data = await window.fetchMyroomData(activeChatOtherUid);
@@ -1312,6 +1365,7 @@
         }
         async function onSendRoomInviteTap(uid, btnEl) {
             const guestName = btnEl.dataset.friendName || '名無しさん';
+            await ensureChatEligibilityAnswered(); // 🎂 招待する側：初回だけ生年月日を確認する
             showRoomChatTermsModal(async () => {
                 btnEl.disabled = true;
                 btnEl.textContent = '...';
@@ -1353,9 +1407,12 @@
             const latest = validInvites[validInvites.length - 1]; // 複数来ていても、直近1件だけ案内する
             setTimeout(() => {
                 if (confirm(`✉️ ${latest.fromName}さんが、あなたをお部屋に招待してくれたよ！\n見に行く？`)) {
-                    showRoomChatTermsModal(() => {
-                        joinFriendRoomAndChat(latest.fromUid, latest.fromName);
-                    });
+                    (async () => {
+                        await ensureChatEligibilityAnswered(); // 🎂 招待される側：初回だけ生年月日を確認する
+                        showRoomChatTermsModal(() => {
+                            joinFriendRoomAndChat(latest.fromUid, latest.fromName);
+                        });
+                    })();
                 }
             }, 1200);
         }

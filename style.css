@@ -416,6 +416,10 @@
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: var(--app-height, 100%); background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; flex-direction: column; }
         #furniture-preview-modal { z-index: 1200; }
         #visit-myroom-modal { z-index: 1200; }
+        /* 🐛修正：会話履歴モーダルにz-index指定が無く、既定値1000のままだったため、
+           #visit-myroom-modal(1200)がまだ開いている間はその下に隠れて見えなかった。
+           マイルームを閉じて初めて背面から現れていたのはこれが原因。マイルームより上に来るよう明示する */
+        #visit-chat-history-modal { z-index: 1300; }
         .modal-content { background: white; padding: 22px; border-radius: 16px; width: 85%; max-width: 380px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); max-height: calc(var(--app-height, 100vh) * 0.75); overflow-y: auto; box-sizing: border-box; position: relative; }
 
         /* ミニゲーム中は連打の勢いで画面がスクロールしてズレてしまわないよう固定する */
@@ -1205,12 +1209,17 @@
         .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
 
         /* 💬 マイルーム1対1ライブチャットの吹き出し（もちすけの頭上にセリフとして表示） */
+        /* 🐛修正：widthを指定せず「left:50%」だけでtranslateX(-50%)中央寄せしていたため、
+           position:absoluteのshrink-to-fit計算に使われる「利用可能幅」がleftの分だけ半分に
+           減ってしまい、日本語（単語区切りが無くどこでも改行してよい文字種）だと
+           ほぼ1〜2文字ごとに折り返す極端に狭い吹き出しになっていた。
+           width:max-contentにして、中身の自然な幅（max-widthが上限）で確定させる */
         .room-chat-bubble {
             position: absolute; bottom: 100%; left: 50%; margin-bottom: 8px;
             transform: translateX(-50%) scale(0.8); transform-origin: center bottom;
             background: white; padding: 8px 12px; border-radius: 16px; font-size: 0.76rem; font-weight: bold;
             color: #4a3622; border: 3px solid #ff9800; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            white-space: normal; max-width: 150px; text-align: center; line-height: 1.35; word-break: break-word;
+            white-space: normal; width: max-content; max-width: 150px; text-align: center; line-height: 1.35; word-break: break-word;
             z-index: 1000; opacity: 0; transition: all 0.2s ease-out; pointer-events: none;
         }
         .room-chat-bubble.chat-bubble-show { opacity: 1; transform: translateX(-50%) scale(1); }
