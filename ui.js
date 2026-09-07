@@ -246,10 +246,6 @@
             if (!seenButtonHints.map) { seenButtonHints.map = true; saveGame(); showMochiComment('地図で好きな県に飛べるで！'); }
             openMap();
         }
-        // 🔓 隠しコマンド：PWA（ホーム画面）ではURLを直接打てないため、⚙️ボタンを素早く7回タップすると
-        // 合言葉入力で管理者モードを有効化できるようにする
-        let menuBtnTapCount = 0;
-        let menuBtnTapTimer = null;
         // 🗺️⚙️🖼️🍴 4隅ボタンの位置・大きさを反映する
         function applyCornerBtnPositions() {
             document.documentElement.style.setProperty('--corner-btn-size', CORNER_BTN_SIZE + 'px');
@@ -342,24 +338,6 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
         function onMenuButtonTap() {
-            menuBtnTapCount++;
-            clearTimeout(menuBtnTapTimer);
-            menuBtnTapTimer = setTimeout(() => { menuBtnTapCount = 0; }, 1500);
-            if (menuBtnTapCount >= 7) {
-                menuBtnTapCount = 0;
-                const key = prompt('合言葉を入力してください');
-                if (key === 'zk9m2xq7wv4p8trh21bs') {
-                    try { localStorage.setItem('punicker_dev_mode', '1'); } catch (e) {}
-                    IS_DEV_MODE = true;
-                    window.IS_DEV_MODE = true;
-                    const section = document.getElementById('dev-tools-section');
-                    if (section) section.style.display = 'block';
-                    alert('🔓 管理者モードが有効になりました！');
-                } else if (key !== null) {
-                    alert('違います');
-                }
-                return;
-            }
             if (!seenButtonHints.menu) { seenButtonHints.menu = true; saveGame(); showMochiComment('設定はここから触れるで！'); }
             openModal('menu-modal'); refreshCloudBackupStatus();
         }
@@ -1852,7 +1830,6 @@
             }, 800);
         }
 
-        // 🚧「移動する」の最終的なUIはまだ未定。ひとまず一覧を出す形で仮実装しておく
         function openMoveMenu() {
             openModal('move-menu-modal'); // 移動先を選ぶだけなので、ここではフェードしない（選んだ時にフェードする）
             renderMoveMenuParts();
@@ -1962,7 +1939,6 @@
         // ===================================================================
         // 🛋️ マイルーム
         // ===================================================================
-        // 🚧 マイルームは仕様検討中のため、いったん開発者モード限定にしておく
         function openMyRoomEntry() {
             moveMenuGoTo(openMyRoom);
         }
