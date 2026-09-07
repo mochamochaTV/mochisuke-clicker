@@ -344,7 +344,7 @@
            <head>のスクリプトが、ブラウザのタブ表示なら<html>に'browser-mode'クラスを付ける
            （＝付いていない＝PWAとして起動している、とみなせる）ので、それを目印に切り替える */
         :root { --pwa-bottom-btn-shift: 0px; }
-        html:not(.browser-mode) { --pwa-bottom-btn-shift: 24px; }
+        html:not(.browser-mode) { --pwa-bottom-btn-shift: 40px; }
 
         /* 🎭 マイルーム中央下のアクションボタン（丸・絵文字）。押すと叫ぶ/ごはんなどのサブボタンが横に開く。
            🐛修正：z-index:40のままだともちすけ本体(z-index:999/998)の下に隠れてタップできなかったため、1000に引き上げる */

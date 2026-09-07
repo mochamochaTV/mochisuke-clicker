@@ -706,6 +706,11 @@
             }
 
             // ✨ 環境パーティクル（ゆっくり漂う光の粒。フェードイン→フェードアウト）
+            // 🐛パフォーマンス修正：この演出はタップ操作に関係なく常時（何もしていなくても）動き続けるため、
+            // 従来のshadowBlur（canvasの中でも特にモバイルSafariで負荷が重い処理）を使っていると、
+            // 起動しているだけでスマホが熱くなったりバッテリーを消費し続ける一因になっていた。
+            // 見た目はほぼそのままに、影(shadow)ではなく単純に二重の円（外側は薄く大きく、内側は濃く小さく）を
+            // 重ねて描くだけの方式に変更し、常時実行される処理を軽量化した
             for (let i = ambientSparkles.length - 1; i >= 0; i--) {
                 const s = ambientSparkles[i];
                 s.x += s.vx; s.y += s.vy; s.life++;
@@ -713,10 +718,13 @@
                 const t = s.life / s.maxLife;
                 const fade = t < 0.15 ? t / 0.15 : t > 0.8 ? (1 - t) / 0.2 : 1;
                 ctx.save();
-                ctx.globalAlpha = Math.max(0, fade * 0.35);
+                ctx.fillStyle = '#ffe9a8';
+                ctx.globalAlpha = Math.max(0, fade * 0.16);
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size * 1.8, 0, Math.PI * 2);
+                ctx.fill();
                 ctx.fillStyle = '#fff8dc';
-                ctx.shadowColor = '#ffe9a8';
-                ctx.shadowBlur = 6;
+                ctx.globalAlpha = Math.max(0, fade * 0.35);
                 ctx.beginPath();
                 ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 ctx.fill();
