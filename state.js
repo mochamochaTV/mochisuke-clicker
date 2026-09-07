@@ -169,6 +169,30 @@
                 ownedMyroomItems: ownedMyroomItems, equippedMyroom: equippedMyroom,
                 myroomSlots: myroomSlots, currentMyroomSlotIndex: currentMyroomSlotIndex
             };
+
+            // 🛡️ セーブ安全装置：バグ等で、意味のある所持数がまるごと0になった「壊れた状態」を
+            // 気づかずそのまま上書き保存してしまう事故を防ぐ（実際にこの種のバグで、もち数・
+            // ゲームセンターのコイン・累計タップ数が起動のたびに0に戻る問題が一度発生している）。
+            // 「直前のセーブでは意味のある進行があったのに、今回は主要な数値が軒並み0になっている」
+            // という、通常のプレイでは絶対に起きない不自然な変化を検知したら、保存そのものを中断して
+            // 今ある（無事な）セーブデータを守る。転生（プレステージ）はscoreを意図的に0へ戻すが、
+            // その際もガチャコイン・累計タップ数は必ず引き継がれる（0にならない）ため、この安全装置には
+            // 引っかからない。
+            try {
+                const prevRaw = localStorage.getItem('mochisuke_save_data');
+                if (prevRaw) {
+                    const prev = JSON.parse(prevRaw);
+                    const prevHadProgress = (prev.score > 100) || (prev.totalTapsCount > 20) || (prev.gachaCoins > 0) || (prev.minigameCoins > 0);
+                    const nowLooksWiped = state.score === 0 && state.totalTapsCount === 0 && state.gachaCoins === 0 && state.minigameCoins === 0;
+                    const prestigeWentBackwards = typeof prev.prestigeCount === 'number' && state.prestigeCount < prev.prestigeCount; // 転生回数が減ることは絶対に無い
+                    if ((prevHadProgress && nowLooksWiped) || prestigeWentBackwards) {
+                        localStorage.setItem('mochisuke_save_data_safety_backup', prevRaw); // 何かあった時に手動で復元できるよう、直前の状態を退避しておく
+                        console.error('🛡️セーブ安全装置作動：直前のセーブに進行状況があったのに、今回まるごと0（または転生回数の逆行）になっていたため、保存を中断しました。', { prev, wouldBeSaved: state });
+                        return; // 保存しない＝今localStorageにある無事なデータをそのまま残す
+                    }
+                }
+            } catch (e) { /* 安全装置自体の不具合でゲームを止めないよう、失敗時は普通に保存へ進む */ }
+
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
 
@@ -317,15 +341,32 @@
         // 🎁 オフライン収益：離れている間の自動増加(mps)ぶんを、もちの数だけ増やす（進行度には一切影響させない）
 
 
+
         // ===================================================================
         // 🌉 一時的な橋渡し（migration bridge）
         // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
         // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
         // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
-        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
-        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
-        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        //
+        // 🐛重要な修正：以前はここを window.名前 = 名前 という「値の一回きりのコピー」にしていましたが、
+        // これだと let で宣言された（後から書き換わる）変数は、コピーした瞬間の値のまま凍結されて
+        // しまい、このファイル側で値が変わっても window 側には反映されない、という重大なバグがありました。
+        // 逆に、他のファイル（まだimport化されていない）がこの変数へ代入すると、それは window 側だけが
+        // 書き換わり、このファイル本来の変数には反映されません。その結果、例えば「もち数」がタップ画面側の
+        // window.score だけ増えて、実際にセーブされるのはこのファイルの score（増えていない方）……という
+        // ズレが起き、セーブするたびに増えた分が消えてしまっていました（起動のたびに0に戻るバグの原因）。
+        //
+        // そこで、書き換わる可能性がある変数（let）は Object.defineProperty で「get/setする度に
+        // 必ずこのファイル本来の変数を読み書きする」ようにし、window側とこのファイル側で常に
+        // 同じ実体を指すようにしました。書き換わらない値（const・関数・クラス）は今まで通り
+        // 単純コピーのままで問題ありません。全ファイルの移行が終わったら、このブロックごと削除します。
         // ===================================================================
+        Object.defineProperty(window, 'score', { configurable: true, get: () => score, set: (v) => { score = v; } });
+        Object.defineProperty(window, 'totalTapsCount', { configurable: true, get: () => totalTapsCount, set: (v) => { totalTapsCount = v; } });
+        Object.defineProperty(window, 'firstPlayTimestamp', { configurable: true, get: () => firstPlayTimestamp, set: (v) => { firstPlayTimestamp = v; } });
+        Object.defineProperty(window, 'lastActiveTimestamp', { configurable: true, get: () => lastActiveTimestamp, set: (v) => { lastActiveTimestamp = v; } });
+        Object.defineProperty(window, 'playerName', { configurable: true, get: () => playerName, set: (v) => { playerName = v; } });
+        Object.defineProperty(window, 'hadLocalSaveOnLoad', { configurable: true, get: () => hadLocalSaveOnLoad, set: (v) => { hadLocalSaveOnLoad = v; } });
         window.menuSaveGame = menuSaveGame;
         window.menuSaveAndQuit = menuSaveAndQuit;
         window.exportSaveData = exportSaveData;
@@ -335,14 +376,8 @@
         window.restoreFromCloud = restoreFromCloud;
         window.sanitizePlayerName = sanitizePlayerName;
         window.savePlayerName = savePlayerName;
-        window.score = score;
-        window.totalTapsCount = totalTapsCount;
-        window.firstPlayTimestamp = firstPlayTimestamp;
-        window.lastActiveTimestamp = lastActiveTimestamp;
         window.OFFLINE_EARNINGS_CAP_HOURS_BASE = OFFLINE_EARNINGS_CAP_HOURS_BASE;
         window.OFFLINE_EARNINGS_MIN_SECONDS = OFFLINE_EARNINGS_MIN_SECONDS;
-        window.playerName = playerName;
         window.saveGame = saveGame;
-        window.hadLocalSaveOnLoad = hadLocalSaveOnLoad;
         window.loadGame = loadGame;
         window.checkForCloudRestoreOnLoad = checkForCloudRestoreOnLoad;

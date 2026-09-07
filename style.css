@@ -1202,7 +1202,13 @@
         }
 
         .breathe-idle { animation: breathe 2.5s infinite ease-in-out; }
-        #myroom-mochisuke-breathe-wrap {
+        /* 🐛修正：自分のマイルームのもちすけだけこのタップハイライト対策がされており、
+           他人の部屋を訪問した時のもちすけ（ホスト本人／訪問中の自分）には同じ対策が漏れていたため、
+           タップするとモバイル標準の灰色ハイライト（画像の透過部分にも四角く出る）が見えてしまっていた。
+           同じ「マイルームのもちすけをタップする」動作をする要素として、まとめて対策する */
+        #myroom-mochisuke-breathe-wrap,
+        #visit-myroom-mochisuke-breathe-wrap,
+        #visit-myroom-myself-breathe-wrap {
             -webkit-tap-highlight-color: transparent; /* 🐛修正：モバイルブラウザ標準のタップ時ハイライト（透過部分含む灰色の四角）が出ないようにする */
             touch-action: manipulation;
         }

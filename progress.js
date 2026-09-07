@@ -518,54 +518,71 @@
         }
 
 
+
         // ===================================================================
         // 🌉 一時的な橋渡し（migration bridge）
         // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
         // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
         // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
-        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
-        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
-        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        //
+        // 🐛重要な修正：以前はここを window.名前 = 名前 という「値の一回きりのコピー」にしていましたが、
+        // これだと let で宣言された（後から書き換わる）変数は、コピーした瞬間の値のまま凍結されて
+        // しまい、このファイル側で値が変わっても window 側には反映されない、という重大なバグがありました。
+        // 逆に、他のファイル（まだimport化されていない）がこの変数へ代入すると、それは window 側だけが
+        // 書き換わり、このファイル本来の変数には反映されません。その結果、例えば「もち数」がタップ画面側の
+        // window.score だけ増えて、実際にセーブされるのはこのファイルの score（増えていない方）……という
+        // ズレが起き、セーブするたびに増えた分が消えてしまっていました（起動のたびに0に戻るバグの原因）。
+        //
+        // そこで、書き換わる可能性がある変数（let）は Object.defineProperty で「get/setする度に
+        // 必ずこのファイル本来の変数を読み書きする」ようにし、window側とこのファイル側で常に
+        // 同じ実体を指すようにしました。書き換わらない値（const・関数・クラス）は今まで通り
+        // 単純コピーのままで問題ありません。全ファイルの移行が終わったら、このブロックごと削除します。
         // ===================================================================
-        window.prestigeCount = prestigeCount;
-        window.ownedKisekaeItems = ownedKisekaeItems;
-        window.equippedKisekae = equippedKisekae;
-        window.missionCounters = missionCounters;
-        window.missionDailyDate = missionDailyDate;
-        window.missionWeeklyWeekKey = missionWeeklyWeekKey;
-        window.missionDailySelected = missionDailySelected;
-        window.missionWeeklySelected = missionWeeklySelected;
-        window.missionClaimed = missionClaimed;
-        window.tutorialMissionStep = tutorialMissionStep;
-        window.ownedMyroomItems = ownedMyroomItems;
-        window.equippedMyroom = equippedMyroom;
-        window.myroomSlots = myroomSlots;
-        window.currentMyroomSlotIndex = currentMyroomSlotIndex;
-        window.previewKisekae = previewKisekae;
-        window.prestigeScoreHistory = prestigeScoreHistory;
-        window.prestigePoints = prestigePoints;
+        Object.defineProperty(window, 'prestigeCount', { configurable: true, get: () => prestigeCount, set: (v) => { prestigeCount = v; } });
+        Object.defineProperty(window, 'ownedKisekaeItems', { configurable: true, get: () => ownedKisekaeItems, set: (v) => { ownedKisekaeItems = v; } });
+        Object.defineProperty(window, 'equippedKisekae', { configurable: true, get: () => equippedKisekae, set: (v) => { equippedKisekae = v; } });
+        Object.defineProperty(window, 'missionCounters', { configurable: true, get: () => missionCounters, set: (v) => { missionCounters = v; } });
+        Object.defineProperty(window, 'missionDailyDate', { configurable: true, get: () => missionDailyDate, set: (v) => { missionDailyDate = v; } });
+        Object.defineProperty(window, 'missionWeeklyWeekKey', { configurable: true, get: () => missionWeeklyWeekKey, set: (v) => { missionWeeklyWeekKey = v; } });
+        Object.defineProperty(window, 'missionDailySelected', { configurable: true, get: () => missionDailySelected, set: (v) => { missionDailySelected = v; } });
+        Object.defineProperty(window, 'missionWeeklySelected', { configurable: true, get: () => missionWeeklySelected, set: (v) => { missionWeeklySelected = v; } });
+        Object.defineProperty(window, 'missionClaimed', { configurable: true, get: () => missionClaimed, set: (v) => { missionClaimed = v; } });
+        Object.defineProperty(window, 'tutorialMissionStep', { configurable: true, get: () => tutorialMissionStep, set: (v) => { tutorialMissionStep = v; } });
+        Object.defineProperty(window, 'ownedMyroomItems', { configurable: true, get: () => ownedMyroomItems, set: (v) => { ownedMyroomItems = v; } });
+        Object.defineProperty(window, 'equippedMyroom', { configurable: true, get: () => equippedMyroom, set: (v) => { equippedMyroom = v; } });
+        Object.defineProperty(window, 'myroomSlots', { configurable: true, get: () => myroomSlots, set: (v) => { myroomSlots = v; } });
+        Object.defineProperty(window, 'currentMyroomSlotIndex', { configurable: true, get: () => currentMyroomSlotIndex, set: (v) => { currentMyroomSlotIndex = v; } });
+        Object.defineProperty(window, 'previewKisekae', { configurable: true, get: () => previewKisekae, set: (v) => { previewKisekae = v; } });
+        Object.defineProperty(window, 'prestigeScoreHistory', { configurable: true, get: () => prestigeScoreHistory, set: (v) => { prestigeScoreHistory = v; } });
+        Object.defineProperty(window, 'prestigePoints', { configurable: true, get: () => prestigePoints, set: (v) => { prestigePoints = v; } });
+        Object.defineProperty(window, 'gachaCoins', { configurable: true, get: () => gachaCoins, set: (v) => { gachaCoins = v; } });
+        Object.defineProperty(window, 'prestigeShopLv', { configurable: true, get: () => prestigeShopLv, set: (v) => { prestigeShopLv = v; } });
+        Object.defineProperty(window, 'hasSeenJapanClear', { configurable: true, get: () => hasSeenJapanClear, set: (v) => { hasSeenJapanClear = v; } });
+        Object.defineProperty(window, 'prefTaps', { configurable: true, get: () => prefTaps, set: (v) => { prefTaps = v; } });
+        Object.defineProperty(window, 'currentStageIndex', { configurable: true, get: () => currentStageIndex, set: (v) => { currentStageIndex = v; } });
+        Object.defineProperty(window, 'selectedStageIndex', { configurable: true, get: () => selectedStageIndex, set: (v) => { selectedStageIndex = v; } });
+        Object.defineProperty(window, 'currentStageProgress', { configurable: true, get: () => currentStageProgress, set: (v) => { currentStageProgress = v; } });
+        Object.defineProperty(window, 'collectedStamps', { configurable: true, get: () => collectedStamps, set: (v) => { collectedStamps = v; } });
+        Object.defineProperty(window, 'stageArrivalTime', { configurable: true, get: () => stageArrivalTime, set: (v) => { stageArrivalTime = v; } });
+        Object.defineProperty(window, 'stampGuardRecheckTimer', { configurable: true, get: () => stampGuardRecheckTimer, set: (v) => { stampGuardRecheckTimer = v; } });
+        Object.defineProperty(window, 'stampDebugMode', { configurable: true, get: () => stampDebugMode, set: (v) => { stampDebugMode = v; } });
+        Object.defineProperty(window, 'stampDebugInterval', { configurable: true, get: () => stampDebugInterval, set: (v) => { stampDebugInterval = v; } });
+        Object.defineProperty(window, 'isPendingStampMoment', { configurable: true, get: () => isPendingStampMoment, set: (v) => { isPendingStampMoment = v; } });
         window.PRESTIGE_BONUS_PER_COUNT = PRESTIGE_BONUS_PER_COUNT;
         window.getPrestigeBonusMultiplier = getPrestigeBonusMultiplier;
-        window.gachaCoins = gachaCoins;
         window.GACHA_COIN_PER_STAMP = GACHA_COIN_PER_STAMP;
         window.GACHA_COIN_JAPAN_CLEAR = GACHA_COIN_JAPAN_CLEAR;
         window.GACHA_COIN_PER_PRESTIGE = GACHA_COIN_PER_PRESTIGE;
-        window.prestigeShopLv = prestigeShopLv;
         window.getOfflineEarningsCapHours = getOfflineEarningsCapHours;
         window.getMinigameDailyLimit = getMinigameDailyLimit;
         window.getPrestigeStartingBonus = getPrestigeStartingBonus;
         window.getPrestigeCdReductionSec = getPrestigeCdReductionSec;
         window.buyPrestigeShopItem = buyPrestigeShopItem;
         window.renderPrestigeShop = renderPrestigeShop;
-        window.hasSeenJapanClear = hasSeenJapanClear;
         window.MINIGAME_DAILY_LIMIT_BASE = MINIGAME_DAILY_LIMIT_BASE;
-        window.prefTaps = prefTaps;
         window.getPrefTrophyLines = getPrefTrophyLines;
         window.getPrefTrophy = getPrefTrophy;
         window.getPrefTrophyIcon = getPrefTrophyIcon;
-        window.currentStageIndex = currentStageIndex;
-        window.selectedStageIndex = selectedStageIndex;
-        window.currentStageProgress = currentStageProgress;
         window.checkOfflineEarnings = checkOfflineEarnings;
         window.triggerAreaTransition = triggerAreaTransition;
         window.showPrefTrophyDetail = showPrefTrophyDetail;
@@ -578,13 +595,7 @@
         window.confirmCloseJapanClear = confirmCloseJapanClear;
         window.closeJapanClearAndExplainPrestige = closeJapanClearAndExplainPrestige;
         window.saveJapanClearImage = saveJapanClearImage;
-        window.collectedStamps = collectedStamps;
-        window.stageArrivalTime = stageArrivalTime;
-        window.stampGuardRecheckTimer = stampGuardRecheckTimer;
-        window.stampDebugMode = stampDebugMode;
-        window.stampDebugInterval = stampDebugInterval;
         window.checkStageProgress = checkStageProgress;
-        window.isPendingStampMoment = isPendingStampMoment;
         window.openDiaryForStamping = openDiaryForStamping;
         window.tapStampFrame = tapStampFrame;
         window.trackMissionEvent = trackMissionEvent;

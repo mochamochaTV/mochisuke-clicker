@@ -946,17 +946,52 @@
 
 
 
+
         // ===================================================================
         // 🌉 一時的な橋渡し（migration bridge）
         // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
         // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
         // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
-        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
-        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
-        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        //
+        // 🐛重要な修正：以前はここを window.名前 = 名前 という「値の一回きりのコピー」にしていましたが、
+        // これだと let で宣言された（後から書き換わる）変数は、コピーした瞬間の値のまま凍結されて
+        // しまい、このファイル側で値が変わっても window 側には反映されない、という重大なバグがありました。
+        // 逆に、他のファイル（まだimport化されていない）がこの変数へ代入すると、それは window 側だけが
+        // 書き換わり、このファイル本来の変数には反映されません。その結果、例えば「もち数」がタップ画面側の
+        // window.score だけ増えて、実際にセーブされるのはこのファイルの score（増えていない方）……という
+        // ズレが起き、セーブするたびに増えた分が消えてしまっていました（起動のたびに0に戻るバグの原因）。
+        //
+        // そこで、書き換わる可能性がある変数（let）は Object.defineProperty で「get/setする度に
+        // 必ずこのファイル本来の変数を読み書きする」ようにし、window側とこのファイル側で常に
+        // 同じ実体を指すようにしました。書き換わらない値（const・関数・クラス）は今まで通り
+        // 単純コピーのままで問題ありません。全ファイルの移行が終わったら、このブロックごと削除します。
         // ===================================================================
+        Object.defineProperty(window, 'deferredInstallPrompt', { configurable: true, get: () => deferredInstallPrompt, set: (v) => { deferredInstallPrompt = v; } });
+        Object.defineProperty(window, 'lastTouchEnd', { configurable: true, get: () => lastTouchEnd, set: (v) => { lastTouchEnd = v; } });
+        Object.defineProperty(window, 'isBgmInitialized', { configurable: true, get: () => isBgmInitialized, set: (v) => { isBgmInitialized = v; } });
+        Object.defineProperty(window, 'canvas', { configurable: true, get: () => canvas, set: (v) => { canvas = v; } });
+        Object.defineProperty(window, 'ctx', { configurable: true, get: () => ctx, set: (v) => { ctx = v; } });
+        Object.defineProperty(window, 'particleList', { configurable: true, get: () => particleList, set: (v) => { particleList = v; } });
+        Object.defineProperty(window, 'rainCanvas', { configurable: true, get: () => rainCanvas, set: (v) => { rainCanvas = v; } });
+        Object.defineProperty(window, 'rainCtx', { configurable: true, get: () => rainCtx, set: (v) => { rainCtx = v; } });
+        Object.defineProperty(window, 'mochiRainList', { configurable: true, get: () => mochiRainList, set: (v) => { mochiRainList = v; } });
+        Object.defineProperty(window, 'ambientSparkles', { configurable: true, get: () => ambientSparkles, set: (v) => { ambientSparkles = v; } });
+        Object.defineProperty(window, 'goldParticleImg', { configurable: true, get: () => goldParticleImg, set: (v) => { goldParticleImg = v; } });
+        Object.defineProperty(window, 'lastGreetingHourBucket', { configurable: true, get: () => lastGreetingHourBucket, set: (v) => { lastGreetingHourBucket = v; } });
+        Object.defineProperty(window, 'audioCtx', { configurable: true, get: () => audioCtx, set: (v) => { audioCtx = v; } });
+        Object.defineProperty(window, 'bgmVolumeMult', { configurable: true, get: () => bgmVolumeMult, set: (v) => { bgmVolumeMult = v; } });
+        Object.defineProperty(window, 'sfxVolumeMult', { configurable: true, get: () => sfxVolumeMult, set: (v) => { sfxVolumeMult = v; } });
+        Object.defineProperty(window, 'bgmGainNode', { configurable: true, get: () => bgmGainNode, set: (v) => { bgmGainNode = v; } });
+        Object.defineProperty(window, 'bgmSourceNode', { configurable: true, get: () => bgmSourceNode, set: (v) => { bgmSourceNode = v; } });
+        Object.defineProperty(window, 'currentBgmFile', { configurable: true, get: () => currentBgmFile, set: (v) => { currentBgmFile = v; } });
+        Object.defineProperty(window, 'IS_DEV_MODE', { configurable: true, get: () => IS_DEV_MODE, set: (v) => { IS_DEV_MODE = v; } });
+        Object.defineProperty(window, 'shakeTimeout', { configurable: true, get: () => shakeTimeout, set: (v) => { shakeTimeout = v; } });
+        Object.defineProperty(window, 'lastScreenShakeTime', { configurable: true, get: () => lastScreenShakeTime, set: (v) => { lastScreenShakeTime = v; } });
+        Object.defineProperty(window, 'lastScreenFlashTime', { configurable: true, get: () => lastScreenFlashTime, set: (v) => { lastScreenFlashTime = v; } });
+        Object.defineProperty(window, 'rippleList', { configurable: true, get: () => rippleList, set: (v) => { rippleList = v; } });
+        Object.defineProperty(window, 'floatingTextList', { configurable: true, get: () => floatingTextList, set: (v) => { floatingTextList = v; } });
+        Object.defineProperty(window, 'lastAmbientFrameTs', { configurable: true, get: () => lastAmbientFrameTs, set: (v) => { lastAmbientFrameTs = v; } });
         window.MAINTENANCE_MODE = MAINTENANCE_MODE;
-        window.deferredInstallPrompt = deferredInstallPrompt;
         window.installBanner = installBanner;
         window.installBannerText = installBannerText;
         window.installBannerAction = installBannerAction;
@@ -970,34 +1005,17 @@
         window.fixBottomGap = fixBottomGap;
         window.FEEDBACK_EMAIL = FEEDBACK_EMAIL;
         window.sendFeedback = sendFeedback;
-        window.lastTouchEnd = lastTouchEnd;
-        window.isBgmInitialized = isBgmInitialized;
-        window.canvas = canvas;
-        window.ctx = ctx;
-        window.particleList = particleList;
-        window.rainCanvas = rainCanvas;
-        window.rainCtx = rainCtx;
-        window.mochiRainList = mochiRainList;
         window.MOCHI_RAIN_MAX = MOCHI_RAIN_MAX;
         window.spawnMochiRain = spawnMochiRain;
-        window.ambientSparkles = ambientSparkles;
         window.spawnAmbientSparkle = spawnAmbientSparkle;
         window.particleImg = particleImg;
-        window.goldParticleImg = goldParticleImg;
         window.pickRandom = pickRandom;
         window.getTimeBucketIndex = getTimeBucketIndex;
-        window.lastGreetingHourBucket = lastGreetingHourBucket;
-        window.audioCtx = audioCtx;
         window.audioBuffers = audioBuffers;
         window.audioBufferPromises = audioBufferPromises;
         window.getAudioContext = getAudioContext;
         window.loadAudioBuffer = loadAudioBuffer;
         window.preloadAllSfx = preloadAllSfx;
-        window.bgmVolumeMult = bgmVolumeMult;
-        window.sfxVolumeMult = sfxVolumeMult;
-        window.bgmGainNode = bgmGainNode;
-        window.bgmSourceNode = bgmSourceNode;
-        window.currentBgmFile = currentBgmFile;
         window.ensureBgmGain = ensureBgmGain;
         window.playBgmLoop = playBgmLoop;
         window.stopBgm = stopBgm;
@@ -1007,7 +1025,6 @@
         window.playAudioFilePitched = playAudioFilePitched;
         window.unlockAllPooledAudio = unlockAllPooledAudio;
         window.capturedErrors = capturedErrors;
-        window.IS_DEV_MODE = IS_DEV_MODE;
         window.initDevMode = initDevMode;
         window.debugAddMochi = debugAddMochi;
         window.debugLevelUpSkill = debugLevelUpSkill;
@@ -1022,20 +1039,14 @@
         window.escapeHtml = escapeHtml;
         window.formatMochi = formatMochi;
         window.vibrate = vibrate;
-        window.shakeTimeout = shakeTimeout;
-        window.lastScreenShakeTime = lastScreenShakeTime;
         window.screenShake = screenShake;
-        window.lastScreenFlashTime = lastScreenFlashTime;
         window.screenFlash = screenFlash;
-        window.rippleList = rippleList;
-        window.floatingTextList = floatingTextList;
         window.remToPx = remToPx;
         window.spawnModalParticleBurst = spawnModalParticleBurst;
         window.spawnModalFloatingText = spawnModalFloatingText;
         window.createRippleEffect = createRippleEffect;
         window.createFloatingText = createFloatingText;
         window.createParticle = createParticle;
-        window.lastAmbientFrameTs = lastAmbientFrameTs;
         window.updateAndRenderParticles = updateAndRenderParticles;
         window.renderMochiRainFrame = renderMochiRainFrame;
         window.lazyLoadImage = lazyLoadImage;

@@ -1096,62 +1096,81 @@
 
 
 
+
         // ===================================================================
         // 🌉 一時的な橋渡し（migration bridge）
         // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
         // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
         // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
-        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
-        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
-        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        //
+        // 🐛重要な修正：以前はここを window.名前 = 名前 という「値の一回きりのコピー」にしていましたが、
+        // これだと let で宣言された（後から書き換わる）変数は、コピーした瞬間の値のまま凍結されて
+        // しまい、このファイル側で値が変わっても window 側には反映されない、という重大なバグがありました。
+        // 逆に、他のファイル（まだimport化されていない）がこの変数へ代入すると、それは window 側だけが
+        // 書き換わり、このファイル本来の変数には反映されません。その結果、例えば「もち数」がタップ画面側の
+        // window.score だけ増えて、実際にセーブされるのはこのファイルの score（増えていない方）……という
+        // ズレが起き、セーブするたびに増えた分が消えてしまっていました（起動のたびに0に戻るバグの原因）。
+        //
+        // そこで、書き換わる可能性がある変数（let）は Object.defineProperty で「get/setする度に
+        // 必ずこのファイル本来の変数を読み書きする」ようにし、window側とこのファイル側で常に
+        // 同じ実体を指すようにしました。書き換わらない値（const・関数・クラス）は今まで通り
+        // 単純コピーのままで問題ありません。全ファイルの移行が終わったら、このブロックごと削除します。
         // ===================================================================
-        window.skills = skills;
+        Object.defineProperty(window, 'skills', { configurable: true, get: () => skills, set: (v) => { skills = v; } });
+        Object.defineProperty(window, 'feedBuffActiveUntil', { configurable: true, get: () => feedBuffActiveUntil, set: (v) => { feedBuffActiveUntil = v; } });
+        Object.defineProperty(window, 'feedLastResetDate', { configurable: true, get: () => feedLastResetDate, set: (v) => { feedLastResetDate = v; } });
+        Object.defineProperty(window, 'feedPlaysUsedToday', { configurable: true, get: () => feedPlaysUsedToday, set: (v) => { feedPlaysUsedToday = v; } });
+        Object.defineProperty(window, 'isFever', { configurable: true, get: () => isFever, set: (v) => { isFever = v; } });
+        Object.defineProperty(window, 'feverTimeLeft', { configurable: true, get: () => feverTimeLeft, set: (v) => { feverTimeLeft = v; } });
+        Object.defineProperty(window, 'feverInterval', { configurable: true, get: () => feverInterval, set: (v) => { feverInterval = v; } });
+        Object.defineProperty(window, 'comboCount', { configurable: true, get: () => comboCount, set: (v) => { comboCount = v; } });
+        Object.defineProperty(window, 'comboTimer', { configurable: true, get: () => comboTimer, set: (v) => { comboTimer = v; } });
+        Object.defineProperty(window, 'comboEndCommentId', { configurable: true, get: () => comboEndCommentId, set: (v) => { comboEndCommentId = v; } });
+        Object.defineProperty(window, 'lastComboReflowTime', { configurable: true, get: () => lastComboReflowTime, set: (v) => { lastComboReflowTime = v; } });
+        Object.defineProperty(window, 'mochiLongPressTimer', { configurable: true, get: () => mochiLongPressTimer, set: (v) => { mochiLongPressTimer = v; } });
+        Object.defineProperty(window, 'lastTappedTime', { configurable: true, get: () => lastTappedTime, set: (v) => { lastTappedTime = v; } });
+        Object.defineProperty(window, 'breatheTimer', { configurable: true, get: () => breatheTimer, set: (v) => { breatheTimer = v; } });
+        Object.defineProperty(window, 'isMochiPressed', { configurable: true, get: () => isMochiPressed, set: (v) => { isMochiPressed = v; } });
+        Object.defineProperty(window, 'squeezeStartX', { configurable: true, get: () => squeezeStartX, set: (v) => { squeezeStartX = v; } });
+        Object.defineProperty(window, 'squeezeStartY', { configurable: true, get: () => squeezeStartY, set: (v) => { squeezeStartY = v; } });
+        Object.defineProperty(window, 'isDraggingSqueeze', { configurable: true, get: () => isDraggingSqueeze, set: (v) => { isDraggingSqueeze = v; } });
+        Object.defineProperty(window, 'isSqueezeSettling', { configurable: true, get: () => isSqueezeSettling, set: (v) => { isSqueezeSettling = v; } });
+        Object.defineProperty(window, 'squeezeLastDx', { configurable: true, get: () => squeezeLastDx, set: (v) => { squeezeLastDx = v; } });
+        Object.defineProperty(window, 'squeezeLastDy', { configurable: true, get: () => squeezeLastDy, set: (v) => { squeezeLastDy = v; } });
+        Object.defineProperty(window, 'stretchSoundSource', { configurable: true, get: () => stretchSoundSource, set: (v) => { stretchSoundSource = v; } });
+        Object.defineProperty(window, 'stretchSoundGain', { configurable: true, get: () => stretchSoundGain, set: (v) => { stretchSoundGain = v; } });
+        Object.defineProperty(window, 'gameScreenRect', { configurable: true, get: () => gameScreenRect, set: (v) => { gameScreenRect = v; } });
+        Object.defineProperty(window, 'bunshinCloneRects', { configurable: true, get: () => bunshinCloneRects, set: (v) => { bunshinCloneRects = v; } });
+        Object.defineProperty(window, 'bunshinCloneEls', { configurable: true, get: () => bunshinCloneEls, set: (v) => { bunshinCloneEls = v; } });
+        Object.defineProperty(window, 'lastCheerTier', { configurable: true, get: () => lastCheerTier, set: (v) => { lastCheerTier = v; } });
+        Object.defineProperty(window, 'lastCheerChangeTime', { configurable: true, get: () => lastCheerChangeTime, set: (v) => { lastCheerChangeTime = v; } });
+        Object.defineProperty(window, 'hasComboTitle1000', { configurable: true, get: () => hasComboTitle1000, set: (v) => { hasComboTitle1000 = v; } });
+        Object.defineProperty(window, 'screamRevertTimeout', { configurable: true, get: () => screamRevertTimeout, set: (v) => { screamRevertTimeout = v; } });
+        Object.defineProperty(window, 'critFilterTimeout', { configurable: true, get: () => critFilterTimeout, set: (v) => { critFilterTimeout = v; } });
+        Object.defineProperty(window, 'critTapId', { configurable: true, get: () => critTapId, set: (v) => { critTapId = v; } });
+        Object.defineProperty(window, 'isScreamActive', { configurable: true, get: () => isScreamActive, set: (v) => { isScreamActive = v; } });
+        Object.defineProperty(window, 'feedDragState', { configurable: true, get: () => feedDragState, set: (v) => { feedDragState = v; } });
+        Object.defineProperty(window, 'feedTeaseLevel', { configurable: true, get: () => feedTeaseLevel, set: (v) => { feedTeaseLevel = v; } });
+        Object.defineProperty(window, 'feedTeaseTimer', { configurable: true, get: () => feedTeaseTimer, set: (v) => { feedTeaseTimer = v; } });
+        Object.defineProperty(window, 'feedBuffIndicatorTimer', { configurable: true, get: () => feedBuffIndicatorTimer, set: (v) => { feedBuffIndicatorTimer = v; } });
+        Object.defineProperty(window, 'hissatsuAutoChargeAccum', { configurable: true, get: () => hissatsuAutoChargeAccum, set: (v) => { hissatsuAutoChargeAccum = v; } });
         window.FEED_BUFF_DURATION_MS = FEED_BUFF_DURATION_MS;
-        window.feedBuffActiveUntil = feedBuffActiveUntil;
         window.FEED_DAILY_LIMIT = FEED_DAILY_LIMIT;
-        window.feedLastResetDate = feedLastResetDate;
-        window.feedPlaysUsedToday = feedPlaysUsedToday;
-        window.isFever = isFever;
-        window.feverTimeLeft = feverTimeLeft;
-        window.feverInterval = feverInterval;
-        window.comboCount = comboCount;
-        window.comboTimer = comboTimer;
-        window.comboEndCommentId = comboEndCommentId;
-        window.lastComboReflowTime = lastComboReflowTime;
-        window.mochiLongPressTimer = mochiLongPressTimer;
         window.MOCHI_LONGPRESS_MS = MOCHI_LONGPRESS_MS;
-        window.lastTappedTime = lastTappedTime;
-        window.breatheTimer = breatheTimer;
-        window.isMochiPressed = isMochiPressed;
-        window.squeezeStartX = squeezeStartX;
-        window.squeezeStartY = squeezeStartY;
-        window.isDraggingSqueeze = isDraggingSqueeze;
-        window.isSqueezeSettling = isSqueezeSettling;
-        window.squeezeLastDx = squeezeLastDx;
-        window.squeezeLastDy = squeezeLastDy;
         window.SQUEEZE_MAX_DRAG = SQUEEZE_MAX_DRAG;
         window.SQUEEZE_MAX_STRETCH = SQUEEZE_MAX_STRETCH;
         window.SQUEEZE_MAX_SQUASH = SQUEEZE_MAX_SQUASH;
         window.SQUEEZE_MIN_DRAG = SQUEEZE_MIN_DRAG;
         window.SQUEEZE_ELEMENT_RADIUS = SQUEEZE_ELEMENT_RADIUS;
-        window.stretchSoundSource = stretchSoundSource;
-        window.stretchSoundGain = stretchSoundGain;
-        window.gameScreenRect = gameScreenRect;
-        window.bunshinCloneRects = bunshinCloneRects;
-        window.bunshinCloneEls = bunshinCloneEls;
         window.refreshBunshinCloneRects = refreshBunshinCloneRects;
         window.getTapPower = getTapPower;
         window.getMps = getMps;
         window.getComboBonusPercent = getComboBonusPercent;
         window.getCheerTier = getCheerTier;
-        window.lastCheerTier = lastCheerTier;
-        window.lastCheerChangeTime = lastCheerChangeTime;
         window.CHEER_MIN_DISPLAY_MS = CHEER_MIN_DISPLAY_MS;
         window.updateCheerBalloon = updateCheerBalloon;
         window.forceCheerLine = forceCheerLine;
-        window.hasComboTitle1000 = hasComboTitle1000;
         window.handleCombo = handleCombo;
-        window.screamRevertTimeout = screamRevertTimeout;
         window.startScreamFace = startScreamFace;
         window.revertScreamFace = revertScreamFace;
         window.triggerAwakeningScream = triggerAwakeningScream;
@@ -1171,9 +1190,6 @@
         window.useSkill = useSkill;
         window.startSkillVisualEffect = startSkillVisualEffect;
         window.endSkillVisualEffect = endSkillVisualEffect;
-        window.critFilterTimeout = critFilterTimeout;
-        window.critTapId = critTapId;
-        window.isScreamActive = isScreamActive;
         window.getMochisukeBaseImg = getMochisukeBaseImg;
         window.resetMochiFilter = resetMochiFilter;
         window.updateSkillTimers = updateSkillTimers;
@@ -1181,11 +1197,8 @@
         window.updateSkillUI = updateSkillUI;
         window.buySkillLevel = buySkillLevel;
         window.resetFeedCountIfNewDay = resetFeedCountIfNewDay;
-        window.feedDragState = feedDragState;
         window.cancelFeedDragIfActive = cancelFeedDragIfActive;
         window.FEED_TEASE_TIME_MS = FEED_TEASE_TIME_MS;
-        window.feedTeaseLevel = feedTeaseLevel;
-        window.feedTeaseTimer = feedTeaseTimer;
         window.scheduleFeedTeaseEscalation = scheduleFeedTeaseEscalation;
         window.showFeedTeaseComment = showFeedTeaseComment;
         window.spawnScreamKanaBurst = spawnScreamKanaBurst;
@@ -1193,8 +1206,6 @@
         window.startFeedDrag = startFeedDrag;
         window.onFeedDragMove = onFeedDragMove;
         window.onFeedDragEnd = onFeedDragEnd;
-        window.feedBuffIndicatorTimer = feedBuffIndicatorTimer;
         window.startFeedBuffIndicator = startFeedBuffIndicator;
         window.startFeverSpawningLoop = startFeverSpawningLoop;
         window.triggerFeverTime = triggerFeverTime;
-        window.hissatsuAutoChargeAccum = hissatsuAutoChargeAccum;

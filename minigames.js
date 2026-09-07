@@ -1118,8 +1118,13 @@
                     <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin:10px 0 6px; min-height:1.4em; text-shadow:0 1px 3px rgba(255,255,255,0.8);"></p>
                     <div id="slot-payout-popup" style="display:none; font-weight:900; font-size:1.8rem; color:#ffd700; text-shadow:0 2px 8px rgba(0,0,0,0.5), 0 0 12px #ff6ec7;"></div>
 
-                    <div id="slot-help-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:20px; overflow-y:auto; box-sizing:border-box; text-align:left;">
-                        <button onclick="toggleSlotHelpOverlay()" style="position:absolute; top:8px; right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
+                    <!-- 🐛修正：PWA(ホーム画面追加/standalone)で開くと、Safariのタブ表示と違い画面が
+                         ノッチ/ステータスバーの裏まで完全に覆うため、固定20pxのpaddingだけだと
+                         閉じるボタンや見出しがその下に隠れて「全体的に上がった」ように見えていた。
+                         env(safe-area-inset-top)ぶんを上だけ追加で確保する（ブラウザ表示では
+                         この値は0になるため、通常表示には影響しない） -->
+                    <div id="slot-help-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:calc(20px + env(safe-area-inset-top, 0px)) 20px 20px; overflow-y:auto; box-sizing:border-box; text-align:left;">
+                        <button onclick="toggleSlotHelpOverlay()" style="position:absolute; top:calc(8px + env(safe-area-inset-top, 0px)); right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
                         <h3 style="margin:0 0 10px; color:#5d4037; text-align:center;">🎰 スロットの遊び方</h3>
                         <p style="font-size:0.78rem; color:#5d4037; line-height:1.6;">① 光っているコインをタップして投入します（1枚で1回）<br>② 光っているレバーを引くとリールが回り始めます<br>③ 光っている3つのボタンで、リールを1つずつ好きなタイミングで止められます<br>④ 上段・中段・下段・斜め2本、5つのライン上に絵柄が3つ揃うと、コインが払い出されます<br>（複数ラインが同時に揃うと、その分コインも増えます）</p>
                         <div style="margin-top:14px;">
@@ -1567,15 +1572,52 @@
 
 
 
+
         // ===================================================================
         // 🌉 一時的な橋渡し（migration bridge）
         // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
         // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
         // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
-        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
-        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
-        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        //
+        // 🐛重要な修正：以前はここを window.名前 = 名前 という「値の一回きりのコピー」にしていましたが、
+        // これだと let で宣言された（後から書き換わる）変数は、コピーした瞬間の値のまま凍結されて
+        // しまい、このファイル側で値が変わっても window 側には反映されない、という重大なバグがありました。
+        // 逆に、他のファイル（まだimport化されていない）がこの変数へ代入すると、それは window 側だけが
+        // 書き換わり、このファイル本来の変数には反映されません。その結果、例えば「もち数」がタップ画面側の
+        // window.score だけ増えて、実際にセーブされるのはこのファイルの score（増えていない方）……という
+        // ズレが起き、セーブするたびに増えた分が消えてしまっていました（起動のたびに0に戻るバグの原因）。
+        //
+        // そこで、書き換わる可能性がある変数（let）は Object.defineProperty で「get/setする度に
+        // 必ずこのファイル本来の変数を読み書きする」ようにし、window側とこのファイル側で常に
+        // 同じ実体を指すようにしました。書き換わらない値（const・関数・クラス）は今まで通り
+        // 単純コピーのままで問題ありません。全ファイルの移行が終わったら、このブロックごと削除します。
         // ===================================================================
+        Object.defineProperty(window, 'slotPlaysRemaining', { configurable: true, get: () => slotPlaysRemaining, set: (v) => { slotPlaysRemaining = v; } });
+        Object.defineProperty(window, 'minigameLastResetDate', { configurable: true, get: () => minigameLastResetDate, set: (v) => { minigameLastResetDate = v; } });
+        Object.defineProperty(window, 'minigamePlaysUsedToday', { configurable: true, get: () => minigamePlaysUsedToday, set: (v) => { minigamePlaysUsedToday = v; } });
+        Object.defineProperty(window, 'minigameSeenUnlocked', { configurable: true, get: () => minigameSeenUnlocked, set: (v) => { minigameSeenUnlocked = v; } });
+        Object.defineProperty(window, 'minigameBests', { configurable: true, get: () => minigameBests, set: (v) => { minigameBests = v; } });
+        Object.defineProperty(window, 'isMinigameActive', { configurable: true, get: () => isMinigameActive, set: (v) => { isMinigameActive = v; } });
+        Object.defineProperty(window, 'minigameCoins', { configurable: true, get: () => minigameCoins, set: (v) => { minigameCoins = v; } });
+        Object.defineProperty(window, 'timeAttackState', { configurable: true, get: () => timeAttackState, set: (v) => { timeAttackState = v; } });
+        Object.defineProperty(window, 'concentrationState', { configurable: true, get: () => concentrationState, set: (v) => { concentrationState = v; } });
+        Object.defineProperty(window, 'mochitsukiState', { configurable: true, get: () => mochitsukiState, set: (v) => { mochitsukiState = v; } });
+        Object.defineProperty(window, 'slotIsSpinning', { configurable: true, get: () => slotIsSpinning, set: (v) => { slotIsSpinning = v; } });
+        Object.defineProperty(window, 'slotSpinLoopSource', { configurable: true, get: () => slotSpinLoopSource, set: (v) => { slotSpinLoopSource = v; } });
+        Object.defineProperty(window, 'slotStoppedCount', { configurable: true, get: () => slotStoppedCount, set: (v) => { slotStoppedCount = v; } });
+        Object.defineProperty(window, 'slotReelResults', { configurable: true, get: () => slotReelResults, set: (v) => { slotReelResults = v; } });
+        Object.defineProperty(window, 'slotReelAnimations', { configurable: true, get: () => slotReelAnimations, set: (v) => { slotReelAnimations = v; } });
+        Object.defineProperty(window, 'slotReelLandingRow', { configurable: true, get: () => slotReelLandingRow, set: (v) => { slotReelLandingRow = v; } });
+        Object.defineProperty(window, 'slotStoppedReels', { configurable: true, get: () => slotStoppedReels, set: (v) => { slotStoppedReels = v; } });
+        Object.defineProperty(window, 'slotBonusZoneSpinsLeft', { configurable: true, get: () => slotBonusZoneSpinsLeft, set: (v) => { slotBonusZoneSpinsLeft = v; } });
+        Object.defineProperty(window, 'slotTotalPulls', { configurable: true, get: () => slotTotalPulls, set: (v) => { slotTotalPulls = v; } });
+        Object.defineProperty(window, 'slotPullsSinceJackpot', { configurable: true, get: () => slotPullsSinceJackpot, set: (v) => { slotPullsSinceJackpot = v; } });
+        Object.defineProperty(window, 'slotJackpotCount', { configurable: true, get: () => slotJackpotCount, set: (v) => { slotJackpotCount = v; } });
+        Object.defineProperty(window, 'slotShortestJackpotPulls', { configurable: true, get: () => slotShortestJackpotPulls, set: (v) => { slotShortestJackpotPulls = v; } });
+        Object.defineProperty(window, 'slotLongestJackpotPulls', { configurable: true, get: () => slotLongestJackpotPulls, set: (v) => { slotLongestJackpotPulls = v; } });
+        Object.defineProperty(window, 'slotNextSpinFree', { configurable: true, get: () => slotNextSpinFree, set: (v) => { slotNextSpinFree = v; } });
+        Object.defineProperty(window, 'slotAdjustMode', { configurable: true, get: () => slotAdjustMode, set: (v) => { slotAdjustMode = v; } });
+        Object.defineProperty(window, 'slotAdjustDragState', { configurable: true, get: () => slotAdjustDragState, set: (v) => { slotAdjustDragState = v; } });
         window.getMinigameRewardMultiplier = getMinigameRewardMultiplier;
         window.minigames = minigames;
         window.SLOT_SYMBOLS = SLOT_SYMBOLS;
@@ -1583,12 +1625,6 @@
         window.SLOT_ALL_SYMBOLS = SLOT_ALL_SYMBOLS;
         window.SLOT_COIN_COST = SLOT_COIN_COST;
         window.SLOT_PLAYS_PER_COIN = SLOT_PLAYS_PER_COIN;
-        window.slotPlaysRemaining = slotPlaysRemaining;
-        window.minigameLastResetDate = minigameLastResetDate;
-        window.minigamePlaysUsedToday = minigamePlaysUsedToday;
-        window.minigameSeenUnlocked = minigameSeenUnlocked;
-        window.minigameBests = minigameBests;
-        window.isMinigameActive = isMinigameActive;
         window.getMinigameBaseReward = getMinigameBaseReward;
         window.hasNewlyUnlockedMinigame = hasNewlyUnlockedMinigame;
         window.resetMinigameCountsIfNewDay = resetMinigameCountsIfNewDay;
@@ -1599,7 +1635,6 @@
         window.startMinigame = startMinigame;
         window.endMinigameToTiles = endMinigameToTiles;
         window.consumeMinigamePlay = consumeMinigamePlay;
-        window.minigameCoins = minigameCoins;
         window.getMinigameCoinGain = getMinigameCoinGain;
         window.grantMinigameReward = grantMinigameReward;
         window.showMinigameResult = showMinigameResult;
@@ -1610,13 +1645,11 @@
         window.answerQuizQuestion = answerQuizQuestion;
         window.TIME_ATTACK_DURATION_SEC = TIME_ATTACK_DURATION_SEC;
         window.TIME_ATTACK_THRESHOLDS = TIME_ATTACK_THRESHOLDS;
-        window.timeAttackState = timeAttackState;
         window.startTimeAttackGame = startTimeAttackGame;
         window.beginTimeAttack = beginTimeAttack;
         window.onTimeAttackTap = onTimeAttackTap;
         window.finishTimeAttack = finishTimeAttack;
         window.CONCENTRATION_THRESHOLDS = CONCENTRATION_THRESHOLDS;
-        window.concentrationState = concentrationState;
         window.startConcentrationGame = startConcentrationGame;
         window.buildConcentrationBoard = buildConcentrationBoard;
         window.updateConcentrationCardVisual = updateConcentrationCardVisual;
@@ -1628,7 +1661,6 @@
         window.MOCHITSUKI_SPEEDUP_RATE = MOCHITSUKI_SPEEDUP_RATE;
         window.MOCHITSUKI_RANKS = MOCHITSUKI_RANKS;
         window.MOCHITSUKI_REWARD_CAP = MOCHITSUKI_REWARD_CAP;
-        window.mochitsukiState = mochitsukiState;
         window.buildMochitsukiBandsHtml = buildMochitsukiBandsHtml;
         window.hexToRgba = hexToRgba;
         window.startMochitsukiGame = startMochitsukiGame;
@@ -1638,26 +1670,10 @@
         window.finishMochitsuki = finishMochitsuki;
         window.SLOT_SYMBOL_HEIGHT = SLOT_SYMBOL_HEIGHT;
         window.SLOT_STRIP_REPEATS = SLOT_STRIP_REPEATS;
-        window.slotIsSpinning = slotIsSpinning;
-        window.slotSpinLoopSource = slotSpinLoopSource;
         window.playSlotSpinLoopSound = playSlotSpinLoopSound;
         window.stopSlotSpinLoopSound = stopSlotSpinLoopSound;
-        window.slotStoppedCount = slotStoppedCount;
-        window.slotReelResults = slotReelResults;
-        window.slotReelAnimations = slotReelAnimations;
-        window.slotReelLandingRow = slotReelLandingRow;
-        window.slotStoppedReels = slotStoppedReels;
-        window.slotBonusZoneSpinsLeft = slotBonusZoneSpinsLeft;
-        window.slotTotalPulls = slotTotalPulls;
-        window.slotPullsSinceJackpot = slotPullsSinceJackpot;
-        window.slotJackpotCount = slotJackpotCount;
-        window.slotShortestJackpotPulls = slotShortestJackpotPulls;
-        window.slotLongestJackpotPulls = slotLongestJackpotPulls;
         window.SLOT_BONUS_ZONE_SPINS = SLOT_BONUS_ZONE_SPINS;
         window.SLOT_BONUS_ZONE_SYMBOLS = SLOT_BONUS_ZONE_SYMBOLS;
-        window.slotNextSpinFree = slotNextSpinFree;
-        window.slotAdjustMode = slotAdjustMode;
-        window.slotAdjustDragState = slotAdjustDragState;
         window.setSlotPartAdjustVisibility = setSlotPartAdjustVisibility;
         window.bringSlotTargetToFront = bringSlotTargetToFront;
         window.positionSlotHandles = positionSlotHandles;

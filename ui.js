@@ -3902,36 +3902,112 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         setupChatInputEnterKey();
 
 
+
         // ===================================================================
         // 🌉 一時的な橋渡し（migration bridge）
         // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
         // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
         // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
-        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
-        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
-        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        //
+        // 🐛重要な修正：以前はここを window.名前 = 名前 という「値の一回きりのコピー」にしていましたが、
+        // これだと let で宣言された（後から書き換わる）変数は、コピーした瞬間の値のまま凍結されて
+        // しまい、このファイル側で値が変わっても window 側には反映されない、という重大なバグがありました。
+        // 逆に、他のファイル（まだimport化されていない）がこの変数へ代入すると、それは window 側だけが
+        // 書き換わり、このファイル本来の変数には反映されません。その結果、例えば「もち数」がタップ画面側の
+        // window.score だけ増えて、実際にセーブされるのはこのファイルの score（増えていない方）……という
+        // ズレが起き、セーブするたびに増えた分が消えてしまっていました（起動のたびに0に戻るバグの原因）。
+        //
+        // そこで、書き換わる可能性がある変数（let）は Object.defineProperty で「get/setする度に
+        // 必ずこのファイル本来の変数を読み書きする」ようにし、window側とこのファイル側で常に
+        // 同じ実体を指すようにしました。書き換わらない値（const・関数・クラス）は今まで通り
+        // 単純コピーのままで問題ありません。全ファイルの移行が終わったら、このブロックごと削除します。
         // ===================================================================
+        Object.defineProperty(window, 'uiDeclutterState', { configurable: true, get: () => uiDeclutterState, set: (v) => { uiDeclutterState = v; } });
+        Object.defineProperty(window, 'hasSeenTutorial', { configurable: true, get: () => hasSeenTutorial, set: (v) => { hasSeenTutorial = v; } });
+        Object.defineProperty(window, 'balloonAutoHideTimer', { configurable: true, get: () => balloonAutoHideTimer, set: (v) => { balloonAutoHideTimer = v; } });
+        Object.defineProperty(window, 'roboMouthAnimTimer', { configurable: true, get: () => roboMouthAnimTimer, set: (v) => { roboMouthAnimTimer = v; } });
+        Object.defineProperty(window, 'mouthAdjustMode', { configurable: true, get: () => mouthAdjustMode, set: (v) => { mouthAdjustMode = v; } });
+        Object.defineProperty(window, 'tutorialStepIndex', { configurable: true, get: () => tutorialStepIndex, set: (v) => { tutorialStepIndex = v; } });
+        Object.defineProperty(window, 'tutorialTimer', { configurable: true, get: () => tutorialTimer, set: (v) => { tutorialTimer = v; } });
+        Object.defineProperty(window, 'isTutorialActive', { configurable: true, get: () => isTutorialActive, set: (v) => { isTutorialActive = v; } });
+        Object.defineProperty(window, 'seenButtonHints', { configurable: true, get: () => seenButtonHints, set: (v) => { seenButtonHints = v; } });
+        Object.defineProperty(window, 'cornerBtnAdjustMode', { configurable: true, get: () => cornerBtnAdjustMode, set: (v) => { cornerBtnAdjustMode = v; } });
+        Object.defineProperty(window, 'cornerBtnDragState', { configurable: true, get: () => cornerBtnDragState, set: (v) => { cornerBtnDragState = v; } });
+        Object.defineProperty(window, 'mouthDragState', { configurable: true, get: () => mouthDragState, set: (v) => { mouthDragState = v; } });
+        Object.defineProperty(window, 'currentMissionTab', { configurable: true, get: () => currentMissionTab, set: (v) => { currentMissionTab = v; } });
+        Object.defineProperty(window, 'activeChatRoomId', { configurable: true, get: () => activeChatRoomId, set: (v) => { activeChatRoomId = v; } });
+        Object.defineProperty(window, 'activeChatOtherUid', { configurable: true, get: () => activeChatOtherUid, set: (v) => { activeChatOtherUid = v; } });
+        Object.defineProperty(window, 'activeChatIsHost', { configurable: true, get: () => activeChatIsHost, set: (v) => { activeChatIsHost = v; } });
+        Object.defineProperty(window, 'myAvatarPrefix', { configurable: true, get: () => myAvatarPrefix, set: (v) => { myAvatarPrefix = v; } });
+        Object.defineProperty(window, 'otherAvatarPrefix', { configurable: true, get: () => otherAvatarPrefix, set: (v) => { otherAvatarPrefix = v; } });
+        Object.defineProperty(window, 'unsubRoomSession', { configurable: true, get: () => unsubRoomSession, set: (v) => { unsubRoomSession = v; } });
+        Object.defineProperty(window, 'unsubRoomMessages', { configurable: true, get: () => unsubRoomMessages, set: (v) => { unsubRoomMessages = v; } });
+        Object.defineProperty(window, 'roomHeartbeatTimer', { configurable: true, get: () => roomHeartbeatTimer, set: (v) => { roomHeartbeatTimer = v; } });
+        Object.defineProperty(window, 'lastChatSendAt', { configurable: true, get: () => lastChatSendAt, set: (v) => { lastChatSendAt = v; } });
+        Object.defineProperty(window, 'lastRenderedChatMsgId', { configurable: true, get: () => lastRenderedChatMsgId, set: (v) => { lastRenderedChatMsgId = v; } });
+        Object.defineProperty(window, 'chatMessageHistory', { configurable: true, get: () => chatMessageHistory, set: (v) => { chatMessageHistory = v; } });
+        Object.defineProperty(window, 'activeChatSessionStartedAt', { configurable: true, get: () => activeChatSessionStartedAt, set: (v) => { activeChatSessionStartedAt = v; } });
+        Object.defineProperty(window, 'birthdateGateResolver', { configurable: true, get: () => birthdateGateResolver, set: (v) => { birthdateGateResolver = v; } });
+        Object.defineProperty(window, 'lastRawChatMessages', { configurable: true, get: () => lastRawChatMessages, set: (v) => { lastRawChatMessages = v; } });
+        Object.defineProperty(window, 'visitingUid', { configurable: true, get: () => visitingUid, set: (v) => { visitingUid = v; } });
+        Object.defineProperty(window, 'myroomFeedDragState', { configurable: true, get: () => myroomFeedDragState, set: (v) => { myroomFeedDragState = v; } });
+        Object.defineProperty(window, 'myroomFeedPickerContext', { configurable: true, get: () => myroomFeedPickerContext, set: (v) => { myroomFeedPickerContext = v; } });
+        Object.defineProperty(window, 'lastMyroomTapSentAt', { configurable: true, get: () => lastMyroomTapSentAt, set: (v) => { lastMyroomTapSentAt = v; } });
+        Object.defineProperty(window, 'lastAppliedRoomActionTs', { configurable: true, get: () => lastAppliedRoomActionTs, set: (v) => { lastAppliedRoomActionTs = v; } });
+        Object.defineProperty(window, 'lastAppliedOtherWalkTs', { configurable: true, get: () => lastAppliedOtherWalkTs, set: (v) => { lastAppliedOtherWalkTs = v; } });
+        Object.defineProperty(window, 'currentFriendTab', { configurable: true, get: () => currentFriendTab, set: (v) => { currentFriendTab = v; } });
+        Object.defineProperty(window, 'lastGiftSentDateStr', { configurable: true, get: () => lastGiftSentDateStr, set: (v) => { lastGiftSentDateStr = v; } });
+        Object.defineProperty(window, 'pendingRoomChatTermsAction', { configurable: true, get: () => pendingRoomChatTermsAction, set: (v) => { pendingRoomChatTermsAction = v; } });
+        Object.defineProperty(window, 'inviteFriendDotRefreshTimer', { configurable: true, get: () => inviteFriendDotRefreshTimer, set: (v) => { inviteFriendDotRefreshTimer = v; } });
+        Object.defineProperty(window, 'moveMochisukeLoopTimer', { configurable: true, get: () => moveMochisukeLoopTimer, set: (v) => { moveMochisukeLoopTimer = v; } });
+        Object.defineProperty(window, 'moveMochisukeLoopIndex', { configurable: true, get: () => moveMochisukeLoopIndex, set: (v) => { moveMochisukeLoopIndex = v; } });
+        Object.defineProperty(window, 'previewMyroom', { configurable: true, get: () => previewMyroom, set: (v) => { previewMyroom = v; } });
+        Object.defineProperty(window, 'myroomIsEditMode', { configurable: true, get: () => myroomIsEditMode, set: (v) => { myroomIsEditMode = v; } });
+        Object.defineProperty(window, 'myroomWalkTimer', { configurable: true, get: () => myroomWalkTimer, set: (v) => { myroomWalkTimer = v; } });
+        Object.defineProperty(window, 'selectedMyroomInstance', { configurable: true, get: () => selectedMyroomInstance, set: (v) => { selectedMyroomInstance = v; } });
+        Object.defineProperty(window, 'myroomSizeAdjustMode', { configurable: true, get: () => myroomSizeAdjustMode, set: (v) => { myroomSizeAdjustMode = v; } });
+        Object.defineProperty(window, 'myroomSizeAdjustDragState', { configurable: true, get: () => myroomSizeAdjustDragState, set: (v) => { myroomSizeAdjustDragState = v; } });
+        Object.defineProperty(window, 'myroomCurrentCategory', { configurable: true, get: () => myroomCurrentCategory, set: (v) => { myroomCurrentCategory = v; } });
+        Object.defineProperty(window, 'myroomItemListVisible', { configurable: true, get: () => myroomItemListVisible, set: (v) => { myroomItemListVisible = v; } });
+        Object.defineProperty(window, 'myroomNameLabelTimeout', { configurable: true, get: () => myroomNameLabelTimeout, set: (v) => { myroomNameLabelTimeout = v; } });
+        Object.defineProperty(window, 'myroomSwitcherPreviewIndex', { configurable: true, get: () => myroomSwitcherPreviewIndex, set: (v) => { myroomSwitcherPreviewIndex = v; } });
+        Object.defineProperty(window, 'wingFlapTimers', { configurable: true, get: () => wingFlapTimers, set: (v) => { wingFlapTimers = v; } });
+        Object.defineProperty(window, 'wingFlapFrameIndex', { configurable: true, get: () => wingFlapFrameIndex, set: (v) => { wingFlapFrameIndex = v; } });
+        Object.defineProperty(window, 'WING_FLAP_INTERVAL_MS', { configurable: true, get: () => WING_FLAP_INTERVAL_MS, set: (v) => { WING_FLAP_INTERVAL_MS = v; } });
+        Object.defineProperty(window, 'WING_FLAP_VOLUME', { configurable: true, get: () => WING_FLAP_VOLUME, set: (v) => { WING_FLAP_VOLUME = v; } });
+        Object.defineProperty(window, 'kisekaeCurrentCategory', { configurable: true, get: () => kisekaeCurrentCategory, set: (v) => { kisekaeCurrentCategory = v; } });
+        Object.defineProperty(window, 'kisekaeNameLabelTimeout', { configurable: true, get: () => kisekaeNameLabelTimeout, set: (v) => { kisekaeNameLabelTimeout = v; } });
+        Object.defineProperty(window, 'kisekaeAdjustMode', { configurable: true, get: () => kisekaeAdjustMode, set: (v) => { kisekaeAdjustMode = v; } });
+        Object.defineProperty(window, 'kisekaeAdjustDragState', { configurable: true, get: () => kisekaeAdjustDragState, set: (v) => { kisekaeAdjustDragState = v; } });
+        Object.defineProperty(window, 'mapZoom', { configurable: true, get: () => mapZoom, set: (v) => { mapZoom = v; } });
+        Object.defineProperty(window, 'mapPanX', { configurable: true, get: () => mapPanX, set: (v) => { mapPanX = v; } });
+        Object.defineProperty(window, 'mapPanY', { configurable: true, get: () => mapPanY, set: (v) => { mapPanY = v; } });
+        Object.defineProperty(window, 'mapDragging', { configurable: true, get: () => mapDragging, set: (v) => { mapDragging = v; } });
+        Object.defineProperty(window, 'mapDragStartX', { configurable: true, get: () => mapDragStartX, set: (v) => { mapDragStartX = v; } });
+        Object.defineProperty(window, 'mapDragStartY', { configurable: true, get: () => mapDragStartY, set: (v) => { mapDragStartY = v; } });
+        Object.defineProperty(window, 'mapPanStartX', { configurable: true, get: () => mapPanStartX, set: (v) => { mapPanStartX = v; } });
+        Object.defineProperty(window, 'mapPanStartY', { configurable: true, get: () => mapPanStartY, set: (v) => { mapPanStartY = v; } });
+        Object.defineProperty(window, 'mapPinchStartDist', { configurable: true, get: () => mapPinchStartDist, set: (v) => { mapPinchStartDist = v; } });
+        Object.defineProperty(window, 'mapPinchStartZoom', { configurable: true, get: () => mapPinchStartZoom, set: (v) => { mapPinchStartZoom = v; } });
+        Object.defineProperty(window, 'lastScoreFormatted', { configurable: true, get: () => lastScoreFormatted, set: (v) => { lastScoreFormatted = v; } });
+        Object.defineProperty(window, 'lastRecommendCheckTime', { configurable: true, get: () => lastRecommendCheckTime, set: (v) => { lastRecommendCheckTime = v; } });
+        Object.defineProperty(window, 'sprayParticleTimer', { configurable: true, get: () => sprayParticleTimer, set: (v) => { sprayParticleTimer = v; } });
+        Object.defineProperty(window, 'currentRankingTab', { configurable: true, get: () => currentRankingTab, set: (v) => { currentRankingTab = v; } });
+        Object.defineProperty(window, 'diaryPageIndex', { configurable: true, get: () => diaryPageIndex, set: (v) => { diaryPageIndex = v; } });
+        Object.defineProperty(window, 'diaryShowingBack', { configurable: true, get: () => diaryShowingBack, set: (v) => { diaryShowingBack = v; } });
         window.onBgmVolumeChange = onBgmVolumeChange;
         window.onSfxVolumeChange = onSfxVolumeChange;
         window.resetVolumeSettings = resetVolumeSettings;
         window.initVolumeSliders = initVolumeSliders;
-        window.uiDeclutterState = uiDeclutterState;
         window.toggleUiDeclutter = toggleUiDeclutter;
-        window.hasSeenTutorial = hasSeenTutorial;
-        window.balloonAutoHideTimer = balloonAutoHideTimer;
         window.showMochiComment = showMochiComment;
         window.hideMochiComment = hideMochiComment;
         window.updateMouthPatchVisibility = updateMouthPatchVisibility;
-        window.roboMouthAnimTimer = roboMouthAnimTimer;
         window.playRoboMouthAnimation = playRoboMouthAnimation;
-        window.mouthAdjustMode = mouthAdjustMode;
         window.TIME_BUCKETS = TIME_BUCKETS;
         window.getTimeGreeting = getTimeGreeting;
         window.getLocalDateString = getLocalDateString;
         window.GREETING_STATE_KEY = GREETING_STATE_KEY;
-        window.tutorialStepIndex = tutorialStepIndex;
-        window.tutorialTimer = tutorialTimer;
-        window.isTutorialActive = isTutorialActive;
         window.checkShowTutorial = checkShowTutorial;
         window.openTutorial = openTutorial;
         window.runTutorialStep = runTutorialStep;
@@ -3940,11 +4016,8 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.doSkipTutorial = doSkipTutorial;
         window.promptPlayerNameIfNeeded = promptPlayerNameIfNeeded;
         window.saveTutorialPlayerName = saveTutorialPlayerName;
-        window.seenButtonHints = seenButtonHints;
         window.onMapButtonTap = onMapButtonTap;
         window.applyCornerBtnPositions = applyCornerBtnPositions;
-        window.cornerBtnAdjustMode = cornerBtnAdjustMode;
-        window.cornerBtnDragState = cornerBtnDragState;
         window.adjustCornerBtnSize = adjustCornerBtnSize;
         window.toggleCornerBtnAdjustMode = toggleCornerBtnAdjustMode;
         window.onCornerBtnAdjustTargetChange = onCornerBtnAdjustTargetChange;
@@ -3956,7 +4029,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.onUiButtonTap = onUiButtonTap;
         window.onFeedButtonTap = onFeedButtonTap;
         window.showOpeningGreeting = showOpeningGreeting;
-        window.mouthDragState = mouthDragState;
         window.toggleMouthAdjustMode = toggleMouthAdjustMode;
         window.setupMouthDrag = setupMouthDrag;
         window.adjustMouthSize = adjustMouthSize;
@@ -3970,37 +4042,22 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.openTrophyRoom = openTrophyRoom;
         window.closeOshigoto = closeOshigoto;
         window.openOshigotoPlaceholder = openOshigotoPlaceholder;
-        window.currentMissionTab = currentMissionTab;
         window.switchMissionTab = switchMissionTab;
         window.renderMissionRow = renderMissionRow;
         window.renderMissionList = renderMissionList;
         window.onClaimMissionTap = onClaimMissionTap;
-        window.activeChatRoomId = activeChatRoomId;
-        window.activeChatOtherUid = activeChatOtherUid;
-        window.activeChatIsHost = activeChatIsHost;
-        window.myAvatarPrefix = myAvatarPrefix;
-        window.otherAvatarPrefix = otherAvatarPrefix;
-        window.unsubRoomSession = unsubRoomSession;
-        window.unsubRoomMessages = unsubRoomMessages;
-        window.roomHeartbeatTimer = roomHeartbeatTimer;
-        window.lastChatSendAt = lastChatSendAt;
-        window.lastRenderedChatMsgId = lastRenderedChatMsgId;
-        window.chatMessageHistory = chatMessageHistory;
-        window.activeChatSessionStartedAt = activeChatSessionStartedAt;
         window.CHAT_SEND_COOLDOWN_MS = CHAT_SEND_COOLDOWN_MS;
         window.CHAT_MAX_LEN = CHAT_MAX_LEN;
         window.CHAT_BUBBLE_DURATION_MS = CHAT_BUBBLE_DURATION_MS;
         window.CHAT_NG_WORDS = CHAT_NG_WORDS;
         window.containsNgWord = containsNgWord;
         window.calcAgeFromBirthdate = calcAgeFromBirthdate;
-        window.birthdateGateResolver = birthdateGateResolver;
         window.populateBirthdateGateSelects = populateBirthdateGateSelects;
         window.openBirthdateGateModal = openBirthdateGateModal;
         window.onConfirmBirthdateGate = onConfirmBirthdateGate;
         window.ensureChatEligibilityAnswered = ensureChatEligibilityAnswered;
         window.openHostWaitingRoom = openHostWaitingRoom;
         window.joinFriendRoomAndChat = joinFriendRoomAndChat;
-        window.lastRawChatMessages = lastRawChatMessages;
         window.startRoomSessionWatch = startRoomSessionWatch;
         window.stopRoomSessionWatch = stopRoomSessionWatch;
         window.onGuestArrived = onGuestArrived;
@@ -4016,7 +4073,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.sendFreeChatMessage = sendFreeChatMessage;
         window.setupChatInputEnterKey = setupChatInputEnterKey;
         window.openFriendPlaceholder = openFriendPlaceholder;
-        window.visitingUid = visitingUid;
         window.visitMyroomOf = visitMyroomOf;
         window.onLikeRoomTap = onLikeRoomTap;
         window.showLikeCoinPopup = showLikeCoinPopup;
@@ -4030,11 +4086,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.isMyroomPrefixFullbody = isMyroomPrefixFullbody;
         window.setMyroomMouthHidden = setMyroomMouthHidden;
         window.applyVisitWalkTarget = applyVisitWalkTarget;
-        window.myroomFeedDragState = myroomFeedDragState;
-        window.myroomFeedPickerContext = myroomFeedPickerContext;
-        window.lastMyroomTapSentAt = lastMyroomTapSentAt;
-        window.lastAppliedRoomActionTs = lastAppliedRoomActionTs;
-        window.lastAppliedOtherWalkTs = lastAppliedOtherWalkTs;
         window.getMyroomActionContext = getMyroomActionContext;
         window.toggleMyroomActionMenu = toggleMyroomActionMenu;
         window.closeMyroomActionMenu = closeMyroomActionMenu;
@@ -4059,19 +4110,15 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.onBlockUserTap = onBlockUserTap;
         window.onReportUserTap = onReportUserTap;
         window.closeFriendScreen = closeFriendScreen;
-        window.currentFriendTab = currentFriendTab;
         window.switchFriendTab = switchFriendTab;
         window.copyMyFriendCode = copyMyFriendCode;
         window.onAddFriendTap = onAddFriendTap;
         window.toggleFavoriteFriend = toggleFavoriteFriend;
-        window.lastGiftSentDateStr = lastGiftSentDateStr;
         window.sendGachaCoinGift = sendGachaCoinGift;
         window.renderFriendList = renderFriendList;
-        window.pendingRoomChatTermsAction = pendingRoomChatTermsAction;
         window.showRoomChatTermsModal = showRoomChatTermsModal;
         window.onAgreeRoomChatTerms = onAgreeRoomChatTerms;
         window.onCancelRoomChatTerms = onCancelRoomChatTerms;
-        window.inviteFriendDotRefreshTimer = inviteFriendDotRefreshTimer;
         window.openMyroomInvitePanel = openMyroomInvitePanel;
         window.closeMyroomInvitePanel = closeMyroomInvitePanel;
         window.refreshMyroomInviteFriendDots = refreshMyroomInviteFriendDots;
@@ -4082,8 +4129,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.checkIncomingGiftsOnLaunch = checkIncomingGiftsOnLaunch;
         window.openMoveMenu = openMoveMenu;
         window.MOVE_MOCHISUKE_SIGN_ORDER = MOVE_MOCHISUKE_SIGN_ORDER;
-        window.moveMochisukeLoopTimer = moveMochisukeLoopTimer;
-        window.moveMochisukeLoopIndex = moveMochisukeLoopIndex;
         window.startMoveMochisukeLoop = startMoveMochisukeLoop;
         window.stopMoveMochisukeLoop = stopMoveMochisukeLoop;
         window.updateMoveMochisukePosition = updateMoveMochisukePosition;
@@ -4094,11 +4139,8 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.warehouseItemAction = warehouseItemAction;
         window.renderWarehouseItems = renderWarehouseItems;
         window.openMyRoomEntry = openMyRoomEntry;
-        window.previewMyroom = previewMyroom;
-        window.myroomIsEditMode = myroomIsEditMode;
         window.setupMyroomSizePanelDrag = setupMyroomSizePanelDrag;
         window.toggleMyroomEditMode = toggleMyroomEditMode;
-        window.myroomWalkTimer = myroomWalkTimer;
         window.startMyroomMochisukeWalk = startMyroomMochisukeWalk;
         window.stopMyroomMochisukeWalk = stopMyroomMochisukeWalk;
         window.MYROOM_WALK_SPEED_PCT_PER_SEC = MYROOM_WALK_SPEED_PCT_PER_SEC;
@@ -4108,15 +4150,12 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.setupMyroomMochisukeTapHandler = setupMyroomMochisukeTapHandler;
         window.openMyRoom = openMyRoom;
         window.closeMyRoom = closeMyRoom;
-        window.selectedMyroomInstance = selectedMyroomInstance;
         window.renderMyroomLayout = renderMyroomLayout;
         window.moveMyroomInstanceLayer = moveMyroomInstanceLayer;
         window.addMyroomInstance = addMyroomInstance;
         window.removeMyroomInstance = removeMyroomInstance;
         window.toggleMyroomInstanceFlip = toggleMyroomInstanceFlip;
         window.setupMyroomFurnitureDrag = setupMyroomFurnitureDrag;
-        window.myroomSizeAdjustMode = myroomSizeAdjustMode;
-        window.myroomSizeAdjustDragState = myroomSizeAdjustDragState;
         window.renderMyroomSizeAdjustOptions = renderMyroomSizeAdjustOptions;
         window.getMyroomSizeAdjustSelection = getMyroomSizeAdjustSelection;
         window.getMyroomSizeAdjustTargetEl = getMyroomSizeAdjustTargetEl;
@@ -4127,13 +4166,9 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.updateMyroomSizeReadout = updateMyroomSizeReadout;
         window.copyMyroomSizeCoords = copyMyroomSizeCoords;
         window.MYROOM_CATEGORY_ORDER = MYROOM_CATEGORY_ORDER;
-        window.myroomCurrentCategory = myroomCurrentCategory;
-        window.myroomItemListVisible = myroomItemListVisible;
         window.closeMyroomItemList = closeMyroomItemList;
         window.openMyroomCategory = openMyroomCategory;
-        window.myroomNameLabelTimeout = myroomNameLabelTimeout;
         window.equipMyroomItem = equipMyroomItem;
-        window.myroomSwitcherPreviewIndex = myroomSwitcherPreviewIndex;
         window.openMyroomSwitcher = openMyroomSwitcher;
         window.closeMyroomSwitcher = closeMyroomSwitcher;
         window.switchMyroomSlotPreview = switchMyroomSlotPreview;
@@ -4148,11 +4183,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.openKisekaeRoom = openKisekaeRoom;
         window.closeKisekaeRoom = closeKisekaeRoom;
         window.renderKisekaeMochisuke = renderKisekaeMochisuke;
-        window.wingFlapTimers = wingFlapTimers;
-        window.wingFlapFrameIndex = wingFlapFrameIndex;
-        window.WING_FLAP_INTERVAL_MS = WING_FLAP_INTERVAL_MS;
         window.WING_SPEED_TOOL_ENABLED = WING_SPEED_TOOL_ENABLED;
-        window.WING_FLAP_VOLUME = WING_FLAP_VOLUME;
         window.WING_VOLUME_TOOL_ENABLED = WING_VOLUME_TOOL_ENABLED;
         window.adjustWingFlapVolume = adjustWingFlapVolume;
         window.copyWingFlapVolume = copyWingFlapVolume;
@@ -4166,16 +4197,12 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.flyBackKisekaeOverlays = flyBackKisekaeOverlays;
         window.applyKisekaeToMainScreen = applyKisekaeToMainScreen;
         window.applyKisekaeToMyroom = applyKisekaeToMyroom;
-        window.kisekaeCurrentCategory = kisekaeCurrentCategory;
         window.adjustWingFlapSpeed = adjustWingFlapSpeed;
         window.copyWingFlapSpeed = copyWingFlapSpeed;
         window.openKisekaeCategory = openKisekaeCategory;
-        window.kisekaeNameLabelTimeout = kisekaeNameLabelTimeout;
         window.showKisekaeItemNameLabel = showKisekaeItemNameLabel;
         window.equipKisekaeItem = equipKisekaeItem;
         window.confirmKisekaeOutfit = confirmKisekaeOutfit;
-        window.kisekaeAdjustMode = kisekaeAdjustMode;
-        window.kisekaeAdjustDragState = kisekaeAdjustDragState;
         window.resolveKisekaeAdjustTarget = resolveKisekaeAdjustTarget;
         window.syncMirroredRightWing = syncMirroredRightWing;
         window.getKisekaeAdjustRefs = getKisekaeAdjustRefs;
@@ -4194,16 +4221,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.openOmiyageCollection = openOmiyageCollection;
         window.showOmiyageFeedConfirm = showOmiyageFeedConfirm;
         window.feedMochisuke = feedMochisuke;
-        window.mapZoom = mapZoom;
-        window.mapPanX = mapPanX;
-        window.mapPanY = mapPanY;
-        window.mapDragging = mapDragging;
-        window.mapDragStartX = mapDragStartX;
-        window.mapDragStartY = mapDragStartY;
-        window.mapPanStartX = mapPanStartX;
-        window.mapPanStartY = mapPanStartY;
-        window.mapPinchStartDist = mapPinchStartDist;
-        window.mapPinchStartZoom = mapPinchStartZoom;
         window.MAP_ZOOM_MIN = MAP_ZOOM_MIN;
         window.MAP_ZOOM_MAX = MAP_ZOOM_MAX;
         window.openMap = openMap;
@@ -4219,18 +4236,14 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.initMapInteractions = initMapInteractions;
         window.toggleStampDebug = toggleStampDebug;
         window.updateStampDebugReadout = updateStampDebugReadout;
-        window.lastScoreFormatted = lastScoreFormatted;
         window.renderScoreDigits = renderScoreDigits;
-        window.lastRecommendCheckTime = lastRecommendCheckTime;
         window.getRecommendedActionTargetId = getRecommendedActionTargetId;
         window.updateRecommendedActionHighlight = updateRecommendedActionHighlight;
         window.hasNewlyPurchasableSkill = hasNewlyPurchasableSkill;
         window.hasNewlyPurchasableOmiyage = hasNewlyPurchasableOmiyage;
-        window.sprayParticleTimer = sprayParticleTimer;
         window.updateSprayEffectDisplay = updateSprayEffectDisplay;
         window.spawnSparkleParticle = spawnSparkleParticle;
         window.updateDisplay = updateDisplay;
-        window.currentRankingTab = currentRankingTab;
         window.closeRanking = closeRanking;
         window.toggleRankingHelpOverlay = toggleRankingHelpOverlay;
         window.switchRankingTab = switchRankingTab;
@@ -4238,9 +4251,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         window.rankNumberStyle = rankNumberStyle;
         window.renderRankOutfitPreviewHtml = renderRankOutfitPreviewHtml;
         window.renderRankingList = renderRankingList;
-        window.diaryPageIndex = diaryPageIndex;
         window.openDiary = openDiary;
-        window.diaryShowingBack = diaryShowingBack;
         window.renderDiaryPage = renderDiaryPage;
         window.flipDiaryPage = flipDiaryPage;
         window.nextPage = nextPage;

@@ -1193,48 +1193,64 @@
 
 
 
+
         // ===================================================================
         // 🌉 一時的な橋渡し（migration bridge）
         // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
         // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
         // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
-        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
-        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
-        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        //
+        // 🐛重要な修正：以前はここを window.名前 = 名前 という「値の一回きりのコピー」にしていましたが、
+        // これだと let で宣言された（後から書き換わる）変数は、コピーした瞬間の値のまま凍結されて
+        // しまい、このファイル側で値が変わっても window 側には反映されない、という重大なバグがありました。
+        // 逆に、他のファイル（まだimport化されていない）がこの変数へ代入すると、それは window 側だけが
+        // 書き換わり、このファイル本来の変数には反映されません。その結果、例えば「もち数」がタップ画面側の
+        // window.score だけ増えて、実際にセーブされるのはこのファイルの score（増えていない方）……という
+        // ズレが起き、セーブするたびに増えた分が消えてしまっていました（起動のたびに0に戻るバグの原因）。
+        //
+        // そこで、書き換わる可能性がある変数（let）は Object.defineProperty で「get/setする度に
+        // 必ずこのファイル本来の変数を読み書きする」ようにし、window側とこのファイル側で常に
+        // 同じ実体を指すようにしました。書き換わらない値（const・関数・クラス）は今まで通り
+        // 単純コピーのままで問題ありません。全ファイルの移行が終わったら、このブロックごと削除します。
         // ===================================================================
+        Object.defineProperty(window, 'purchasedItems', { configurable: true, get: () => purchasedItems, set: (v) => { purchasedItems = v; } });
+        Object.defineProperty(window, 'purchasedClothes', { configurable: true, get: () => purchasedClothes, set: (v) => { purchasedClothes = v; } });
+        Object.defineProperty(window, 'equippedClotheId', { configurable: true, get: () => equippedClotheId, set: (v) => { equippedClotheId = v; } });
+        Object.defineProperty(window, 'currentShopTab', { configurable: true, get: () => currentShopTab, set: (v) => { currentShopTab = v; } });
+        Object.defineProperty(window, 'currentGachaRarity', { configurable: true, get: () => currentGachaRarity, set: (v) => { currentGachaRarity = v; } });
+        Object.defineProperty(window, 'ticketInventory', { configurable: true, get: () => ticketInventory, set: (v) => { ticketInventory = v; } });
+        Object.defineProperty(window, 'sprayInventory', { configurable: true, get: () => sprayInventory, set: (v) => { sprayInventory = v; } });
+        Object.defineProperty(window, 'activeSprayId', { configurable: true, get: () => activeSprayId, set: (v) => { activeSprayId = v; } });
+        Object.defineProperty(window, 'sprayBuffActiveUntil', { configurable: true, get: () => sprayBuffActiveUntil, set: (v) => { sprayBuffActiveUntil = v; } });
+        Object.defineProperty(window, 'favoriteFriendIds', { configurable: true, get: () => favoriteFriendIds, set: (v) => { favoriteFriendIds = v; } });
+        Object.defineProperty(window, 'blockedUserIds', { configurable: true, get: () => blockedUserIds, set: (v) => { blockedUserIds = v; } });
+        Object.defineProperty(window, 'currentGachaRateTab', { configurable: true, get: () => currentGachaRateTab, set: (v) => { currentGachaRateTab = v; } });
+        Object.defineProperty(window, 'pendingGachaResult', { configurable: true, get: () => pendingGachaResult, set: (v) => { pendingGachaResult = v; } });
+        Object.defineProperty(window, 'pendingGachaResults10', { configurable: true, get: () => pendingGachaResults10, set: (v) => { pendingGachaResults10 = v; } });
+        Object.defineProperty(window, 'gachaCrankAdjustMode', { configurable: true, get: () => gachaCrankAdjustMode, set: (v) => { gachaCrankAdjustMode = v; } });
+        Object.defineProperty(window, 'gachaCrankAdjustDragState', { configurable: true, get: () => gachaCrankAdjustDragState, set: (v) => { gachaCrankAdjustDragState = v; } });
+        Object.defineProperty(window, 'omiyagePage', { configurable: true, get: () => omiyagePage, set: (v) => { omiyagePage = v; } });
+        Object.defineProperty(window, 'omiyageSelectedIdx', { configurable: true, get: () => omiyageSelectedIdx, set: (v) => { omiyageSelectedIdx = v; } });
         window.getOmiyagePriceMultiplier = getOmiyagePriceMultiplier;
         window.getOmiyagePriceCurveBase = getOmiyagePriceCurveBase;
         window.getOmiyagePrice = getOmiyagePrice;
-        window.purchasedItems = purchasedItems;
-        window.purchasedClothes = purchasedClothes;
-        window.equippedClotheId = equippedClotheId;
-        window.currentShopTab = currentShopTab;
         window.equipClothe = equipClothe;
         window.openShop = openShop;
         window.closeShop = closeShop;
         window.getItemThumbHtml = getItemThumbHtml;
         window.switchShopTab = switchShopTab;
-        window.currentGachaRarity = currentGachaRarity;
         window.pickGachaRarity = pickGachaRarity;
         window.playGachaCrankSequence = playGachaCrankSequence;
         window.setGachaButtonsDisabled = setGachaButtonsDisabled;
-        window.ticketInventory = ticketInventory;
-        window.sprayInventory = sprayInventory;
-        window.activeSprayId = activeSprayId;
-        window.sprayBuffActiveUntil = sprayBuffActiveUntil;
-        window.favoriteFriendIds = favoriteFriendIds;
-        window.blockedUserIds = blockedUserIds;
         window.grantRandomNormalConsumable = grantRandomNormalConsumable;
         window.useTicket = useTicket;
         window.updateGachaCoinDisplay = updateGachaCoinDisplay;
         window.toggleGachaRatesOverlay = toggleGachaRatesOverlay;
         window.GACHA_RATE_TAB_LABELS = GACHA_RATE_TAB_LABELS;
-        window.currentGachaRateTab = currentGachaRateTab;
         window.renderGachaRateTabs = renderGachaRateTabs;
         window.switchGachaRateTab = switchGachaRateTab;
         window.GACHA_COST_SINGLE = GACHA_COST_SINGLE;
         window.GACHA_COST_TEN = GACHA_COST_TEN;
-        window.pendingGachaResult = pendingGachaResult;
         window.startGachaSpin = startGachaSpin;
         window.dropGachaCapsule = dropGachaCapsule;
         window.enableGachaCapsuleTapToOpen = enableGachaCapsuleTapToOpen;
@@ -1245,7 +1261,6 @@
         window.grantGachaKisekaeItem = grantGachaKisekaeItem;
         window.grantGachaPrizeForRarity = grantGachaPrizeForRarity;
         window.revealGachaPrize = revealGachaPrize;
-        window.pendingGachaResults10 = pendingGachaResults10;
         window.startGachaSpin10 = startGachaSpin10;
         window.dropGachaCapsuleOneByOne = dropGachaCapsuleOneByOne;
         window.showGacha10SummaryGrid = showGacha10SummaryGrid;
@@ -1260,8 +1275,6 @@
         window.buyFurnitureItem = buyFurnitureItem;
         window.previewShopFurniture = previewShopFurniture;
         window.closeFurniturePreview = closeFurniturePreview;
-        window.gachaCrankAdjustMode = gachaCrankAdjustMode;
-        window.gachaCrankAdjustDragState = gachaCrankAdjustDragState;
         window.toggleGachaCrankAdjustMode = toggleGachaCrankAdjustMode;
         window.positionGachaCrankHandles = positionGachaCrankHandles;
         window.setupGachaCrankAdjustDrag = setupGachaCrankAdjustDrag;
@@ -1269,8 +1282,6 @@
         window.copyGachaCrankCoords = copyGachaCrankCoords;
         window.renderShopList = renderShopList;
         window.OMIYAGE_PAGE_SIZE = OMIYAGE_PAGE_SIZE;
-        window.omiyagePage = omiyagePage;
-        window.omiyageSelectedIdx = omiyageSelectedIdx;
         window.OMIYAGE_IMG_NATURAL_RATIO = OMIYAGE_IMG_NATURAL_RATIO;
         window.syncOmiyageImageFrame = syncOmiyageImageFrame;
         window.renderOmiyageShelf = renderOmiyageShelf;
