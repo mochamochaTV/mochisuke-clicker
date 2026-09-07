@@ -741,15 +741,24 @@
         }
 
         function updateSkillTimers(dt) {
+            // 🐛パフォーマンス修正：このupdateSkillTimers自体は100ms毎（1秒に10回）に呼ばれ続けるが、
+            // 以前は「発動中・クールダウン中のスキルが1つも無い（＝完全に待機中）」時でも毎回
+            // updateSkillUI()（各スキルボタンのDOM要素を複数回問い合わせ、ゲージ等を書き換える処理）
+            // を呼んでいた。これはスキルを使っていない・使い終わった後もずっと動き続ける、無駄な
+            // 常時コストになっていたため、実際にゲージが変化しうる時（発動中 or クールダウン中）だけ
+            // updateSkillUI()を呼ぶように変更。発動中・クールダウン中の見た目の滑らかさは変わらない
+            let needsUiUpdate = false;
             Object.keys(skills).forEach(key => {
                 const s = skills[key];
                 // 持続終了の判定
                 if (s.activeTimer > 0) {
+                    needsUiUpdate = true;
                     s.activeTimer -= dt;
                     if (s.activeTimer <= 0) { s.activeTimer = 0; endSkillVisualEffect(key); }
                 }
                 // クールタイム完了の判定（必殺技はタップ数で回復するのでここでは時間経過させない）
                 else if (s.currentCd > 0 && key !== 'hissatsu') {
+                    needsUiUpdate = true;
                     s.currentCd -= dt;
                     if (s.currentCd <= 0) {
                         s.currentCd = 0;
@@ -759,7 +768,7 @@
                     }
                 }
             });
-            updateSkillUI();
+            if (needsUiUpdate) updateSkillUI();
         }
 
         // 必殺技のクールタイムをタップ数で回復させる（実際のタップの度に呼ぶ）
@@ -1049,12 +1058,21 @@
 
         // 🎉 日本全国制覇の演出
         let hissatsuAutoChargeAccum = 0;
+        // 🐛パフォーマンス修正：スコアの自動加算(getMps由来)は100ms毎に正確に積み上げる必要があるが、
+        // その都度updateDisplay()（複数のDOMテキスト書き換え＋数値の書式変換）まで毎回呼んでいたため、
+        // 自動増加を持っているプレイヤーほど「起動しているだけ」で1秒に10回も画面を再描画し続けており、
+        // バッテリー消費・発熱の一因になっていた。加算自体は毎回行いつつ、画面への反映は3回に1回
+        // （≒約300ms間隔）にまとめて間引く。増分は小さいため見た目の滑らかさはほぼ変わらない。
+        // なお、タップ直後の反映はこのループとは別（タップ処理側で毎回updateDisplay()している）ので、
+        // タップの反応速度には一切影響しない
+        let autoDisplayTickCounter = 0;
         setInterval(() => {
             let mps = getMps();
             if (mps > 0) {
                 let gain = mps / 10; score += gain;
                 if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) { currentStageProgress += gain; checkStageProgress(); }
-                updateDisplay();
+                autoDisplayTickCounter++;
+                if (autoDisplayTickCounter >= 3) { autoDisplayTickCounter = 0; updateDisplay(); }
             }
             updateSkillTimers(0.1); // スキルのクールタイムや持続タイマーを100ms単位でリアルタイム更新
 
