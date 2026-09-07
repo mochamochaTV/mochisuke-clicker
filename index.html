@@ -43,7 +43,12 @@
                 // 存在しない（document.bodyがnull）。存在確認してから触る。
                 if (!window.visualViewport || !document.body) return;
                 var offsetTop = window.visualViewport.offsetTop || 0;
-                document.body.style.transform = offsetTop > 0.5 ? 'translateY(' + (-offsetTop) + 'px)' : '';
+                // 🐛修正(符号ミス)：offsetTopは「実際に見えている範囲が、ページの上端からどれだけ
+                // 下にズレたか」を表す値。fixed要素はページ上端基準のまま動かないため、見た目には
+                // 「fixed要素が上にズレて消えた」ように見える。これを打ち消すには、fixed要素側を
+                // 同じ量だけ「下」に動かして帳尻を合わせる必要がある（以前は符号が逆で、
+                // さらに上にズレる＝症状を悪化させていた）。
+                document.body.style.transform = offsetTop > 0.5 ? 'translateY(' + offsetTop + 'px)' : '';
             }
             function onViewportChange() { setAppHeight(); syncViewportOffset(); }
             onViewportChange();
@@ -76,7 +81,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-09-07-003">
+    <link rel="stylesheet" href="style.css?v=2026-09-07-004">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -1519,13 +1524,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-09-07-003"></script>
-    <script src="state.js?v=2026-09-07-003"></script>
-    <script src="tap.js?v=2026-09-07-003"></script>
-    <script src="shop.js?v=2026-09-07-003"></script>
-    <script src="progress.js?v=2026-09-07-003"></script>
-    <script src="minigames.js?v=2026-09-07-003"></script>
-    <script src="ui.js?v=2026-09-07-003"></script>
-    <script src="main.js?v=2026-09-07-003"></script>
+    <script src="data.js?v=2026-09-07-004"></script>
+    <script src="state.js?v=2026-09-07-004"></script>
+    <script src="tap.js?v=2026-09-07-004"></script>
+    <script src="shop.js?v=2026-09-07-004"></script>
+    <script src="progress.js?v=2026-09-07-004"></script>
+    <script src="minigames.js?v=2026-09-07-004"></script>
+    <script src="ui.js?v=2026-09-07-004"></script>
+    <script src="main.js?v=2026-09-07-004"></script>
 </body>
 </html>
