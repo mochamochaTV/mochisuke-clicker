@@ -1,4 +1,4 @@
-        const stages = [
+        export const stages = [
             { name: "鹿児島", pinX: 17.1, pinY: 76.5, distance: 500, item: "スイートポテト", itemImg: "omiyage_images/kyushu_okinawa/kagoshima_item.webp", price: 12, diary: "旅の始まりは鹿児島から！桜島がとっても雄大で、パワーをもらった気分やで。ここから日本中をもちでいっぱいにしに行くで！", bg: "bg_images/kyushu_okinawa/kagoshima.webp", diaryImg: "diary_images/kyushu_okinawa/kagoshima_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", pinX: 21.0, pinY: 73.3, distance: 900, item: "完熟マンゴー", itemImg: "omiyage_images/kyushu_okinawa/miyazaki_item.webp", price: 25, diary: "宮崎にやってきたで！ヤシの木が並んで南国気分満点やなあ。お日様を浴びたマンゴーは甘くて最高や！", bg: "bg_images/kyushu_okinawa/miyazaki.webp", diaryImg: "diary_images/kyushu_okinawa/miyazaki_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
             { name: "大分", pinX: 21.5, pinY: 69.4, distance: 1600, item: "ジャズ羊羹", itemImg: "omiyage_images/kyushu_okinawa/oita_item.webp", price: 50, diary: "大分といえば温泉やで！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだわ。", bg: "bg_images/kyushu_okinawa/oita.webp", diaryImg: "diary_images/kyushu_okinawa/oita_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
@@ -62,14 +62,14 @@
         // tapBonus : 装備中、タップ力に加算される値
         // mpsBonus : 装備中、自動増加(もち/秒)に加算される値
         // ===================================================================
-        const clothesData = [
+        export const clothesData = [
             { id: "normal", name: "いつもの姿", price: 0, desc: "標準のもちすけスタイル", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15))", tapBonus: 0, mpsBonus: 0 },
         ];
 
         // スキル総合コアシステムデータ
         // unlockStage: このステージ(0=鹿児島)に到達するとショップで購入できるようになる
         // unlockPrice: 初回獲得(Lv0→1)の価格 / lvPriceMult: Lvアップごとの価格倍率
-        const PRESTIGE_SHOP_ITEMS = {
+        export const PRESTIGE_SHOP_ITEMS = {
             offlineCap: { name: 'オフライン収益 上限+1時間', cost: 3, max: 8, step: 1, unit: '時間' },
             minigamePlays: { name: 'ミニゲーム 1日プレイ回数+1', cost: 5, max: 3, step: 1, unit: '回' },
             omiyagePriceDiscount: { name: 'おみやげ価格 -2%', cost: 4, max: 10, step: 2, unit: '%引き' },
@@ -78,7 +78,7 @@
             skillCdReduction: { name: 'スキル基本クールタイム -1秒', cost: 5, max: 5, step: 1, unit: '秒' },
             minigameReward: { name: 'ミニゲーム報酬 +5%', cost: 4, max: 10, step: 5, unit: '%' },
         };
-        const dialogueData = {
+        export const dialogueData = {
             timeGreetings: {
                 morning: [ // 5:00〜10:59
                     "おはよう！今日も一日頑張ろうな！",
@@ -199,7 +199,7 @@
         };
 
         // ランダムに配列から1つ取り出すヘルパー
-        const TUTORIAL_STEPS = [
+        export const TUTORIAL_STEPS = [
             { text: 'ワイと一緒に、日本を鹿児島から沖縄まで縦断する旅に出よう！', highlight: null, duration: 4000 },
             { text: '画面のワイをタップすると、もちが増えていくで。', highlight: null, duration: 3800 },
             { text: '連打するとコンボも伸びていくで！', highlight: null, duration: 3500 },
@@ -213,8 +213,8 @@
             { text: 'ここから、ワイにお土産をあげられるで！', highlight: 'feed-toggle-btn', duration: 4500 },
             { text: 'さあ、日本一周の旅に出発や！応援してるで！', highlight: null, duration: 3500 },
         ];
-        const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3'];
-        const cheerLines = {
+        export const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3'];
+        export const cheerLines = {
             0: ["もちもちやろ？", "その調子や！", "ええ感じやで！", "もちすけ嬉しいわ！", "いいペースやな！", "もっともっと！", "楽しなってきたな！"],
             50: ["50コンボ突破や！", "頑張れ！", "やるやないか！", "その勢いええで！", "もっといけるやろ！", "ノリノリやな！", "ええ調子やで！"],
             100: ["100コンボ達成や！", "目指せ500コンボ！", "もちすけ興奮してきたで！", "まだまだいけるで！", "止まるな、そのままや！", "すごい勢いやな！"],
@@ -232,22 +232,22 @@
                 "もちすけ界の伝説になったな！", "ありがとう、ここまで一緒に来てくれて！"
             ]
         };
-        const comboEndLines = ["ナイスタップ！", "おつかれやで！", "ええコンボやったな！", "また続けような！", "もちもち楽しかったわ！", "ようやったで！"];
+        export const comboEndLines = ["ナイスタップ！", "おつかれやで！", "ええコンボやったな！", "また続けような！", "もちもち楽しかったわ！", "ようやったで！"];
 
         // 🎁 ノーマル（灰）で出る消耗品アイテム一覧
-        const NORMAL_CONSUMABLE_ITEMS = [
+        export const NORMAL_CONSUMABLE_ITEMS = [
             { id: 'minigameTicket', name: 'ミニゲーム追加券', img: 'ui_images/item/minigame_ticket.webp', desc: '4種すべての今日の残り回数+1' },
             { id: 'cooldownTicket', name: 'スキルクールタイム短縮チケット', img: 'ui_images/item/cooldown_ticket.webp', desc: '全スキルのクールタイムを即リセット' },
             { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'ui_images/item/mochi30min_ticket.webp', desc: '今の自動増加×30分ぶんのもちを獲得' },
         ];
 
         // ✨ ガチャのノーマルレア・レアで排出される、1日だけ自動増加がアップするスプレー（見た目エフェクトつき）
-        const SPRAY_ITEMS = [
+        export const SPRAY_ITEMS = [
             { id: 'spray_normalRare', name: 'キラキラスプレー', star: 1, mpsMultiplier: 1.2, effectId: 'sparkle', desc: '自動増加+20%＆キラキラエフェクト（1日）' },
             { id: 'spray_rare',       name: 'オーラスプレー',   star: 2, mpsMultiplier: 1.5, effectId: 'aura',    desc: '自動増加+50%＆光るオーラエフェクト（1日）' },
         ];
 
-        const GACHA_RARITIES = [
+        export const GACHA_RARITIES = [
             { id: 'normal',      label: 'ノーマル',     weight: 90,  filter: 'grayscale(0.7) brightness(0.95)',                              color: '#9e9e9e', desc: '消耗品（ミニゲーム追加券・スキルクールタイム短縮チケット・もち30分ぶんチケット）',
               flair: { flash: 0.2, glow: 0, vibrate: [10, 15], nameScale: 1.0, rays: false } }, // 灰
             { id: 'normalRare',  label: 'ノーマルレア',  weight: 5.9, filter: 'sepia(0.4) saturate(2.5) hue-rotate(60deg) brightness(1.05)',   color: '#4caf50', desc: '上位の消耗品、または一時的な見た目エフェクト',
@@ -259,25 +259,25 @@
             { id: 'ur',          label: 'ウルトラレア',  weight: 0.1, filter: 'saturate(3) hue-rotate(0deg)',                                  color: '#ff6ec7', desc: '最上位ランクの服・帽子・アクセサリー',
               flair: { flash: 0.7, glow: 90, vibrate: [25, 30, 25, 30, 25, 40], nameScale: 1.55, rays: true } }, // 虹（後でグラデ演出に差し替え予定）
         ];
-        const OMIYAGE_ROWS = [
+        export const OMIYAGE_ROWS = [
             { itemTop: 20.2, itemBottom: 34.0, plateTop: 34.5, plateBottom: 37.7 },
             { itemTop: 38.1, itemBottom: 50.9, plateTop: 51.2, plateBottom: 54.1 },
             { itemTop: 54.8, itemBottom: 67.6, plateTop: 68.0, plateBottom: 71.2 }
         ];
-        const OMIYAGE_COLS = [
+        export const OMIYAGE_COLS = [
             { left: 9.2,  right: 35.2 },
             { left: 36.6, right: 61.9 },
             { left: 63.7, right: 89.7 }
         ];
-        const feedTeaseComments = ["ちょうだい！", "まだ〜？", "はやくよこせ！"];
-        const FEED_TEASE_MAX_LEVEL = feedTeaseComments.length; // これ以上は毎回叫ぶだけになる
+        export const feedTeaseComments = ["ちょうだい！", "まだ〜？", "はやくよこせ！"];
+        export const FEED_TEASE_MAX_LEVEL = feedTeaseComments.length; // これ以上は毎回叫ぶだけになる
 
         // ===================================================================
         // 👗 着せ替え部屋：帽子・顔パーツ・服の3カテゴリ（あつまれどうぶつの森を参考にした一覧選択式）
         // 帽子・顔パーツは、もちすけの上に重ねる「単体パーツ」画像で、位置・大きさを個別に調整する。
         // 服だけは、もちすけ全身を着せ替えた状態の完成イラストをそのまま使う（座標調整は不要）。
         // ===================================================================
-        const KISEKAE_ITEMS = {
+        export const KISEKAE_ITEMS = {
             hat: [
                 { id: 'hat_crown_red',      name: '王冠（赤）',        star: 3, img: 'ui_images/kisekae/hat_crown_red.webp',      top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
                 { id: 'hat_crown_blue',     name: '王冠（青）',        star: 3, img: 'ui_images/kisekae/hat_crown_blue.webp',     top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
@@ -355,19 +355,19 @@
                 },
             ],
         };
-        const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服', back: '背中', fullbody: '全身' };
-        const DEFAULT_MOUTH_POSITION = { top: 36.986245, left: 48.44735, width: 17 }; // 服の指定が無い時（初期衣装含む）はこちら
+        export const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服', back: '背中', fullbody: '全身' };
+        export const DEFAULT_MOUTH_POSITION = { top: 36.986245, left: 48.44735, width: 17 }; // 服の指定が無い時（初期衣装含む）はこちら
 
         // ===================================================================
         // 💼 おしごとミッション：序盤の1本道チュートリアル → デイリー → ウィークリー、の3段階
         // 進捗は trackKey に対応するカウンター(missionCounters)を見て判定する
         // ===================================================================
-        const TUTORIAL_MISSIONS = [
+        export const TUTORIAL_MISSIONS = [
             { id: 'tut_tap10', text: '10回タップしよう！', trackKey: 'totalTaps', target: 10, reward: 5 },
             { id: 'tut_buy_omiyage', text: 'ショップでおみやげを買おう！', trackKey: 'omiyageBoughtTotal', target: 1, reward: 5 },
             { id: 'tut_minigame', text: 'ミニゲームを1回遊ぼう！', trackKey: 'minigamesPlayedTotal', target: 1, reward: 10 },
         ];
-        const DAILY_MISSION_POOL = [
+        export const DAILY_MISSION_POOL = [
             { id: 'daily_login', text: 'ログインする', trackKey: 'loginToday', target: 1, reward: 3 },
             { id: 'daily_tap100', text: '100回タップする', trackKey: 'tapsToday', target: 100, reward: 5 },
             { id: 'daily_tap300', text: '300回タップする', trackKey: 'tapsToday', target: 300, reward: 10 },
@@ -379,7 +379,7 @@
             { id: 'daily_skill1', text: 'スキルを1回使う', trackKey: 'skillUsedToday', target: 1, reward: 5 },
             { id: 'daily_feed1', text: 'もちすけにお土産をあげる', trackKey: 'feedToday', target: 1, reward: 5 },
         ];
-        const WEEKLY_MISSION_POOL = [
+        export const WEEKLY_MISSION_POOL = [
             { id: 'weekly_login3', text: '3日ログインする', trackKey: 'loginDaysThisWeek', target: 3, reward: 15 },
             { id: 'weekly_stamp3', text: '都道府県を3つ制覇する', trackKey: 'stampsThisWeek', target: 3, reward: 20 },
             { id: 'weekly_jackpot', text: 'スロットで大当たりを出す', trackKey: 'jackpotsThisWeek', target: 1, reward: 25 },
@@ -389,13 +389,13 @@
             { id: 'weekly_gacha5', text: 'ガチャ・スロットを合計5回まわす', trackKey: 'gachaSpinsThisWeek', target: 5, reward: 20 },
             { id: 'weekly_skill5', text: 'スキルを合計5回使う', trackKey: 'skillUsedThisWeek', target: 5, reward: 15 },
         ];
-        const DAILY_MISSION_COUNT = 3; // 毎日、プールの中からこの数だけランダムに選ばれる
-        const WEEKLY_MISSION_COUNT = 2;
+        export const DAILY_MISSION_COUNT = 3; // 毎日、プールの中からこの数だけランダムに選ばれる
+        export const WEEKLY_MISSION_COUNT = 2;
 
         // ===================================================================
         // 🚶 移動画面：家4つ・看板4つ・戻る看板1つの座標（すべて#move-menu-stage基準の%指定）
         // ===================================================================
-        const MOVE_MENU_PARTS = [
+        export const MOVE_MENU_PARTS = [
             { id: 'move-house-warehouse', label: '家（ものおき）',     top: 72.42361,  left: 46.67685,  width: 41.440215, height: 19.095317 },
             { id: 'move-sign-warehouse',  label: '看板（ものおき）',   top: 82.006069, left: 6.839692,  width: 20,         height: 10 },
             { id: 'move-house-shop',      label: '家（ショップ）',     top: 53.549175, left: 48.638675, width: 35.201018, height: 18.133128 },
@@ -410,7 +410,7 @@
         // ===================================================================
         // 🎮 ゲーセン：5つの筐体イラストの座標（#minigame-tile-view基準の%指定）
         // ===================================================================
-        const ARCADE_CABINET_PARTS = [
+        export const ARCADE_CABINET_PARTS = [
             { id: 'arcade-cabinet-quiz',          gameId: 'quiz',          img: 'ui_images/arcade/quiz.webp',          top: 12.689866, left: -6.432579, width: 52.396949, height: 36.335854 },
             { id: 'arcade-cabinet-timeattack',    gameId: 'timeattack',    img: 'ui_images/arcade/timeattack.webp',    top: 14.505297, left: 29.099241, width: 44,         height: 34.21785 },
             { id: 'arcade-cabinet-concentration', gameId: 'concentration', img: 'ui_images/arcade/concentration.webp', top: 15.506797, left: 63.541989, width: 36.36641,  height: 33.158848 },
@@ -421,7 +421,7 @@
         // ===================================================================
         // 📦 ものおき：4つの小物イラストの座標（#warehouse-item-stage基準の%指定）
         // ===================================================================
-        const WAREHOUSE_ITEM_PARTS = [
+        export const WAREHOUSE_ITEM_PARTS = [
             { id: 'warehouse-item-trophy',  label: 'トロフィー',   action: 'trophy',  img: 'ui_images/warehouse/trophy.webp',  top: 21.767025, left: 7.78117,   width: 40, height: 34 },
             { id: 'warehouse-item-omiyage', label: 'おみやげ',     action: 'omiyage', img: 'ui_images/warehouse/omiyage.webp', top: 8,         left: 54,        width: 40, height: 34 },
             { id: 'warehouse-item-ticket',  label: 'アイテム一覧', action: 'ticket',  img: 'ui_images/warehouse/ticket.webp',  top: 61.07716,  left: 7.781172,  width: 40, height: 34 },
@@ -432,7 +432,7 @@
         // 🛋️ マイルーム：壁紙・床・家具（4スロット）の6カテゴリ。着せ替え部屋と同じ操作方式
         // 壁紙・床は常に1つ装着、家具は各スロットに1つずつ置ける（無しも選べる）
         // ===================================================================
-        const MYROOM_ITEMS = {
+        export const MYROOM_ITEMS = {
             wallpaper: [
                 { id: 'wallpaper_default', name: 'シンプルな壁紙（クリーム）', star: 1, img: 'ui_images/myroom/wallpaper_cream_simple.webp' },
             ],
@@ -459,31 +459,78 @@
             ],
             small_deco: [],  // 小物（観葉植物・ぬいぐるみなど）
         };
-        const MYROOM_CATEGORY_LABELS = { wallpaper: '壁紙', flooring: '床', wall_deco: '壁掛け', big_furniture: '大型家具', table: '机・棚', small_deco: '小物' };
+        export const MYROOM_CATEGORY_LABELS = { wallpaper: '壁紙', flooring: '床', wall_deco: '壁掛け', big_furniture: '大型家具', table: '机・棚', small_deco: '小物' };
         // 家具4カテゴリの初期位置（プレイヤーが動かした後は、equippedMyroomの方の座標が優先される）
         // wall_decoだけ、壁の範囲(0〜62%)からはみ出せないよう制限する。他は床にさえ着いていれば壁側にはみ出してもよい
-        const MYROOM_SLOT_POSITIONS = {
+        export const MYROOM_SLOT_POSITIONS = {
             wall_deco:      { top: 8,  left: 30, width: 26, height: 20 },
             big_furniture:  { top: 48, left: 4,  width: 40, height: 40 },
             table:          { top: 52, left: 56, width: 30, height: 32 },
             small_deco:     { top: 30, left: 68, width: 20, height: 20 },
         };
-        const MYROOM_WALL_ZONE_BOTTOM = 62; // 壁掛けが超えてはいけない下限（壁紙と床の境界と同じ値）
-        let MYROOM_MOCHISUKE_SIZE = { width: 22 }; // もちすけ本体の大きさ（管理者が調整）
-        const MYROOM_FURNITURE_LIMIT_PER_CATEGORY = 3; // カテゴリごとに置ける最大個数
+        export const MYROOM_WALL_ZONE_BOTTOM = 62; // 壁掛けが超えてはいけない下限（壁紙と床の境界と同じ値）
+        export let MYROOM_MOCHISUKE_SIZE = { width: 22 }; // もちすけ本体の大きさ（管理者が調整）
+        export const MYROOM_FURNITURE_LIMIT_PER_CATEGORY = 3; // カテゴリごとに置ける最大個数
 
         // 🗺️⚙️🖼️🍴 タップ画面4隅ボタンの位置・大きさ（管理者が調整）
         // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
-        const CORNER_BTN_ADJUST_TOOL_ENABLED = false;
-        let CORNER_BTN_SIZE = 50; // 共通の大きさ(px)
-        const CORNER_BTN_OFFSETS = {
+        export const CORNER_BTN_ADJUST_TOOL_ENABLED = false;
+        export let CORNER_BTN_SIZE = 50; // 共通の大きさ(px)
+        export const CORNER_BTN_OFFSETS = {
             'map-toggle-btn':  { vert: 1,  horiz: 12 },  // top: calc(8px+safe-area+vert)px; left: horizpx;
             'menu-toggle-btn': { vert: 0,  horiz: 12 },  // top: calc(8px+safe-area+vert)px; right: horizpx;
             'ui-toggle-btn':   { vert: 88, horiz: 10 },  // bottom: calc(14px+safe-area+vert)px; left: horizpx;
             'feed-toggle-btn': { vert: 88, horiz: 10 },  // bottom: calc(14px+safe-area+vert)px; right: horizpx;
         };
         // 📱 PWA（ホーム画面に追加した版）だけ、下2つのボタンの位置を別途上書きする
-        const CORNER_BTN_OFFSETS_PWA_OVERRIDE = {
+        export const CORNER_BTN_OFFSETS_PWA_OVERRIDE = {
             'ui-toggle-btn':   { vert: 50, horiz: 11 },
             'feed-toggle-btn': { vert: 51, horiz: 10 },
         };
+
+
+        // ===================================================================
+        // 🌉 一時的な橋渡し（migration bridge）
+        // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
+        // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
+        // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
+        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
+        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
+        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        // ===================================================================
+        window.stages = stages;
+        window.clothesData = clothesData;
+        window.PRESTIGE_SHOP_ITEMS = PRESTIGE_SHOP_ITEMS;
+        window.dialogueData = dialogueData;
+        window.TUTORIAL_STEPS = TUTORIAL_STEPS;
+        window.SFX_FILES = SFX_FILES;
+        window.cheerLines = cheerLines;
+        window.comboEndLines = comboEndLines;
+        window.NORMAL_CONSUMABLE_ITEMS = NORMAL_CONSUMABLE_ITEMS;
+        window.SPRAY_ITEMS = SPRAY_ITEMS;
+        window.GACHA_RARITIES = GACHA_RARITIES;
+        window.OMIYAGE_ROWS = OMIYAGE_ROWS;
+        window.OMIYAGE_COLS = OMIYAGE_COLS;
+        window.feedTeaseComments = feedTeaseComments;
+        window.FEED_TEASE_MAX_LEVEL = FEED_TEASE_MAX_LEVEL;
+        window.KISEKAE_ITEMS = KISEKAE_ITEMS;
+        window.KISEKAE_CATEGORY_LABELS = KISEKAE_CATEGORY_LABELS;
+        window.DEFAULT_MOUTH_POSITION = DEFAULT_MOUTH_POSITION;
+        window.TUTORIAL_MISSIONS = TUTORIAL_MISSIONS;
+        window.DAILY_MISSION_POOL = DAILY_MISSION_POOL;
+        window.WEEKLY_MISSION_POOL = WEEKLY_MISSION_POOL;
+        window.DAILY_MISSION_COUNT = DAILY_MISSION_COUNT;
+        window.WEEKLY_MISSION_COUNT = WEEKLY_MISSION_COUNT;
+        window.MOVE_MENU_PARTS = MOVE_MENU_PARTS;
+        window.ARCADE_CABINET_PARTS = ARCADE_CABINET_PARTS;
+        window.WAREHOUSE_ITEM_PARTS = WAREHOUSE_ITEM_PARTS;
+        window.MYROOM_ITEMS = MYROOM_ITEMS;
+        window.MYROOM_CATEGORY_LABELS = MYROOM_CATEGORY_LABELS;
+        window.MYROOM_SLOT_POSITIONS = MYROOM_SLOT_POSITIONS;
+        window.MYROOM_WALL_ZONE_BOTTOM = MYROOM_WALL_ZONE_BOTTOM;
+        window.MYROOM_MOCHISUKE_SIZE = MYROOM_MOCHISUKE_SIZE;
+        window.MYROOM_FURNITURE_LIMIT_PER_CATEGORY = MYROOM_FURNITURE_LIMIT_PER_CATEGORY;
+        window.CORNER_BTN_ADJUST_TOOL_ENABLED = CORNER_BTN_ADJUST_TOOL_ENABLED;
+        window.CORNER_BTN_SIZE = CORNER_BTN_SIZE;
+        window.CORNER_BTN_OFFSETS = CORNER_BTN_OFFSETS;
+        window.CORNER_BTN_OFFSETS_PWA_OVERRIDE = CORNER_BTN_OFFSETS_PWA_OVERRIDE;

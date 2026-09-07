@@ -1,10 +1,10 @@
-        function menuSaveGame() {
+        export function menuSaveGame() {
             saveGame();
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             alert("💾 セーブしました！");
         }
 
-        function menuSaveAndQuit() {
+        export function menuSaveAndQuit() {
             saveGame();
             // 【重要】ブラウザ/PWAの仕様上、Webページ側から「アプリを完全に終了させる」ことはできません
             // （window.close()は script が開いたウィンドウ以外では基本的に無視されます）。
@@ -18,7 +18,7 @@
         }
 
         // 🔄 セーブデータの書き出し/読み込み（別URL・別インスタンス間でもデータを確実に移せる）
-        function exportSaveData() {
+        export function exportSaveData() {
             saveGame();
             const raw = localStorage.getItem('mochisuke_save_data');
             const el = document.getElementById('save-export-text');
@@ -29,7 +29,7 @@
             catch (e) { alert('下のテキストを手動でコピーしてください'); }
         }
 
-        function importSaveData() {
+        export function importSaveData() {
             const text = document.getElementById('save-import-text').value.trim();
             if (!text) { alert('貼り付け欄が空です'); return; }
             if (!confirm('今のセーブデータに上書きします。よろしいですか？（今のデータは失われます）')) return;
@@ -57,7 +57,7 @@
             location.reload();
         }
 
-        async function refreshCloudBackupStatus() {
+        export async function refreshCloudBackupStatus() {
             const el = document.getElementById('cloud-backup-status');
             if (!el) return;
             el.innerText = '最終バックアップ: 確認中…';
@@ -71,7 +71,7 @@
         }
 
         // ☁️ 今この瞬間の状態を、自分の意思で確実にクラウドへ残す（自動バックアップの安全装置を無視してでも上書きする）
-        async function manualCloudBackup() {
+        export async function manualCloudBackup() {
             if (!window.backupSaveData) { alert('クラウド機能の準備ができていません。少し待ってからもう一度試してください'); return; }
             saveGame(); // 念のため、まずローカルの保存内容を最新にしておく
             const raw = localStorage.getItem('mochisuke_save_data');
@@ -87,7 +87,7 @@
             }
         }
 
-        async function restoreFromCloud() {
+        export async function restoreFromCloud() {
             if (!window.restoreSaveData) { alert('クラウド機能の準備ができていません。少し待ってからもう一度試してください'); return; }
             const backup = await window.restoreSaveData();
             if (!backup || !backup.data) {
@@ -107,7 +107,7 @@
             location.reload();
         }
 
-        function sanitizePlayerName(rawName) {
+        export function sanitizePlayerName(rawName) {
             let n = String(rawName || '').trim();
             if (!n) return { ok: false, reason: '名前を入力してください' };
             n = n.slice(0, 20);
@@ -116,7 +116,7 @@
             return { ok: true, name: n };
         }
 
-        function savePlayerName() {
+        export function savePlayerName() {
             const input = document.getElementById('player-name-input');
             const result = sanitizePlayerName(input.value);
             if (!result.ok) { alert(result.reason); return; }
@@ -126,20 +126,20 @@
             alert('保存しました！');
         }
 
-        let score = 0; 
-        let totalTapsCount = 0;       // 日本制覇演出の統計表示用
-        let firstPlayTimestamp = null; // 初回プレイ日時（統計表示用）
-        let lastActiveTimestamp = null; // 最後にセーブした時刻（オフライン収益の計算に使う）
-        const OFFLINE_EARNINGS_CAP_HOURS_BASE = 4; // オフライン収益として計算する時間の上限（これ以上離れていても4時間分だけ）
-        const OFFLINE_EARNINGS_MIN_SECONDS = 90; // これより短い離席では出さない（毎回のリロードで鬱陶しくならないように）
+        export let score = 0; 
+        export let totalTapsCount = 0;       // 日本制覇演出の統計表示用
+        export let firstPlayTimestamp = null; // 初回プレイ日時（統計表示用）
+        export let lastActiveTimestamp = null; // 最後にセーブした時刻（オフライン収益の計算に使う）
+        export const OFFLINE_EARNINGS_CAP_HOURS_BASE = 4; // オフライン収益として計算する時間の上限（これ以上離れていても4時間分だけ）
+        export const OFFLINE_EARNINGS_MIN_SECONDS = 90; // これより短い離席では出さない（毎回のリロードで鬱陶しくならないように）
 
         // 🔄 転生システム
-        let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
+        export let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
 
         // ===================================================================
         // 🎮 ミニゲームセンター
         // ===================================================================
-        function saveGame() {
+        export function saveGame() {
             lastActiveTimestamp = Date.now();
             const state = {
                 score: score, currentStageIndex: currentStageIndex, selectedStageIndex: selectedStageIndex,
@@ -172,8 +172,8 @@
             localStorage.setItem('mochisuke_save_data', JSON.stringify(state));
         }
 
-        let hadLocalSaveOnLoad = false;
-        function loadGame() {
+        export let hadLocalSaveOnLoad = false;
+        export function loadGame() {
             const data = localStorage.getItem('mochisuke_save_data');
             hadLocalSaveOnLoad = !!data;
             if (data) {
@@ -288,7 +288,7 @@
 
         // 🛟 ローカルにセーブが全く無い状態で起動した時、クラウドにバックアップが残っていないか自動でチェックする
         // （「データが消えたことに気づかないまま最初からプレイしてしまう」事故を防ぐための保険）
-        function checkForCloudRestoreOnLoad() {
+        export function checkForCloudRestoreOnLoad() {
             if (hadLocalSaveOnLoad) return; // ローカルにセーブがあれば何もしない
             let attempts = 0;
             const poll = setInterval(async () => {
@@ -315,3 +315,34 @@
         }
 
         // 🎁 オフライン収益：離れている間の自動増加(mps)ぶんを、もちの数だけ増やす（進行度には一切影響させない）
+
+
+        // ===================================================================
+        // 🌉 一時的な橋渡し（migration bridge）
+        // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
+        // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
+        // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
+        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
+        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
+        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        // ===================================================================
+        window.menuSaveGame = menuSaveGame;
+        window.menuSaveAndQuit = menuSaveAndQuit;
+        window.exportSaveData = exportSaveData;
+        window.importSaveData = importSaveData;
+        window.refreshCloudBackupStatus = refreshCloudBackupStatus;
+        window.manualCloudBackup = manualCloudBackup;
+        window.restoreFromCloud = restoreFromCloud;
+        window.sanitizePlayerName = sanitizePlayerName;
+        window.savePlayerName = savePlayerName;
+        window.score = score;
+        window.totalTapsCount = totalTapsCount;
+        window.firstPlayTimestamp = firstPlayTimestamp;
+        window.lastActiveTimestamp = lastActiveTimestamp;
+        window.OFFLINE_EARNINGS_CAP_HOURS_BASE = OFFLINE_EARNINGS_CAP_HOURS_BASE;
+        window.OFFLINE_EARNINGS_MIN_SECONDS = OFFLINE_EARNINGS_MIN_SECONDS;
+        window.playerName = playerName;
+        window.saveGame = saveGame;
+        window.hadLocalSaveOnLoad = hadLocalSaveOnLoad;
+        window.loadGame = loadGame;
+        window.checkForCloudRestoreOnLoad = checkForCloudRestoreOnLoad;

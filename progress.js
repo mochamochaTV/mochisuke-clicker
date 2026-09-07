@@ -1,59 +1,59 @@
-        let prestigeCount = 0;      // 転生した回数
+        export let prestigeCount = 0;      // 転生した回数
 
         // 👗 着せ替え部屋：所持アイテムと、今装着中のアイテム（カテゴリごとに1つだけ）
-        let ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [] };
-        let equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null };
+        export let ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [] };
+        export let equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null };
 
         // 💼 おしごとミッション：進捗カウンター・選ばれているミッション・受け取り済みの管理
-        let missionCounters = {
+        export let missionCounters = {
             totalTaps: 0, omiyageBoughtTotal: 0, minigamesPlayedTotal: 0,
             tapsToday: 0, minigamesToday: 0, omiyageBoughtToday: 0, gachaSpinsToday: 0,
             tapsThisWeek: 0, stampsThisWeek: 0, jackpotsThisWeek: 0, loginDaysThisWeek: 0,
         };
-        let missionDailyDate = '';       // 最後にデイリーをリセットした日付(YYYY-MM-DD)
-        let missionWeeklyWeekKey = '';   // 最後にウィークリーをリセットした週(YYYY-Www)
-        let missionDailySelected = [];   // 今日選ばれているデイリーミッションのID
-        let missionWeeklySelected = [];  // 今週選ばれているウィークリーミッションのID
-        let missionClaimed = {};         // { [ミッションID]: true } 受け取り済み
-        let tutorialMissionStep = 0;     // チュートリアルミッション、次に見せるステップ番号
+        export let missionDailyDate = '';       // 最後にデイリーをリセットした日付(YYYY-MM-DD)
+        export let missionWeeklyWeekKey = '';   // 最後にウィークリーをリセットした週(YYYY-Www)
+        export let missionDailySelected = [];   // 今日選ばれているデイリーミッションのID
+        export let missionWeeklySelected = [];  // 今週選ばれているウィークリーミッションのID
+        export let missionClaimed = {};         // { [ミッションID]: true } 受け取り済み
+        export let tutorialMissionStep = 0;     // チュートリアルミッション、次に見せるステップ番号
 
         // 🛋️ マイルーム：所持アイテムと、今の配置状況
-        let ownedMyroomItems = { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [] };
-        let equippedMyroom = {
+        export let ownedMyroomItems = { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [] };
+        export let equippedMyroom = {
             wallpaper: 'wallpaper_default', flooring: 'flooring_default',
             // 🛋️ 家具4カテゴリは、複数個の配置インスタンス配列にする： [{ itemId, top, left, flip }, ...]
             wall_deco: [], big_furniture: [], table: [], small_deco: [],
         };
         // 🔀 最大3部屋まで持てる。equippedMyroomは「今表示・編集中の部屋」を指す
-        let myroomSlots = [null, null, null];
-        let currentMyroomSlotIndex = 0;
-        let previewKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' }; // 「決定」を押すまでの試着中の状態
-        let prestigeScoreHistory = []; // 各転生の直前に持っていたもち数の記録（将来使う可能性があるので記録だけしておく）
-        let prestigePoints = 0;     // 転生ポイント（所持数、将来のショップで消費する予定）
-        const PRESTIGE_BONUS_PER_COUNT = 0.02; // 転生1回につき、タップ力・自動増加が恒久的に+2%（控えめ・線形。世界編を見据えてここは急激に伸ばさない）
-        function getPrestigeBonusMultiplier() {
+        export let myroomSlots = [null, null, null];
+        export let currentMyroomSlotIndex = 0;
+        export let previewKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt' }; // 「決定」を押すまでの試着中の状態
+        export let prestigeScoreHistory = []; // 各転生の直前に持っていたもち数の記録（将来使う可能性があるので記録だけしておく）
+        export let prestigePoints = 0;     // 転生ポイント（所持数、将来のショップで消費する予定）
+        export const PRESTIGE_BONUS_PER_COUNT = 0.02; // 転生1回につき、タップ力・自動増加が恒久的に+2%（控えめ・線形。世界編を見据えてここは急激に伸ばさない）
+        export function getPrestigeBonusMultiplier() {
             return 1 + prestigeCount * PRESTIGE_BONUS_PER_COUNT;
         }
 
         // 🎰 ガチャコイン：もちとは別枠の通貨。もちは際限なく増え続けて価値が変わってしまうため、
         // ガチャの対価としては、タップでは稼げない・増え方がゆるやかな別通貨を用意した
-        let gachaCoins = 0;
-        const GACHA_COIN_PER_STAMP = 2;      // 都道府県のスタンプを押すたびに
-        const GACHA_COIN_JAPAN_CLEAR = 50;   // 日本制覇の達成時に
-        const GACHA_COIN_PER_PRESTIGE = 30;  // 転生するたびに
+        export let gachaCoins = 0;
+        export const GACHA_COIN_PER_STAMP = 2;      // 都道府県のスタンプを押すたびに
+        export const GACHA_COIN_JAPAN_CLEAR = 50;   // 日本制覇の達成時に
+        export const GACHA_COIN_PER_PRESTIGE = 30;  // 転生するたびに
 
         // 🛍️ 転生ポイントショップ（世界編を見据えて、パワーではなく利便性(QOL)中心。ただし今回、周回の土台になる部分もいくつか追加）
-        let prestigeShopLv = {
+        export let prestigeShopLv = {
             offlineCap: 0, minigamePlays: 0,
             omiyagePriceDiscount: 0, omiyagePriceCurve: 0,
             startingBonus: 0, skillCdReduction: 0, minigameReward: 0,
         };
-        function getOfflineEarningsCapHours() { return OFFLINE_EARNINGS_CAP_HOURS_BASE + prestigeShopLv.offlineCap; }
-        function getMinigameDailyLimit() { return MINIGAME_DAILY_LIMIT_BASE + prestigeShopLv.minigamePlays; }
+        export function getOfflineEarningsCapHours() { return OFFLINE_EARNINGS_CAP_HOURS_BASE + prestigeShopLv.offlineCap; }
+        export function getMinigameDailyLimit() { return MINIGAME_DAILY_LIMIT_BASE + prestigeShopLv.minigamePlays; }
         // 恒久強化の効果を返す関数群（買い物ショップ・スキルクールタイム・ミニゲーム報酬・初期ボーナス計算から呼ばれる）
-        function getPrestigeStartingBonus() { return prestigeShopLv.startingBonus; }                     // タップ力・自動増加の初期加算値
-        function getPrestigeCdReductionSec() { return prestigeShopLv.skillCdReduction; }                 // スキル基本クールタイムからの短縮秒数
-        function buyPrestigeShopItem(key) {
+        export function getPrestigeStartingBonus() { return prestigeShopLv.startingBonus; }                     // タップ力・自動増加の初期加算値
+        export function getPrestigeCdReductionSec() { return prestigeShopLv.skillCdReduction; }                 // スキル基本クールタイムからの短縮秒数
+        export function buyPrestigeShopItem(key) {
             const item = PRESTIGE_SHOP_ITEMS[key];
             if (!item) return;
             const currentCount = prestigeShopLv[key] || 0;
@@ -65,7 +65,7 @@
             renderPrestigeShop();
         }
 
-        function renderPrestigeShop() {
+        export function renderPrestigeShop() {
             const el = document.getElementById('prestige-shop-list');
             if (!el) return;
             el.innerHTML = '';
@@ -84,13 +84,13 @@
             if (ptEl) ptEl.innerText = `所持転生ポイント: ${prestigePoints}`;
         }
 
-        let hasSeenJapanClear = false; // 日本制覇演出を出したかどうか（何度も出ないようにする）
-        const MINIGAME_DAILY_LIMIT_BASE = 3; // 1日あたりのプレイ回数上限（調整しやすいよう定数化）
+        export let hasSeenJapanClear = false; // 日本制覇演出を出したかどうか（何度も出ないようにする）
+        export const MINIGAME_DAILY_LIMIT_BASE = 3; // 1日あたりのプレイ回数上限（調整しやすいよう定数化）
 
-        let prefTaps = new Array(47).fill(0);
+        export let prefTaps = new Array(47).fill(0);
 
         // 県ごとのボーダーライン（調整しやすいよう関数化。県のインデックスiに応じて段階的にスケール）
-        function getPrefTrophyLines(i) {
+        export function getPrefTrophyLines(i) {
             const bronzeLine = 50 + i * 15;
             const silverLine = bronzeLine * 2.5;
             const goldLine = bronzeLine * 6;
@@ -98,7 +98,7 @@
         }
 
         // タップ数は増える一方なので、この関数は常に「今まで到達した最高のトロフィー」を返す（ダウングレードしない）
-        function getPrefTrophy(i) {
+        export function getPrefTrophy(i) {
             const taps = prefTaps[i] || 0;
             const { bronzeLine, silverLine, goldLine } = getPrefTrophyLines(i);
             if (taps >= goldLine) return 'gold';
@@ -107,16 +107,16 @@
             return null;
         }
 
-        function getPrefTrophyIcon(trophy) {
+        export function getPrefTrophyIcon(trophy) {
             if (trophy === 'gold') return '🥇';
             if (trophy === 'silver') return '🥈';
             if (trophy === 'bronze') return '🥉';
             return '　';
         }
-        let currentStageIndex = 0;     
-        let selectedStageIndex = 0;    
-        let currentStageProgress = 0;   
-        function checkOfflineEarnings() {
+        export let currentStageIndex = 0;     
+        export let selectedStageIndex = 0;    
+        export let currentStageProgress = 0;   
+        export function checkOfflineEarnings() {
             if (!lastActiveTimestamp) return; // 初回プレイなど、前回の記録が無ければ何もしない
             const elapsedSeconds = (Date.now() - lastActiveTimestamp) / 1000;
             if (elapsedSeconds < OFFLINE_EARNINGS_MIN_SECONDS) return;
@@ -144,7 +144,7 @@
 
         // 実機で今どうなっているかを数値で見るための簡易パネル。
         // 推測でCSSを直すのではなく、ここに出た実際の数字をスクショで送ってもらえれば原因を一発で特定できます。
-        function triggerAreaTransition(newBgUrl, callback) {
+        export function triggerAreaTransition(newBgUrl, callback) {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -157,7 +157,7 @@
 
         // 波紋・浮き文字はDOM要素を作らずcanvasにまとめて描画する（連打時のcreateElement/appendChild/remove連発による
         // レイアウト負荷とGCの揺れが高速タップ時のカクつきの主因だったため、パーティクルと同じ描画ループに統合）
-        function showPrefTrophyDetail(i) {
+        export function showPrefTrophyDetail(i) {
             const stage = stages[i];
             const taps = prefTaps[i] || 0;
             const trophy = getPrefTrophy(i);
@@ -167,18 +167,18 @@
             alert(`【${stage.name}】\n滞在中タップ数: ${taps.toLocaleString()}回\n現在のトロフィー: ${trophyText}${goldBonusText}\n\n🥉銅: ${bronzeLine}回\n🥈銀: ${Math.floor(silverLine)}回\n🥇金: ${Math.floor(goldLine)}回`);
         }
 
-        const PRESTIGE_POINTS_PER_RUN = 5; // 転生1回あたりに獲得する転生ポイント（v1はシンプルに固定値。将来調整可）
+        export const PRESTIGE_POINTS_PER_RUN = 5; // 転生1回あたりに獲得する転生ポイント（v1はシンプルに固定値。将来調整可）
 
-        function openPrestigeShop() {
+        export function openPrestigeShop() {
             renderPrestigeShop();
             openModal('prestige-shop-modal');
         }
 
-        function canPrestige() {
+        export function canPrestige() {
             return hasSeenJapanClear; // 日本全国制覇済みなら転生可能
         }
 
-        function openPrestigeConfirm() {
+        export function openPrestigeConfirm() {
             if (!canPrestige()) {
                 alert('日本全国を制覇すると転生できるようになります。まずは沖縄まで旅を続けよう！');
                 return;
@@ -192,7 +192,7 @@
             if (confirm(msg)) doPrestige();
         }
 
-        function doPrestige() {
+        export function doPrestige() {
             prestigeScoreHistory.push({ prestigeNumber: prestigeCount + 1, score: Math.floor(score), timestamp: Date.now() });
             prestigeCount++;
             prestigePoints += PRESTIGE_POINTS_PER_RUN;
@@ -219,7 +219,7 @@
             location.reload(); // 画面各所を確実に初期状態へ戻すため、リロードして最初から表示し直す
         }
 
-        function triggerJapanClearCelebration() {
+        export function triggerJapanClearCelebration() {
             if (hasSeenJapanClear) return;
             hasSeenJapanClear = true;
             gachaCoins += GACHA_COIN_JAPAN_CLEAR;
@@ -282,11 +282,11 @@
         }
 
         // 連打の勢いで誤って閉じないよう、必ず確認をはさむ
-        function confirmCloseJapanClear() {
+        export function confirmCloseJapanClear() {
             document.getElementById('japan-clear-confirm').style.display = 'flex';
         }
 
-        function closeJapanClearAndExplainPrestige() {
+        export function closeJapanClearAndExplainPrestige() {
             document.getElementById('japan-clear-confirm').style.display = 'none';
             closeModal('japan-clear-modal');
             // 転生について、ここで初めて説明する（倉庫から選べることも伝える）
@@ -301,7 +301,7 @@
         }
 
         // 📷 達成画面を、そのまま画像として保存できるようにする
-        function saveJapanClearImage() {
+        export function saveJapanClearImage() {
             const cw = 900, ch = 1600;
             const canvas = document.createElement('canvas');
             canvas.width = cw; canvas.height = ch;
@@ -349,14 +349,14 @@
             bg.src = 'ui_images/backgrounds/japan_clear.webp';
         }
 
-        let collectedStamps = {}; // { 都道府県のインデックス: true }  -- スタンプ帳に押した記録
+        export let collectedStamps = {}; // { 都道府県のインデックス: true }  -- スタンプ帳に押した記録
 
-        let stageArrivalTime = Date.now(); // このエリアに着いた時刻（自動増加が高いと一瞬でゲージが埋まってしまう対策用）
-        let stampGuardRecheckTimer = null;
+        export let stageArrivalTime = Date.now(); // このエリアに着いた時刻（自動増加が高いと一瞬でゲージが埋まってしまう対策用）
+        export let stampGuardRecheckTimer = null;
         // 📊 スタンプ関連の状態を、実機で直接確認するための診断パネル
-        let stampDebugMode = false;
-        let stampDebugInterval = null;
-        function checkStageProgress() {
+        export let stampDebugMode = false;
+        export let stampDebugInterval = null;
+        export function checkStageProgress() {
             if (currentStageProgress >= stages[currentStageIndex].distance) {
                 currentStageProgress = stages[currentStageIndex].distance; // スタンプを押すまでの間、表示が100%を超えて増え続けないようにする
                 if (currentStageIndex < stages.length - 1) {
@@ -378,10 +378,10 @@
         }
 
         // 🔴 スタンプを押す：効果音・演出のあと、少し間を置いてフェードして次のエリアへ
-        let isPendingStampMoment = false; // ゲージが溜まって「スタンプを押す」を待っている状態かどうか
+        export let isPendingStampMoment = false; // ゲージが溜まって「スタンプを押す」を待っている状態かどうか
 
         // 🔴 進捗エリアのボタン：まだスタンプは押さず、絵日記の裏面を開いて「押してもらう」のを待つ
-        function openDiaryForStamping() {
+        export function openDiaryForStamping() {
             if (currentStageProgress < stages[currentStageIndex].distance) return; // 念のため、本当にゲージが満タンか確認する
             const btn = document.getElementById('stamp-press-btn');
             if (btn) btn.style.display = 'none';
@@ -393,7 +393,7 @@
         }
 
         // 🔴 絵日記裏面のスタンプ枠をタップした時：待機中かつ未到達の県でだけ、実際にスタンプを押す
-        function tapStampFrame() {
+        export function tapStampFrame() {
             if (!isPendingStampMoment) return; // 通常の閲覧中は何も起きない
             if (diaryPageIndex !== currentStageIndex) return;
             if (collectedStamps[currentStageIndex]) return;
@@ -453,11 +453,11 @@
         // ===================================================================
         // 💼 おしごとミッション：進捗の記録・日/週の切り替え・受け取り処理
         // ===================================================================
-        function trackMissionEvent(key, amount) {
+        export function trackMissionEvent(key, amount) {
             if (missionCounters[key] === undefined) return;
             missionCounters[key] += (amount || 1);
         }
-        function getWeekKey(d) {
+        export function getWeekKey(d) {
             // ISO週番号ベースの「年-週」文字列を作る（週の変わり目判定に使う）
             const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
             const dayNum = (date.getUTCDay() + 6) % 7;
@@ -466,12 +466,12 @@
             const weekNum = 1 + Math.round(((date - firstThursday) / 86400000 - 3 + (firstThursday.getUTCDay() + 6) % 7) / 7);
             return `${date.getUTCFullYear()}-W${weekNum}`;
         }
-        function pickRandomMissions(pool, count) {
+        export function pickRandomMissions(pool, count) {
             const shuffled = [...pool].sort(() => Math.random() - 0.5);
             return shuffled.slice(0, count).map(m => m.id);
         }
         // 日付・週が変わっていたら、カウンターとミッションの選び直しをする（ゲーム起動時に毎回呼ぶ）
-        function checkAndRotateMissions() {
+        export function checkAndRotateMissions() {
             const now = new Date();
             const todayStr = now.toISOString().slice(0, 10);
             if (missionDailyDate !== todayStr) {
@@ -498,16 +498,16 @@
                 missionWeeklySelected = pickRandomMissions(WEEKLY_MISSION_POOL, WEEKLY_MISSION_COUNT);
             }
         }
-        function getMissionDef(id) {
+        export function getMissionDef(id) {
             return TUTORIAL_MISSIONS.find(m => m.id === id) || DAILY_MISSION_POOL.find(m => m.id === id) || WEEKLY_MISSION_POOL.find(m => m.id === id);
         }
-        function getMissionProgress(mission) {
+        export function getMissionProgress(mission) {
             return missionCounters[mission.trackKey] || 0;
         }
-        function isMissionComplete(mission) {
+        export function isMissionComplete(mission) {
             return getMissionProgress(mission) >= mission.target;
         }
-        function claimMission(id) {
+        export function claimMission(id) {
             const mission = getMissionDef(id);
             if (!mission || missionClaimed[id] || !isMissionComplete(mission)) return false;
             missionClaimed[id] = true;
@@ -516,3 +516,82 @@
             saveGame();
             return true;
         }
+
+
+        // ===================================================================
+        // 🌉 一時的な橋渡し（migration bridge）
+        // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
+        // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
+        // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
+        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
+        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
+        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        // ===================================================================
+        window.prestigeCount = prestigeCount;
+        window.ownedKisekaeItems = ownedKisekaeItems;
+        window.equippedKisekae = equippedKisekae;
+        window.missionCounters = missionCounters;
+        window.missionDailyDate = missionDailyDate;
+        window.missionWeeklyWeekKey = missionWeeklyWeekKey;
+        window.missionDailySelected = missionDailySelected;
+        window.missionWeeklySelected = missionWeeklySelected;
+        window.missionClaimed = missionClaimed;
+        window.tutorialMissionStep = tutorialMissionStep;
+        window.ownedMyroomItems = ownedMyroomItems;
+        window.equippedMyroom = equippedMyroom;
+        window.myroomSlots = myroomSlots;
+        window.currentMyroomSlotIndex = currentMyroomSlotIndex;
+        window.previewKisekae = previewKisekae;
+        window.prestigeScoreHistory = prestigeScoreHistory;
+        window.prestigePoints = prestigePoints;
+        window.PRESTIGE_BONUS_PER_COUNT = PRESTIGE_BONUS_PER_COUNT;
+        window.getPrestigeBonusMultiplier = getPrestigeBonusMultiplier;
+        window.gachaCoins = gachaCoins;
+        window.GACHA_COIN_PER_STAMP = GACHA_COIN_PER_STAMP;
+        window.GACHA_COIN_JAPAN_CLEAR = GACHA_COIN_JAPAN_CLEAR;
+        window.GACHA_COIN_PER_PRESTIGE = GACHA_COIN_PER_PRESTIGE;
+        window.prestigeShopLv = prestigeShopLv;
+        window.getOfflineEarningsCapHours = getOfflineEarningsCapHours;
+        window.getMinigameDailyLimit = getMinigameDailyLimit;
+        window.getPrestigeStartingBonus = getPrestigeStartingBonus;
+        window.getPrestigeCdReductionSec = getPrestigeCdReductionSec;
+        window.buyPrestigeShopItem = buyPrestigeShopItem;
+        window.renderPrestigeShop = renderPrestigeShop;
+        window.hasSeenJapanClear = hasSeenJapanClear;
+        window.MINIGAME_DAILY_LIMIT_BASE = MINIGAME_DAILY_LIMIT_BASE;
+        window.prefTaps = prefTaps;
+        window.getPrefTrophyLines = getPrefTrophyLines;
+        window.getPrefTrophy = getPrefTrophy;
+        window.getPrefTrophyIcon = getPrefTrophyIcon;
+        window.currentStageIndex = currentStageIndex;
+        window.selectedStageIndex = selectedStageIndex;
+        window.currentStageProgress = currentStageProgress;
+        window.checkOfflineEarnings = checkOfflineEarnings;
+        window.triggerAreaTransition = triggerAreaTransition;
+        window.showPrefTrophyDetail = showPrefTrophyDetail;
+        window.PRESTIGE_POINTS_PER_RUN = PRESTIGE_POINTS_PER_RUN;
+        window.openPrestigeShop = openPrestigeShop;
+        window.canPrestige = canPrestige;
+        window.openPrestigeConfirm = openPrestigeConfirm;
+        window.doPrestige = doPrestige;
+        window.triggerJapanClearCelebration = triggerJapanClearCelebration;
+        window.confirmCloseJapanClear = confirmCloseJapanClear;
+        window.closeJapanClearAndExplainPrestige = closeJapanClearAndExplainPrestige;
+        window.saveJapanClearImage = saveJapanClearImage;
+        window.collectedStamps = collectedStamps;
+        window.stageArrivalTime = stageArrivalTime;
+        window.stampGuardRecheckTimer = stampGuardRecheckTimer;
+        window.stampDebugMode = stampDebugMode;
+        window.stampDebugInterval = stampDebugInterval;
+        window.checkStageProgress = checkStageProgress;
+        window.isPendingStampMoment = isPendingStampMoment;
+        window.openDiaryForStamping = openDiaryForStamping;
+        window.tapStampFrame = tapStampFrame;
+        window.trackMissionEvent = trackMissionEvent;
+        window.getWeekKey = getWeekKey;
+        window.pickRandomMissions = pickRandomMissions;
+        window.checkAndRotateMissions = checkAndRotateMissions;
+        window.getMissionDef = getMissionDef;
+        window.getMissionProgress = getMissionProgress;
+        window.isMissionComplete = isMissionComplete;
+        window.claimMission = claimMission;

@@ -1,17 +1,17 @@
-        function onBgmVolumeChange(val) {
+        export function onBgmVolumeChange(val) {
             bgmVolumeMult = val / 100;
             document.getElementById('bgm-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_bgm_volume', bgmVolumeMult);
             applyBgmVolume();
         }
 
-        function onSfxVolumeChange(val) {
+        export function onSfxVolumeChange(val) {
             sfxVolumeMult = val / 100;
             document.getElementById('sfx-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_sfx_volume', sfxVolumeMult);
         }
 
-        function resetVolumeSettings() {
+        export function resetVolumeSettings() {
             onBgmVolumeChange(30);
             onSfxVolumeChange(100);
             document.getElementById('bgm-vol-slider').value = 30;
@@ -19,7 +19,7 @@
         }
 
         // 明らかにスパム/おかしな名前を弾く簡易チェック（記号だけ・同じ文字の連続など）
-        function initVolumeSliders() {
+        export function initVolumeSliders() {
             const bgmSlider = document.getElementById('bgm-vol-slider');
             const sfxSlider = document.getElementById('sfx-vol-slider');
             if (bgmSlider) { bgmSlider.value = Math.round(bgmVolumeMult * 100); document.getElementById('bgm-vol-label').innerText = bgmSlider.value + '%'; }
@@ -30,8 +30,8 @@
 
         // ✏️ 意見・要望の送信（サーバーが無いので、メールアプリに下書きを渡す形にしています。
         // 実際に使う時は下のFEEDBACK_EMAILを自分の受け取りたいメールアドレスに書き換えてください）
-        let uiDeclutterState = 0;
-        function toggleUiDeclutter() {
+        export let uiDeclutterState = 0;
+        export function toggleUiDeclutter() {
             uiDeclutterState = (uiDeclutterState + 1) % 4;
             document.body.classList.remove('ui-mode-1', 'ui-mode-2', 'ui-mode-3');
             if (uiDeclutterState > 0) {
@@ -63,11 +63,11 @@
 
         // スマホ環境の2本指ズーム・ダブルタップズームを制限
         document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-        let hasSeenTutorial = false; // 初回チュートリアルを見せたかどうか
+        export let hasSeenTutorial = false; // 初回チュートリアルを見せたかどうか
 
         // 🍴 もちすけにお土産をあげる機能（回数制限なし）
-        let balloonAutoHideTimer = null;
-        function showMochiComment(text) {
+        export let balloonAutoHideTimer = null;
+        export function showMochiComment(text) {
             const balloon = document.getElementById('mochi-balloon');
             if (!balloon) return;
             balloon.innerText = text;
@@ -80,7 +80,7 @@
         }
 
         // プレゼントや黄金もちが消えた時など、表示中のセリフを引っ込めるためのヘルパー
-        function hideMochiComment() {
+        export function hideMochiComment() {
             const balloon = document.getElementById('mochi-balloon');
             if (balloon) balloon.classList.remove('balloon-show');
         }
@@ -89,7 +89,7 @@
         // （showMochiComment/updateCheerBalloon/チュートリアルなど、色々な場所からセリフが更新されても、ここ1箇所で拾える）
         // 👄 口パーツは「通常の姿・話していない・叫んでいない・必殺技で巨大化していない」時だけ表示する。
         // 叫び顔・必殺技巨大化は、それぞれ専用のイラスト/拡大を使うため、口パーツを重ねると浮いて見えてしまう。
-        function updateMouthPatchVisibility() {
+        export function updateMouthPatchVisibility() {
             const mouthPatchEl = document.getElementById('mochisuke-mouth-patch');
             if (!mouthPatchEl) return;
             if (mouthAdjustMode) { mouthPatchEl.style.display = 'block'; return; } // 🐛修正：調整中は、セリフ等で見えなくなるとイライラするので常に表示する
@@ -121,8 +121,8 @@
         })();
 
         // 🤖 ロボもちすけの口（窓）アニメーション。open=trueで開くコマ送り、falseで閉じるコマ送り（開く時の逆再生）
-        let roboMouthAnimTimer = null;
-        function playRoboMouthAnimation(open) {
+        export let roboMouthAnimTimer = null;
+        export function playRoboMouthAnimation(open) {
             const item = KISEKAE_ITEMS.fullbody.find(i => i.id === 'fullbody_robo');
             const mainImg = document.getElementById('mochisuke-fullbody');
             if (!item || !mainImg) return;
@@ -143,34 +143,34 @@
 
         // 🫁 口パーツの呼吸は、もちすけ画像と共通の親要素(#mochisuke-breathe-wrap)にアニメーションをかけることで、
         // 追いかけて同期させるのではなく、そもそもズレようがない形で実現している（詳細はHTML側を参照）
-        let mouthAdjustMode = false; // 調整モード中かどうか
+        export let mouthAdjustMode = false; // 調整モード中かどうか
 
         // 時間帯の並び順（インデックスは他の場所でも共通して使う）
-        const TIME_BUCKETS = ['morning', 'noon', 'evening', 'lateNight'];
-        function getTimeGreeting() {
+        export const TIME_BUCKETS = ['morning', 'noon', 'evening', 'lateNight'];
+        export function getTimeGreeting() {
             const bucket = TIME_BUCKETS[getTimeBucketIndex(new Date().getHours())];
             return pickRandom(dialogueData.timeGreetings[bucket]);
         }
 
-        function getLocalDateString(d) {
+        export function getLocalDateString(d) {
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
 
         // 画面を開いた直後の挨拶。その日その時間帯にまだ挨拶していなければ「おはよう」等、
         // 既に挨拶済みなら「おかえり」を出す。両方ともlocalStorageに記録して次回に引き継ぐ。
-        const GREETING_STATE_KEY = 'punicker_last_greeting_bucket';
-        let tutorialStepIndex = 0;
-        let tutorialTimer = null;
-        let isTutorialActive = false;
+        export const GREETING_STATE_KEY = 'punicker_last_greeting_bucket';
+        export let tutorialStepIndex = 0;
+        export let tutorialTimer = null;
+        export let isTutorialActive = false;
 
-        function checkShowTutorial() {
+        export function checkShowTutorial() {
             if (hasSeenTutorial) return;
             // 何かしら既にプレイした形跡があれば、初見扱いにしない
             if (score > 0 || totalTapsCount > 0) { hasSeenTutorial = true; saveGame(); return; }
             openTutorial();
         }
 
-        function openTutorial() {
+        export function openTutorial() {
             tutorialStepIndex = 0;
             isTutorialActive = true;
             document.body.classList.add('tutorial-active');
@@ -178,7 +178,7 @@
             runTutorialStep();
         }
 
-        function runTutorialStep() {
+        export function runTutorialStep() {
             document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
 
             if (tutorialStepIndex >= TUTORIAL_STEPS.length) {
@@ -204,7 +204,7 @@
             }, step.duration);
         }
 
-        function endTutorial() {
+        export function endTutorial() {
             isTutorialActive = false;
             document.body.classList.remove('tutorial-active');
             document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
@@ -213,10 +213,10 @@
             promptPlayerNameIfNeeded();
         }
 
-        function confirmSkipTutorial() {
+        export function confirmSkipTutorial() {
             document.getElementById('tutorial-skip-confirm').style.display = 'flex';
         }
-        function doSkipTutorial() {
+        export function doSkipTutorial() {
             document.getElementById('tutorial-skip-confirm').style.display = 'none';
             clearTimeout(tutorialTimer);
             hideMochiComment();
@@ -224,13 +224,13 @@
         }
 
         // 🍴 チュートリアルの最後に、まだ名前を決めていなければ聞いておく
-        function promptPlayerNameIfNeeded() {
+        export function promptPlayerNameIfNeeded() {
             if (localStorage.getItem('punicker_player_name')) return;
             const input = document.getElementById('tutorial-name-input');
             if (input) input.value = playerName;
             openModal('tutorial-name-modal');
         }
-        function saveTutorialPlayerName() {
+        export function saveTutorialPlayerName() {
             const input = document.getElementById('tutorial-name-input');
             const result = sanitizePlayerName(input.value);
             if (!result.ok) { alert(result.reason); return; }
@@ -241,13 +241,13 @@
         }
 
         // 💬 4つの丸ボタン、初めて押した時だけ軽くヒントを出す（チュートリアル終了後の、2周目以降のフォロー用）
-        let seenButtonHints = { map: false, menu: false, ui: false, feed: false };
-        function onMapButtonTap() {
+        export let seenButtonHints = { map: false, menu: false, ui: false, feed: false };
+        export function onMapButtonTap() {
             if (!seenButtonHints.map) { seenButtonHints.map = true; saveGame(); showMochiComment('地図で好きな県に飛べるで！'); }
             openMap();
         }
         // 🗺️⚙️🖼️🍴 4隅ボタンの位置・大きさを反映する
-        function applyCornerBtnPositions() {
+        export function applyCornerBtnPositions() {
             document.documentElement.style.setProperty('--corner-btn-size', CORNER_BTN_SIZE + 'px');
             const isPwa = isRunningStandalone();
             const getOffsets = (id) => (isPwa && CORNER_BTN_OFFSETS_PWA_OVERRIDE[id]) ? CORNER_BTN_OFFSETS_PWA_OVERRIDE[id] : CORNER_BTN_OFFSETS[id];
@@ -265,28 +265,28 @@
             feed.style.right = getOffsets('feed-toggle-btn').horiz + 'px';
         }
         // 🛠️ 開発者用：4隅ボタンの調整ツール（大きさは共通、位置は個別にドラッグ調整）
-        let cornerBtnAdjustMode = false;
-        let cornerBtnDragState = null;
-        function adjustCornerBtnSize(delta) {
+        export let cornerBtnAdjustMode = false;
+        export let cornerBtnDragState = null;
+        export function adjustCornerBtnSize(delta) {
             CORNER_BTN_SIZE = Math.max(20, CORNER_BTN_SIZE + delta);
             document.getElementById('corner-btn-size-readout').textContent = CORNER_BTN_SIZE + 'px';
             applyCornerBtnPositions();
         }
-        function toggleCornerBtnAdjustMode() {
+        export function toggleCornerBtnAdjustMode() {
             cornerBtnAdjustMode = !cornerBtnAdjustMode;
             const btn = document.getElementById('corner-btn-adjust-toggle-btn');
             btn.style.background = cornerBtnAdjustMode ? '#4caf50' : '#e91e63';
             if (cornerBtnAdjustMode) setupCornerBtnDrag();
             updateCornerBtnReadout();
         }
-        function onCornerBtnAdjustTargetChange() {
+        export function onCornerBtnAdjustTargetChange() {
             updateCornerBtnReadout();
         }
         // PWA(ホーム画面)かどうかで、参照・更新すべきオフセットのデータを切り替える
-        function getCornerBtnOffsetsRef(id) {
+        export function getCornerBtnOffsetsRef(id) {
             return (isRunningStandalone() && CORNER_BTN_OFFSETS_PWA_OVERRIDE[id]) ? CORNER_BTN_OFFSETS_PWA_OVERRIDE[id] : CORNER_BTN_OFFSETS[id];
         }
-        function setupCornerBtnDrag() {
+        export function setupCornerBtnDrag() {
             if (document.body.dataset.cornerDragSetup) return;
             document.body.dataset.cornerDragSetup = '1';
             ['map-toggle-btn', 'menu-toggle-btn', 'ui-toggle-btn', 'feed-toggle-btn'].forEach(id => {
@@ -316,13 +316,13 @@
             document.body.addEventListener('pointerup', () => { cornerBtnDragState = null; });
             document.body.addEventListener('pointercancel', () => { cornerBtnDragState = null; });
         }
-        function updateCornerBtnReadout() {
+        export function updateCornerBtnReadout() {
             const id = document.getElementById('corner-btn-adjust-target').value;
             const offsets = getCornerBtnOffsetsRef(id);
             const envLabel = isRunningStandalone() ? '（PWA）' : '（通常URL）';
             document.getElementById('corner-btn-adjust-readout').textContent = `${envLabel} vert:${offsets.vert}px; horiz:${offsets.horiz}px;`;
         }
-        function copyCornerBtnCoords() {
+        export function copyCornerBtnCoords() {
             const labels = { 'map-toggle-btn': '地図', 'menu-toggle-btn': '設定', 'ui-toggle-btn': '背景', 'feed-toggle-btn': 'お土産一覧' };
             const envLabel = isRunningStandalone() ? '【PWA(ホーム画面)】' : '【通常URL】';
             const lines = [envLabel, `大きさ(共通): ${CORNER_BTN_SIZE}px`];
@@ -337,20 +337,20 @@
             textarea.select();
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
-        function onMenuButtonTap() {
+        export function onMenuButtonTap() {
             if (!seenButtonHints.menu) { seenButtonHints.menu = true; saveGame(); showMochiComment('設定はここから触れるで！'); }
             openModal('menu-modal'); refreshCloudBackupStatus();
         }
-        function onUiButtonTap() {
+        export function onUiButtonTap() {
             if (!seenButtonHints.ui) { seenButtonHints.ui = true; saveGame(); showMochiComment('写真撮る時とかに使こてな！'); }
             toggleUiDeclutter();
         }
-        function onFeedButtonTap() {
+        export function onFeedButtonTap() {
             if (!seenButtonHints.feed) { seenButtonHints.feed = true; saveGame(); showMochiComment('ここからお土産あげられるんやで！'); }
             openOmiyageCollection();
         }
 
-        function showOpeningGreeting() {
+        export function showOpeningGreeting() {
             const now = new Date();
             const bucketIdx = getTimeBucketIndex(now.getHours());
             const bucketName = TIME_BUCKETS[bucketIdx];
@@ -367,8 +367,8 @@
             showMochiComment(text);
         }
 
-        let mouthDragState = null;
-        function toggleMouthAdjustMode() {
+        export let mouthDragState = null;
+        export function toggleMouthAdjustMode() {
             mouthAdjustMode = !mouthAdjustMode;
             const anchor = document.getElementById('mochisuke-mouth-anchor');
             const wrap = document.getElementById('mochisuke-breathe-wrap');
@@ -393,7 +393,7 @@
                 if (btn) btn.style.background = '#e91e63';
             }
         }
-        function setupMouthDrag(anchor) {
+        export function setupMouthDrag(anchor) {
             if (anchor.dataset.dragSetup) return; // 二重登録防止
             anchor.dataset.dragSetup = '1';
             anchor.addEventListener('pointerdown', (e) => {
@@ -420,20 +420,20 @@
             anchor.addEventListener('pointerup', () => { mouthDragState = null; });
             anchor.addEventListener('pointercancel', () => { mouthDragState = null; });
         }
-        function adjustMouthSize(delta) {
+        export function adjustMouthSize(delta) {
             const anchor = document.getElementById('mochisuke-mouth-anchor');
             if (!anchor) return;
             const cur = parseFloat(anchor.style.width) || 18;
             anchor.style.width = Math.max(3, cur + delta) + '%';
             updateMouthReadout();
         }
-        function updateMouthReadout() {
+        export function updateMouthReadout() {
             const anchor = document.getElementById('mochisuke-mouth-anchor');
             const el = document.getElementById('mouth-adjust-readout');
             if (!anchor || !el) return;
             el.textContent = `top:${anchor.style.top}; left:${anchor.style.left}; width:${anchor.style.width};`;
         }
-        function copyMouthCoords() {
+        export function copyMouthCoords() {
             const anchor = document.getElementById('mochisuke-mouth-anchor');
             const text = `口パーツ: top:${anchor.style.top}; left:${anchor.style.left}; width:${anchor.style.width};`;
             const textarea = document.getElementById('mouth-copy-textarea');
@@ -443,7 +443,7 @@
 
         // 🛠️ もちすけ本体の大きさ調整。着せ替え部屋も全く同じ大きさに揃える約束なので、
         // ここで変えた値は、着せ替え部屋のもちすけ本体にもその場で同期する
-        function adjustMochisukeBodySize(deltaWidth, deltaMaxHeight) {
+        export function adjustMochisukeBodySize(deltaWidth, deltaMaxHeight) {
             const btn = document.getElementById('mochisuke-btn');
             const curWidth = parseFloat(btn.style.width) || 170;
             const curMaxH = parseFloat(btn.style.maxHeight) || 206;
@@ -455,13 +455,13 @@
             if (roomWrap) { roomWrap.style.width = newWidth + 'px'; roomWrap.style.maxHeight = newMaxH + 'px'; }
             updateMochisukeBodyReadout();
         }
-        function updateMochisukeBodyReadout() {
+        export function updateMochisukeBodyReadout() {
             const btn = document.getElementById('mochisuke-btn');
             const el = document.getElementById('mochisuke-body-readout');
             if (!btn || !el) return;
             el.textContent = `width:${btn.style.width || '170px'}; max-height:${btn.style.maxHeight || '206px'};（着せ替え部屋にも自動で同期済み）`;
         }
-        function copyMochisukeBodyCoords() {
+        export function copyMochisukeBodyCoords() {
             const btn = document.getElementById('mochisuke-btn');
             const text = `もちすけ本体: width:${btn.style.width || '170px'}; max-height:${btn.style.maxHeight || '206px'};`;
             const textarea = document.getElementById('mochisuke-body-copy-textarea');
@@ -469,13 +469,13 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
 
-        function openModal(id, skipSound) {
+        export function openModal(id, skipSound) {
             cancelFeedDragIfActive(); // 給餌中に他画面へ移動したら、置きっぱなしのおみやげを片付ける
             if (!skipSound) playAudioFile('audio/skill_tap.mp3');
             document.body.classList.add('modal-open');
             document.getElementById(id).style.display = "flex";
         }
-        function closeModal(id) {
+        export function closeModal(id) {
             document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none";
             // 🔴 スタンプを押さずに絵日記を閉じた場合、進捗エリアのボタンを再表示して操作不能にならないようにする
             if (id === 'diary-modal' && isPendingStampMoment) {
@@ -484,7 +484,7 @@
             }
         }
 
-        function openTrophyRoom() {
+        export function openTrophyRoom() {
             const grid = document.getElementById('trophy-grid');
             grid.innerHTML = "";
             stages.forEach((stage, i) => {
@@ -505,7 +505,7 @@
         }
 
         // 💼 おしごとミッション
-        function closeOshigoto() {
+        export function closeOshigoto() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -514,20 +514,20 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
-        function openOshigotoPlaceholder() {
+        export function openOshigotoPlaceholder() {
             checkAndRotateMissions(); // 開くたびに、日付/週またぎを最新化する
             openModal('mission-modal');
             switchMissionTab(currentMissionTab);
         }
-        let currentMissionTab = 'tutorial';
-        function switchMissionTab(tab) {
+        export let currentMissionTab = 'tutorial';
+        export function switchMissionTab(tab) {
             currentMissionTab = tab;
             ['tutorial', 'daily', 'weekly'].forEach(t => {
                 document.getElementById(`mission-tab-${t}`).classList.toggle('active', t === tab);
             });
             renderMissionList();
         }
-        function renderMissionRow(mission) {
+        export function renderMissionRow(mission) {
             const progress = getMissionProgress(mission);
             const complete = isMissionComplete(mission);
             const claimed = missionClaimed[mission.id];
@@ -561,7 +561,7 @@
                 </div>
             `;
         }
-        function renderMissionList() {
+        export function renderMissionList() {
             const container = document.getElementById('mission-list-container');
             let html = '';
 
@@ -585,7 +585,7 @@
 
             container.innerHTML = html;
         }
-        function onClaimMissionTap(id) {
+        export function onClaimMissionTap(id) {
             const success = claimMission(id);
             if (success) {
                 playAudioFile('audio/levelup.mp3');
@@ -599,41 +599,41 @@
         // 招待する/されるフローの間だけ、Firestoreの roomSessions/{roomId} をonSnapshotで監視し、
         // 相手の入退室・チャットメッセージをリアルタイムに反映する。
         // ===================================================================
-        let activeChatRoomId = null;      // 今参加している部屋セッションのID（未参加ならnull）
-        let activeChatOtherUid = null;    // 一緒にいる相手のuid
-        let activeChatIsHost = false;     // 自分が部屋の主(ホスト)かどうか
-        let myAvatarPrefix = null;        // 自分の見た目が表示されているDOM要素のprefix（ホストなら主役枠、ゲストなら訪問者枠）
-        let otherAvatarPrefix = null;     // 相手の見た目が表示されているDOM要素のprefix
-        let unsubRoomSession = null;      // セッション監視の解除関数
-        let unsubRoomMessages = null;     // チャット監視の解除関数
-        let roomHeartbeatTimer = null;
-        let lastChatSendAt = 0;
-        let lastRenderedChatMsgId = null;
-        let chatMessageHistory = [];      // 履歴モーダル表示用に、今回のセッションの全メッセージを保持
+        export let activeChatRoomId = null;      // 今参加している部屋セッションのID（未参加ならnull）
+        export let activeChatOtherUid = null;    // 一緒にいる相手のuid
+        export let activeChatIsHost = false;     // 自分が部屋の主(ホスト)かどうか
+        export let myAvatarPrefix = null;        // 自分の見た目が表示されているDOM要素のprefix（ホストなら主役枠、ゲストなら訪問者枠）
+        export let otherAvatarPrefix = null;     // 相手の見た目が表示されているDOM要素のprefix
+        export let unsubRoomSession = null;      // セッション監視の解除関数
+        export let unsubRoomMessages = null;     // チャット監視の解除関数
+        export let roomHeartbeatTimer = null;
+        export let lastChatSendAt = 0;
+        export let lastRenderedChatMsgId = null;
+        export let chatMessageHistory = [];      // 履歴モーダル表示用に、今回のセッションの全メッセージを保持
         // 🐛修正：roomSessionsドキュメントは同じ2人の間で使い回されるため、messagesサブコレクションには
         // 過去すべての訪問回の会話が積み上がっている。表示だけをこの時刻(=今回の訪問開始時刻)以降に
         // 絞ることで「その回だけの履歴」に見せる（Firestore上のデータそのものは削除しない）
-        let activeChatSessionStartedAt = 0;
-        const CHAT_SEND_COOLDOWN_MS = 1200; // 連投防止（これより短い間隔では送信できない）
-        const CHAT_MAX_LEN = 200;
-        const CHAT_BUBBLE_DURATION_MS = 5000;
+        export let activeChatSessionStartedAt = 0;
+        export const CHAT_SEND_COOLDOWN_MS = 1200; // 連投防止（これより短い間隔では送信できない）
+        export const CHAT_MAX_LEN = 200;
+        export const CHAT_BUBBLE_DURATION_MS = 5000;
         // 🚫 簡易NGワードフィルタ（完全ではないが、うっかり系の暴言・個人情報っぽいワードを軽く抑止する）
         // 必要に応じてここに単語を追加してください。完璧な検閲ではなく、あくまで抑止目的です。
-        const CHAT_NG_WORDS = ['死ね', 'ころす', '殺す', 'きえろ', '消えろ'];
-        function containsNgWord(text) {
+        export const CHAT_NG_WORDS = ['死ね', 'ころす', '殺す', 'きえろ', '消えろ'];
+        export function containsNgWord(text) {
             return CHAT_NG_WORDS.some(w => text.includes(w));
         }
 
         // 🎂 チャット年齢ゲート：招待する/されるとき、まだ回答していなければ生年月日を聞く（初回のみ）
-        function calcAgeFromBirthdate(y, m, d) {
+        export function calcAgeFromBirthdate(y, m, d) {
             const today = new Date();
             let age = today.getFullYear() - y;
             const hadBirthdayThisYear = (today.getMonth() + 1 > m) || (today.getMonth() + 1 === m && today.getDate() >= d);
             if (!hadBirthdayThisYear) age--;
             return age;
         }
-        let birthdateGateResolver = null;
-        function populateBirthdateGateSelects() {
+        export let birthdateGateResolver = null;
+        export function populateBirthdateGateSelects() {
             const yearSel = document.getElementById('birthdate-gate-year');
             if (!yearSel || yearSel.options.length > 0) return; // 初回だけ作る
             const nowY = new Date().getFullYear();
@@ -645,14 +645,14 @@
             const daySel = document.getElementById('birthdate-gate-day');
             for (let d = 1; d <= 31; d++) { const opt = document.createElement('option'); opt.value = d; opt.textContent = d + '日'; daySel.appendChild(opt); }
         }
-        function openBirthdateGateModal() {
+        export function openBirthdateGateModal() {
             return new Promise((resolve) => {
                 birthdateGateResolver = resolve;
                 populateBirthdateGateSelects();
                 openModal('birthdate-gate-modal');
             });
         }
-        async function onConfirmBirthdateGate() {
+        export async function onConfirmBirthdateGate() {
             const y = parseInt(document.getElementById('birthdate-gate-year').value, 10);
             const m = parseInt(document.getElementById('birthdate-gate-month').value, 10);
             const d = parseInt(document.getElementById('birthdate-gate-day').value, 10);
@@ -666,14 +666,14 @@
             if (resolver) resolver(eligible);
         }
         // 既に回答済みならすぐ戻り、未回答ならモーダルで聞いてから戻る（何度招待しても2回目以降は聞かない）
-        async function ensureChatEligibilityAnswered() {
+        export async function ensureChatEligibilityAnswered() {
             if (!window.getMyChatEligibility || !window.isRankingReady || !window.isRankingReady()) return;
             const known = await window.getMyChatEligibility();
             if (known === null) await openBirthdateGateModal();
         }
 
         // 🕐 招待を送った側(ホスト)：ゲストを待つ部屋を開く
-        async function openHostWaitingRoom(guestUid, guestName) {
+        export async function openHostWaitingRoom(guestUid, guestName) {
             if (!window.startRoomHostSession) { alert('通信環境を確認して、もう一度試してください'); return; }
             const roomId = await window.startRoomHostSession(guestUid);
             if (!roomId) { alert('招待の開始に失敗しました。時間を置いて試してください'); return; }
@@ -702,7 +702,7 @@
         }
 
         // 🚪 招待された側(ゲスト)：実際に部屋に入って、ホストと一緒に過ごす
-        async function joinFriendRoomAndChat(hostUid, hostNameFallback) {
+        export async function joinFriendRoomAndChat(hostUid, hostNameFallback) {
             if (!window.fetchMyroomData || !window.joinRoomHostSession) return;
             const data = await window.fetchMyroomData(hostUid);
             if (!data || !data.myroom) { alert('🏠 まだお部屋が公開されていません'); return; }
@@ -743,10 +743,10 @@
             startRoomSessionWatch(roomId, hostName);
         }
 
-        let lastRawChatMessages = []; // messagesサブコレクションの生データ（session開始時刻が後から判明した時の再フィルタ用）
+        export let lastRawChatMessages = []; // messagesサブコレクションの生データ（session開始時刻が後から判明した時の再フィルタ用）
 
         // 👀 セッション監視（相手の到着・退出を検知）＋チャット監視＋生存確認を、まとめて開始する
-        function startRoomSessionWatch(roomId, otherName) {
+        export function startRoomSessionWatch(roomId, otherName) {
             stopRoomSessionWatch();
             // 🐛修正：本当のsessionStartedAtがFirestoreから届くまでの一瞬、フィルタが0のままだと
             // 過去の全履歴が一瞬だけ見えてしまう。届くまではInfinityにして「何も出さない」側に倒す
@@ -791,7 +791,7 @@
             }, 15000);
         }
 
-        function stopRoomSessionWatch() {
+        export function stopRoomSessionWatch() {
             if (unsubRoomSession) { unsubRoomSession(); unsubRoomSession = null; }
             if (unsubRoomMessages) { unsubRoomMessages(); unsubRoomMessages = null; }
             if (roomHeartbeatTimer) { clearInterval(roomHeartbeatTimer); roomHeartbeatTimer = null; }
@@ -806,7 +806,7 @@
         }
 
         // 🎉 ホスト側：待っていたゲストが実際に部屋に来た瞬間の演出
-        async function onGuestArrived(guestName) {
+        export async function onGuestArrived(guestName) {
             const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
             myselfWrap.dataset.shown = '1';
             myselfWrap.style.display = 'block';
@@ -823,7 +823,7 @@
         }
 
         // 🚪🔴 相手が退出した／セッションが切れた時
-        function handleRoomSessionEnded(otherName) {
+        export function handleRoomSessionEnded(otherName) {
             if (!activeChatRoomId) return; // 既に自分から退室済み
             activeChatRoomId = null; activeChatOtherUid = null; activeChatIsHost = false;
             myAvatarPrefix = null; otherAvatarPrefix = null;
@@ -835,7 +835,7 @@
         }
 
         // 💬📜 チャット用フローティングボタン（メッセージ・履歴）の表示切替。開くたびに入力バーは閉じた状態から始める
-        function setChatUiVisible(visible) {
+        export function setChatUiVisible(visible) {
             const toggleBtn = document.getElementById('visit-chat-toggle-btn');
             const historyBtn = document.getElementById('visit-chat-history-btn');
             const inputBar = document.getElementById('visit-chat-input-bar');
@@ -850,13 +850,13 @@
         }
 
         // 🏠 自分の部屋をホスト中は、他人の部屋にしか意味のないボタン（いいね・スタンプ行）を隠す
-        function setVisitActionButtonsForHosting(isHosting) {
+        export function setVisitActionButtonsForHosting(isHosting) {
             const stampRow = document.getElementById('visit-stamp-buttons-row');
             if (stampRow) stampRow.style.display = isHosting ? 'none' : 'flex';
         }
 
         // 💬 入力バーの開閉（💬ボタンを押した時）。開く時は入力欄にフォーカスしてキーボードを呼び出す
-        function toggleChatInputBar() {
+        export function toggleChatInputBar() {
             const bar = document.getElementById('visit-chat-input-bar');
             if (!bar) return;
             const showing = bar.style.display === 'flex';
@@ -870,7 +870,7 @@
         }
 
         // 💭 指定したアバターの頭上に、セリフとしてメッセージを表示する
-        function showChatBubble(prefix, text) {
+        export function showChatBubble(prefix, text) {
             const bubble = document.getElementById(prefix + '-chat-bubble');
             if (!bubble) return;
             clearTimeout(bubble._hideTimer);
@@ -878,7 +878,7 @@
             bubble.classList.add('chat-bubble-show');
             bubble._hideTimer = setTimeout(() => bubble.classList.remove('chat-bubble-show'), CHAT_BUBBLE_DURATION_MS);
         }
-        function hideChatBubble(prefix) {
+        export function hideChatBubble(prefix) {
             const bubble = document.getElementById(prefix + '-chat-bubble');
             if (!bubble) return;
             clearTimeout(bubble._hideTimer);
@@ -889,7 +889,7 @@
         // 🐛修正：roomSessionsのドキュメントは同じ2人の間で使い回され続けるため、messagesには
         // 過去すべての訪問回の会話が積み上がっている。ここでactiveChatSessionStartedAt以降の
         // メッセージだけに絞ることで、履歴には「今回の訪問分だけ」が表示されるようにする
-        function renderChatMessages(rawMsgs) {
+        export function renderChatMessages(rawMsgs) {
             if (!activeChatRoomId) return;
             lastRawChatMessages = rawMsgs;
             const msgs = rawMsgs.filter(m => (m.createdAt || 0) >= activeChatSessionStartedAt);
@@ -907,7 +907,7 @@
         }
 
         // 📜 履歴モーダルの中身を「プレイヤー名：内容」の形式で描画する
-        function renderChatHistoryModalContent() {
+        export function renderChatHistoryModalContent() {
             const el = document.getElementById('visit-chat-history-list');
             if (!el) return;
             if (chatMessageHistory.length === 0) {
@@ -919,12 +919,12 @@
             ).join('');
             el.scrollTop = el.scrollHeight;
         }
-        function openChatHistoryModal() {
+        export function openChatHistoryModal() {
             renderChatHistoryModalContent();
             openModal('visit-chat-history-modal');
         }
 
-        async function sendFreeChatMessage() {
+        export async function sendFreeChatMessage() {
             if (!activeChatRoomId) return;
             const input = document.getElementById('visit-chat-input');
             const text = input.value.trim();
@@ -947,7 +947,7 @@
         }
 
         // ⌨️ Enterキーで送信できるようにする（起動時に1回だけ登録）
-        function setupChatInputEnterKey() {
+        export function setupChatInputEnterKey() {
             const input = document.getElementById('visit-chat-input');
             if (!input) return;
             input.addEventListener('keydown', (e) => {
@@ -956,7 +956,7 @@
         }
 
         // 🤝 フレンド機能
-        async function openFriendPlaceholder() {
+        export async function openFriendPlaceholder() {
             openModal('friend-modal');
             document.getElementById('friend-add-result').innerText = '';
             document.getElementById('friend-code-input').value = '';
@@ -972,8 +972,8 @@
             switchFriendTab('list');
         }
         // 🏠 誰でも、フレンドコード・ランキングを問わず、他の人の部屋を見に行ける（読み取り専用）
-        let visitingUid = null;
-        async function visitMyroomOf(uid, showBoth) {
+        export let visitingUid = null;
+        export async function visitMyroomOf(uid, showBoth) {
             if (!window.fetchMyroomData) return;
             const data = await window.fetchMyroomData(uid);
             if (!data || !data.myroom) {
@@ -1014,7 +1014,7 @@
                 }
             }
         }
-        async function onLikeRoomTap() {
+        export async function onLikeRoomTap() {
             if (!visitingUid || !window.likeRoom) return;
             const likeBtn = document.getElementById('visit-like-btn');
             likeBtn.disabled = true;
@@ -1036,7 +1036,7 @@
             }
         }
         // 🪙 いいねを送った瞬間、ボタンの近くに「+1」がふわっと浮かんで消える演出
-        function showLikeCoinPopup(anchorEl) {
+        export function showLikeCoinPopup(anchorEl) {
             const rect = anchorEl.getBoundingClientRect();
             const popup = document.createElement('div');
             popup.textContent = '🪙 +1';
@@ -1044,7 +1044,7 @@
             document.body.appendChild(popup);
             setTimeout(() => popup.remove(), 1300);
         }
-        function closeVisitMyroom() {
+        export function closeVisitMyroom() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -1080,20 +1080,20 @@
         // これ以降は「自分のアバター」だけをこのタイマーでランダムに歩かせ、選んだ目的地を
         // roomSessionsドキュメントに書き込む。相手側は自分で歩かせず、届いた目的地をそのまま
         // 再生する（=applyVisitWalkTarget）ことで、2人の画面の動きを一致させる
-        const visitWalkTimers = { visitHost: null, visitSelf: null };
-        function startVisitMochisukeWalk(wrapId, key) {
+        export const visitWalkTimers = { visitHost: null, visitSelf: null };
+        export function startVisitMochisukeWalk(wrapId, key) {
             stopVisitMochisukeWalk(key);
             scheduleNextVisitWalk(wrapId, key);
         }
-        function stopVisitMochisukeWalk(key) {
+        export function stopVisitMochisukeWalk(key) {
             clearTimeout(visitWalkTimers[key]);
             visitWalkTimers[key] = null;
         }
-        function scheduleNextVisitWalk(wrapId, key) {
+        export function scheduleNextVisitWalk(wrapId, key) {
             const pauseDuration = 3000 + Math.random() * 4000; // 3〜7秒くらい、その場に立ち止まる
             visitWalkTimers[key] = setTimeout(() => walkVisitMochisukeToRandomSpot(wrapId, key), pauseDuration);
         }
-        function walkVisitMochisukeToRandomSpot(wrapId, key) {
+        export function walkVisitMochisukeToRandomSpot(wrapId, key) {
             const wrap = document.getElementById(wrapId);
             if (!wrap || wrap.style.display === 'none') { scheduleNextVisitWalk(wrapId, key); return; }
             const newLeftPct = 12 + Math.random() * 76;
@@ -1113,15 +1113,15 @@
         // 「歩行中」「叫び中」など複数の理由(reason)をSetで管理し、どれか1つでも理由が残っていれば
         // 非表示のままにする方式に変更。全ての理由が消えた時だけ表示を戻すので、
         // 歩行と叫びが重なっても正しい状態に保たれる
-        const myroomMouthHideReasons = {};
-        function isMyroomPrefixFullbody(prefix) {
+        export const myroomMouthHideReasons = {};
+        export function isMyroomPrefixFullbody(prefix) {
             // 「マイルーム（一人用/もようがえ）」画面のもちすけだけは applyVisitOutfit を使わず
             // dataset.fullbody を持たないため、グローバルなequippedKisekaeを直接見る
             if (prefix === 'myroom-mochisuke') return !!(equippedKisekae && equippedKisekae.fullbody);
             const el = document.getElementById(prefix + '-mouth-anchor');
             return !!(el && el.dataset.fullbody === '1');
         }
-        function setMyroomMouthHidden(prefix, reason, hidden) {
+        export function setMyroomMouthHidden(prefix, reason, hidden) {
             const mouthAnchor = document.getElementById(prefix + '-mouth-anchor');
             if (!mouthAnchor || isMyroomPrefixFullbody(prefix)) return; // 全身衣装中は触らない
             const reasons = myroomMouthHideReasons[prefix] || (myroomMouthHideReasons[prefix] = new Set());
@@ -1130,7 +1130,7 @@
         }
         // 🚶 実際にDOMへ反映する部分（自分の意思による移動でも、相手から届いた移動でも同じ関数を使うことで、
         // 見た目・速度の計算方法を完全に一致させる）
-        function applyVisitWalkTarget(wrapId, newLeftPct, newBottomPct) {
+        export function applyVisitWalkTarget(wrapId, newLeftPct, newBottomPct) {
             const wrap = document.getElementById(wrapId);
             if (!wrap || wrap.style.display === 'none') return;
             const currentLeft = parseFloat(wrap.style.left) || 50;
@@ -1155,30 +1155,30 @@
         // ライブセッション中は、自分が起こした演出をroomSessions.roomActionに書き込み、相手の画面にも
         // 同じ演出を再生させることで、2人の見え方をなるべく揃える（報酬・スコアには一切影響しない）
         // ===================================================================
-        let myroomFeedDragState = null;
-        let myroomFeedPickerContext = 'visit';
-        let lastMyroomTapSentAt = 0;
-        let lastAppliedRoomActionTs = 0; // 相手発の演出イベントの二重再生防止
-        let lastAppliedOtherWalkTs = 0;  // 相手発の歩行イベントの二重再生防止
+        export let myroomFeedDragState = null;
+        export let myroomFeedPickerContext = 'visit';
+        export let lastMyroomTapSentAt = 0;
+        export let lastAppliedRoomActionTs = 0; // 相手発の演出イベントの二重再生防止
+        export let lastAppliedOtherWalkTs = 0;  // 相手発の歩行イベントの二重再生防止
 
         // 今の画面文脈（'visit'=訪問/招待中の部屋、'edit'=自分の部屋のプレビュー画面）における
         // 「自分のアバターのprefix」「（いれば）相手のアバターのprefix」を返す
-        function getMyroomActionContext(context) {
+        export function getMyroomActionContext(context) {
             if (context === 'edit') return { selfPrefix: 'myroom-mochisuke', otherPrefix: null };
             if (activeChatRoomId && myAvatarPrefix) return { selfPrefix: myAvatarPrefix, otherPrefix: otherAvatarPrefix };
             return { selfPrefix: 'visit-myroom-mochisuke', otherPrefix: null };
         }
-        function toggleMyroomActionMenu(context) {
+        export function toggleMyroomActionMenu(context) {
             const menu = document.getElementById(context + '-myroom-action-submenu');
             if (menu) menu.classList.toggle('show');
         }
-        function closeMyroomActionMenu(context) {
+        export function closeMyroomActionMenu(context) {
             const menu = document.getElementById(context + '-myroom-action-submenu');
             if (menu) menu.classList.remove('show');
         }
 
         // 👉 もちすけをタップ：自分・相手どちらのもちすけをタップしても遊べる、報酬なしの触れ合い演出
-        function onMyroomAvatarTap(prefix) {
+        export function onMyroomAvatarTap(prefix) {
             playMyroomTapEffect(prefix);
             const now = Date.now();
             // 🐛連打対策：タップは瞬間的に大量発生しうるので、見た目の反映は毎回でも、
@@ -1190,7 +1190,7 @@
         }
 
         // 🗣️ 叫ぶ：自分のもちすけだけが対象（タップ画面の「じらされ過ぎて叫ぶ」演出の使い回し）
-        function onMyroomScreamTap(context) {
+        export function onMyroomScreamTap(context) {
             closeMyroomActionMenu(context);
             const { selfPrefix } = getMyroomActionContext(context);
             playMyroomScreamEffect(selfPrefix);
@@ -1200,16 +1200,16 @@
         }
 
         // 🍙 ごはん：倉庫で持っているおみやげから選ばせる（タップ画面と違い、無制限・タップ力バフなし）
-        function onMyroomFeedTap(context) {
+        export function onMyroomFeedTap(context) {
             closeMyroomActionMenu(context);
             myroomFeedPickerContext = context;
             renderMyroomFeedPicker();
             document.getElementById('myroom-feed-picker-panel').classList.add('show');
         }
-        function closeMyroomFeedPicker() {
+        export function closeMyroomFeedPicker() {
             document.getElementById('myroom-feed-picker-panel').classList.remove('show');
         }
-        function renderMyroomFeedPicker() {
+        export function renderMyroomFeedPicker() {
             const grid = document.getElementById('myroom-feed-picker-grid');
             if (!grid) return;
             grid.innerHTML = '';
@@ -1229,7 +1229,7 @@
         }
         // 選んだおみやげのアイコンを自分のもちすけの近くに置く。タップ画面と同じく、これをドラッグして
         // どちらかのもちすけの上まで運んで離すと食べてくれる（離した場所で対象が自動的に決まる）
-        function placeMyroomFeedIcon(idx) {
+        export function placeMyroomFeedIcon(idx) {
             const stage = stages[idx];
             const { selfPrefix } = getMyroomActionContext(myroomFeedPickerContext);
             const selfWrap = document.getElementById(selfPrefix + '-breathe-wrap');
@@ -1248,7 +1248,7 @@
             document.body.appendChild(icon);
             icon.addEventListener('pointerdown', (e) => startMyroomFeedDrag(idx, icon, e));
         }
-        function startMyroomFeedDrag(idx, icon, e) {
+        export function startMyroomFeedDrag(idx, icon, e) {
             e.preventDefault();
             icon.classList.remove('myroom-feed-icon-drop-in');
             icon.style.cursor = 'grabbing';
@@ -1258,12 +1258,12 @@
             document.addEventListener('pointerup', onMyroomFeedDragEnd);
             document.addEventListener('pointercancel', onMyroomFeedDragEnd);
         }
-        function onMyroomFeedDragMove(e) {
+        export function onMyroomFeedDragMove(e) {
             if (!myroomFeedDragState) return;
             myroomFeedDragState.icon.style.left = e.clientX + 'px';
             myroomFeedDragState.icon.style.top = e.clientY + 'px';
         }
-        function onMyroomFeedDragEnd(e) {
+        export function onMyroomFeedDragEnd(e) {
             if (!myroomFeedDragState) return;
             const { idx, icon } = myroomFeedDragState;
             document.removeEventListener('pointermove', onMyroomFeedDragMove);
@@ -1301,7 +1301,7 @@
         }
 
         // ===== 実際の見た目の演出（自分の操作でも、相手から届いた同期でも、この共通関数を使う） =====
-        function playMyroomTapEffect(prefix) {
+        export function playMyroomTapEffect(prefix) {
             const wrap = document.getElementById(prefix + '-breathe-wrap');
             const inner = document.getElementById(prefix + '-inner');
             if (!wrap || wrap.style.display === 'none' || !inner) return;
@@ -1318,8 +1318,8 @@
         // 「衣装(clothes)」「帽子/顔」「フルボディ衣装」に分かれた重ね着き構造なので、タップ画面の
         // 単一画像(mochiBtnElement.src)swapと同じ見た目にするため、叫んでいる間だけ帽子・顔・
         // フルボディ衣装を隠して衣装レイヤーだけをimage_scream.webpに差し替え、終わったら全て元に戻す
-        const myroomScreamState = {}; // prefixごとに、叫ぶ前の状態を覚えておいて正確に巻き戻す
-        function playMyroomScreamEffect(prefix) {
+        export const myroomScreamState = {}; // prefixごとに、叫ぶ前の状態を覚えておいて正確に巻き戻す
+        export function playMyroomScreamEffect(prefix) {
             const wrap = document.getElementById(prefix + '-breathe-wrap');
             const inner = document.getElementById(prefix + '-inner');
             const clothesEl = document.getElementById(prefix + '-clothes');
@@ -1369,7 +1369,7 @@
             }
         }
         // 叫び終わったら、衣装・帽子・顔・フルボディ衣装の表示状態を叫ぶ前と完全に一致するよう戻す
-        function revertMyroomScreamEffect(prefix) {
+        export function revertMyroomScreamEffect(prefix) {
             const state = myroomScreamState[prefix];
             if (!state) return;
             clearTimeout(state.revertTimeout);
@@ -1386,7 +1386,7 @@
             setMyroomMouthHidden(prefix, 'scream', false); // 叫び終わり（他に理由が残っていなければ口閉じパーツを復活させる）
             delete myroomScreamState[prefix];
         }
-        function playMyroomFeedEffect(prefix, idx) {
+        export function playMyroomFeedEffect(prefix, idx) {
             const wrap = document.getElementById(prefix + '-breathe-wrap');
             const inner = document.getElementById(prefix + '-inner');
             const stage = stages[idx];
@@ -1405,13 +1405,13 @@
             spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 10, '#ffd54f');
         }
         // 🎭 相手から届いた演出イベントを、自分の画面でも再生する（自分自身の書き込みは無視する）
-        function applyRemoteRoomAction(action) {
+        export function applyRemoteRoomAction(action) {
             if (!action || !action.targetPrefix) return;
             if (action.type === 'scream') playMyroomScreamEffect(action.targetPrefix);
             else if (action.type === 'feed') playMyroomFeedEffect(action.targetPrefix, action.itemIdx);
             else if (action.type === 'tap') playMyroomTapEffect(action.targetPrefix);
         }
-        function renderVisitMyroomLayout(myroomData) {
+        export function renderVisitMyroomLayout(myroomData) {
             const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === myroomData.wallpaper) || MYROOM_ITEMS.wallpaper[0];
             const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === myroomData.flooring) || MYROOM_ITEMS.flooring[0];
             document.getElementById('visit-myroom-wallpaper').src = wallpaperItem.img;
@@ -1429,7 +1429,7 @@
                 });
             });
         }
-        function applyVisitOutfit(outfit, prefix) {
+        export function applyVisitOutfit(outfit, prefix) {
             const fullbodyId = outfit && outfit.fullbody;
             const clothesEl = document.getElementById(`${prefix}-clothes`);
             const fullbodyEl = document.getElementById(`${prefix}-fullbody`);
@@ -1479,7 +1479,7 @@
             }
         }
         // 🚫🚨 訪問中の相手をブロック・通報する
-        async function sendVisitStamp(text) {
+        export async function sendVisitStamp(text) {
             // 💬 ライブチャット中は、定型文もそのままチャットへ即送信する（相手にリアルタイムで届く）。
             // 🐛修正：isStamp=trueで送ることで、13歳未満が関わり自由文チャットが無効なペアでも
             // 定型スタンプだけは送れるようにする（Firestoreルール側もこのフラグを見て許可する）。
@@ -1503,7 +1503,7 @@
                 alert('送信できませんでした。時間を置いて試してください');
             }
         }
-        function onBlockUserTap() {
+        export function onBlockUserTap() {
             const targetUid = visitingUid || activeChatOtherUid;
             if (!targetUid) return;
             const label = document.getElementById('visit-myroom-name-label').textContent;
@@ -1513,7 +1513,7 @@
             alert('🚫 ブロックしました');
             closeVisitMyroom();
         }
-        async function onReportUserTap() {
+        export async function onReportUserTap() {
             const targetUid = visitingUid || activeChatOtherUid;
             if (!targetUid) return;
             const reason = prompt('通報の理由を教えてください（任意）');
@@ -1525,7 +1525,7 @@
                 else alert('通報を送信できませんでした。時間を置いて試してください');
             }
         }
-        function closeFriendScreen() {
+        export function closeFriendScreen() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -1534,8 +1534,8 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
-        let currentFriendTab = 'list';
-        function switchFriendTab(tab) {
+        export let currentFriendTab = 'list';
+        export function switchFriendTab(tab) {
             currentFriendTab = tab;
             ['list', 'favorite', 'add'].forEach(t => {
                 document.getElementById(`friend-tab-${t}`).classList.toggle('active', t === tab);
@@ -1544,7 +1544,7 @@
             document.getElementById('friend-add-view').style.display = (tab === 'add') ? 'block' : 'none';
             if (tab === 'list' || tab === 'favorite') renderFriendList();
         }
-        async function copyMyFriendCode() {
+        export async function copyMyFriendCode() {
             const code = document.getElementById('my-friend-code').innerText;
             if (!code || code.includes('（') || code.includes('読み込み')) return;
             const result = document.getElementById('friend-add-result');
@@ -1569,7 +1569,7 @@
                 } catch (err) {}
             }
         }
-        async function onAddFriendTap() {
+        export async function onAddFriendTap() {
             const input = document.getElementById('friend-code-input');
             const result = document.getElementById('friend-add-result');
             // 🐛保険：コピペ時に紛れ込む改行・空白などの見えない文字を除去してから照合する
@@ -1594,15 +1594,15 @@
                 if (res.errorMessage) alert(`⚠️ フレンド追加エラーの詳細：\n${res.errorMessage}`); // 見逃さないよう、確実に表示する
             }
         }
-        function toggleFavoriteFriend(uid) {
+        export function toggleFavoriteFriend(uid) {
             const idx = favoriteFriendIds.indexOf(uid);
             if (idx >= 0) favoriteFriendIds.splice(idx, 1);
             else favoriteFriendIds.push(uid);
             saveGame();
             renderFriendList();
         }
-        let lastGiftSentDateStr = null; // 🐛修正：1日1回までの送信制限。セーブデータにも保存し、リロードでリセットされないようにする
-        async function sendGachaCoinGift(uid, btnEl) {
+        export let lastGiftSentDateStr = null; // 🐛修正：1日1回までの送信制限。セーブデータにも保存し、リロードでリセットされないようにする
+        export async function sendGachaCoinGift(uid, btnEl) {
             const todayStr = new Date().toISOString().slice(0, 10);
             if (lastGiftSentDateStr === todayStr) {
                 alert('🪙 今日はもう送りました。また明日！');
@@ -1624,7 +1624,7 @@
                 alert('送信できませんでした。時間を置いて試してください');
             }
         }
-        async function renderFriendList() {
+        export async function renderFriendList() {
             const listEl = document.getElementById('friend-list-view');
             listEl.innerHTML = `<div style="text-align:center; color:#aaa; padding:14px;">読み込み中...</div>`;
             if (!window.isRankingReady || !window.isRankingReady()) {
@@ -1664,18 +1664,18 @@
             });
         }
         // 📜 招待する・される、その都度ごとに利用規約＆プライバシーポリシーへの同意を求める
-        let pendingRoomChatTermsAction = null;
-        function showRoomChatTermsModal(onAgree) {
+        export let pendingRoomChatTermsAction = null;
+        export function showRoomChatTermsModal(onAgree) {
             pendingRoomChatTermsAction = onAgree;
             openModal('room-chat-terms-modal');
         }
-        function onAgreeRoomChatTerms() {
+        export function onAgreeRoomChatTerms() {
             closeModal('room-chat-terms-modal');
             const action = pendingRoomChatTermsAction;
             pendingRoomChatTermsAction = null;
             if (action) action();
         }
-        function onCancelRoomChatTerms() {
+        export function onCancelRoomChatTerms() {
             closeModal('room-chat-terms-modal');
             pendingRoomChatTermsAction = null;
         }
@@ -1683,19 +1683,19 @@
         // 🐛修正：オンライン/オフラインの丸は開いた瞬間の一度きりの判定だったため、パネルを開いたまま
         // 待っていると、相手が後からオンラインになっても丸の色が変わらず「時間差がある」ように見えていた。
         // パネルを開いている間だけ、定期的に丸だけを再判定するタイマーを回す（リストの作り直しはしない）
-        let inviteFriendDotRefreshTimer = null;
-        function openMyroomInvitePanel() {
+        export let inviteFriendDotRefreshTimer = null;
+        export function openMyroomInvitePanel() {
             document.getElementById('myroom-invite-panel').style.display = 'flex';
             renderMyroomInviteFriendList();
             clearInterval(inviteFriendDotRefreshTimer);
             inviteFriendDotRefreshTimer = setInterval(refreshMyroomInviteFriendDots, 10000);
         }
-        function closeMyroomInvitePanel() {
+        export function closeMyroomInvitePanel() {
             document.getElementById('myroom-invite-panel').style.display = 'none';
             clearInterval(inviteFriendDotRefreshTimer);
             inviteFriendDotRefreshTimer = null;
         }
-        async function refreshMyroomInviteFriendDots() {
+        export async function refreshMyroomInviteFriendDots() {
             if (!window.checkUserOnline) return;
             const dots = document.querySelectorAll('#myroom-invite-friend-list .friend-online-dot');
             for (const dot of dots) {
@@ -1706,7 +1706,7 @@
                 dot.title = online ? 'オンライン' : 'オフライン';
             }
         }
-        async function renderMyroomInviteFriendList() {
+        export async function renderMyroomInviteFriendList() {
             const listEl = document.getElementById('myroom-invite-friend-list');
             listEl.innerHTML = `<div style="text-align:center; color:#aaa; padding:10px;">読み込み中...</div>`;
             if (!window.isRankingReady || !window.isRankingReady()) {
@@ -1744,7 +1744,7 @@
                 });
             }
         }
-        async function onSendRoomInviteTap(uid, btnEl) {
+        export async function onSendRoomInviteTap(uid, btnEl) {
             const guestName = btnEl.dataset.friendName || '名無しさん';
             await ensureChatEligibilityAnswered(); // 🎂 招待する側：初回だけ生年月日を確認する
             showRoomChatTermsModal(async () => {
@@ -1769,7 +1769,7 @@
         // 💌🐛修正：以前は45秒(招待)/20秒(スタンプ)おきにgetDocsで問い合わせる「ポーリング」方式だったため、
         // 実際に届くまで最大で数十秒の時間差があった。onSnapshotによるリアルタイム監視に切り替えることで、
         // Firestore側の書き込みとほぼ同時に検知できるようにする。
-        function startIncomingVisitStampWatch() {
+        export function startIncomingVisitStampWatch() {
             if (!window.isRankingReady || !window.isRankingReady()) { setTimeout(startIncomingVisitStampWatch, 500); return; }
             if (!window.listenIncomingVisitStamps) return; // 旧バージョンのindex.html併用時など、関数が無ければ何もしない
             window.listenIncomingVisitStamps((stamps) => {
@@ -1784,7 +1784,7 @@
             });
         }
         // ✉️ 自分宛の招待をリアルタイム監視する（起動時に一度だけ呼べば、以後は届いた瞬間に検知される）
-        function startIncomingRoomInviteWatch() {
+        export function startIncomingRoomInviteWatch() {
             if (!window.isRankingReady || !window.isRankingReady()) { setTimeout(startIncomingRoomInviteWatch, 500); return; }
             if (!window.listenIncomingRoomInvites) return;
             window.listenIncomingRoomInvites((invites) => {
@@ -1804,7 +1804,7 @@
                 }, 400);
             });
         }
-        async function checkIncomingGiftsOnLaunch() {
+        export async function checkIncomingGiftsOnLaunch() {
             if (!window.isRankingReady || !window.isRankingReady()) return;
             const gifts = await window.checkIncomingGifts();
             if (!gifts || gifts.length === 0) return;
@@ -1830,16 +1830,16 @@
             }, 800);
         }
 
-        function openMoveMenu() {
+        export function openMoveMenu() {
             openModal('move-menu-modal'); // 移動先を選ぶだけなので、ここではフェードしない（選んだ時にフェードする）
             renderMoveMenuParts();
             startMoveMochisukeLoop();
         }
         // 🐹 もちすけが、ものおき→ショップ→ゲーセン→マイルーム→戻る看板、の順に看板の右をワープして回る演出
-        const MOVE_MOCHISUKE_SIGN_ORDER = ['move-sign-warehouse', 'move-sign-shop', 'move-sign-arcade', 'move-sign-myroom', 'move-sign-return'];
-        let moveMochisukeLoopTimer = null;
-        let moveMochisukeLoopIndex = 0;
-        function startMoveMochisukeLoop() {
+        export const MOVE_MOCHISUKE_SIGN_ORDER = ['move-sign-warehouse', 'move-sign-shop', 'move-sign-arcade', 'move-sign-myroom', 'move-sign-return'];
+        export let moveMochisukeLoopTimer = null;
+        export let moveMochisukeLoopIndex = 0;
+        export function startMoveMochisukeLoop() {
             stopMoveMochisukeLoop();
             moveMochisukeLoopIndex = 0;
             updateMoveMochisukePosition();
@@ -1848,11 +1848,11 @@
                 updateMoveMochisukePosition();
             }, 1500);
         }
-        function stopMoveMochisukeLoop() {
+        export function stopMoveMochisukeLoop() {
             if (moveMochisukeLoopTimer) clearInterval(moveMochisukeLoopTimer);
             moveMochisukeLoopTimer = null;
         }
-        function updateMoveMochisukePosition() {
+        export function updateMoveMochisukePosition() {
             const signId = MOVE_MOCHISUKE_SIGN_ORDER[moveMochisukeLoopIndex];
             const signPart = MOVE_MENU_PARTS.find(p => p.id === signId);
             const returnSignPart = MOVE_MENU_PARTS.find(p => p.id === 'move-sign-return');
@@ -1872,7 +1872,7 @@
             mochi.style.left = (signPart.left + signPart.width + 1.5) + '%';
         }
         // MOVE_MENU_PARTSの座標を、実際の画像に反映する
-        function renderMoveMenuParts() {
+        export function renderMoveMenuParts() {
             MOVE_MENU_PARTS.forEach(p => {
                 const el = document.getElementById(p.id);
                 if (!el) return;
@@ -1883,7 +1883,7 @@
             });
         }
         // 移動先が決まった時だけ、ここでフェード＋移動音を鳴らしてから実際に画面を切り替える
-        function moveMenuGoTo(fn) {
+        export function moveMenuGoTo(fn) {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -1894,11 +1894,11 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
-        function moveMenuGoHome() {
+        export function moveMenuGoHome() {
             moveMenuGoTo(() => {});
         }
 
-        function closeWarehouse() {
+        export function closeWarehouse() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -1909,13 +1909,13 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
-        function warehouseItemAction(action) {
+        export function warehouseItemAction(action) {
             if (action === 'trophy') openTrophyRoom();
             else if (action === 'omiyage') openOmiyageCollection();
             else if (action === 'ticket') openTicketInventory();
             else if (action === 'diary') openDiary();
         }
-        function renderWarehouseItems() {
+        export function renderWarehouseItems() {
             const stage = document.getElementById('warehouse-item-stage');
             stage.querySelectorAll('.warehouse-item-wrap').forEach(el => el.remove());
             WAREHOUSE_ITEM_PARTS.forEach(part => {
@@ -1939,14 +1939,14 @@
         // ===================================================================
         // 🛋️ マイルーム
         // ===================================================================
-        function openMyRoomEntry() {
+        export function openMyRoomEntry() {
             moveMenuGoTo(openMyRoom);
         }
-        let previewMyroom = {};
+        export let previewMyroom = {};
         // 🎨 もようがえモード：通常時はUIを消してすっきり見せ、ボタンを押した時だけ編集UIを出す
-        let myroomIsEditMode = false;
+        export let myroomIsEditMode = false;
         // 🖐️ 大きさ調整パネル自体を、ドラッグで自由に動かせるようにする（「もようがえ」ボタン等と重ならないように避難できる）
-        function setupMyroomSizePanelDrag() {
+        export function setupMyroomSizePanelDrag() {
             const handle = document.getElementById('myroom-size-adjust-drag-handle');
             const panel = document.getElementById('myroom-size-adjust-panel');
             if (!handle || handle.dataset.dragSetup) return;
@@ -1975,7 +1975,7 @@
             handle.addEventListener('pointerup', endDrag);
             handle.addEventListener('pointercancel', endDrag);
         }
-        function toggleMyroomEditMode() {
+        export function toggleMyroomEditMode() {
             myroomIsEditMode = !myroomIsEditMode;
             selectedMyroomInstance = null;
             const editEls = document.querySelectorAll('.myroom-edit-ui');
@@ -1994,21 +1994,21 @@
             renderMyroomLayout(); // 削除ボタンの表示/非表示を確実に同期させる
         }
         // 🚶 マイルームでは、もちすけがランダムに歩き回る・立ち止まるを繰り返す
-        let myroomWalkTimer = null;
-        function startMyroomMochisukeWalk() {
+        export let myroomWalkTimer = null;
+        export function startMyroomMochisukeWalk() {
             stopMyroomMochisukeWalk();
             scheduleNextMyroomWalk();
         }
-        function stopMyroomMochisukeWalk() {
+        export function stopMyroomMochisukeWalk() {
             clearTimeout(myroomWalkTimer);
             myroomWalkTimer = null;
         }
-        const MYROOM_WALK_SPEED_PCT_PER_SEC = 22; // もちすけの歩く速さ（%/秒、一定）
-        function scheduleNextMyroomWalk() {
+        export const MYROOM_WALK_SPEED_PCT_PER_SEC = 22; // もちすけの歩く速さ（%/秒、一定）
+        export function scheduleNextMyroomWalk() {
             const pauseDuration = 3000 + Math.random() * 4000; // 3〜7秒くらい、その場に立ち止まる（前より少し頻度を減らした）
             myroomWalkTimer = setTimeout(walkMyroomMochisukeToRandomSpot, pauseDuration);
         }
-        function walkMyroomMochisukeToRandomSpot() {
+        export function walkMyroomMochisukeToRandomSpot() {
             const wrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (!wrap) return;
             const currentLeft = parseFloat(wrap.style.left) || 50;
@@ -2031,7 +2031,7 @@
             scheduleNextMyroomWalk();
         }
         // 👆 マイルームでは、もちは出ないが、もちすけをタップすると反応してくれる
-        function onMyroomMochisukeTap() {
+        export function onMyroomMochisukeTap() {
             if (myroomIsEditMode) return; // もようがえモード中は、ドラッグ操作を優先する
             const inner = document.getElementById('myroom-mochisuke-inner');
             if (!inner) return;
@@ -2042,7 +2042,7 @@
             );
         }
         // 🐛修正：PWA環境ではonclick属性が不安定になることがあるため、pointerupで明示的に判定する
-        function setupMyroomMochisukeTapHandler() {
+        export function setupMyroomMochisukeTapHandler() {
             const wrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (!wrap || wrap.dataset.tapSetup) return;
             wrap.dataset.tapSetup = '1';
@@ -2051,7 +2051,7 @@
                 onMyroomMochisukeTap();
             });
         }
-        function openMyRoom() {
+        export function openMyRoom() {
             myroomIsEditMode = false;
             selectedMyroomInstance = null;
             myroomCurrentCategory = 'wallpaper';
@@ -2079,7 +2079,7 @@
                 setupMyroomSizePanelDrag();
             }
         }
-        function closeMyRoom() {
+        export function closeMyRoom() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -2092,8 +2092,8 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
-        let selectedMyroomInstance = null; // 今タップして選択中の家具 { cat, idx } または null
-        function renderMyroomLayout() {
+        export let selectedMyroomInstance = null; // 今タップして選択中の家具 { cat, idx } または null
+        export function renderMyroomLayout() {
             const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === previewMyroom.wallpaper) || MYROOM_ITEMS.wallpaper[0];
             const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === previewMyroom.flooring) || MYROOM_ITEMS.flooring[0];
             document.getElementById('myroom-wallpaper-layer').src = wallpaperItem.img;
@@ -2150,13 +2150,13 @@
             setupMyroomFurnitureDrag();
         }
         // ⬆️⬇️ 家具の重なり順（前面・背面）を調整する
-        function moveMyroomInstanceLayer(cat, idx, delta) {
+        export function moveMyroomInstanceLayer(cat, idx, delta) {
             const inst = previewMyroom[cat][idx];
             inst.zIndex = (inst.zIndex || 10) + delta;
             renderMyroomLayout();
         }
         // 🆕 家具を配置に追加する（上限あり）
-        function addMyroomInstance(cat, itemId) {
+        export function addMyroomInstance(cat, itemId) {
             if (!previewMyroom[cat]) previewMyroom[cat] = [];
             if (previewMyroom[cat].length >= MYROOM_FURNITURE_LIMIT_PER_CATEGORY) {
                 alert(`⚠️ ${MYROOM_CATEGORY_LABELS[cat]}は最大${MYROOM_FURNITURE_LIMIT_PER_CATEGORY}個までしか置けません`);
@@ -2190,18 +2190,18 @@
             label.style.display = 'block';
             myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
         }
-        function removeMyroomInstance(cat, idx) {
+        export function removeMyroomInstance(cat, idx) {
             previewMyroom[cat].splice(idx, 1);
             selectedMyroomInstance = null; // インデックスがずれるため、選択状態はリセットする
             renderMyroomLayout();
             if (myroomCurrentCategory === cat) openMyroomCategory(cat);
         }
-        function toggleMyroomInstanceFlip(cat, idx) {
+        export function toggleMyroomInstanceFlip(cat, idx) {
             previewMyroom[cat][idx].flip = !previewMyroom[cat][idx].flip;
             renderMyroomLayout();
         }
         // 📍 配置済みの家具を、プレイヤーが直接ドラッグで動かせるようにする（恒久機能）
-        function setupMyroomFurnitureDrag() {
+        export function setupMyroomFurnitureDrag() {
             const stage = document.getElementById('myroom-stage');
             if (stage.dataset.furnitureDragSetup) return;
             stage.dataset.furnitureDragSetup = '1';
@@ -2273,10 +2273,10 @@
         }
 
         // 🛠️ 開発者用：家具の大きさ調整ツール（位置はプレイヤー機能で調整するので、ここでは大きさのみ）
-        let myroomSizeAdjustMode = false;
-        let myroomSizeAdjustDragState = null;
+        export let myroomSizeAdjustMode = false;
+        export let myroomSizeAdjustDragState = null;
         // アイテムごとに調整できるよう、ドロップダウンの選択肢を動的に生成する
-        function renderMyroomSizeAdjustOptions() {
+        export function renderMyroomSizeAdjustOptions() {
             const select = document.getElementById('myroom-size-adjust-target');
             let html = `<optgroup label="もちすけ本体"><option value="mochisuke__mochisuke">もちすけの大きさ</option></optgroup>`;
             ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
@@ -2289,18 +2289,18 @@
             });
             select.innerHTML = html;
         }
-        function getMyroomSizeAdjustSelection() {
+        export function getMyroomSizeAdjustSelection() {
             const val = document.getElementById('myroom-size-adjust-target').value;
             const [cat, itemId] = val.split('__');
             if (cat === 'mochisuke') return { cat: 'mochisuke', item: MYROOM_MOCHISUKE_SIZE };
             return { cat, item: MYROOM_ITEMS[cat] ? MYROOM_ITEMS[cat].find(i => i.id === itemId) : null };
         }
-        function getMyroomSizeAdjustTargetEl() {
+        export function getMyroomSizeAdjustTargetEl() {
             const { cat } = getMyroomSizeAdjustSelection();
             if (cat === 'mochisuke') return document.getElementById('myroom-mochisuke-breathe-wrap');
             return document.getElementById('myroom-size-preview-img');
         }
-        function toggleMyroomSizeAdjustMode() {
+        export function toggleMyroomSizeAdjustMode() {
             myroomSizeAdjustMode = !myroomSizeAdjustMode;
             const btn = document.getElementById('myroom-size-adjust-toggle-btn');
             const target = getMyroomSizeAdjustTargetEl();
@@ -2315,7 +2315,7 @@
                 btn.style.background = '#e91e63';
             }
         }
-        function onMyroomSizeAdjustTargetChange() {
+        export function onMyroomSizeAdjustTargetChange() {
             document.querySelectorAll('.myroom-slot-img').forEach(el => el.style.outline = '');
             const mochisukeEl = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (mochisukeEl) mochisukeEl.style.outline = '';
@@ -2340,7 +2340,7 @@
             positionMyroomSizeHandles();
             updateMyroomSizeReadout();
         }
-        function positionMyroomSizeHandles() {
+        export function positionMyroomSizeHandles() {
             if (!myroomSizeAdjustMode) return;
             const stage = document.getElementById('myroom-stage');
             const target = getMyroomSizeAdjustTargetEl();
@@ -2356,7 +2356,7 @@
             hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
             hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
         }
-        function setupMyroomSizeAdjustDrag() {
+        export function setupMyroomSizeAdjustDrag() {
             const stage = document.getElementById('myroom-stage');
             if (stage.dataset.sizeDragSetup) return;
             stage.dataset.sizeDragSetup = '1';
@@ -2401,13 +2401,13 @@
             stage.addEventListener('pointerup', () => { myroomSizeAdjustDragState = null; });
             stage.addEventListener('pointercancel', () => { myroomSizeAdjustDragState = null; });
         }
-        function updateMyroomSizeReadout() {
+        export function updateMyroomSizeReadout() {
             const { cat, item } = getMyroomSizeAdjustSelection();
             const el = document.getElementById('myroom-size-adjust-readout');
             if (!item || !el) return;
             el.textContent = (cat === 'mochisuke') ? `width:${item.width}%;` : `width:${item.width}%; height:${item.height}%;`;
         }
-        function copyMyroomSizeCoords() {
+        export function copyMyroomSizeCoords() {
             const lines = [`もちすけ本体: width:${MYROOM_MOCHISUKE_SIZE.width}%;`];
             ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
                 (MYROOM_ITEMS[cat] || []).forEach(item => {
@@ -2421,17 +2421,17 @@
             textarea.select();
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
-        const MYROOM_CATEGORY_ORDER = ['wallpaper', 'flooring', 'wall_deco', 'big_furniture', 'table', 'small_deco'];
-        let myroomCurrentCategory = 'wallpaper';
-        let myroomItemListVisible = false; // アイテム一覧が今表示されているか
-        function closeMyroomItemList() {
+        export const MYROOM_CATEGORY_ORDER = ['wallpaper', 'flooring', 'wall_deco', 'big_furniture', 'table', 'small_deco'];
+        export let myroomCurrentCategory = 'wallpaper';
+        export let myroomItemListVisible = false; // アイテム一覧が今表示されているか
+        export function closeMyroomItemList() {
             myroomItemListVisible = false;
             document.getElementById('myroom-item-list-left').style.display = 'none';
             document.getElementById('myroom-item-list-right').style.display = 'none';
             const countLabel = document.getElementById('myroom-placed-count-label');
             if (countLabel) countLabel.style.display = 'none';
         }
-        function openMyroomCategory(cat) {
+        export function openMyroomCategory(cat) {
             playAudioFile('audio/skill_tap.mp3');
             // 同じカテゴリボタンをもう一度押したら、トグルで一覧を閉じる
             if (myroomCurrentCategory === cat && myroomItemListVisible) {
@@ -2502,8 +2502,8 @@
                 btn.style.boxShadow = (MYROOM_CATEGORY_ORDER[idx] === cat) ? '0 0 0 3px #ffd700, 0 3px 8px rgba(0,0,0,0.25)' : '0 3px 8px rgba(0,0,0,0.25)';
             });
         }
-        let myroomNameLabelTimeout = null;
-        function equipMyroomItem(cat, id) {
+        export let myroomNameLabelTimeout = null;
+        export function equipMyroomItem(cat, id) {
             previewMyroom[cat] = id;
             renderMyroomLayout();
             openMyroomCategory(cat);
@@ -2515,25 +2515,25 @@
             myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
         }
         // 🔀 最大3部屋まで持てる。切り替えパネル
-        let myroomSwitcherPreviewIndex = 0; // パネル内で＜＞で選んでいる番号（まだ確定していない）
-        function openMyroomSwitcher() {
+        export let myroomSwitcherPreviewIndex = 0; // パネル内で＜＞で選んでいる番号（まだ確定していない）
+        export function openMyroomSwitcher() {
             myroomSwitcherPreviewIndex = currentMyroomSlotIndex;
             updateMyroomSwitcherView();
             document.getElementById('myroom-switcher-overlay').style.display = 'flex';
         }
-        function closeMyroomSwitcher() {
+        export function closeMyroomSwitcher() {
             document.getElementById('myroom-switcher-overlay').style.display = 'none';
         }
-        function switchMyroomSlotPreview(delta) {
+        export function switchMyroomSlotPreview(delta) {
             myroomSwitcherPreviewIndex = (myroomSwitcherPreviewIndex + delta + 3) % 3;
             updateMyroomSwitcherView();
         }
-        function updateMyroomSwitcherView() {
+        export function updateMyroomSwitcherView() {
             const isCurrent = myroomSwitcherPreviewIndex === currentMyroomSlotIndex;
             document.getElementById('myroom-switcher-label').textContent = `部屋${myroomSwitcherPreviewIndex + 1}${isCurrent ? '（今の部屋）' : ''}`;
             renderMyroomSwitcherThumbnail(myroomSwitcherPreviewIndex);
         }
-        function renderMyroomSwitcherThumbnail(slotIndex) {
+        export function renderMyroomSwitcherThumbnail(slotIndex) {
             const thumb = document.getElementById('myroom-switcher-thumbnail');
             // 今編集中の部屋を見ている場合は、保存前の最新状態(previewMyroom)を反映する
             const slot = (slotIndex === currentMyroomSlotIndex) ? previewMyroom : myroomSlots[slotIndex];
@@ -2554,7 +2554,7 @@
             });
             thumb.innerHTML = html;
         }
-        function confirmMyroomSlotSwitch() {
+        export function confirmMyroomSlotSwitch() {
             if (myroomSwitcherPreviewIndex === currentMyroomSlotIndex) { closeMyroomSwitcher(); return; }
             // 今編集中の部屋を、抜ける前にスロットへ保存しておく
             myroomSlots[currentMyroomSlotIndex] = JSON.parse(JSON.stringify(previewMyroom));
@@ -2573,7 +2573,7 @@
             saveGame();
             closeMyroomSwitcher();
         }
-        function confirmMyroomLayout() {
+        export function confirmMyroomLayout() {
             equippedMyroom = JSON.parse(JSON.stringify(previewMyroom)); // 配列(家具配置)も含めて完全に独立させる
             saveGame();
             const btn = document.getElementById('myroom-confirm-btn');
@@ -2582,7 +2582,7 @@
             setTimeout(() => { btn.innerText = original; }, 1200);
         }
         // 🌐 「決定」とは別に、実際にランキング・フレンドから見られるようにするには「公開する」を押す必要がある
-        function onPublishMyroomTap() {
+        export function onPublishMyroomTap() {
             if (!confirm('この部屋を公開しますか？\nランキング・フレンドから見られるようになります。')) return;
             equippedMyroom = JSON.parse(JSON.stringify(previewMyroom)); // 公開時点の内容を、決定扱いにもしておく
             saveGame();
@@ -2592,7 +2592,7 @@
             }
         }
 
-        function openWarehouse() {
+        export function openWarehouse() {
             let boughtCount = 0;
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
             const badge = document.getElementById('warehouse-omiyage-badge');
@@ -2603,7 +2603,7 @@
         }
 
         // 🎫 ガチャで手に入れたチケットの一覧。個数を確認しながら、好きなタイミングで使える
-        function openTicketInventory() {
+        export function openTicketInventory() {
             const list = document.getElementById('ticket-inventory-list');
             list.innerHTML = '';
             NORMAL_CONSUMABLE_ITEMS.forEach(item => {
@@ -2632,7 +2632,7 @@
             openModal('ticket-inventory-modal');
         }
         // ✨ スプレーを使う：1日だけ自動増加バフ＋見た目エフェクトが有効になる
-        function useSpray(itemId) {
+        export function useSpray(itemId) {
             if ((sprayInventory[itemId] || 0) <= 0) return;
             sprayInventory[itemId]--;
             activeSprayId = itemId;
@@ -2644,13 +2644,13 @@
         // ===================================================================
         // 👗 着せ替え部屋
         // ===================================================================
-        function openKisekaeRoom() {
+        export function openKisekaeRoom() {
             openModal('kisekae-room-modal'); // タップ音のみでOK、フェード・移動音は不要
             previewKisekae = { ...equippedKisekae }; // 確定済みの状態から、試着用のコピーを作る
             renderKisekaeMochisuke();
             openKisekaeCategory('clothes');
         }
-        function closeKisekaeRoom() {
+        export function closeKisekaeRoom() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -2661,7 +2661,7 @@
         }
 
         // 着せ替え部屋のもちすけと、通常のタップ画面のもちすけ、両方に今の装着状態を反映する
-        function renderKisekaeMochisuke() {
+        export function renderKisekaeMochisuke() {
             const roomClothes = document.getElementById('kisekae-mochisuke-clothes');
             const roomFullbody = document.getElementById('kisekae-mochisuke-fullbody');
             const fullbodyId = previewKisekae.fullbody;
@@ -2704,31 +2704,31 @@
         }
 
         // 🕊️ 背中(翼)の表示・羽ばたきアニメーションループ。target: 'room'（着せ替え部屋）か 'main'（タップ画面）
-        let wingFlapTimers = { room: null, main: null };
-        let wingFlapFrameIndex = { room: 0, main: 0 };
-        let WING_FLAP_INTERVAL_MS = 130; // 8コマ ×130ms ≒ 1040msで1周（実機調整パネルから変更できる）
+        export let wingFlapTimers = { room: null, main: null };
+        export let wingFlapFrameIndex = { room: 0, main: 0 };
+        export let WING_FLAP_INTERVAL_MS = 130; // 8コマ ×130ms ≒ 1040msで1周（実機調整パネルから変更できる）
         // 🚧 速度が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
-        const WING_SPEED_TOOL_ENABLED = false;
-        let WING_FLAP_VOLUME = 0.1; // 羽ばたき音の音量（0〜1）。実機調整パネルから変更できる
+        export const WING_SPEED_TOOL_ENABLED = false;
+        export let WING_FLAP_VOLUME = 0.1; // 羽ばたき音の音量（0〜1）。実機調整パネルから変更できる
         // 🚧 音量が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
-        const WING_VOLUME_TOOL_ENABLED = false;
-        function adjustWingFlapVolume(delta) {
+        export const WING_VOLUME_TOOL_ENABLED = false;
+        export function adjustWingFlapVolume(delta) {
             WING_FLAP_VOLUME = Math.max(0, Math.min(1, Math.round((WING_FLAP_VOLUME + delta) * 10) / 10));
             document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
             playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 押した音量でその場で試し鳴らしする
         }
-        function copyWingFlapVolume() {
+        export function copyWingFlapVolume() {
             const text = `羽ばたき音量: ${WING_FLAP_VOLUME}`;
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
             alert(`コピーしました\n${text}`);
         }
         // タップ画面('main')・着せ替え部屋('room')・マイルーム('myroom')、それぞれの要素IDプレフィックスを解決する
-        function kisekaeElPrefix(target) {
+        export function kisekaeElPrefix(target) {
             if (target === 'room') return 'kisekae-mochisuke';
             if (target === 'myroom') return 'myroom-mochisuke';
             return 'mochisuke';
         }
-        function updateKisekaeWingDisplay(target, backId) {
+        export function updateKisekaeWingDisplay(target, backId) {
             const leftEl = document.getElementById(kisekaeElPrefix(target) + '-wing-left');
             const rightEl = document.getElementById(kisekaeElPrefix(target) + '-wing-right');
             if (!leftEl || !rightEl) return;
@@ -2745,7 +2745,7 @@
                 stopWingFlapLoop(target);
             }
         }
-        function applyWingFrame(leftEl, rightEl, item, frameIdx) {
+        export function applyWingFrame(leftEl, rightEl, item, frameIdx) {
             leftEl.src = item.leftFrames[frameIdx];
             rightEl.src = item.rightFrames[frameIdx];
             const lp = item.leftFramePos[frameIdx], rp = item.rightFramePos[frameIdx];
@@ -2753,13 +2753,13 @@
             rightEl.style.top = rp.top + '%'; rightEl.style.left = rp.left + '%';
         }
         // 🐹 もちすけが実際に見えている画面（タップ画面 or 着せ替え部屋）かどうかを判定する
-        function isMochisukeVisible() {
+        export function isMochisukeVisible() {
             const kisekaeModal = document.getElementById('kisekae-room-modal');
             const isKisekaeOpen = kisekaeModal && kisekaeModal.style.display === 'flex';
             const isAnyModalOpen = document.body.classList.contains('modal-open');
             return isKisekaeOpen || !isAnyModalOpen;
         }
-        function startWingFlapLoop(target, item) {
+        export function startWingFlapLoop(target, item) {
             stopWingFlapLoop(target);
             wingFlapFrameIndex[target] = 0;
             const leftEl = document.getElementById(kisekaeElPrefix(target) + '-wing-left');
@@ -2771,7 +2771,7 @@
                 if (wingFlapFrameIndex[target] === 0 && isMochisukeVisible()) playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 1周ごとに、動きに合わせて羽ばたき音を鳴らす（見えている画面の時だけ）
             }, WING_FLAP_INTERVAL_MS);
         }
-        function stopWingFlapLoop(target) {
+        export function stopWingFlapLoop(target) {
             if (wingFlapTimers[target]) clearInterval(wingFlapTimers[target]);
             wingFlapTimers[target] = null;
         }
@@ -2779,7 +2779,7 @@
         // 🚧 通常のタップ画面にも反映する。服については、既存の「衣装（きせかえタブ）」システムと
         // 見た目の適用先が重なるため、しばらくは「後から呼ばれた方が勝つ」形で共存させている
         // 🎩💨 叫んだ勢いで、帽子・顔パーツが吹っ飛んでいく（服だけは1枚絵の都合で諦めて、初期衣装に戻る）
-        function flyOffKisekaeOverlays() {
+        export function flyOffKisekaeOverlays() {
             const dirs = { hat: { x: -70, y: -160, r: -150 }, face: { x: 80, y: -130, r: 170 } };
             ['hat', 'face'].forEach(cat => {
                 const el = document.getElementById(`mochisuke-kisekae-${cat}`);
@@ -2792,7 +2792,7 @@
             });
         }
         // 通常に戻ったら、飛んでいった帽子・顔パーツを、ふわっと元の位置に着け直す
-        function flyBackKisekaeOverlays() {
+        export function flyBackKisekaeOverlays() {
             const dirs = { hat: { x: -70, y: -160, r: -150 }, face: { x: 80, y: -130, r: 170 } };
             ['hat', 'face'].forEach(cat => {
                 const el = document.getElementById(`mochisuke-kisekae-${cat}`);
@@ -2808,7 +2808,7 @@
             });
         }
 
-        function applyKisekaeToMainScreen() {
+        export function applyKisekaeToMainScreen() {
             const mainBtn = document.getElementById('mochisuke-btn');
             const mainFullbody = document.getElementById('mochisuke-fullbody');
             const mouthAnchor = document.getElementById('mochisuke-mouth-anchor');
@@ -2860,7 +2860,7 @@
             updateKisekaeWingDisplay('main', fullbodyId ? null : equippedKisekae.back);
         }
         // 🛋️ マイルームのもちすけにも、装備中の着せ替えを反映する
-        function applyKisekaeToMyroom() {
+        export function applyKisekaeToMyroom() {
             const breatheWrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (breatheWrap) breatheWrap.style.width = MYROOM_MOCHISUKE_SIZE.width + '%';
             const clothesEl = document.getElementById('myroom-mochisuke-clothes');
@@ -2911,10 +2911,10 @@
             updateKisekaeWingDisplay('myroom', fullbodyId ? null : equippedKisekae.back);
         }
 
-        let kisekaeCurrentCategory = 'clothes';
+        export let kisekaeCurrentCategory = 'clothes';
         // カテゴリを開いて、名前順・Zの字並びで左右にアイテムを並べる
         // 🛠️ 開発者用：翼の羽ばたき速度を実機で調整する（位置調整パネルとは独立して、常に使える）
-        function adjustWingFlapSpeed(delta) {
+        export function adjustWingFlapSpeed(delta) {
             WING_FLAP_INTERVAL_MS = Math.max(20, WING_FLAP_INTERVAL_MS + delta);
             document.getElementById('wing-flap-speed-readout').textContent = WING_FLAP_INTERVAL_MS + 'ms';
             // 今表示中の翼があれば、新しい速度ですぐ再スタートして確認できるようにする
@@ -2924,12 +2924,12 @@
                 if (item) startWingFlapLoop('room', item);
             }
         }
-        function copyWingFlapSpeed() {
+        export function copyWingFlapSpeed() {
             const text = `羽ばたき速度: ${WING_FLAP_INTERVAL_MS}ms`;
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
             alert(`コピーしました\n${text}`);
         }
-        function openKisekaeCategory(cat) {
+        export function openKisekaeCategory(cat) {
             playAudioFile('audio/skill_tap.mp3');
             if (cat !== 'back') clearWingGhostFrames(); // 背中カテゴリから離れる時は、翼のゴースト表示を片付ける
             const showWingSpeedPanel = WING_SPEED_TOOL_ENABLED && IS_DEV_MODE && cat === 'back';
@@ -2984,8 +2984,8 @@
             if (IS_DEV_MODE) renderKisekaeAdjustPanel(cat);
         }
 
-        let kisekaeNameLabelTimeout = null;
-        function showKisekaeItemNameLabel(name) {
+        export let kisekaeNameLabelTimeout = null;
+        export function showKisekaeItemNameLabel(name) {
             const label = document.getElementById('kisekae-item-name-label');
             if (!label) return;
             clearTimeout(kisekaeNameLabelTimeout);
@@ -2993,7 +2993,7 @@
             label.style.display = 'block';
             kisekaeNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
         }
-        function equipKisekaeItem(cat, id) {
+        export function equipKisekaeItem(cat, id) {
             if (cat === 'fullbody' && id) {
                 // 全身を装着すると、帽子・顔パーツ・背中（翼）は自動的に外れる（服は保持したまま、全身解除時に元へ戻る）
                 previewKisekae.hat = null;
@@ -3011,7 +3011,7 @@
         }
 
         // 🎯「決定」ボタン：試着中の服装を、実際に確定して保存・タップ画面にも反映する
-        function confirmKisekaeOutfit() {
+        export function confirmKisekaeOutfit() {
             equippedKisekae = { ...previewKisekae };
             saveGame();
             applyKisekaeToMainScreen();
@@ -3024,10 +3024,10 @@
         }
 
         // 🛠️ 開発者用：帽子・顔パーツ・背中(翼)の位置・大きさ調整ツール（服・全身はフルボディ画像なので調整不要）
-        let kisekaeAdjustMode = false;
-        let kisekaeAdjustDragState = null;
+        export let kisekaeAdjustMode = false;
+        export let kisekaeAdjustDragState = null;
         // 選択中の対象を解決する：通常のhat/faceか、backカテゴリの左右どちらの翼か
-        function resolveKisekaeAdjustTarget() {
+        export function resolveKisekaeAdjustTarget() {
             const val = document.getElementById('kisekae-adjust-target').value;
             if (kisekaeCurrentCategory === 'back') {
                 const [itemId, frameIdxStr] = val.split('__');
@@ -3047,7 +3047,7 @@
             };
         }
         // 🔄 左翼の位置・大きさに合わせて、右翼を左右対称にミラーして自動追従させる
-        function syncMirroredRightWing(resolved, posObj, sizeObj) {
+        export function syncMirroredRightWing(resolved, posObj, sizeObj) {
             if (kisekaeCurrentCategory !== 'back' || resolved.side !== 'left') return;
             const rightPos = resolved.item.rightFramePos[resolved.frameIdx];
             rightPos.top = posObj.top;
@@ -3061,19 +3061,19 @@
         }
         // 位置(top/left)の読み書き先と、大きさ(width/height)の読み書き先を返す。
         // backカテゴリだけ「位置はフレーム別・大きさは共通」なので、書き込み先オブジェクトが分かれる
-        function getKisekaeAdjustRefs(resolved) {
+        export function getKisekaeAdjustRefs(resolved) {
             if (resolved.side) {
                 const posArr = resolved.item[resolved.side + 'FramePos'];
                 return { posObj: posArr[resolved.frameIdx], sizeObj: resolved.item };
             }
             return { posObj: resolved.item, sizeObj: resolved.item };
         }
-        function getKisekaeAdjustTargetEl() {
+        export function getKisekaeAdjustTargetEl() {
             return resolveKisekaeAdjustTarget().el;
         }
         // 🚧 座標が一通り確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
-        const KISEKAE_ADJUST_TOOL_ENABLED = false;
-        function renderKisekaeAdjustPanel(cat) {
+        export const KISEKAE_ADJUST_TOOL_ENABLED = false;
+        export function renderKisekaeAdjustPanel(cat) {
             const panel = document.getElementById('kisekae-adjust-panel');
             if (!KISEKAE_ADJUST_TOOL_ENABLED) { panel.style.display = 'none'; return; }
             if (cat === 'clothes' || cat === 'fullbody') { panel.style.display = 'none'; return; } // 服・全身は調整不要
@@ -3099,7 +3099,7 @@
             updateKisekaeAdjustReadout();
         }
         // 👻 翼調整中、今選んでいる1枚以外の7枚を半透明で表示し、全体の流れが見えるようにする
-        function renderWingGhostFrames(item, activeFrameIdx) {
+        export function renderWingGhostFrames(item, activeFrameIdx) {
             clearWingGhostFrames();
             const stage = document.getElementById('kisekae-mochisuke-wrap');
             for (let f = 0; f < item.leftFrames.length; f++) {
@@ -3114,10 +3114,10 @@
                 });
             }
         }
-        function clearWingGhostFrames() {
+        export function clearWingGhostFrames() {
             document.querySelectorAll('.wing-ghost-frame').forEach(el => el.remove());
         }
-        function toggleKisekaeAdjustMode() {
+        export function toggleKisekaeAdjustMode() {
             kisekaeAdjustMode = !kisekaeAdjustMode;
             const btn = document.getElementById('kisekae-adjust-toggle-btn');
             const resolved = resolveKisekaeAdjustTarget();
@@ -3147,7 +3147,7 @@
                 renderKisekaeMochisuke(); // 実際に装着中のものへ表示を戻す
             }
         }
-        function onKisekaeAdjustTargetChange() {
+        export function onKisekaeAdjustTargetChange() {
             ['hat', 'face', 'clothes', 'fullbody'].forEach(c => { const el = document.getElementById(`kisekae-mochisuke-${c}`); if (el) el.style.outline = ''; });
             document.getElementById('kisekae-mochisuke-wing-left').style.outline = '';
             document.getElementById('kisekae-mochisuke-wing-right').style.outline = '';
@@ -3169,7 +3169,7 @@
             positionKisekaeHandles();
             updateKisekaeAdjustReadout();
         }
-        function positionKisekaeHandles() {
+        export function positionKisekaeHandles() {
             if (!kisekaeAdjustMode) return;
             const stage = document.getElementById('kisekae-stage');
             const target = getKisekaeAdjustTargetEl();
@@ -3185,7 +3185,7 @@
             hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
             hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
         }
-        function setupKisekaeAdjustDrag() {
+        export function setupKisekaeAdjustDrag() {
             const stage = document.getElementById('kisekae-stage');
             if (stage.dataset.dragSetup) return;
             stage.dataset.dragSetup = '1';
@@ -3243,7 +3243,7 @@
             stage.addEventListener('pointercancel', () => { kisekaeAdjustDragState = null; });
         }
         // 🔄 顔パーツだけ、回転（傾き）も調整できる
-        function adjustKisekaeFaceRotation(delta) {
+        export function adjustKisekaeFaceRotation(delta) {
             const val = document.getElementById('kisekae-adjust-target').value;
             const item = KISEKAE_ITEMS.face.find(i => i.id === val);
             if (!item) return;
@@ -3252,7 +3252,7 @@
             target.style.transform = `rotate(${item.rotation}deg)`;
             updateKisekaeAdjustReadout();
         }
-        function updateKisekaeAdjustReadout() {
+        export function updateKisekaeAdjustReadout() {
             const resolved = resolveKisekaeAdjustTarget();
             const target = resolved.el;
             const el = document.getElementById('kisekae-adjust-readout');
@@ -3264,7 +3264,7 @@
             }
             el.textContent = text;
         }
-        function copyAllKisekaeCoords() {
+        export function copyAllKisekaeCoords() {
             const lines = [];
             ['hat', 'face'].forEach(cat => {
                 const adjustable = KISEKAE_ITEMS[cat].filter(i => i.locked);
@@ -3293,7 +3293,7 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
 
-        function openOmiyageCollection() {
+        export function openOmiyageCollection() {
             const grid = document.getElementById('omiyage-collection-grid');
             grid.innerHTML = '';
             const owned = stages.map((s, i) => ({ s, i, lv: purchasedItems[i] || 0 })).filter(o => o.lv > 0 && o.s.itemImg);
@@ -3313,7 +3313,7 @@
             openModal('omiyage-collection-modal');
         }
 
-        function showOmiyageFeedConfirm(idx) {
+        export function showOmiyageFeedConfirm(idx) {
             resetFeedCountIfNewDay();
             const stage = stages[idx];
             const lv = purchasedItems[idx] || 0;
@@ -3337,7 +3337,7 @@
         }
 
         // 🍴 もちすけにあげる：おみやげを自由にドラッグして、もちすけの上で離すと食べてくれる
-        function feedMochisuke(idx) {
+        export function feedMochisuke(idx) {
             const stage = stages[idx];
             if (!stage) return;
 
@@ -3374,13 +3374,13 @@
         }
 
         // ⚡ タップ力2倍中のバフ表示を、残り秒数のカウントダウン付きで出す
-        let mapZoom = 1;
-        let mapPanX = 0, mapPanY = 0;
-        let mapDragging = false, mapDragStartX = 0, mapDragStartY = 0, mapPanStartX = 0, mapPanStartY = 0;
-        let mapPinchStartDist = 0, mapPinchStartZoom = 1;
-        const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
+        export let mapZoom = 1;
+        export let mapPanX = 0, mapPanY = 0;
+        export let mapDragging = false, mapDragStartX = 0, mapDragStartY = 0, mapPanStartX = 0, mapPanStartY = 0;
+        export let mapPinchStartDist = 0, mapPinchStartZoom = 1;
+        export const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
 
-        function openMap() {
+        export function openMap() {
             lazyLoadImage('map-illustration-img');
             const pinsLayer = document.getElementById('map-pins-layer');
             pinsLayer.innerHTML = "";
@@ -3405,11 +3405,11 @@
             openModal('map-modal', true);
         }
 
-        function closeMapModal() {
+        export function closeMapModal() {
             closeModal('map-modal');
         }
 
-        function onMapPinTap(idx) {
+        export function onMapPinTap(idx) {
             const stage = stages[idx];
             if (selectedStageIndex === idx) return; // すでに滞在中
             document.getElementById('map-confirm-text').innerText = `${stage.name}に移動しますか？`;
@@ -3425,7 +3425,7 @@
             noBtn.onclick = () => { cleanup(); };
         }
 
-        function mapMoveTo(idx) {
+        export function mapMoveTo(idx) {
             closeModal('map-modal');
             triggerAreaTransition(stages[idx].bg, () => {
                 selectedStageIndex = idx; updateDisplay(); saveGame();
@@ -3436,12 +3436,12 @@
         }
 
         // --- 拡大縮小・ドラッグ操作 ---
-        function applyMapTransform() {
+        export function applyMapTransform() {
             const canvas = document.getElementById('map-canvas');
             if (canvas) canvas.style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
         }
 
-        function clampMapPan() {
+        export function clampMapPan() {
             const viewport = document.getElementById('map-viewport');
             const img = document.getElementById('map-illustration-img');
             if (!viewport || !img) return;
@@ -3453,14 +3453,14 @@
         }
 
         // viewport要素基準のローカル座標（クライアント座標→viewport左上を原点とした座標）に変換
-        function getMapFocalPoint(clientX, clientY) {
+        export function getMapFocalPoint(clientX, clientY) {
             const viewport = document.getElementById('map-viewport');
             const rect = viewport.getBoundingClientRect();
             return { x: clientX - rect.left, y: clientY - rect.top };
         }
 
         // (fx, fy)＝viewport基準の座標を中心に拡大縮小する（その地点の絵柄が画面上で動かないようにpanを調整）
-        function zoomMapToward(newZoomRaw, fx, fy) {
+        export function zoomMapToward(newZoomRaw, fx, fy) {
             const newZoom = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, newZoomRaw));
             const localX = (fx - mapPanX) / mapZoom;
             const localY = (fy - mapPanY) / mapZoom;
@@ -3472,17 +3472,17 @@
         }
 
         // ＋／－ボタンは画面中央を基準に拡大縮小する
-        function mapZoomBy(factor) {
+        export function mapZoomBy(factor) {
             const viewport = document.getElementById('map-viewport');
             zoomMapToward(mapZoom * factor, viewport.clientWidth / 2, viewport.clientHeight / 2);
         }
 
-        function mapZoomReset() {
+        export function mapZoomReset() {
             mapZoom = 1; mapPanX = 0; mapPanY = 0;
             applyMapTransform();
         }
 
-        function initMapInteractions() {
+        export function initMapInteractions() {
             const viewport = document.getElementById('map-viewport');
             if (!viewport || viewport.dataset.bound) return;
             viewport.dataset.bound = '1';
@@ -3530,7 +3530,7 @@
             }, { passive: false });
         }
 
-        function toggleStampDebug() {
+        export function toggleStampDebug() {
             stampDebugMode = !stampDebugMode;
             if (stampDebugMode) {
                 stampDebugInterval = setInterval(updateStampDebugReadout, 300);
@@ -3540,7 +3540,7 @@
                 document.getElementById('stamp-debug-readout').textContent = '';
             }
         }
-        function updateStampDebugReadout() {
+        export function updateStampDebugReadout() {
             const el = document.getElementById('stamp-debug-readout');
             if (!el) return;
             const stage = stages[currentStageIndex];
@@ -3558,10 +3558,10 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
 ボタンdisplay: ${btn ? btn.style.display : '?'}`;
         }
 
-        let lastScoreFormatted = '';
+        export let lastScoreFormatted = '';
         // もちの数表示を1文字ずつ<span>に分けて描画し、前回と値が違う文字だけポンっと弾ませる
         // （右詰めで比較するので、桁が増えて全体がズレても「実際に変わった桁」だけを正しく判定できる）
-        function renderScoreDigits(container, newText, oldText) {
+        export function renderScoreDigits(container, newText, oldText) {
             // Array.from()でUnicodeのコードポイント単位に分割する。
             // 単純な文字列インデックス(newText[j])だと絵文字(🔥など)がサロゲートペアで
             // 2つに分断され、それぞれが壊れた文字(□□)として表示されてしまうため。
@@ -3581,8 +3581,8 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         }
 
         // 💡「次のおすすめアクション」判定：初心者が迷わないよう、状況に応じて1箇所だけハイライトする
-        let lastRecommendCheckTime = 0;
-        function getRecommendedActionTargetId() {
+        export let lastRecommendCheckTime = 0;
+        export function getRecommendedActionTargetId() {
             // ① 今いる県のおみやげをまだ買っていない、かつ購入できる資金がある → ショップへ
             const stage = stages[selectedStageIndex];
             const curLv = purchasedItems[selectedStageIndex] || 0;
@@ -3605,7 +3605,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             // 特に無ければハイライトしない
             return null;
         }
-        function updateRecommendedActionHighlight() {
+        export function updateRecommendedActionHighlight() {
             if (isTutorialActive) return; // チュートリアル中は、こちらの自動ハイライトは出さない（チュートリアル自身のハイライトとぶつかるため）
             const now = Date.now();
             if (now - lastRecommendCheckTime < 1000) return; // 連打のたびに毎回判定しなくていいよう、1秒に1回だけ再計算
@@ -3619,11 +3619,11 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         }
 
         // 新しく解放されて、まだ一度も遊んでいないミニゲームがあるか判定
-        function hasNewlyPurchasableSkill() {
+        export function hasNewlyPurchasableSkill() {
             return Object.values(skills).some(s => s.lv === 0 && currentStageIndex >= s.unlockStage && score >= s.unlockPrice);
         }
         // 未購入(lv===0)で、解放済み(訪問済み)かつ購入できるおみやげがあるか判定（レベルアップは対象外）
-        function hasNewlyPurchasableOmiyage() {
+        export function hasNewlyPurchasableOmiyage() {
             for (let i = 0; i <= currentStageIndex; i++) {
                 const lv = purchasedItems[i] || 0;
                 if (lv === 0 && score >= getOmiyagePrice(stages[i], 0)) return true;
@@ -3631,8 +3631,8 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             return false;
         }
         // ✨ スプレーの見た目エフェクト（キラキラ・オーラ）を、バフの有無に応じて切り替える
-        let sprayParticleTimer = null;
-        function updateSprayEffectDisplay() {
+        export let sprayParticleTimer = null;
+        export function updateSprayEffectDisplay() {
             const isActive = Date.now() < sprayBuffActiveUntil && activeSprayId;
             const auraEl = document.getElementById('spray-aura-effect');
             if (!isActive) {
@@ -3651,7 +3651,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
                 sprayParticleTimer = null;
             }
         }
-        function spawnSparkleParticle() {
+        export function spawnSparkleParticle() {
             if (Date.now() >= sprayBuffActiveUntil) { updateSprayEffectDisplay(); return; }
             if (!isMochisukeVisible()) return; // 見えている画面の時だけ生成する
             const wrap = document.getElementById('mochisuke-deform-wrap');
@@ -3663,7 +3663,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             document.body.appendChild(particle);
             setTimeout(() => particle.remove(), 1300);
         }
-        function updateDisplay() {
+        export function updateDisplay() {
             updateRecommendedActionHighlight();
             const prestigeBtn = document.getElementById('main-prestige-btn');
             if (prestigeBtn) prestigeBtn.style.display = canPrestige() ? 'block' : 'none';
@@ -3700,9 +3700,9 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         // ===================================================================
         // 🎮 ミニゲームセンター：共通ロジック
         // ===================================================================
-        let currentRankingTab = 'score';
+        export let currentRankingTab = 'score';
 
-        function closeRanking() {
+        export function closeRanking() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -3711,12 +3711,12 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
-        function toggleRankingHelpOverlay() {
+        export function toggleRankingHelpOverlay() {
             const overlay = document.getElementById('ranking-help-overlay');
             if (overlay) overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
         }
 
-        function switchRankingTab(tab) {
+        export function switchRankingTab(tab) {
             currentRankingTab = tab;
             document.getElementById('rank-tab-score').classList.toggle('active', tab === 'score');
             document.getElementById('rank-tab-taps').classList.toggle('active', tab === 'taps');
@@ -3725,20 +3725,20 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             renderRankingList();
         }
 
-        async function openRanking() {
+        export async function openRanking() {
             openModal('ranking-modal');
             await renderRankingList();
         }
 
         // 順位の見た目（1〜3位は特別扱い）
-        function rankNumberStyle(rank) {
+        export function rankNumberStyle(rank) {
             if (rank === 1) return { bg: 'linear-gradient(135deg,#ffd700,#ffb300)', color: '#5d4037' };
             if (rank === 2) return { bg: 'linear-gradient(135deg,#e0e0e0,#b0bec5)', color: '#5d4037' };
             if (rank === 3) return { bg: 'linear-gradient(135deg,#d7a06e,#b5651d)', color: '#fff' };
             return { bg: '#fff', color: '#8d6e63' };
         }
         // そのプレイヤーの装着中の服・帽子・顔パーツを、小さいもちすけとして重ねて表示するHTMLを作る
-        function renderRankOutfitPreviewHtml(outfit) {
+        export function renderRankOutfitPreviewHtml(outfit) {
             const fullbodyId = outfit && outfit.fullbody;
             if (fullbodyId) {
                 const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
@@ -3765,7 +3765,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             });
             return html;
         }
-        async function renderRankingList() {
+        export async function renderRankingList() {
             const listContainer = document.getElementById('ranking-list');
             listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
 
@@ -3847,8 +3847,8 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         }
 
         // 定期メインループ（100ms周期で自動加算＆スキル秒数減算を一元管理）
-        let diaryPageIndex = 0;
-        function openDiary() {
+        export let diaryPageIndex = 0;
+        export function openDiary() {
             diaryPageIndex = selectedStageIndex;
             diaryShowingBack = false;
             document.getElementById('diary-front-content').style.display = 'block';
@@ -3856,8 +3856,8 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             renderDiaryPage();
             openModal('diary-modal');
         }
-        let diaryShowingBack = false;
-        function renderDiaryPage() {
+        export let diaryShowingBack = false;
+        export function renderDiaryPage() {
             const stage = stages[diaryPageIndex]; const paper = document.getElementById('diary-paper-element');
             paper.classList.remove('page-animate'); void paper.offsetWidth; paper.classList.add('page-animate');
             const isPurchased = (purchasedItems[diaryPageIndex] || 0) > 0;
@@ -3889,14 +3889,359 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             document.getElementById('prev-page-btn').disabled = (diaryPageIndex === 0);
             document.getElementById('next-page-btn').disabled = (diaryPageIndex === currentStageIndex || diaryPageIndex === stages.length - 1);
         }
-        function flipDiaryPage(showBack) {
+        export function flipDiaryPage(showBack) {
             diaryShowingBack = showBack;
             document.getElementById('diary-front-content').style.display = showBack ? 'none' : 'block';
             document.getElementById('diary-back-content').style.display = showBack ? 'block' : 'none';
             playAudioFile('audio/page_turn.mp3', 1.0);
         }
-        function nextPage() { if (diaryPageIndex < currentStageIndex && diaryPageIndex < stages.length - 1) { diaryPageIndex++; flipDiaryPage(false); renderDiaryPage(); } }
-        function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; flipDiaryPage(false); renderDiaryPage(); } }
+        export function nextPage() { if (diaryPageIndex < currentStageIndex && diaryPageIndex < stages.length - 1) { diaryPageIndex++; flipDiaryPage(false); renderDiaryPage(); } }
+        export function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; flipDiaryPage(false); renderDiaryPage(); } }
 
         // 💬 マイルームのライブチャット：入力欄でEnterキーを押した時に送信できるようにする
         setupChatInputEnterKey();
+
+
+        // ===================================================================
+        // 🌉 一時的な橋渡し（migration bridge）
+        // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
+        // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
+        // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
+        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
+        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
+        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        // ===================================================================
+        window.onBgmVolumeChange = onBgmVolumeChange;
+        window.onSfxVolumeChange = onSfxVolumeChange;
+        window.resetVolumeSettings = resetVolumeSettings;
+        window.initVolumeSliders = initVolumeSliders;
+        window.uiDeclutterState = uiDeclutterState;
+        window.toggleUiDeclutter = toggleUiDeclutter;
+        window.hasSeenTutorial = hasSeenTutorial;
+        window.balloonAutoHideTimer = balloonAutoHideTimer;
+        window.showMochiComment = showMochiComment;
+        window.hideMochiComment = hideMochiComment;
+        window.updateMouthPatchVisibility = updateMouthPatchVisibility;
+        window.roboMouthAnimTimer = roboMouthAnimTimer;
+        window.playRoboMouthAnimation = playRoboMouthAnimation;
+        window.mouthAdjustMode = mouthAdjustMode;
+        window.TIME_BUCKETS = TIME_BUCKETS;
+        window.getTimeGreeting = getTimeGreeting;
+        window.getLocalDateString = getLocalDateString;
+        window.GREETING_STATE_KEY = GREETING_STATE_KEY;
+        window.tutorialStepIndex = tutorialStepIndex;
+        window.tutorialTimer = tutorialTimer;
+        window.isTutorialActive = isTutorialActive;
+        window.checkShowTutorial = checkShowTutorial;
+        window.openTutorial = openTutorial;
+        window.runTutorialStep = runTutorialStep;
+        window.endTutorial = endTutorial;
+        window.confirmSkipTutorial = confirmSkipTutorial;
+        window.doSkipTutorial = doSkipTutorial;
+        window.promptPlayerNameIfNeeded = promptPlayerNameIfNeeded;
+        window.saveTutorialPlayerName = saveTutorialPlayerName;
+        window.seenButtonHints = seenButtonHints;
+        window.onMapButtonTap = onMapButtonTap;
+        window.applyCornerBtnPositions = applyCornerBtnPositions;
+        window.cornerBtnAdjustMode = cornerBtnAdjustMode;
+        window.cornerBtnDragState = cornerBtnDragState;
+        window.adjustCornerBtnSize = adjustCornerBtnSize;
+        window.toggleCornerBtnAdjustMode = toggleCornerBtnAdjustMode;
+        window.onCornerBtnAdjustTargetChange = onCornerBtnAdjustTargetChange;
+        window.getCornerBtnOffsetsRef = getCornerBtnOffsetsRef;
+        window.setupCornerBtnDrag = setupCornerBtnDrag;
+        window.updateCornerBtnReadout = updateCornerBtnReadout;
+        window.copyCornerBtnCoords = copyCornerBtnCoords;
+        window.onMenuButtonTap = onMenuButtonTap;
+        window.onUiButtonTap = onUiButtonTap;
+        window.onFeedButtonTap = onFeedButtonTap;
+        window.showOpeningGreeting = showOpeningGreeting;
+        window.mouthDragState = mouthDragState;
+        window.toggleMouthAdjustMode = toggleMouthAdjustMode;
+        window.setupMouthDrag = setupMouthDrag;
+        window.adjustMouthSize = adjustMouthSize;
+        window.updateMouthReadout = updateMouthReadout;
+        window.copyMouthCoords = copyMouthCoords;
+        window.adjustMochisukeBodySize = adjustMochisukeBodySize;
+        window.updateMochisukeBodyReadout = updateMochisukeBodyReadout;
+        window.copyMochisukeBodyCoords = copyMochisukeBodyCoords;
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openTrophyRoom = openTrophyRoom;
+        window.closeOshigoto = closeOshigoto;
+        window.openOshigotoPlaceholder = openOshigotoPlaceholder;
+        window.currentMissionTab = currentMissionTab;
+        window.switchMissionTab = switchMissionTab;
+        window.renderMissionRow = renderMissionRow;
+        window.renderMissionList = renderMissionList;
+        window.onClaimMissionTap = onClaimMissionTap;
+        window.activeChatRoomId = activeChatRoomId;
+        window.activeChatOtherUid = activeChatOtherUid;
+        window.activeChatIsHost = activeChatIsHost;
+        window.myAvatarPrefix = myAvatarPrefix;
+        window.otherAvatarPrefix = otherAvatarPrefix;
+        window.unsubRoomSession = unsubRoomSession;
+        window.unsubRoomMessages = unsubRoomMessages;
+        window.roomHeartbeatTimer = roomHeartbeatTimer;
+        window.lastChatSendAt = lastChatSendAt;
+        window.lastRenderedChatMsgId = lastRenderedChatMsgId;
+        window.chatMessageHistory = chatMessageHistory;
+        window.activeChatSessionStartedAt = activeChatSessionStartedAt;
+        window.CHAT_SEND_COOLDOWN_MS = CHAT_SEND_COOLDOWN_MS;
+        window.CHAT_MAX_LEN = CHAT_MAX_LEN;
+        window.CHAT_BUBBLE_DURATION_MS = CHAT_BUBBLE_DURATION_MS;
+        window.CHAT_NG_WORDS = CHAT_NG_WORDS;
+        window.containsNgWord = containsNgWord;
+        window.calcAgeFromBirthdate = calcAgeFromBirthdate;
+        window.birthdateGateResolver = birthdateGateResolver;
+        window.populateBirthdateGateSelects = populateBirthdateGateSelects;
+        window.openBirthdateGateModal = openBirthdateGateModal;
+        window.onConfirmBirthdateGate = onConfirmBirthdateGate;
+        window.ensureChatEligibilityAnswered = ensureChatEligibilityAnswered;
+        window.openHostWaitingRoom = openHostWaitingRoom;
+        window.joinFriendRoomAndChat = joinFriendRoomAndChat;
+        window.lastRawChatMessages = lastRawChatMessages;
+        window.startRoomSessionWatch = startRoomSessionWatch;
+        window.stopRoomSessionWatch = stopRoomSessionWatch;
+        window.onGuestArrived = onGuestArrived;
+        window.handleRoomSessionEnded = handleRoomSessionEnded;
+        window.setChatUiVisible = setChatUiVisible;
+        window.setVisitActionButtonsForHosting = setVisitActionButtonsForHosting;
+        window.toggleChatInputBar = toggleChatInputBar;
+        window.showChatBubble = showChatBubble;
+        window.hideChatBubble = hideChatBubble;
+        window.renderChatMessages = renderChatMessages;
+        window.renderChatHistoryModalContent = renderChatHistoryModalContent;
+        window.openChatHistoryModal = openChatHistoryModal;
+        window.sendFreeChatMessage = sendFreeChatMessage;
+        window.setupChatInputEnterKey = setupChatInputEnterKey;
+        window.openFriendPlaceholder = openFriendPlaceholder;
+        window.visitingUid = visitingUid;
+        window.visitMyroomOf = visitMyroomOf;
+        window.onLikeRoomTap = onLikeRoomTap;
+        window.showLikeCoinPopup = showLikeCoinPopup;
+        window.closeVisitMyroom = closeVisitMyroom;
+        window.visitWalkTimers = visitWalkTimers;
+        window.startVisitMochisukeWalk = startVisitMochisukeWalk;
+        window.stopVisitMochisukeWalk = stopVisitMochisukeWalk;
+        window.scheduleNextVisitWalk = scheduleNextVisitWalk;
+        window.walkVisitMochisukeToRandomSpot = walkVisitMochisukeToRandomSpot;
+        window.myroomMouthHideReasons = myroomMouthHideReasons;
+        window.isMyroomPrefixFullbody = isMyroomPrefixFullbody;
+        window.setMyroomMouthHidden = setMyroomMouthHidden;
+        window.applyVisitWalkTarget = applyVisitWalkTarget;
+        window.myroomFeedDragState = myroomFeedDragState;
+        window.myroomFeedPickerContext = myroomFeedPickerContext;
+        window.lastMyroomTapSentAt = lastMyroomTapSentAt;
+        window.lastAppliedRoomActionTs = lastAppliedRoomActionTs;
+        window.lastAppliedOtherWalkTs = lastAppliedOtherWalkTs;
+        window.getMyroomActionContext = getMyroomActionContext;
+        window.toggleMyroomActionMenu = toggleMyroomActionMenu;
+        window.closeMyroomActionMenu = closeMyroomActionMenu;
+        window.onMyroomAvatarTap = onMyroomAvatarTap;
+        window.onMyroomScreamTap = onMyroomScreamTap;
+        window.onMyroomFeedTap = onMyroomFeedTap;
+        window.closeMyroomFeedPicker = closeMyroomFeedPicker;
+        window.renderMyroomFeedPicker = renderMyroomFeedPicker;
+        window.placeMyroomFeedIcon = placeMyroomFeedIcon;
+        window.startMyroomFeedDrag = startMyroomFeedDrag;
+        window.onMyroomFeedDragMove = onMyroomFeedDragMove;
+        window.onMyroomFeedDragEnd = onMyroomFeedDragEnd;
+        window.playMyroomTapEffect = playMyroomTapEffect;
+        window.myroomScreamState = myroomScreamState;
+        window.playMyroomScreamEffect = playMyroomScreamEffect;
+        window.revertMyroomScreamEffect = revertMyroomScreamEffect;
+        window.playMyroomFeedEffect = playMyroomFeedEffect;
+        window.applyRemoteRoomAction = applyRemoteRoomAction;
+        window.renderVisitMyroomLayout = renderVisitMyroomLayout;
+        window.applyVisitOutfit = applyVisitOutfit;
+        window.sendVisitStamp = sendVisitStamp;
+        window.onBlockUserTap = onBlockUserTap;
+        window.onReportUserTap = onReportUserTap;
+        window.closeFriendScreen = closeFriendScreen;
+        window.currentFriendTab = currentFriendTab;
+        window.switchFriendTab = switchFriendTab;
+        window.copyMyFriendCode = copyMyFriendCode;
+        window.onAddFriendTap = onAddFriendTap;
+        window.toggleFavoriteFriend = toggleFavoriteFriend;
+        window.lastGiftSentDateStr = lastGiftSentDateStr;
+        window.sendGachaCoinGift = sendGachaCoinGift;
+        window.renderFriendList = renderFriendList;
+        window.pendingRoomChatTermsAction = pendingRoomChatTermsAction;
+        window.showRoomChatTermsModal = showRoomChatTermsModal;
+        window.onAgreeRoomChatTerms = onAgreeRoomChatTerms;
+        window.onCancelRoomChatTerms = onCancelRoomChatTerms;
+        window.inviteFriendDotRefreshTimer = inviteFriendDotRefreshTimer;
+        window.openMyroomInvitePanel = openMyroomInvitePanel;
+        window.closeMyroomInvitePanel = closeMyroomInvitePanel;
+        window.refreshMyroomInviteFriendDots = refreshMyroomInviteFriendDots;
+        window.renderMyroomInviteFriendList = renderMyroomInviteFriendList;
+        window.onSendRoomInviteTap = onSendRoomInviteTap;
+        window.startIncomingVisitStampWatch = startIncomingVisitStampWatch;
+        window.startIncomingRoomInviteWatch = startIncomingRoomInviteWatch;
+        window.checkIncomingGiftsOnLaunch = checkIncomingGiftsOnLaunch;
+        window.openMoveMenu = openMoveMenu;
+        window.MOVE_MOCHISUKE_SIGN_ORDER = MOVE_MOCHISUKE_SIGN_ORDER;
+        window.moveMochisukeLoopTimer = moveMochisukeLoopTimer;
+        window.moveMochisukeLoopIndex = moveMochisukeLoopIndex;
+        window.startMoveMochisukeLoop = startMoveMochisukeLoop;
+        window.stopMoveMochisukeLoop = stopMoveMochisukeLoop;
+        window.updateMoveMochisukePosition = updateMoveMochisukePosition;
+        window.renderMoveMenuParts = renderMoveMenuParts;
+        window.moveMenuGoTo = moveMenuGoTo;
+        window.moveMenuGoHome = moveMenuGoHome;
+        window.closeWarehouse = closeWarehouse;
+        window.warehouseItemAction = warehouseItemAction;
+        window.renderWarehouseItems = renderWarehouseItems;
+        window.openMyRoomEntry = openMyRoomEntry;
+        window.previewMyroom = previewMyroom;
+        window.myroomIsEditMode = myroomIsEditMode;
+        window.setupMyroomSizePanelDrag = setupMyroomSizePanelDrag;
+        window.toggleMyroomEditMode = toggleMyroomEditMode;
+        window.myroomWalkTimer = myroomWalkTimer;
+        window.startMyroomMochisukeWalk = startMyroomMochisukeWalk;
+        window.stopMyroomMochisukeWalk = stopMyroomMochisukeWalk;
+        window.MYROOM_WALK_SPEED_PCT_PER_SEC = MYROOM_WALK_SPEED_PCT_PER_SEC;
+        window.scheduleNextMyroomWalk = scheduleNextMyroomWalk;
+        window.walkMyroomMochisukeToRandomSpot = walkMyroomMochisukeToRandomSpot;
+        window.onMyroomMochisukeTap = onMyroomMochisukeTap;
+        window.setupMyroomMochisukeTapHandler = setupMyroomMochisukeTapHandler;
+        window.openMyRoom = openMyRoom;
+        window.closeMyRoom = closeMyRoom;
+        window.selectedMyroomInstance = selectedMyroomInstance;
+        window.renderMyroomLayout = renderMyroomLayout;
+        window.moveMyroomInstanceLayer = moveMyroomInstanceLayer;
+        window.addMyroomInstance = addMyroomInstance;
+        window.removeMyroomInstance = removeMyroomInstance;
+        window.toggleMyroomInstanceFlip = toggleMyroomInstanceFlip;
+        window.setupMyroomFurnitureDrag = setupMyroomFurnitureDrag;
+        window.myroomSizeAdjustMode = myroomSizeAdjustMode;
+        window.myroomSizeAdjustDragState = myroomSizeAdjustDragState;
+        window.renderMyroomSizeAdjustOptions = renderMyroomSizeAdjustOptions;
+        window.getMyroomSizeAdjustSelection = getMyroomSizeAdjustSelection;
+        window.getMyroomSizeAdjustTargetEl = getMyroomSizeAdjustTargetEl;
+        window.toggleMyroomSizeAdjustMode = toggleMyroomSizeAdjustMode;
+        window.onMyroomSizeAdjustTargetChange = onMyroomSizeAdjustTargetChange;
+        window.positionMyroomSizeHandles = positionMyroomSizeHandles;
+        window.setupMyroomSizeAdjustDrag = setupMyroomSizeAdjustDrag;
+        window.updateMyroomSizeReadout = updateMyroomSizeReadout;
+        window.copyMyroomSizeCoords = copyMyroomSizeCoords;
+        window.MYROOM_CATEGORY_ORDER = MYROOM_CATEGORY_ORDER;
+        window.myroomCurrentCategory = myroomCurrentCategory;
+        window.myroomItemListVisible = myroomItemListVisible;
+        window.closeMyroomItemList = closeMyroomItemList;
+        window.openMyroomCategory = openMyroomCategory;
+        window.myroomNameLabelTimeout = myroomNameLabelTimeout;
+        window.equipMyroomItem = equipMyroomItem;
+        window.myroomSwitcherPreviewIndex = myroomSwitcherPreviewIndex;
+        window.openMyroomSwitcher = openMyroomSwitcher;
+        window.closeMyroomSwitcher = closeMyroomSwitcher;
+        window.switchMyroomSlotPreview = switchMyroomSlotPreview;
+        window.updateMyroomSwitcherView = updateMyroomSwitcherView;
+        window.renderMyroomSwitcherThumbnail = renderMyroomSwitcherThumbnail;
+        window.confirmMyroomSlotSwitch = confirmMyroomSlotSwitch;
+        window.confirmMyroomLayout = confirmMyroomLayout;
+        window.onPublishMyroomTap = onPublishMyroomTap;
+        window.openWarehouse = openWarehouse;
+        window.openTicketInventory = openTicketInventory;
+        window.useSpray = useSpray;
+        window.openKisekaeRoom = openKisekaeRoom;
+        window.closeKisekaeRoom = closeKisekaeRoom;
+        window.renderKisekaeMochisuke = renderKisekaeMochisuke;
+        window.wingFlapTimers = wingFlapTimers;
+        window.wingFlapFrameIndex = wingFlapFrameIndex;
+        window.WING_FLAP_INTERVAL_MS = WING_FLAP_INTERVAL_MS;
+        window.WING_SPEED_TOOL_ENABLED = WING_SPEED_TOOL_ENABLED;
+        window.WING_FLAP_VOLUME = WING_FLAP_VOLUME;
+        window.WING_VOLUME_TOOL_ENABLED = WING_VOLUME_TOOL_ENABLED;
+        window.adjustWingFlapVolume = adjustWingFlapVolume;
+        window.copyWingFlapVolume = copyWingFlapVolume;
+        window.kisekaeElPrefix = kisekaeElPrefix;
+        window.updateKisekaeWingDisplay = updateKisekaeWingDisplay;
+        window.applyWingFrame = applyWingFrame;
+        window.isMochisukeVisible = isMochisukeVisible;
+        window.startWingFlapLoop = startWingFlapLoop;
+        window.stopWingFlapLoop = stopWingFlapLoop;
+        window.flyOffKisekaeOverlays = flyOffKisekaeOverlays;
+        window.flyBackKisekaeOverlays = flyBackKisekaeOverlays;
+        window.applyKisekaeToMainScreen = applyKisekaeToMainScreen;
+        window.applyKisekaeToMyroom = applyKisekaeToMyroom;
+        window.kisekaeCurrentCategory = kisekaeCurrentCategory;
+        window.adjustWingFlapSpeed = adjustWingFlapSpeed;
+        window.copyWingFlapSpeed = copyWingFlapSpeed;
+        window.openKisekaeCategory = openKisekaeCategory;
+        window.kisekaeNameLabelTimeout = kisekaeNameLabelTimeout;
+        window.showKisekaeItemNameLabel = showKisekaeItemNameLabel;
+        window.equipKisekaeItem = equipKisekaeItem;
+        window.confirmKisekaeOutfit = confirmKisekaeOutfit;
+        window.kisekaeAdjustMode = kisekaeAdjustMode;
+        window.kisekaeAdjustDragState = kisekaeAdjustDragState;
+        window.resolveKisekaeAdjustTarget = resolveKisekaeAdjustTarget;
+        window.syncMirroredRightWing = syncMirroredRightWing;
+        window.getKisekaeAdjustRefs = getKisekaeAdjustRefs;
+        window.getKisekaeAdjustTargetEl = getKisekaeAdjustTargetEl;
+        window.KISEKAE_ADJUST_TOOL_ENABLED = KISEKAE_ADJUST_TOOL_ENABLED;
+        window.renderKisekaeAdjustPanel = renderKisekaeAdjustPanel;
+        window.renderWingGhostFrames = renderWingGhostFrames;
+        window.clearWingGhostFrames = clearWingGhostFrames;
+        window.toggleKisekaeAdjustMode = toggleKisekaeAdjustMode;
+        window.onKisekaeAdjustTargetChange = onKisekaeAdjustTargetChange;
+        window.positionKisekaeHandles = positionKisekaeHandles;
+        window.setupKisekaeAdjustDrag = setupKisekaeAdjustDrag;
+        window.adjustKisekaeFaceRotation = adjustKisekaeFaceRotation;
+        window.updateKisekaeAdjustReadout = updateKisekaeAdjustReadout;
+        window.copyAllKisekaeCoords = copyAllKisekaeCoords;
+        window.openOmiyageCollection = openOmiyageCollection;
+        window.showOmiyageFeedConfirm = showOmiyageFeedConfirm;
+        window.feedMochisuke = feedMochisuke;
+        window.mapZoom = mapZoom;
+        window.mapPanX = mapPanX;
+        window.mapPanY = mapPanY;
+        window.mapDragging = mapDragging;
+        window.mapDragStartX = mapDragStartX;
+        window.mapDragStartY = mapDragStartY;
+        window.mapPanStartX = mapPanStartX;
+        window.mapPanStartY = mapPanStartY;
+        window.mapPinchStartDist = mapPinchStartDist;
+        window.mapPinchStartZoom = mapPinchStartZoom;
+        window.MAP_ZOOM_MIN = MAP_ZOOM_MIN;
+        window.MAP_ZOOM_MAX = MAP_ZOOM_MAX;
+        window.openMap = openMap;
+        window.closeMapModal = closeMapModal;
+        window.onMapPinTap = onMapPinTap;
+        window.mapMoveTo = mapMoveTo;
+        window.applyMapTransform = applyMapTransform;
+        window.clampMapPan = clampMapPan;
+        window.getMapFocalPoint = getMapFocalPoint;
+        window.zoomMapToward = zoomMapToward;
+        window.mapZoomBy = mapZoomBy;
+        window.mapZoomReset = mapZoomReset;
+        window.initMapInteractions = initMapInteractions;
+        window.toggleStampDebug = toggleStampDebug;
+        window.updateStampDebugReadout = updateStampDebugReadout;
+        window.lastScoreFormatted = lastScoreFormatted;
+        window.renderScoreDigits = renderScoreDigits;
+        window.lastRecommendCheckTime = lastRecommendCheckTime;
+        window.getRecommendedActionTargetId = getRecommendedActionTargetId;
+        window.updateRecommendedActionHighlight = updateRecommendedActionHighlight;
+        window.hasNewlyPurchasableSkill = hasNewlyPurchasableSkill;
+        window.hasNewlyPurchasableOmiyage = hasNewlyPurchasableOmiyage;
+        window.sprayParticleTimer = sprayParticleTimer;
+        window.updateSprayEffectDisplay = updateSprayEffectDisplay;
+        window.spawnSparkleParticle = spawnSparkleParticle;
+        window.updateDisplay = updateDisplay;
+        window.currentRankingTab = currentRankingTab;
+        window.closeRanking = closeRanking;
+        window.toggleRankingHelpOverlay = toggleRankingHelpOverlay;
+        window.switchRankingTab = switchRankingTab;
+        window.openRanking = openRanking;
+        window.rankNumberStyle = rankNumberStyle;
+        window.renderRankOutfitPreviewHtml = renderRankOutfitPreviewHtml;
+        window.renderRankingList = renderRankingList;
+        window.diaryPageIndex = diaryPageIndex;
+        window.openDiary = openDiary;
+        window.diaryShowingBack = diaryShowingBack;
+        window.renderDiaryPage = renderDiaryPage;
+        window.flipDiaryPage = flipDiaryPage;
+        window.nextPage = nextPage;
+        window.prevPage = prevPage;

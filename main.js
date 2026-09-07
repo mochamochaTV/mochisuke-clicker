@@ -2,7 +2,7 @@
         // 大きな更新をする直前に true にしてから公開すると、プレイヤーには「メンテナンス中」画面だけが表示され、
         // ゲーム本体・セーブ/ロード・クラウドバックアップは一切動かなくなる（壊れた状態が保存されてしまう事故を防ぐ）。
         // 手元で動作確認が終わったら、false に戻して公開し直す。
-        const MAINTENANCE_MODE = false;
+        export const MAINTENANCE_MODE = false;
 
         // 画面の実測高さ(--app-height)は<head>内で先に設定済み。ここでは重複させない。
 
@@ -10,18 +10,18 @@
         // PWA化(manifest+ServiceWorker)しただけでは自動でホーム画面に追加はされない。
         // ・Android/Chrome系 → beforeinstallpromptイベントを捕まえて自前ボタンから誘導すれば即インストール可
         // ・iOS Safari → ブラウザ側に自動インストールAPIが無いため「共有→ホーム画面に追加」を手動案内するしかない
-        let deferredInstallPrompt = null;
-        const installBanner = document.getElementById('install-banner');
-        const installBannerText = document.getElementById('install-banner-text');
-        const installBannerAction = document.getElementById('install-banner-action');
-        const installBannerClose = document.getElementById('install-banner-close');
-        const INSTALL_DISMISS_KEY = 'punicker_install_dismissed_v1';
+        export let deferredInstallPrompt = null;
+        export const installBanner = document.getElementById('install-banner');
+        export const installBannerText = document.getElementById('install-banner-text');
+        export const installBannerAction = document.getElementById('install-banner-action');
+        export const installBannerClose = document.getElementById('install-banner-close');
+        export const INSTALL_DISMISS_KEY = 'punicker_install_dismissed_v1';
 
-        function isRunningStandalone() {
+        export function isRunningStandalone() {
             return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
         }
 
-        function showInstallBanner(mode) {
+        export function showInstallBanner(mode) {
             if (isRunningStandalone() || localStorage.getItem(INSTALL_DISMISS_KEY)) return;
             if (mode === 'android') {
                 installBannerText.innerText = '📲 ホーム画面に追加すると次回から一瞬で起動できます';
@@ -63,10 +63,10 @@
         });
 
         // iOSはbeforeinstallpromptが発火しないため、UAで判定して案内バナーを出す
-        const ua = navigator.userAgent.toLowerCase();
-        const isIOSDevice = /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        export const ua = navigator.userAgent.toLowerCase();
+        export const isIOSDevice = /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
         // X・LINE・Discord・Instagram・Facebookなどのアプリ内ブラウザを検出（それぞれUAに特徴的な文字列が入る）
-        const isInAppBrowser = /line\/|fban|fbav|instagram|discord|twitter/.test(ua);
+        export const isInAppBrowser = /line\/|fban|fbav|instagram|discord|twitter/.test(ua);
         if (isIOSDevice) {
             setTimeout(() => showInstallBanner(isInAppBrowser ? 'ios-inapp' : 'ios'), 4000);
         }
@@ -76,7 +76,7 @@
         // 下に隙間が残るケースがあったため、今回はCSSの単位を信じるのをやめ、
         // 実際に画面の下端と#game-screenの下端の差(px)を毎回測って、その分だけ
         // 高さを強制的に足す方式に変更した。原因の理屈が何であれ、実測して埋めるので確実に効く。
-        function fixBottomGap() {
+        export function fixBottomGap() {
             const gs = document.getElementById('game-screen');
             if (!gs) return;
             gs.style.height = ''; // 一旦flexの自然な高さに戻す
@@ -97,8 +97,8 @@
         [50, 200, 500, 1000, 2000].forEach((ms) => setTimeout(fixBottomGap, ms));
 
         // ☰ メニュー機能
-        const FEEDBACK_EMAIL = 'your-email@example.com';
-        async function sendFeedback() {
+        export const FEEDBACK_EMAIL = 'your-email@example.com';
+        export async function sendFeedback() {
             const textEl = document.getElementById('feedback-text');
             const text = textEl.value.trim();
             if (!text) { alert("意見を入力してから送信してください！"); return; }
@@ -118,7 +118,7 @@
         }
 
         // 🖼️ 画面写真モード切替（もちすけ/スキル/もち数だけ → もちすけ+背景だけ → 背景だけ → 元通り）
-        let lastTouchEnd = 0;
+        export let lastTouchEnd = 0;
         document.addEventListener('touchend', (e) => {
             const now = Date.now();
             if (now - lastTouchEnd <= 15) e.preventDefault();
@@ -126,15 +126,17 @@
         }, { passive: false });
 
         // 47都道府県ステージデータ
-        let isBgmInitialized = false;
-        let canvas = null; let ctx = null; let particleList = [];
-        let rainCanvas = null; let rainCtx = null;
+        export let isBgmInitialized = false;
+        export let canvas = null; export let ctx = null; export let particleList = [];
+        export let rainCanvas = null; export let rainCtx = null;
         // 🌧️ もちの雨（自動増加(mps)がある時、もちすけの後ろにうっすら降ってくる。収入が少ない時はほとんど降らない）
-        let mochiRainList = [];
-        const MOCHI_RAIN_MAX = 10;
-        function spawnMochiRain() {
+        export let mochiRainList = [];
+        export const MOCHI_RAIN_MAX = 10;
+        export function spawnMochiRain() {
             const mps = getMps();
-            if (!rainCanvas || mps <= 0 || document.hidden) return;
+            // 🐛パフォーマンス修正：モーダルが開いていてタップ画面が見えていない間は、どうせ見えない
+            // もちの雨を新しく降らせても無駄なので生成自体を止める（描画側もモーダル中は丸ごと止めている）
+            if (!rainCanvas || mps <= 0 || document.hidden || document.body.classList.contains('modal-open')) return;
             if (mochiRainList.length >= MOCHI_RAIN_MAX) return; // 上限に達している間は新規追加を控える（既存の粒を消して落下を妨げないため）
             // mpsが小さいうちは滅多に降らないようにし、育つにつれて自然に増える
             const spawnChance = Math.min(1, mps / 40);
@@ -155,9 +157,11 @@
         }
         setInterval(spawnMochiRain, 1200);
         // ✨ 常時ふわふわ漂う環境パーティクル（タップしていない時も画面に生命感を出す）
-        let ambientSparkles = [];
-        function spawnAmbientSparkle() {
-            if (!canvas || document.hidden) return;
+        export let ambientSparkles = [];
+        export function spawnAmbientSparkle() {
+            // 🐛パフォーマンス修正：このキラキラも spawnMochiRain と同じくタップ画面専用の演出。
+            // モーダルが開いていて画面が見えていない間は生成しても無駄なので止める
+            if (!canvas || document.hidden || document.body.classList.contains('modal-open')) return;
             ambientSparkles.push({
                 x: Math.random() * canvas.width,
                 y: canvas.height + 10,
@@ -170,10 +174,10 @@
             if (ambientSparkles.length > 18) ambientSparkles.shift(); // 増えすぎ防止
         }
         setInterval(spawnAmbientSparkle, 900);
-        const particleImg = new Image(); particleImg.src = 'ui_images/mochisuke/mochi_particle.webp';
+        export const particleImg = new Image(); particleImg.src = 'ui_images/mochisuke/mochi_particle.webp';
         // ctx.filter (hue-rotate/drop-shadow) はスマホブラウザ(特にiOS Safari)で
         // 正しく適用されないことがあるため、金色版画像を事前に1回だけ焼き込んで使い回す
-        let goldParticleImg = null;
+        export let goldParticleImg = null;
         particleImg.onload = () => {
             try {
                 const w = particleImg.naturalWidth || particleImg.width || 64;
@@ -191,10 +195,10 @@
             } catch (e) { goldParticleImg = null; }
         };
 
-        function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+        export function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
         // もちすけの吹き出しにテキストを表示するヘルパー（イベント時にどこからでも呼べます）
-        function getTimeBucketIndex(h) {
+        export function getTimeBucketIndex(h) {
             if (h >= 5 && h < 11) return 0;  // morning
             if (h >= 11 && h < 17) return 1; // noon
             if (h >= 17 && h < 22) return 2; // evening
@@ -202,14 +206,14 @@
         }
 
         // 今の時間帯に合った挨拶をランダムで1つ返す
-        let lastGreetingHourBucket = -1;
+        export let lastGreetingHourBucket = -1;
         // 📖 初回チュートリアル：もちすけのセリフで進行し、該当ボタンを光らせながら説明する。
         // 他のボタンは（もちすけ本体を除いて）誤操作防止のため一時的に押せなくする。
-        let audioCtx = null;
-        const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
-        const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
+        export let audioCtx = null;
+        export const audioBuffers = {};        // fileName -> デコード済みAudioBuffer
+        export const audioBufferPromises = {}; // fileName -> デコード中のPromise（二重読み込み防止）
 
-        function getAudioContext() {
+        export function getAudioContext() {
             if (!audioCtx) {
                 const AC = window.AudioContext || window.webkitAudioContext;
                 audioCtx = new AC();
@@ -217,7 +221,7 @@
             return audioCtx;
         }
 
-        function loadAudioBuffer(fileName) {
+        export function loadAudioBuffer(fileName) {
             if (audioBuffers[fileName]) return Promise.resolve(audioBuffers[fileName]);
             if (audioBufferPromises[fileName]) return audioBufferPromises[fileName];
             const ctx = getAudioContext();
@@ -230,13 +234,13 @@
             return promise;
         }
 
-        function preloadAllSfx() {
+        export function preloadAllSfx() {
             SFX_FILES.forEach(loadAudioBuffer);
         }
 
         // 🔊 音量設定（BGM/効果音を別々に調整できる。0〜1の倍率としてlocalStorageに保存）
-        let bgmVolumeMult = parseFloat(localStorage.getItem('punicker_bgm_volume') ?? '0.3');
-        let sfxVolumeMult = parseFloat(localStorage.getItem('punicker_sfx_volume') ?? '1');
+        export let bgmVolumeMult = parseFloat(localStorage.getItem('punicker_bgm_volume') ?? '0.3');
+        export let sfxVolumeMult = parseFloat(localStorage.getItem('punicker_sfx_volume') ?? '1');
         if (isNaN(bgmVolumeMult)) bgmVolumeMult = 1;
         if (isNaN(sfxVolumeMult)) sfxVolumeMult = 1;
 
@@ -246,11 +250,11 @@
         // 効果音は既にWeb Audio APIのGainNodeで音量調整していたので問題なかったが、
         // BGMだけ従来の<audio>要素のままだったため、スライダーを動かしても一切変化しなかった。
         // BGMもGainNode経由の再生に統一し、これで確実に音量調整できるようにする。
-        let bgmGainNode = null;
-        let bgmSourceNode = null;
-        let currentBgmFile = null;
+        export let bgmGainNode = null;
+        export let bgmSourceNode = null;
+        export let currentBgmFile = null;
 
-        function ensureBgmGain() {
+        export function ensureBgmGain() {
             if (!bgmGainNode) {
                 const ctx = getAudioContext();
                 bgmGainNode = ctx.createGain();
@@ -260,7 +264,7 @@
             return bgmGainNode;
         }
 
-        function playBgmLoop(fileName) {
+        export function playBgmLoop(fileName) {
             if (currentBgmFile === fileName && bgmSourceNode) return; // 既に同じ曲が再生中なら何もしない
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
@@ -278,15 +282,15 @@
             });
         }
 
-        function stopBgm() {
+        export function stopBgm() {
             if (bgmSourceNode) { try { bgmSourceNode.stop(); } catch (e) {} bgmSourceNode = null; currentBgmFile = null; }
         }
 
-        function applyBgmVolume() {
+        export function applyBgmVolume() {
             if (bgmGainNode) bgmGainNode.gain.value = bgmVolumeMult;
         }
 
-        function playBufferNow(buffer, vol, rate = 1) {
+        export function playBufferNow(buffer, vol, rate = 1) {
             const ctx = getAudioContext();
             const source = ctx.createBufferSource();
             source.buffer = buffer;
@@ -297,7 +301,7 @@
             source.start(0);
         }
 
-        function playAudioFile(fileName, vol = 0.6) {
+        export function playAudioFile(fileName, vol = 0.6) {
             // alert()などのブロッキングダイアログの後、AudioContextがsuspendedのまま
             // 二度と再生されなくなるバグ対策：鳴らす直前に毎回、寝ていたら起こす
             const ctx = getAudioContext();
@@ -313,7 +317,7 @@
         }
 
         // ピッチを変えて再生する版（ミニゲームの連続成功演出などで使用）
-        function playAudioFilePitched(fileName, vol, rate) {
+        export function playAudioFilePitched(fileName, vol, rate) {
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
             const buffer = audioBuffers[fileName];
@@ -329,7 +333,7 @@
         // 以前は「最初の1回だけ」解錠していたが、alert()などのブロッキングダイアログを挟むと
         // AudioContextが勝手にsuspendedへ戻ってしまい、それ以降ずっと無音になるバグがあったため、
         // 一度きりではなく毎回のタップとアプリ復帰時にチェックするようにした。
-        function unlockAllPooledAudio() {
+        export function unlockAllPooledAudio() {
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
         }
@@ -342,7 +346,7 @@
         // もちすけ以外（背景など）をタップしても音が鳴ってしまう原因になっていたため削除。
         // タップ音はもちすけ本体（下のpointerdownハンドラ）と、必殺技中の「どこでも連打」時のみ鳴る。
 
-        const capturedErrors = [];
+        export const capturedErrors = [];
         window.addEventListener('error', (e) => {
             capturedErrors.push(`[JSエラー] ${e.message} (${(e.filename || '').split('/').pop()}:${e.lineno})`);
             if (capturedErrors.length > 8) capturedErrors.shift();
@@ -353,8 +357,8 @@
         });
 
         /* 🛠️ 開発者専用メニュー：URLに ?dev=1 を付けた時だけ有効になる（通常プレイヤーには一切見えない） */
-        let IS_DEV_MODE = false;
-        function initDevMode() {
+        export let IS_DEV_MODE = false;
+        export function initDevMode() {
             // 推測されないよう、単純な値ではなく長いランダムな文字列をキーにしている
             const isDevParam = new URLSearchParams(location.search).get('dev') === 'zk9m2xq7wv4p8trh21bs';
             // 🐛修正：PWAとしてホーム画面に追加すると、manifest.jsonの固定start_urlが使われ、
@@ -373,7 +377,7 @@
             if (section) section.style.display = 'block';
         }
 
-        function debugAddMochi() {
+        export function debugAddMochi() {
             const currentReq = stages[currentStageIndex] ? stages[currentStageIndex].distance : 1000000;
             score += currentReq;
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
@@ -382,20 +386,20 @@
             updateDisplay(); saveGame();
         }
 
-        function debugLevelUpSkill(key) {
+        export function debugLevelUpSkill(key) {
             skills[key].lv++;
             playAudioFile('audio/levelup.mp3');
             updateSkillUI(); saveGame();
         }
 
-        function debugLevelUpAllSkills() {
+        export function debugLevelUpAllSkills() {
             Object.keys(skills).forEach(key => { skills[key].lv++; });
             playAudioFile('audio/levelup.mp3');
             updateSkillUI(); saveGame();
             alert("⚡ すべてのスキル・必殺技を即時獲得＆Lv+1しました！");
         }
 
-        function debugResetCooldowns() {
+        export function debugResetCooldowns() {
             Object.keys(skills).forEach(key => {
                 skills[key].currentCd = 0; skills[key].activeTimer = 0;
                 endSkillVisualEffect(key);
@@ -405,7 +409,7 @@
         }
 
         // 👄 口パーツを、実際のゲーム画面上で直接ドラッグして位置調整するモード（デバイスによるズレを避けるため）
-        function initAndPlayBGM() {
+        export function initAndPlayBGM() {
             if (isBgmInitialized) return;
             isBgmInitialized = true;
             playBgmLoop('audio/bgm/bgm.mp3');
@@ -414,7 +418,7 @@
         // 🎬 OP画面をタップしてゲームへ。ブラウザの仕様上「一切操作なしで音を鳴らす」ことはiOSではできないが、
         // どのみちOP画面をタップしないとゲームに入れない作りなので、そのタップの瞬間にBGMを鳴らせば
         // 体感的には「ゲームを開いたら音楽が鳴る」とほぼ同じ感覚になる。
-        function startGameFromOpScreen() {
+        export function startGameFromOpScreen() {
             initAndPlayBGM();
             const op = document.getElementById('op-screen');
             if (op) {
@@ -423,7 +427,7 @@
             }
         }
 
-        function resizeParticleCanvas() {
+        export function resizeParticleCanvas() {
             const rect = document.getElementById('game-screen').getBoundingClientRect();
             gameScreenRect = rect; // タップ演出（リップル/文字/パーティクル）で使い回すキャッシュ
             if (bunshinCloneRects.length > 0) refreshBunshinCloneRects();
@@ -431,14 +435,14 @@
             if (!canvas) return;
             canvas.width = rect.width; canvas.height = rect.height;
         }
-        function getGameScreenRect() {
+        export function getGameScreenRect() {
             return gameScreenRect || document.getElementById('game-screen').getBoundingClientRect();
         }
 
         // #game-screenの背景と同じ画像をbodyにも敷いておく。
         // これで万一OS側のビューポート計算のクセで数十px程度のズレが残っても、
         // 見えるのは同じ背景の続きになるので「白い余白」としては目立たなくなる。
-        function setGameBackground(url) {
+        export function setGameBackground(url) {
             const gameScreen = document.getElementById('game-screen');
             const bgCss = `url('${url}')`;
             // 先読みしてから切り替えることで、読み込み中に背景が真っ白/壊れて見える瞬間を防ぐ
@@ -540,16 +544,16 @@
 
         // スキル効果を含んだタップ力計算コア
         // もちの数が大きくなりすぎてもUIからはみ出さないよう、日本語の単位（万/億/兆/京）で短く表示する
-        const MOCHI_DECIMAL_PLACES = 6; // 大きい数字の時、小数点以下を何桁まで表示するか（5〜10の範囲で調整可能）
+        export const MOCHI_DECIMAL_PLACES = 6; // 大きい数字の時、小数点以下を何桁まで表示するか（5〜10の範囲で調整可能）
         // 🔒 他プレイヤーが入力した名前などをそのままinnerHTMLに差し込むと、
         // 悪意のあるスクリプトを名前に仕込まれて他の人の画面で実行されてしまう(XSS)ため、必ずこれを通す
-        function escapeHtml(str) {
+        export function escapeHtml(str) {
             const div = document.createElement('div');
             div.textContent = String(str ?? '');
             return div.innerHTML;
         }
 
-        function formatMochi(n) {
+        export function formatMochi(n) {
             n = Math.floor(n);
             if (n < 1e8) return n.toLocaleString(); // 1億未満はそのまま数字表示（万単位の小数は意味が薄いので廃止）
             if (n >= 1e20) return (n / 1e20).toFixed(MOCHI_DECIMAL_PLACES) + '垓';
@@ -562,16 +566,16 @@
         // 【重要】iOSのSafari/PWAはVibration API自体を実装していないため、iPhoneでは何も起きません
         // （AndroidのChromeなどでは有効です）。iPhone側でも「叩いた感」を出したい場合は、
         // 振動の代わりに画面のフラッシュ/シェイク演出などの視覚効果で代替するのがおすすめです。
-        function vibrate(pattern) {
+        export function vibrate(pattern) {
             if (navigator.vibrate) {
                 try { navigator.vibrate(pattern); } catch (e) {}
             }
         }
 
         // 🎬 画面シェイク（iPhoneで振動が効かない分、視覚的な「叩いた感」を強化する）
-        let shakeTimeout = null;
-        let lastScreenShakeTime = 0;
-        function screenShake(size = 'small') {
+        export let shakeTimeout = null;
+        export let lastScreenShakeTime = 0;
+        export function screenShake(size = 'small') {
             const el = document.getElementById('game-screen');
             if (!el) return;
             const now = performance.now();
@@ -587,8 +591,8 @@
         }
 
         // 🎬 画面フラッシュ（会心・黄金・フィーバーなどの「決まった瞬間」を派手に見せる）
-        let lastScreenFlashTime = 0;
-        function screenFlash(color, peakOpacity = 0.35) {
+        export let lastScreenFlashTime = 0;
+        export function screenFlash(color, peakOpacity = 0.35) {
             const el = document.getElementById('screen-flash-overlay');
             if (!el) return;
             const now = performance.now();
@@ -605,10 +609,10 @@
             });
         }
 
-        let rippleList = [];
-        let floatingTextList = [];
+        export let rippleList = [];
+        export let floatingTextList = [];
 
-        function remToPx(sizeStr) {
+        export function remToPx(sizeStr) {
             if (typeof sizeStr === 'number') return sizeStr;
             const s = String(sizeStr).trim();
             if (s.endsWith('rem')) return parseFloat(s) * 16;
@@ -620,7 +624,7 @@
         // #particle-canvasはモーダルより下のレイヤーにあるため、モーダルを開いた状態でcreateParticle()を
         // 呼んでも画面には映らない（もちすけの後ろに隠れて見える原因もこれ）。これはposition:fixedのDOM要素で
         // モーダルより手前に直接描画するので、どこで呼んでも確実に見える。
-        function spawnModalParticleBurst(x, y, count, color) {
+        export function spawnModalParticleBurst(x, y, count, color) {
             for (let i = 0; i < count; i++) {
                 const p = document.createElement('div');
                 const angle = Math.random() * Math.PI * 2;
@@ -642,7 +646,7 @@
         // 🎭 マイルームのタップ・叫ぶ・ごはん演出用：モーダルの手前に浮かび上がって消えるテキスト。
         // createFloatingText()はタップ画面専用のcanvasに描くため、マイルームのモーダル内では見えない。
         // こちらはposition:fixedのDOM要素なので、どのモーダルの上にいても確実に見える
-        function spawnModalFloatingText(x, y, text, color = '#ff9800', size = '1.2rem') {
+        export function spawnModalFloatingText(x, y, text, color = '#ff9800', size = '1.2rem') {
             const el = document.createElement('div');
             el.textContent = text;
             el.style.cssText = `position:fixed; left:${x}px; top:${y}px; transform:translate(-50%,-50%); font-size:${size};
@@ -656,12 +660,12 @@
             setTimeout(() => el.remove(), 1150);
         }
 
-        function createRippleEffect(x, y) {
+        export function createRippleEffect(x, y) {
             const rect = getGameScreenRect();
             rippleList.push({ x: x - rect.left, y: y - rect.top, start: performance.now() });
         }
 
-        function createFloatingText(x, y, text, color = "#ff9800", size = "1.3rem") {
+        export function createFloatingText(x, y, text, color = "#ff9800", size = "1.3rem") {
             if (floatingTextList.length > 40) return; // パーティクルと同様、連打が続いても際限なく増えないように上限を設ける
             const rect = getGameScreenRect();
             floatingTextList.push({
@@ -671,7 +675,7 @@
             });
         }
 
-        function createParticle(x, y, isGold = false) {
+        export function createParticle(x, y, isGold = false) {
             if (particleList.length > 50) return; 
             const rect = getGameScreenRect();
             particleList.push({
@@ -687,9 +691,15 @@
         // 「今まさに反応が必要なものは何もない、環境演出だけが動いているアイドル状態」の時だけ、
         // 描画を約30fpsに間引いて負荷とバッテリー消費を抑える。タップした瞬間にこれらのリストへ
         // 要素が入るので、その場で即座に60fpsへ戻り、タップの反応速度には一切影響しない
-        let lastAmbientFrameTs = 0;
-        const updateAndRenderParticles = (ts) => {
+        export let lastAmbientFrameTs = 0;
+        export const updateAndRenderParticles = (ts) => {
             if (!ctx || !canvas) { requestAnimationFrame(updateAndRenderParticles); return; }
+            // 🐛パフォーマンス修正：この描画loopはタップ画面のcanvas専用だが、ランキング・移動・ショップ・
+            // マイルームなど、何かモーダルを開いている間はタップ画面自体が見えない（モーダルの黒い背景に
+            // 覆われる）。見えていないのに毎フレーム描画し続けるのは完全に無駄なので、モーダルが開いている
+            // 間は描画処理を丸ごとスキップする（RAFの連鎖だけは切らさず維持し、モーダルを閉じた瞬間に
+            // すぐ元の頻度で再開できるようにする）
+            if (document.body.classList.contains('modal-open')) { requestAnimationFrame(updateAndRenderParticles); return; }
             const isAmbientIdle = particleList.length === 0 && rippleList.length === 0 && floatingTextList.length === 0;
             if (isAmbientIdle) {
                 if (ts - lastAmbientFrameTs < 33) { requestAnimationFrame(updateAndRenderParticles); return; }
@@ -796,7 +806,7 @@
         // メインループから呼び出す普通の関数に統合した（RAFの二重登録を解消）。
         // また、パーティクル毎のsave()/restore()はコストが高いので、setTransformで直接位置と回転を
         // 指定し、最後に1回だけリセットする方式に変更して負荷を下げている。
-        function renderMochiRainFrame() {
+        export function renderMochiRainFrame() {
             if (!rainCtx || !rainCanvas) return;
             rainCtx.clearRect(0, 0, rainCanvas.width, rainCanvas.height);
             for (let i = mochiRainList.length - 1; i >= 0; i--) {
@@ -811,7 +821,7 @@
         }
 
         // 10コンボ毎に+2%（例：50コンボで+10%、100コンボで+20%）。控えめな伸び方にして、頭打ちなく積み上げていける
-        function lazyLoadImage(imgId) {
+        export function lazyLoadImage(imgId) {
             const img = document.getElementById(imgId);
             if (img && !img.src && img.dataset.src) img.src = img.dataset.src;
         }
@@ -823,7 +833,7 @@
             }
         });
 
-        function startMochiLifeLoop() {
+        export function startMochiLifeLoop() {
             setInterval(() => {
                 if (isTutorialActive) return;
                 const idleDuration = Date.now() - lastTappedTime;
@@ -853,20 +863,20 @@
         }
 
         // 🎁 プレゼント出現頻度・報酬の調整用定数（ここを変えるだけでバランス調整できます）
-        const PRESENT_SPAWN_CHANCE = 0.2;      // 20秒毎の抽選確率（旧0.4→期待間隔が約2倍の100秒程度に）
-        const PRESENT_SPAWN_INTERVAL_MS = 20000;
-        const PRESENT_REWARD_MIN = 400;        // 旧200→倍
-        const PRESENT_REWARD_DISTANCE_RATE = 0.1; // 旧0.05→倍
-        const PRESENT_REWARD_MPS_RATE = 120;      // 旧60→倍
+        export const PRESENT_SPAWN_CHANCE = 0.2;      // 20秒毎の抽選確率（旧0.4→期待間隔が約2倍の100秒程度に）
+        export const PRESENT_SPAWN_INTERVAL_MS = 20000;
+        export const PRESENT_REWARD_MIN = 400;        // 旧200→倍
+        export const PRESENT_REWARD_DISTANCE_RATE = 0.1; // 旧0.05→倍
+        export const PRESENT_REWARD_MPS_RATE = 120;      // 旧60→倍
 
         // ミニゲームの基準報酬額（プレゼントボーナスと同じ考え方の基準額を使い回す）
-        function startPresentSpawningLoop() {
+        export function startPresentSpawningLoop() {
             setInterval(() => { if (!isTutorialActive && !document.getElementById('lucky-present') && Math.random() < PRESENT_SPAWN_CHANCE) spawnLuckyPresent(); }, PRESENT_SPAWN_INTERVAL_MS);
         }
 
-        const PRESENT_TAPS_REQUIRED = 10; // 風船(プレゼント)を割るのに必要なタップ数
+        export const PRESENT_TAPS_REQUIRED = 10; // 風船(プレゼント)を割るのに必要なタップ数
 
-        function spawnLuckyPresent() {
+        export function spawnLuckyPresent() {
             const gameScreen = document.getElementById('game-screen');
             showMochiComment(pickRandom(dialogueData.eventComments.presentSpawn));
             const present = document.createElement('div'); present.id = 'lucky-present';
@@ -910,7 +920,7 @@
             setTimeout(() => { if (present.parentNode) { present.remove(); hideMochiComment(); } }, 11000);
         }
 
-        function spawnGoldMochi() {
+        export function spawnGoldMochi() {
             const gameScreen = document.getElementById('game-screen');
             showMochiComment(pickRandom(dialogueData.eventComments.goldMochiSpawn));
             const goldMochi = document.createElement('div'); goldMochi.id = 'fever-pop';
@@ -921,8 +931,8 @@
             setTimeout(() => { if (goldMochi.parentNode) { goldMochi.remove(); hideMochiComment(); } }, 6000);
         }
 
-        const appStartTime = Date.now();
-        const AUTOSAVE_CLOUD_GRACE_MS = 8000; // 起動直後の数秒間は、クラウドへの送信（ランキング・バックアップ）を見送る
+        export const appStartTime = Date.now();
+        export const AUTOSAVE_CLOUD_GRACE_MS = 8000; // 起動直後の数秒間は、クラウドへの送信（ランキング・バックアップ）を見送る
                                                  // （起動直後の一瞬だけ表示がおかしくなるケースがあっても、それをクラウドに送ってしまわないための保険）
         setInterval(() => {
             saveGame();
@@ -934,3 +944,110 @@
             }
         }, 10000); // 10秒毎オートセーブ＋ランキング送信＋クラウドバックアップ
 
+
+
+        // ===================================================================
+        // 🌉 一時的な橋渡し（migration bridge）
+        // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
+        // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
+        // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
+        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
+        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
+        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        // ===================================================================
+        window.MAINTENANCE_MODE = MAINTENANCE_MODE;
+        window.deferredInstallPrompt = deferredInstallPrompt;
+        window.installBanner = installBanner;
+        window.installBannerText = installBannerText;
+        window.installBannerAction = installBannerAction;
+        window.installBannerClose = installBannerClose;
+        window.INSTALL_DISMISS_KEY = INSTALL_DISMISS_KEY;
+        window.isRunningStandalone = isRunningStandalone;
+        window.showInstallBanner = showInstallBanner;
+        window.ua = ua;
+        window.isIOSDevice = isIOSDevice;
+        window.isInAppBrowser = isInAppBrowser;
+        window.fixBottomGap = fixBottomGap;
+        window.FEEDBACK_EMAIL = FEEDBACK_EMAIL;
+        window.sendFeedback = sendFeedback;
+        window.lastTouchEnd = lastTouchEnd;
+        window.isBgmInitialized = isBgmInitialized;
+        window.canvas = canvas;
+        window.ctx = ctx;
+        window.particleList = particleList;
+        window.rainCanvas = rainCanvas;
+        window.rainCtx = rainCtx;
+        window.mochiRainList = mochiRainList;
+        window.MOCHI_RAIN_MAX = MOCHI_RAIN_MAX;
+        window.spawnMochiRain = spawnMochiRain;
+        window.ambientSparkles = ambientSparkles;
+        window.spawnAmbientSparkle = spawnAmbientSparkle;
+        window.particleImg = particleImg;
+        window.goldParticleImg = goldParticleImg;
+        window.pickRandom = pickRandom;
+        window.getTimeBucketIndex = getTimeBucketIndex;
+        window.lastGreetingHourBucket = lastGreetingHourBucket;
+        window.audioCtx = audioCtx;
+        window.audioBuffers = audioBuffers;
+        window.audioBufferPromises = audioBufferPromises;
+        window.getAudioContext = getAudioContext;
+        window.loadAudioBuffer = loadAudioBuffer;
+        window.preloadAllSfx = preloadAllSfx;
+        window.bgmVolumeMult = bgmVolumeMult;
+        window.sfxVolumeMult = sfxVolumeMult;
+        window.bgmGainNode = bgmGainNode;
+        window.bgmSourceNode = bgmSourceNode;
+        window.currentBgmFile = currentBgmFile;
+        window.ensureBgmGain = ensureBgmGain;
+        window.playBgmLoop = playBgmLoop;
+        window.stopBgm = stopBgm;
+        window.applyBgmVolume = applyBgmVolume;
+        window.playBufferNow = playBufferNow;
+        window.playAudioFile = playAudioFile;
+        window.playAudioFilePitched = playAudioFilePitched;
+        window.unlockAllPooledAudio = unlockAllPooledAudio;
+        window.capturedErrors = capturedErrors;
+        window.IS_DEV_MODE = IS_DEV_MODE;
+        window.initDevMode = initDevMode;
+        window.debugAddMochi = debugAddMochi;
+        window.debugLevelUpSkill = debugLevelUpSkill;
+        window.debugLevelUpAllSkills = debugLevelUpAllSkills;
+        window.debugResetCooldowns = debugResetCooldowns;
+        window.initAndPlayBGM = initAndPlayBGM;
+        window.startGameFromOpScreen = startGameFromOpScreen;
+        window.resizeParticleCanvas = resizeParticleCanvas;
+        window.getGameScreenRect = getGameScreenRect;
+        window.setGameBackground = setGameBackground;
+        window.MOCHI_DECIMAL_PLACES = MOCHI_DECIMAL_PLACES;
+        window.escapeHtml = escapeHtml;
+        window.formatMochi = formatMochi;
+        window.vibrate = vibrate;
+        window.shakeTimeout = shakeTimeout;
+        window.lastScreenShakeTime = lastScreenShakeTime;
+        window.screenShake = screenShake;
+        window.lastScreenFlashTime = lastScreenFlashTime;
+        window.screenFlash = screenFlash;
+        window.rippleList = rippleList;
+        window.floatingTextList = floatingTextList;
+        window.remToPx = remToPx;
+        window.spawnModalParticleBurst = spawnModalParticleBurst;
+        window.spawnModalFloatingText = spawnModalFloatingText;
+        window.createRippleEffect = createRippleEffect;
+        window.createFloatingText = createFloatingText;
+        window.createParticle = createParticle;
+        window.lastAmbientFrameTs = lastAmbientFrameTs;
+        window.updateAndRenderParticles = updateAndRenderParticles;
+        window.renderMochiRainFrame = renderMochiRainFrame;
+        window.lazyLoadImage = lazyLoadImage;
+        window.startMochiLifeLoop = startMochiLifeLoop;
+        window.PRESENT_SPAWN_CHANCE = PRESENT_SPAWN_CHANCE;
+        window.PRESENT_SPAWN_INTERVAL_MS = PRESENT_SPAWN_INTERVAL_MS;
+        window.PRESENT_REWARD_MIN = PRESENT_REWARD_MIN;
+        window.PRESENT_REWARD_DISTANCE_RATE = PRESENT_REWARD_DISTANCE_RATE;
+        window.PRESENT_REWARD_MPS_RATE = PRESENT_REWARD_MPS_RATE;
+        window.startPresentSpawningLoop = startPresentSpawningLoop;
+        window.PRESENT_TAPS_REQUIRED = PRESENT_TAPS_REQUIRED;
+        window.spawnLuckyPresent = spawnLuckyPresent;
+        window.spawnGoldMochi = spawnGoldMochi;
+        window.appStartTime = appStartTime;
+        window.AUTOSAVE_CLOUD_GRACE_MS = AUTOSAVE_CLOUD_GRACE_MS;

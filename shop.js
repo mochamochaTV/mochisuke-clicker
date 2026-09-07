@@ -1,21 +1,21 @@
-        function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
-        function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
-        function getOmiyagePrice(stage, currentLv) {
+        export function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
+        export function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
+        export function getOmiyagePrice(stage, currentLv) {
             return Math.floor(stage.price * Math.pow(getOmiyagePriceCurveBase(), currentLv) * getOmiyagePriceMultiplier());
         }
-        let purchasedItems = {};      
-        let purchasedClothes = { normal: true };
-        let equippedClotheId = "normal";
-        let currentShopTab = "omiyage"; 
+        export let purchasedItems = {};      
+        export let purchasedClothes = { normal: true };
+        export let equippedClotheId = "normal";
+        export let currentShopTab = "omiyage"; 
 
-        function equipClothe(id) {
+        export function equipClothe(id) {
             equippedClotheId = id;
             resetMochiFilter();
             saveGame(); updateDisplay();
         }
 
         // 起動時に読み込まなくていい大きな画像（マップ・おみやげ屋の背景）は、実際に開いた時だけ読み込む
-        function openShop() {
+        export function openShop() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3'); // 県移動の時と同じ、移動音
             overlay.classList.add('fade-black');
@@ -28,7 +28,7 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
-        function closeShop() {
+        export function closeShop() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
@@ -46,7 +46,7 @@
             if (shelfImg) shelfImg.addEventListener('click', () => { if (omiyageSelectedIdx != null) closeOmiyageDetail(); });
         });
         // お土産イラスト（stage.itemImg）表示用ヘルパー。未整備の県は🎁の絵文字にフォールバックする
-        function getItemThumbHtml(stage, size) {
+        export function getItemThumbHtml(stage, size) {
             size = size || 48;
             if (stage.itemImg) {
                 return `<img class="item-thumb" src="${stage.itemImg}" style="width:${size}px; height:${size}px;" alt="${stage.item}">`;
@@ -54,7 +54,7 @@
             return `<div class="item-thumb" style="width:${size}px; height:${size}px; display:flex; align-items:center; justify-content:center; font-size:${Math.floor(size * 0.5)}px; background:#fff8ec;">🎁</div>`;
         }
 
-        function switchShopTab(tab) {
+        export function switchShopTab(tab) {
             currentShopTab = tab;
             updateShopTabHighlight();
             document.getElementById('shop-tab-omiyage').classList.toggle('tab-active', tab === 'omiyage');
@@ -74,8 +74,8 @@
         // 🎰 ガチャタブ：管理者用URL(?dev=...)からでないと、まだ「近日公開」の案内だけ表示する
         // 🎰 ガチャの演出本体：①3段階の回転（だんだん速く・揺れも強く）→②カプセル排出→③パカッと開いて中身が出る
         // 🎨 レア度ごとのカプセルの色（実際のイラストが無くても、同じ画像に色フィルターをかけて表現する）
-        let currentGachaRarity = null; // この回のレア度（色分けに使う）
-        function pickGachaRarity() {
+        export let currentGachaRarity = null; // この回のレア度（色分けに使う）
+        export function pickGachaRarity() {
             const total = GACHA_RARITIES.reduce((s, r) => s + r.weight, 0);
             let roll = Math.random() * total;
             for (const r of GACHA_RARITIES) {
@@ -86,7 +86,7 @@
         }
 
         // 🎰 3段階の回転演出（1連・10連で共通）：Promiseを返し、終わったら呼び出し側が次の処理に進める
-        function playGachaCrankSequence() {
+        export function playGachaCrankSequence() {
             const crank = document.getElementById('gacha-crank');
             playAudioFile('audio/gacha/crank.mp3');
 
@@ -133,7 +133,7 @@
             });
         }
 
-        function setGachaButtonsDisabled(disabled) {
+        export function setGachaButtonsDisabled(disabled) {
             ['gacha-spin-btn', 'gacha-spin10-btn'].forEach(id => {
                 const btn = document.getElementById(id);
                 if (!btn) return;
@@ -143,14 +143,14 @@
         }
 
         // 🎁 ノーマル（灰）が出た時：3種類の消耗品からランダムに1つ選んで、その場で効果を発動する
-        let ticketInventory = { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 }; // 🎫 ガチャで手に入れたチケットの所持数（すぐ使わず倉庫にためておける）
-        let sprayInventory = { spray_normalRare: 0, spray_rare: 0 }; // ✨ ガチャで手に入れたスプレーの所持数
-        let activeSprayId = null;    // 今かかっているスプレーのID
-        let sprayBuffActiveUntil = 0; // このタイムスタンプまで、自動増加バフ＋見た目エフェクトが有効
-        let favoriteFriendIds = []; // ⭐ お気に入りに登録したフレンドのuid一覧
-        let blockedUserIds = []; // 🚫 ブロックしたユーザーのuid一覧（この人からの招待・スタンプは今後無視する）
+        export let ticketInventory = { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 }; // 🎫 ガチャで手に入れたチケットの所持数（すぐ使わず倉庫にためておける）
+        export let sprayInventory = { spray_normalRare: 0, spray_rare: 0 }; // ✨ ガチャで手に入れたスプレーの所持数
+        export let activeSprayId = null;    // 今かかっているスプレーのID
+        export let sprayBuffActiveUntil = 0; // このタイムスタンプまで、自動増加バフ＋見た目エフェクトが有効
+        export let favoriteFriendIds = []; // ⭐ お気に入りに登録したフレンドのuid一覧
+        export let blockedUserIds = []; // 🚫 ブロックしたユーザーのuid一覧（この人からの招待・スタンプは今後無視する）
 
-        function grantRandomNormalConsumable() {
+        export function grantRandomNormalConsumable() {
             const item = pickRandom(NORMAL_CONSUMABLE_ITEMS);
             ticketInventory[item.id] = (ticketInventory[item.id] || 0) + 1;
             saveGame(); updateDisplay();
@@ -158,7 +158,7 @@
         }
 
         // 🎫 倉庫にためたチケットを、好きなタイミングで実際に使う
-        function useTicket(itemId) {
+        export function useTicket(itemId) {
             if ((ticketInventory[itemId] || 0) <= 0) return;
             if (itemId === 'minigameTicket') {
                 Object.keys(minigamePlaysUsedToday).forEach(k => {
@@ -174,12 +174,12 @@
             openTicketInventory(); // 一覧を開いている場合、個数表示を更新する
         }
 
-        function updateGachaCoinDisplay() {
+        export function updateGachaCoinDisplay() {
             const el = document.getElementById('gacha-coin-value');
             if (el) el.innerText = IS_DEV_MODE ? '∞' : formatMochi(gachaCoins);
         }
 
-        function toggleGachaRatesOverlay() {
+        export function toggleGachaRatesOverlay() {
             const overlay = document.getElementById('gacha-rates-overlay');
             if (!overlay) return;
             const showing = overlay.style.display === 'block';
@@ -199,9 +199,9 @@
             overlay.style.display = 'block';
         }
         // 🎁 レア度ごとに、実際に排出されるアイテムと確率を一覧表示する
-        const GACHA_RATE_TAB_LABELS = { normal: 'ノーマル', normalRare: 'ノーマルレア', rare: 'レア', sr: 'スーパーレア', ur: 'ウルトラレア' };
-        let currentGachaRateTab = 'normal';
-        function renderGachaRateTabs() {
+        export const GACHA_RATE_TAB_LABELS = { normal: 'ノーマル', normalRare: 'ノーマルレア', rare: 'レア', sr: 'スーパーレア', ur: 'ウルトラレア' };
+        export let currentGachaRateTab = 'normal';
+        export function renderGachaRateTabs() {
             const tabsEl = document.getElementById('gacha-rate-tabs');
             tabsEl.innerHTML = Object.keys(GACHA_RATE_TAB_LABELS).map(id => {
                 const rarity = GACHA_RARITIES.find(r => r.id === id);
@@ -210,7 +210,7 @@
             }).join('');
             switchGachaRateTab(currentGachaRateTab);
         }
-        function switchGachaRateTab(tabId) {
+        export function switchGachaRateTab(tabId) {
             currentGachaRateTab = tabId;
             const tabsEl = document.getElementById('gacha-rate-tabs');
             [...tabsEl.children].forEach((btn, i) => {
@@ -256,11 +256,11 @@
         }
 
         // ===== 1連：カプセルが落ちてきて、タップすると開く =====
-        const GACHA_COST_SINGLE = 10;
-        const GACHA_COST_TEN = 90; // 1回x10より少しお得な価格設定
+        export const GACHA_COST_SINGLE = 10;
+        export const GACHA_COST_TEN = 90; // 1回x10より少しお得な価格設定
 
-        let pendingGachaResult = null; // 🐛修正：コイン消費と同時に確定させ、演出中に中断されてもコインだけ失うことが無いようにする
-        function startGachaSpin() {
+        export let pendingGachaResult = null; // 🐛修正：コイン消費と同時に確定させ、演出中に中断されてもコインだけ失うことが無いようにする
+        export function startGachaSpin() {
             const spinBtn = document.getElementById('gacha-spin-btn');
             if (spinBtn.disabled) return;
             if (!IS_DEV_MODE && gachaCoins < GACHA_COST_SINGLE) {
@@ -306,7 +306,7 @@
             });
         }
 
-        function dropGachaCapsule() {
+        export function dropGachaCapsule() {
             const capsuleWrap = document.getElementById('gacha-capsule-wrap');
             const capsuleWhole = document.getElementById('gacha-capsule-whole');
             const capsuleTop = document.getElementById('gacha-capsule-top');
@@ -332,7 +332,7 @@
         }
 
         // 🫳 落ちたカプセルは自動で開かず、プレイヤーがタップした時に開く
-        function enableGachaCapsuleTapToOpen() {
+        export function enableGachaCapsuleTapToOpen() {
             const capsuleWhole = document.getElementById('gacha-capsule-whole');
             capsuleWhole.style.pointerEvents = 'auto';
             capsuleWhole.style.cursor = 'pointer';
@@ -348,7 +348,7 @@
             };
         }
 
-        function openGachaCapsule() {
+        export function openGachaCapsule() {
             const capsuleWhole = document.getElementById('gacha-capsule-whole');
             const capsuleTop = document.getElementById('gacha-capsule-top');
             const capsuleBottom = document.getElementById('gacha-capsule-bottom');
@@ -373,7 +373,7 @@
         }
 
         // 🎰 ガチャ：星ランク別のアイテムプールを取得し、1つ抽選して付与する
-        function getKisekaeItemsByStar(star) {
+        export function getKisekaeItemsByStar(star) {
             const pool = [];
             ['hat', 'face', 'clothes', 'back', 'fullbody'].forEach(cat => {
                 KISEKAE_ITEMS[cat].forEach(item => {
@@ -382,9 +382,9 @@
             });
             return pool;
         }
-        const DUPLICATE_REFUND_BY_STAR = { 1: 3, 2: 8, 3: 20, 4: 50 }; // 重複時は、レア度に応じてガチャコインを還元する
+        export const DUPLICATE_REFUND_BY_STAR = { 1: 3, 2: 8, 3: 20, 4: 50 }; // 重複時は、レア度に応じてガチャコインを還元する
         // ✨ ノーマルレア・レアだけ、衣装かスプレーかを半々で抽選する（スーパーレア・ウルトラレアは衣装のみ）
-        function grantGachaNormalRareOrRareReward(star) {
+        export function grantGachaNormalRareOrRareReward(star) {
             const sprayItem = SPRAY_ITEMS.find(i => i.star === star);
             if (sprayItem && Math.random() < 0.5) {
                 sprayInventory[sprayItem.id] = (sprayInventory[sprayItem.id] || 0) + 1;
@@ -392,7 +392,7 @@
             }
             return grantGachaKisekaeItem(star);
         }
-        function grantGachaKisekaeItem(star) {
+        export function grantGachaKisekaeItem(star) {
             const pool = getKisekaeItemsByStar(star);
             const notOwned = pool.filter(item => !(ownedKisekaeItems[item.category] || []).includes(item.id));
             const candidates = notOwned.length > 0 ? notOwned : pool; // 全部持っていたら重複当選になる
@@ -409,7 +409,7 @@
             return { item: picked, isDuplicate, refundCoins };
         }
         // 🎰 レア度から、実際の景品を確定・付与する（コイン消費と同時に呼ぶ）
-        function grantGachaPrizeForRarity(rarity) {
+        export function grantGachaPrizeForRarity(rarity) {
             if (rarity.id === 'normal') {
                 return { kind: 'normal', item: grantRandomNormalConsumable() };
             } else if (['normalRare', 'rare', 'sr', 'ur'].includes(rarity.id)) {
@@ -420,7 +420,7 @@
             }
             return null;
         }
-        function revealGachaPrize() {
+        export function revealGachaPrize() {
             const prizeReveal = document.getElementById('gacha-prize-reveal');
             const prizeImg = document.getElementById('gacha-prize-img');
             const prizeName = document.getElementById('gacha-prize-name');
@@ -490,8 +490,8 @@
         }
 
         // ===== 10連：レバーは1回、カプセル10個が続けて出て、全部落ちてから順番にパカパカ開いていく =====
-        let pendingGachaResults10 = null; // 🐛修正：10連分も、コイン消費と同時に確定させる
-        function startGachaSpin10() {
+        export let pendingGachaResults10 = null; // 🐛修正：10連分も、コイン消費と同時に確定させる
+        export function startGachaSpin10() {
             const spin10Btn = document.getElementById('gacha-spin10-btn');
             if (spin10Btn.disabled) return;
             if (!IS_DEV_MODE && gachaCoins < GACHA_COST_TEN) {
@@ -527,7 +527,7 @@
         // 🔴 10連のカプセルは、まず機体の小さな絵の上（1連と同じ場所）に1個ずつ出す。前のカプセルが残っていると
         // 次と重なって邪魔になるため、バウンドして着地した後、少し間を置いてフェードアウトしてから次に道を譲る。
         // 全部出し終わってから、初めて全画面の演出に切り替える。
-        function dropGachaCapsuleOneByOne(rarities, index) {
+        export function dropGachaCapsuleOneByOne(rarities, index) {
             if (index >= rarities.length) {
                 document.getElementById('gacha-reveal-fullscreen').style.display = 'flex';
                 showGacha10SummaryGrid(rarities);
@@ -566,7 +566,7 @@
         }
 
         // 🔴 10個出し終わったら、まとめて表示。画面をタップすると、1個ずつ自動で開いていく
-        function showGacha10SummaryGrid(rarities) {
+        export function showGacha10SummaryGrid(rarities) {
             document.getElementById('gacha-capsule-wrap-mini').getAnimations().forEach(a => a.cancel());
             document.getElementById('gacha-capsule-wrap-mini').style.display = 'none';
 
@@ -624,7 +624,7 @@
             document.getElementById('gacha-stage').addEventListener('click', openHandler); // 保険として、ステージ全体でも拾う
         }
 
-        function openGacha10CapsulesSequentially(capsuleSets, iconEls, rarities, index) {
+        export function openGacha10CapsulesSequentially(capsuleSets, iconEls, rarities, index) {
             if (index >= capsuleSets.length) {
                 finishGachaSpin10();
                 return;
@@ -677,7 +677,7 @@
         }
 
         // 🔴 全部開き終わったら、結果のUIをそのまま残さず、「もう10連／やめる」の選択だけ出す
-        function finishGachaSpin10() {
+        export function finishGachaSpin10() {
             saveGame();
             playAudioFile('audio/levelup.mp3');
             screenFlash('#ffd700', 0.25);
@@ -695,7 +695,7 @@
         }
 
         // 🔴 「もう10連」「やめる」どちらを押しても、結果表示はいったんすべて消してから次に進む
-        function closeGacha10ResultsAnd(spinAgain) {
+        export function closeGacha10ResultsAnd(spinAgain) {
             const panel = document.getElementById('gacha-multi-panel');
             panel.style.display = 'none';
             document.getElementById('gacha-multi-grid').innerHTML = '';
@@ -707,11 +707,11 @@
         }
 
         // 🎰 クランクの位置：通常URLとPWA(ホーム画面)で見え方が変わるため、別々の座標を持つ
-        const GACHA_CRANK_POS = { top: 62.402035, left: 40.200326, width: 19.031814 };
-        const GACHA_CRANK_POS_PWA = { top: 63.284389, left: 40.200326, width: 19.031814 };
+        export const GACHA_CRANK_POS = { top: 62.402035, left: 40.200326, width: 19.031814 };
+        export const GACHA_CRANK_POS_PWA = { top: 63.284389, left: 40.200326, width: 19.031814 };
         // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
-        const GACHA_CRANK_ADJUST_TOOL_ENABLED = false;
-        function applyGachaCrankPosition() {
+        export const GACHA_CRANK_ADJUST_TOOL_ENABLED = false;
+        export function applyGachaCrankPosition() {
             const crank = document.getElementById('gacha-crank');
             if (!crank) return;
             const pos = isRunningStandalone() ? GACHA_CRANK_POS_PWA : GACHA_CRANK_POS;
@@ -719,11 +719,11 @@
             crank.style.left = pos.left + '%';
             crank.style.width = pos.width + '%';
         }
-        function onGachaTabTap() {
+        export function onGachaTabTap() {
             switchShopTab('gacha');
         }
         // 🛋️ 家具の購入・プレビュー
-        function buyFurnitureItem(cat, itemId) {
+        export function buyFurnitureItem(cat, itemId) {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             if (!item) return;
             if (!IS_DEV_MODE && score < item.price) return;
@@ -735,7 +735,7 @@
             updateDisplay();
             renderShopList();
         }
-        function previewShopFurniture(cat, itemId) {
+        export function previewShopFurniture(cat, itemId) {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             if (!item) return;
             const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === equippedMyroom.wallpaper) || MYROOM_ITEMS.wallpaper[0];
@@ -763,7 +763,7 @@
             document.getElementById('furniture-preview-price').textContent = ownedCount > 0 ? `所持:${ownedCount}個 ／ 追加：${formatMochi(item.price)}もち` : `${formatMochi(item.price)}もち`;
             openModal('furniture-preview-modal');
         }
-        function closeFurniturePreview() {
+        export function closeFurniturePreview() {
             closeModal('furniture-preview-modal');
             // 🐛修正：closeModalがbodyのmodal-openクラスを消してしまうため、ショップがまだ開いたままなら付け直す
             const shopModal = document.getElementById('shop-modal');
@@ -773,9 +773,9 @@
         }
 
         // 🛠️ 開発者用：ガチャのクランク（回す部分）の位置調整ツール
-        let gachaCrankAdjustMode = false;
-        let gachaCrankAdjustDragState = null;
-        function toggleGachaCrankAdjustMode() {
+        export let gachaCrankAdjustMode = false;
+        export let gachaCrankAdjustDragState = null;
+        export function toggleGachaCrankAdjustMode() {
             gachaCrankAdjustMode = !gachaCrankAdjustMode;
             const btn = document.getElementById('gacha-adjust-toggle-btn');
             const target = document.getElementById('gacha-crank');
@@ -793,7 +793,7 @@
                 btn.style.background = '#e91e63';
             }
         }
-        function positionGachaCrankHandles() {
+        export function positionGachaCrankHandles() {
             if (!gachaCrankAdjustMode) return;
             const stage = document.getElementById('gacha-illustration-wrap');
             const target = document.getElementById('gacha-crank');
@@ -809,7 +809,7 @@
             hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
             hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
         }
-        function setupGachaCrankAdjustDrag() {
+        export function setupGachaCrankAdjustDrag() {
             const stage = document.getElementById('gacha-illustration-wrap');
             if (stage.dataset.dragSetup) return;
             stage.dataset.dragSetup = '1';
@@ -848,13 +848,13 @@
             stage.addEventListener('pointerup', () => { gachaCrankAdjustDragState = null; });
             stage.addEventListener('pointercancel', () => { gachaCrankAdjustDragState = null; });
         }
-        function updateGachaCrankReadout() {
+        export function updateGachaCrankReadout() {
             const target = document.getElementById('gacha-crank');
             const el = document.getElementById('gacha-adjust-readout');
             if (!target || !el) return;
             el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
         }
-        function copyGachaCrankCoords() {
+        export function copyGachaCrankCoords() {
             const target = document.getElementById('gacha-crank');
             const text = `クランク: top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
             const textarea = document.getElementById('gacha-adjust-copy-textarea');
@@ -864,7 +864,7 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
 
-        function renderShopList() {
+        export function renderShopList() {
             if (currentShopTab === 'omiyage') {
                 renderOmiyageShelf();
                 return;
@@ -985,14 +985,14 @@
             }
         }
 
-        const OMIYAGE_PAGE_SIZE = 9;
-        let omiyagePage = 0;
-        let omiyageSelectedIdx = null;
-        const OMIYAGE_IMG_NATURAL_RATIO = 851 / 1847; // 棚イラストの実寸比率（幅/高さ）
+        export const OMIYAGE_PAGE_SIZE = 9;
+        export let omiyagePage = 0;
+        export let omiyageSelectedIdx = null;
+        export const OMIYAGE_IMG_NATURAL_RATIO = 851 / 1847; // 棚イラストの実寸比率（幅/高さ）
 
         // #omiyage-image-frameを、コンテナ内で棚イラストが実際に表示される範囲(レターボックス考慮済み)に
         // ピッタリ合わせる。これにより、中の%指定（スロット位置・名札・詳細パネルなど）が常に画像基準で正確になる。
-        function syncOmiyageImageFrame() {
+        export function syncOmiyageImageFrame() {
             const container = document.getElementById('omiyage-shelf-container');
             const frame = document.getElementById('omiyage-image-frame');
             if (!container || !frame) return;
@@ -1026,7 +1026,7 @@
             frame.style.top = top + 'px';
         }
 
-        function renderOmiyageShelf(shake) {
+        export function renderOmiyageShelf(shake) {
             syncOmiyageImageFrame();
             const maxPage = Math.ceil(stages.length / OMIYAGE_PAGE_SIZE) - 1;
             if (omiyagePage > maxPage) omiyagePage = 0;
@@ -1082,7 +1082,7 @@
             document.getElementById('omiyage-page-indicator').innerText = `${omiyagePage + 1} / ${maxPage + 1} ページ`;
         }
 
-        function omiyagePageBy(dir) {
+        export function omiyagePageBy(dir) {
             const maxPage = Math.ceil(stages.length / OMIYAGE_PAGE_SIZE) - 1;
             omiyagePage = (omiyagePage + dir + maxPage + 1) % (maxPage + 1); // 最初で←→最後、最後で→→最初
             omiyageSelectedIdx = null;
@@ -1090,14 +1090,14 @@
             renderOmiyageShelf(true); // trueで、切り替え時の揺れ演出を出す
         }
 
-        function onOmiyageSlotTap(idx, el) {
+        export function onOmiyageSlotTap(idx, el) {
             playAudioFile('audio/tap.mp3');
             el.classList.remove('mochitto'); void el.offsetWidth; el.classList.add('mochitto'); // もちっと演出
             omiyageSelectedIdx = idx;
             showOmiyageDetail(idx);
         }
 
-        function showOmiyageDetail(idx) {
+        export function showOmiyageDetail(idx) {
             const stage = stages[idx];
             const currentLv = purchasedItems[idx] || 0;
             const nextPrice = getOmiyagePrice(stage, currentLv);
@@ -1130,23 +1130,23 @@
         }
 
         // 見た目だけ隠す（選択状態は保持しない呼び出し元でクリアする）
-        function closeOmiyageDetailUI() {
+        export function closeOmiyageDetailUI() {
             document.getElementById('omiyage-detail-panel').classList.remove('show');
         }
 
         // 🍡 お土産一覧（倉庫）：持っているおみやげを並べて、タップで「もちすけにあげる」を選べる
-        function closeOmiyageDetail() {
+        export function closeOmiyageDetail() {
             omiyageSelectedIdx = null;
             closeOmiyageDetailUI();
         }
 
-        function buyOmiyageFromShelf(idx, price) {
+        export function buyOmiyageFromShelf(idx, price) {
             if (score < price) return;
             buyOmiyage(idx); // 既存の購入ロジックを流用（効果音・セリフ・セーブ・再描画まで全部やってくれる）
             flashOmiyageMoneySpent(price);
         }
 
-        function flashOmiyageMoneySpent(price) {
+        export function flashOmiyageMoneySpent(price) {
             const el = document.getElementById('omiyage-money-flash');
             const valueEl = document.getElementById('omiyage-money-value');
             const container = document.getElementById('omiyage-shelf-container'); // #omiyage-money-displayと同じ絶対配置の基準
@@ -1162,7 +1162,7 @@
             setTimeout(() => el.classList.remove('show'), 1600);
         }
 
-        function buyOmiyage(idx) {
+        export function buyOmiyage(idx) {
             const stage = stages[idx]; const currentLv = purchasedItems[idx] || 0;
             const nextPrice = getOmiyagePrice(stage, currentLv);
             if (score >= nextPrice) {
@@ -1174,7 +1174,7 @@
             }
         }
 
-        function buyKisekae(id) {
+        export function buyKisekae(id) {
             const target = clothesData.find(c => c.id === id);
             if (score >= target.price && !purchasedClothes[id]) {
                 score -= target.price; purchasedClothes[id] = true;
@@ -1184,10 +1184,103 @@
         }
 
         // 🗺️ 地図の拡大縮小・ドラッグ操作の状態
-        function updateShopTabHighlight() {
+        export function updateShopTabHighlight() {
             const skillTab = document.getElementById('shop-tab-skills');
             if (skillTab) skillTab.classList.toggle('shop-recommend-glow', hasNewlyPurchasableSkill());
             const omiyageTab = document.getElementById('shop-tab-omiyage');
             if (omiyageTab) omiyageTab.classList.toggle('shop-recommend-glow', hasNewlyPurchasableOmiyage());
         }
 
+
+
+        // ===================================================================
+        // 🌉 一時的な橋渡し（migration bridge）
+        // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
+        // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
+        // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
+        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
+        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
+        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        // ===================================================================
+        window.getOmiyagePriceMultiplier = getOmiyagePriceMultiplier;
+        window.getOmiyagePriceCurveBase = getOmiyagePriceCurveBase;
+        window.getOmiyagePrice = getOmiyagePrice;
+        window.purchasedItems = purchasedItems;
+        window.purchasedClothes = purchasedClothes;
+        window.equippedClotheId = equippedClotheId;
+        window.currentShopTab = currentShopTab;
+        window.equipClothe = equipClothe;
+        window.openShop = openShop;
+        window.closeShop = closeShop;
+        window.getItemThumbHtml = getItemThumbHtml;
+        window.switchShopTab = switchShopTab;
+        window.currentGachaRarity = currentGachaRarity;
+        window.pickGachaRarity = pickGachaRarity;
+        window.playGachaCrankSequence = playGachaCrankSequence;
+        window.setGachaButtonsDisabled = setGachaButtonsDisabled;
+        window.ticketInventory = ticketInventory;
+        window.sprayInventory = sprayInventory;
+        window.activeSprayId = activeSprayId;
+        window.sprayBuffActiveUntil = sprayBuffActiveUntil;
+        window.favoriteFriendIds = favoriteFriendIds;
+        window.blockedUserIds = blockedUserIds;
+        window.grantRandomNormalConsumable = grantRandomNormalConsumable;
+        window.useTicket = useTicket;
+        window.updateGachaCoinDisplay = updateGachaCoinDisplay;
+        window.toggleGachaRatesOverlay = toggleGachaRatesOverlay;
+        window.GACHA_RATE_TAB_LABELS = GACHA_RATE_TAB_LABELS;
+        window.currentGachaRateTab = currentGachaRateTab;
+        window.renderGachaRateTabs = renderGachaRateTabs;
+        window.switchGachaRateTab = switchGachaRateTab;
+        window.GACHA_COST_SINGLE = GACHA_COST_SINGLE;
+        window.GACHA_COST_TEN = GACHA_COST_TEN;
+        window.pendingGachaResult = pendingGachaResult;
+        window.startGachaSpin = startGachaSpin;
+        window.dropGachaCapsule = dropGachaCapsule;
+        window.enableGachaCapsuleTapToOpen = enableGachaCapsuleTapToOpen;
+        window.openGachaCapsule = openGachaCapsule;
+        window.getKisekaeItemsByStar = getKisekaeItemsByStar;
+        window.DUPLICATE_REFUND_BY_STAR = DUPLICATE_REFUND_BY_STAR;
+        window.grantGachaNormalRareOrRareReward = grantGachaNormalRareOrRareReward;
+        window.grantGachaKisekaeItem = grantGachaKisekaeItem;
+        window.grantGachaPrizeForRarity = grantGachaPrizeForRarity;
+        window.revealGachaPrize = revealGachaPrize;
+        window.pendingGachaResults10 = pendingGachaResults10;
+        window.startGachaSpin10 = startGachaSpin10;
+        window.dropGachaCapsuleOneByOne = dropGachaCapsuleOneByOne;
+        window.showGacha10SummaryGrid = showGacha10SummaryGrid;
+        window.openGacha10CapsulesSequentially = openGacha10CapsulesSequentially;
+        window.finishGachaSpin10 = finishGachaSpin10;
+        window.closeGacha10ResultsAnd = closeGacha10ResultsAnd;
+        window.GACHA_CRANK_POS = GACHA_CRANK_POS;
+        window.GACHA_CRANK_POS_PWA = GACHA_CRANK_POS_PWA;
+        window.GACHA_CRANK_ADJUST_TOOL_ENABLED = GACHA_CRANK_ADJUST_TOOL_ENABLED;
+        window.applyGachaCrankPosition = applyGachaCrankPosition;
+        window.onGachaTabTap = onGachaTabTap;
+        window.buyFurnitureItem = buyFurnitureItem;
+        window.previewShopFurniture = previewShopFurniture;
+        window.closeFurniturePreview = closeFurniturePreview;
+        window.gachaCrankAdjustMode = gachaCrankAdjustMode;
+        window.gachaCrankAdjustDragState = gachaCrankAdjustDragState;
+        window.toggleGachaCrankAdjustMode = toggleGachaCrankAdjustMode;
+        window.positionGachaCrankHandles = positionGachaCrankHandles;
+        window.setupGachaCrankAdjustDrag = setupGachaCrankAdjustDrag;
+        window.updateGachaCrankReadout = updateGachaCrankReadout;
+        window.copyGachaCrankCoords = copyGachaCrankCoords;
+        window.renderShopList = renderShopList;
+        window.OMIYAGE_PAGE_SIZE = OMIYAGE_PAGE_SIZE;
+        window.omiyagePage = omiyagePage;
+        window.omiyageSelectedIdx = omiyageSelectedIdx;
+        window.OMIYAGE_IMG_NATURAL_RATIO = OMIYAGE_IMG_NATURAL_RATIO;
+        window.syncOmiyageImageFrame = syncOmiyageImageFrame;
+        window.renderOmiyageShelf = renderOmiyageShelf;
+        window.omiyagePageBy = omiyagePageBy;
+        window.onOmiyageSlotTap = onOmiyageSlotTap;
+        window.showOmiyageDetail = showOmiyageDetail;
+        window.closeOmiyageDetailUI = closeOmiyageDetailUI;
+        window.closeOmiyageDetail = closeOmiyageDetail;
+        window.buyOmiyageFromShelf = buyOmiyageFromShelf;
+        window.flashOmiyageMoneySpent = flashOmiyageMoneySpent;
+        window.buyOmiyage = buyOmiyage;
+        window.buyKisekae = buyKisekae;
+        window.updateShopTabHighlight = updateShopTabHighlight;

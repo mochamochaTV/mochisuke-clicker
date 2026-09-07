@@ -1,6 +1,6 @@
-        function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
+        export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
 
-        const minigames = {
+        export const minigames = {
             quiz:          { id: "quiz",          name: "ご当地クイズ",         icon: "🗾", unlockStage: 0 },
             timeattack:    { id: "timeattack",    name: "タップタイムアタック", icon: "⏱️", unlockStage: 0 },
             concentration: { id: "concentration", name: "ご当地神経衰弱",       icon: "🃏", unlockStage: 0 },
@@ -9,7 +9,7 @@
         };
         // 🎰 スロットの絵柄と配当（3つ揃った時の倍率）。同じ絵柄の並び順で、揃いにくいほど高配当にしてある
         // 🎰 絵柄一覧（価値が低い順）。weightが大きいほど出やすい（＝価値が高いほどレア）
-        const SLOT_SYMBOLS = [
+        export const SLOT_SYMBOLS = [
             { id: 'cherry',      icon: '🍒', img: 'ui_images/slot/symbol_cherry.webp',      label: 'チェリー',   payout: 2,   weight: 44 },
             { id: 'carrot',      icon: '🥕', img: 'ui_images/slot/symbol_carrot.webp',      label: '人参',      payout: 3,   weight: 36 },
             { id: 'bell',        icon: '🔔', img: 'ui_images/slot/symbol_bell.webp',        label: 'ベル',      payout: 4,   weight: 30 },
@@ -23,32 +23,32 @@
             { id: 'marmot',      icon: '🐹', img: 'ui_images/slot/symbol_marmot.webp',      label: 'マーモット', payout: 150, weight: 0.15, isJackpot: true },
         ];
         // リプレイ：揃うとコインを消費せず、もう一度レバーを引ける（配当表には含めない特殊絵柄）
-        const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'ui_images/slot/symbol_replay.webp', label: 'リプレイ', weight: 20 };
-        const SLOT_ALL_SYMBOLS = [...SLOT_SYMBOLS, SLOT_REPLAY_SYMBOL]; // リールの帯を作る時に使う、全絵柄（リプレイ含む）
-        const SLOT_COIN_COST = 1;        // コインを1回投入するのに必要なミニゲームコイン
-        const SLOT_PLAYS_PER_COIN = 5;   // コイン1枚で、レバーを何回引けるか
-        let slotPlaysRemaining = 0;      // 今、あと何回レバーを引けるか
-        let minigameLastResetDate = null;
-        let minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0, slot: 0 };
-        let minigameSeenUnlocked = { quiz: false, timeattack: false, concentration: false, mochitsuki: false, slot: false }; // 「新しく解放された」ハイライトを、一度見たら消すためのフラグ
-        let minigameBests = { timeattack: 0, concentration: null }; // concentration=最少手数(小さいほど良い)
+        export const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'ui_images/slot/symbol_replay.webp', label: 'リプレイ', weight: 20 };
+        export const SLOT_ALL_SYMBOLS = [...SLOT_SYMBOLS, SLOT_REPLAY_SYMBOL]; // リールの帯を作る時に使う、全絵柄（リプレイ含む）
+        export const SLOT_COIN_COST = 1;        // コインを1回投入するのに必要なミニゲームコイン
+        export const SLOT_PLAYS_PER_COIN = 5;   // コイン1枚で、レバーを何回引けるか
+        export let slotPlaysRemaining = 0;      // 今、あと何回レバーを引けるか
+        export let minigameLastResetDate = null;
+        export let minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0, slot: 0 };
+        export let minigameSeenUnlocked = { quiz: false, timeattack: false, concentration: false, mochitsuki: false, slot: false }; // 「新しく解放された」ハイライトを、一度見たら消すためのフラグ
+        export let minigameBests = { timeattack: 0, concentration: null }; // concentration=最少手数(小さいほど良い)
 
         // ===================================================================
         // 🏅 県内ランキング＆トロフィーシステム
         // ===================================================================
         // prefTaps[i]: その県に滞在中(selectedStageIndex===i)にタップした累計回数。
         // 過去に訪れた県に戻ってタップしても加算され続ける（進行用のcurrentStageProgressとは別管理）。
-        let isMinigameActive = false; // 立っている間はメインのタップ判定を無視する
-        function getMinigameBaseReward() {
+        export let isMinigameActive = false; // 立っている間はメインのタップ判定を無視する
+        export function getMinigameBaseReward() {
             const currentStage = stages[currentStageIndex] || stages[0];
             return Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
         }
 
-        function hasNewlyUnlockedMinigame() {
+        export function hasNewlyUnlockedMinigame() {
             return Object.values(minigames).some(g => currentStageIndex >= g.unlockStage && !minigameSeenUnlocked[g.id]);
         }
         // 未獲得(lv===0)で、解放済み(ステージ条件クリア)かつ購入できるスキルがあるか判定（レベルアップは対象外）
-        function resetMinigameCountsIfNewDay() {
+        export function resetMinigameCountsIfNewDay() {
             const today = getLocalDateString(new Date());
             if (minigameLastResetDate !== today) {
                 minigameLastResetDate = today;
@@ -57,7 +57,7 @@
             }
         }
 
-        function openMinigameCenter() {
+        export function openMinigameCenter() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3'); // 県移動の時と同じ、移動音
             overlay.classList.add('fade-black');
@@ -72,7 +72,7 @@
             }, 300);
         }
 
-        function closeMinigameCenter() {
+        export function closeMinigameCenter() {
             if (isMinigameActive) {
                 endMinigameToTiles(); // プレイ中は、まず1つ前のミニゲーム選択画面に戻すだけ
                 return;
@@ -90,7 +90,7 @@
         }
 
         // タイムアタック/もちつきのタイマーやアニメーションを、離脱時に必ず止めるための後始末
-        function cleanupActiveMinigameTimers() {
+        export function cleanupActiveMinigameTimers() {
             if (typeof timeAttackState !== 'undefined' && timeAttackState && timeAttackState.timerId) {
                 clearInterval(timeAttackState.timerId); timeAttackState = null;
             }
@@ -102,7 +102,7 @@
             stopSlotSpinLoopSound();
         }
 
-        function renderMinigameTiles() {
+        export function renderMinigameTiles() {
             const container = document.getElementById('minigame-tile-view');
             // 調整パネル・ハンドルは残しつつ、筐体イラストだけ作り直す（毎回呼ばれるため、既存の筐体要素は先に消す）
             container.querySelectorAll('.arcade-cabinet-wrap').forEach(el => el.remove());
@@ -147,7 +147,7 @@
             });
         }
 
-        function startMinigame(id) {
+        export function startMinigame(id) {
             const g = minigames[id];
             if (!g.isCoinGame && (minigamePlaysUsedToday[id] || 0) >= getMinigameDailyLimit()) return;
             if (!minigameSeenUnlocked[id]) { minigameSeenUnlocked[id] = true; saveGame(); }
@@ -163,7 +163,7 @@
             else if (id === 'slot') startSlotGame(playView);
         }
 
-        function endMinigameToTiles() {
+        export function endMinigameToTiles() {
             cleanupActiveMinigameTimers();
             isMinigameActive = false;
             document.getElementById('minigame-play-view').style.display = 'none';
@@ -171,18 +171,18 @@
             renderMinigameTiles();
         }
 
-        function consumeMinigamePlay(id) {
+        export function consumeMinigamePlay(id) {
             minigamePlaysUsedToday[id] = (minigamePlaysUsedToday[id] || 0) + 1;
             saveGame();
         }
 
         // 🎮 ミニゲームコイン：もちとは別に、ミニゲーム専用の景品交換に使う予定の通貨（ガチャコインと同じく価値が目減りしない）
-        let minigameCoins = 0;
-        function getMinigameCoinGain(multiplier) {
+        export let minigameCoins = 0;
+        export function getMinigameCoinGain(multiplier) {
             return Math.max(1, Math.round(multiplier * 5 * getMinigameRewardMultiplier())); // 出来が良いほど多くもらえるが、最低1枚は必ずもらえる。転生ショップの「ミニゲーム報酬」強化もここに乗る
         }
 
-        function grantMinigameReward(multiplier) {
+        export function grantMinigameReward(multiplier) {
             const coinGain = getMinigameCoinGain(multiplier);
             minigameCoins += coinGain;
             trackMissionEvent('minigamesPlayedTotal', 1); trackMissionEvent('minigamesToday', 1); trackMissionEvent('minigamesThisWeek', 1);
@@ -190,7 +190,7 @@
             return { coins: coinGain };
         }
 
-        function showMinigameResult(title, detail, reward) {
+        export function showMinigameResult(title, detail, reward) {
             isMinigameActive = false; // 結果画面ではメイン画面のタップ判定を戻してもよい
             playAudioFile('audio/levelup.mp3');
             const container = document.getElementById('minigame-play-view');
@@ -207,9 +207,9 @@
         // -------------------------------------------------------------
         // 🗾 ① ご当地クイズ
         // -------------------------------------------------------------
-        const QUIZ_REWARD_BY_CORRECT = { 3: 1.0, 2: 0.6, 1: 0.3, 0: 0.1 }; // 正解数ごとの倍率（調整用）
+        export const QUIZ_REWARD_BY_CORRECT = { 3: 1.0, 2: 0.6, 1: 0.3, 0: 0.1 }; // 正解数ごとの倍率（調整用）
 
-        function startQuizGame(container) {
+        export function startQuizGame(container) {
             if (currentStageIndex + 1 < 2) {
                 container.innerHTML = `<div style="text-align:center; padding:20px;">
                     <p style="margin-bottom:14px;">もう少し旅を進めてから挑戦してね！</p>
@@ -223,7 +223,7 @@
             renderQuizQuestion(container, quizState);
         }
 
-        function generateQuizQuestion() {
+        export function generateQuizQuestion() {
             const pool = [];
             for (let i = 0; i <= currentStageIndex; i++) pool.push(stages[i]);
             const correctStage = pickRandom(pool);
@@ -235,7 +235,7 @@
             return { correctStage, isNameToItem, choices };
         }
 
-        function renderQuizQuestion(container, quizState) {
+        export function renderQuizQuestion(container, quizState) {
             const q = quizState.questions[quizState.qIndex];
             const questionText = q.isNameToItem ? `${q.correctStage.name}の名産品は？` : `「${q.correctStage.item}」はどこの県の名産品？`;
             // 「名産品→県名を当てる」問題の時だけ、その名産品のイラストを見せる（答えの県名は分からないので成立する）
@@ -268,7 +268,7 @@
                 </div>`;
         }
 
-        function answerQuizQuestion(isCorrect, choiceIdx) {
+        export function answerQuizQuestion(isCorrect, choiceIdx) {
             const quizState = window.__quizState;
             if (!quizState) return;
             document.querySelectorAll('.quiz-choice-btn').forEach(b => b.onclick = null); // 連打防止
@@ -313,13 +313,13 @@
         // -------------------------------------------------------------
         // ⏱️ ② タップタイムアタック
         // -------------------------------------------------------------
-        const TIME_ATTACK_DURATION_SEC = 15;
-        const TIME_ATTACK_THRESHOLDS = [ // [必要タップ数, 倍率]（多い順に判定）
+        export const TIME_ATTACK_DURATION_SEC = 15;
+        export const TIME_ATTACK_THRESHOLDS = [ // [必要タップ数, 倍率]（多い順に判定）
             [60, 1.3], [40, 1.0], [20, 0.6], [0, 0.3]
         ];
-        let timeAttackState = null;
+        export let timeAttackState = null;
 
-        function startTimeAttackGame(container) {
+        export function startTimeAttackGame(container) {
             container.innerHTML = `
                 <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:14px; background:radial-gradient(circle at 50% 15%, #e3f6f3, #fbfffe); border-radius:20px;">
                     <div style="font-size:3.5rem; margin-bottom:14px;">⏱️</div>
@@ -329,7 +329,7 @@
                 </div>`;
         }
 
-        function beginTimeAttack() {
+        export function beginTimeAttack() {
             const container = document.getElementById('minigame-play-view');
             timeAttackState = { taps: 0, timeLeft: TIME_ATTACK_DURATION_SEC, timerId: null };
             container.innerHTML = `
@@ -377,7 +377,7 @@
             }, 1000);
         }
 
-        function onTimeAttackTap(e) {
+        export function onTimeAttackTap(e) {
             e.preventDefault();
             if (!timeAttackState) return;
             timeAttackState.taps++;
@@ -414,7 +414,7 @@
             if (timeAttackState.taps % 20 === 0) { vibrate(20); screenFlash('#26a69a', 0.12); }
         }
 
-        function finishTimeAttack() {
+        export function finishTimeAttack() {
             consumeMinigamePlay('timeattack');
             const taps = timeAttackState ? timeAttackState.taps : 0;
             timeAttackState = null;
@@ -429,12 +429,12 @@
         // -------------------------------------------------------------
         // 🃏 ③ ご当地神経衰弱
         // -------------------------------------------------------------
-        const CONCENTRATION_THRESHOLDS = [ // [手数の上限, 倍率]（少ない順に判定）
+        export const CONCENTRATION_THRESHOLDS = [ // [手数の上限, 倍率]（少ない順に判定）
             [14, 1.4], [18, 1.0], [24, 0.6], [Infinity, 0.3]
         ];
-        let concentrationState = null;
+        export let concentrationState = null;
 
-        function startConcentrationGame(container) {
+        export function startConcentrationGame(container) {
             const candidates = [];
             for (let i = 0; i <= currentStageIndex; i++) { if (stages[i].itemImg) candidates.push(stages[i]); }
             if (candidates.length < 6) {
@@ -457,7 +457,7 @@
         }
 
         // カードのDOMを最初の1回だけ組み立てる（毎回作り直すとCSSのtransitionが再生されないため）
-        function buildConcentrationBoard() {
+        export function buildConcentrationBoard() {
             const container = document.getElementById('minigame-play-view');
             const st = concentrationState;
             const cardsHtml = st.cards.map((c, i) => `
@@ -481,7 +481,7 @@
         }
 
         // 個別カードの見た目だけを更新する（既存のDOM要素のクラスを切り替えるだけなので、3D回転アニメーションが正しく再生される）
-        function updateConcentrationCardVisual(i) {
+        export function updateConcentrationCardVisual(i) {
             const st = concentrationState;
             const inner = document.getElementById(`concent-inner-${i}`);
             if (!inner) return;
@@ -490,7 +490,7 @@
             inner.classList.toggle('matched', st.cards[i].matched);
         }
 
-        function flipConcentrationCard(i) {
+        export function flipConcentrationCard(i) {
             const st = concentrationState;
             if (!st || st.locked) return;
             if (st.flippedIndices.includes(i) || st.cards[i].matched) return;
@@ -531,7 +531,7 @@
             }
         }
 
-        function finishConcentration() {
+        export function finishConcentration() {
             consumeMinigamePlay('concentration');
             const moves = concentrationState.moves;
             const found = CONCENTRATION_THRESHOLDS.find(([max]) => moves <= max);
@@ -553,24 +553,24 @@
         // -------------------------------------------------------------
         // 🍡 ④ もちつきリズム
         // -------------------------------------------------------------
-        const MOCHITSUKI_BEATS = 12;
-        const MOCHITSUKI_INITIAL_PERIOD_MS = 950; // 最初の速さ（半周期）※以前の1100msより少し速いスタートに
-        const MOCHITSUKI_MIN_PERIOD_MS = 340;       // どれだけ速くなっても、これ以上は速くならない下限（以前より速い上限速度）
-        const MOCHITSUKI_SPEEDUP_RATE = 0.90;       // タップ毎に前回の何倍の速さになるか（小さいほど加速が急。以前より加速アップ）
+        export const MOCHITSUKI_BEATS = 12;
+        export const MOCHITSUKI_INITIAL_PERIOD_MS = 950; // 最初の速さ（半周期）※以前の1100msより少し速いスタートに
+        export const MOCHITSUKI_MIN_PERIOD_MS = 340;       // どれだけ速くなっても、これ以上は速くならない下限（以前より速い上限速度）
+        export const MOCHITSUKI_SPEEDUP_RATE = 0.90;       // タップ毎に前回の何倍の速さになるか（小さいほど加速が急。以前より加速アップ）
         // 判定ランク定義（中央からの誤差%が小さい順、左右対称）。ここを調整するだけで難易度・演出のバランスを変えられます。
         // range: この誤差(%)以内ならこのランク／color: 判定文字＆パーティクル色／particles: 弾けるパーティクル数／weight: 得点への重み
-        const MOCHITSUKI_RANKS = [
+        export const MOCHITSUKI_RANKS = [
             { name: 'PERFECT', range: 3,  color: '#ffd700', particles: 10, weight: 1.6, gold: true  },
             { name: 'GREAT',   range: 7,  color: '#ff5722', particles: 7,  weight: 1.2, gold: false },
             { name: 'GOOD',    range: 12, color: '#4caf50', particles: 4,  weight: 0.8, gold: false },
             { name: 'OK',      range: 19, color: '#2196f3', particles: 2,  weight: 0.4, gold: false },
             { name: 'MISS',    range: Infinity, color: '#999', particles: 0, weight: 0.1, gold: false }
         ];
-        const MOCHITSUKI_REWARD_CAP = 1.6;
-        let mochitsukiState = null;
+        export const MOCHITSUKI_REWARD_CAP = 1.6;
+        export let mochitsukiState = null;
 
         // MOCHITSUKI_RANKSから帯を自動生成するので、判定ロジックと見た目のズレ（対称性の崩れ）が原理的に起きない
-        function buildMochitsukiBandsHtml() {
+        export function buildMochitsukiBandsHtml() {
             const finite = MOCHITSUKI_RANKS.filter(r => isFinite(r.range)).slice().sort((a, b) => b.range - a.range);
             return finite.map(r => {
                 const width = r.range * 2;
@@ -580,13 +580,13 @@
             }).join('');
         }
 
-        function hexToRgba(hex, alpha) {
+        export function hexToRgba(hex, alpha) {
             const h = hex.replace('#', '');
             const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
-        function startMochitsukiGame(container) {
+        export function startMochitsukiGame(container) {
             mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null, periodMs: MOCHITSUKI_INITIAL_PERIOD_MS, streak: 0, bestStreak: 0 };
             MOCHITSUKI_RANKS.forEach(r => mochitsukiState.counts[r.name] = 0);
             container.innerHTML = `
@@ -610,12 +610,12 @@
             animateMochitsukiIndicator();
         }
 
-        function getMochitsukiIndicatorPercent(elapsedMs, periodMs) {
+        export function getMochitsukiIndicatorPercent(elapsedMs, periodMs) {
             const t = elapsedMs % (periodMs * 2);
             return t < periodMs ? (t / periodMs) * 100 : 100 - ((t - periodMs) / periodMs) * 100;
         }
 
-        function animateMochitsukiIndicator() {
+        export function animateMochitsukiIndicator() {
             if (!mochitsukiState) return;
             const el = document.getElementById('mochi-indicator');
             const track = el ? el.parentElement : null;
@@ -628,7 +628,7 @@
             mochitsukiState.animId = requestAnimationFrame(animateMochitsukiIndicator);
         }
 
-        function onMochitsukiTap(e) {
+        export function onMochitsukiTap(e) {
             e.preventDefault();
             if (!mochitsukiState) return;
             const elapsed = performance.now() - mochitsukiState.startTime;
@@ -706,7 +706,7 @@
             }
         }
 
-        function finishMochitsuki() {
+        export function finishMochitsuki() {
             consumeMinigamePlay('mochitsuki');
             const st = mochitsukiState;
             const weightedSum = MOCHITSUKI_RANKS.reduce((sum, r) => sum + st.counts[r.name] * r.weight, 0);
@@ -722,13 +722,13 @@
         // 🎰 スロット（コインを賭けて遊ぶ、1日の回数制限が無いゲーム）
         // レバーを引く→3つのリールが回る→3つのボタンで1つずつ自分で止める、という本格仕様
         // ===================================================================
-        const SLOT_SYMBOL_HEIGHT = 44; // 1コマぶんの高さ(px)。窓に縦3コマ表示するので、窓の高さ(約130px)÷3に合わせてある
-        const SLOT_STRIP_REPEATS = 8;  // 全絵柄を、この回数ぶん繰り返して1本の帯を作る（長く回っているように見せるため）
-        let slotIsSpinning = false;      // レバーを引いてから、3つとも止まり終えるまでtrue
-        let slotSpinLoopSource = null;   // 回転中ループ音の再生ノード（stopで確実に止められるよう保持）
+        export const SLOT_SYMBOL_HEIGHT = 44; // 1コマぶんの高さ(px)。窓に縦3コマ表示するので、窓の高さ(約130px)÷3に合わせてある
+        export const SLOT_STRIP_REPEATS = 8;  // 全絵柄を、この回数ぶん繰り返して1本の帯を作る（長く回っているように見せるため）
+        export let slotIsSpinning = false;      // レバーを引いてから、3つとも止まり終えるまでtrue
+        export let slotSpinLoopSource = null;   // 回転中ループ音の再生ノード（stopで確実に止められるよう保持）
 
         // 🔊 リールが回っている間、ループするSE。BGMとは別のチャンネルで鳴らすので、BGMを止めずに重ねられる
-        function playSlotSpinLoopSound() {
+        export function playSlotSpinLoopSound() {
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
             loadAudioBuffer('audio/slot/spin_loop.mp3').then((buffer) => {
@@ -743,33 +743,33 @@
                 slotSpinLoopSource = source;
             });
         }
-        function stopSlotSpinLoopSound() {
+        export function stopSlotSpinLoopSound() {
             if (slotSpinLoopSource) { try { slotSpinLoopSource.stop(); } catch (e) {} slotSpinLoopSource = null; }
         }
 
-        let slotStoppedCount = 0;
-        let slotReelResults = [null, null, null];   // この回で、各リールが最終的にどの絵柄で止まるか（レバーを引いた瞬間に内部で先に決める）
-        let slotReelAnimations = [null, null, null]; // 各リールの「回り続ける」アニメーションを、止める時にcancelできるよう保持
-        let slotReelLandingRow = [null, null, null]; // 各リールが最終的に止まった時の、帯の中の行番号（揃った絵柄を光らせる時に使う）
-        let slotStoppedReels = [];       // 今の回で、すでに止めたリールの番号（リーチ判定に使う）
-        let slotBonusZoneSpinsLeft = 0;  // 特化ゾーン：残りこの回数ぶん、当たりやすい状態が続く
-        let slotTotalPulls = 0;          // 総回転数（レバーを引いた回数、全期間）
-        let slotPullsSinceJackpot = 0;   // 前回マーモットが出てから、何回転しているか
-        let slotJackpotCount = 0;        // マーモットが出た回数
-        let slotShortestJackpotPulls = null; // マーモットが出るまでの回転数、最短記録
-        let slotLongestJackpotPulls = null;  // マーモットが出るまでの回転数、最長記録
-        const SLOT_BONUS_ZONE_SPINS = 10; // マーモット後、特化ゾーンが続くレバー回数
+        export let slotStoppedCount = 0;
+        export let slotReelResults = [null, null, null];   // この回で、各リールが最終的にどの絵柄で止まるか（レバーを引いた瞬間に内部で先に決める）
+        export let slotReelAnimations = [null, null, null]; // 各リールの「回り続ける」アニメーションを、止める時にcancelできるよう保持
+        export let slotReelLandingRow = [null, null, null]; // 各リールが最終的に止まった時の、帯の中の行番号（揃った絵柄を光らせる時に使う）
+        export let slotStoppedReels = [];       // 今の回で、すでに止めたリールの番号（リーチ判定に使う）
+        export let slotBonusZoneSpinsLeft = 0;  // 特化ゾーン：残りこの回数ぶん、当たりやすい状態が続く
+        export let slotTotalPulls = 0;          // 総回転数（レバーを引いた回数、全期間）
+        export let slotPullsSinceJackpot = 0;   // 前回マーモットが出てから、何回転しているか
+        export let slotJackpotCount = 0;        // マーモットが出た回数
+        export let slotShortestJackpotPulls = null; // マーモットが出るまでの回転数、最短記録
+        export let slotLongestJackpotPulls = null;  // マーモットが出るまでの回転数、最長記録
+        export const SLOT_BONUS_ZONE_SPINS = 10; // マーモット後、特化ゾーンが続くレバー回数
         // 特化ゾーン中は、この重みで抽選する（BAR以上の高価値な絵柄が出やすくなる）
-        const SLOT_BONUS_ZONE_SYMBOLS = SLOT_SYMBOLS.map(s => ({
+        export const SLOT_BONUS_ZONE_SYMBOLS = SLOT_SYMBOLS.map(s => ({
             ...s, weight: (s.payout >= 10) ? s.weight * 6 : s.weight * 0.4,
         })).concat([{ ...SLOT_REPLAY_SYMBOL, weight: SLOT_REPLAY_SYMBOL.weight * 2 }]); // リプレイも少し出やすくして、ゾーンが長続きしやすくする
-        let slotNextSpinFree = false; // リプレイが揃った直後は、次の1回はコイン消費なし
+        export let slotNextSpinFree = false; // リプレイが揃った直後は、次の1回はコイン消費なし
 
         // 🛠️ スロットの各パーツ位置・大きさを、実際のイラストに合わせて調整するための開発者用ツール
-        let slotAdjustMode = false;
-        let slotAdjustDragState = null;
+        export let slotAdjustMode = false;
+        export let slotAdjustDragState = null;
         // 調整中だけ、普段は透明・非表示のパーツ（コイン投入口・払出口・投入コイン）を見える状態にする
-        function setSlotPartAdjustVisibility(show) {
+        export function setSlotPartAdjustVisibility(show) {
             const coinInsertImg = document.getElementById('slot-coin-insert-img');
             if (coinInsertImg) {
                 if (show) { coinInsertImg.style.display = 'block'; coinInsertImg.style.opacity = '0.7'; }
@@ -784,7 +784,7 @@
         }
         // 選ばれたパーツを一時的に最前面に出し、他のパーツと重なっていてもドラッグで確実につかめるようにする。
         // 普段はpointer-events:noneのパーツ（レバー取り付け部品・投入コインなど）も、調整中だけ掴めるようにする
-        function bringSlotTargetToFront(targetId) {
+        export function bringSlotTargetToFront(targetId) {
             SLOT_ADJUSTABLE_PARTS.forEach(p => {
                 const el = document.getElementById(p.id);
                 if (!el) return;
@@ -802,7 +802,7 @@
             });
         }
         // ハンドル（縁・角の丸）と回転軸マーカーを、今選ばれているパーツの実際の位置に合わせて配置し直す
-        function positionSlotHandles() {
+        export function positionSlotHandles() {
             if (!slotAdjustMode) return;
             const stage = document.getElementById('slot-machine-stage');
             const partId = document.getElementById('slot-adjust-target').value;
@@ -839,7 +839,7 @@
                 pivotMarker.style.display = 'none';
             }
         }
-        function toggleSlotAdjustMode() {
+        export function toggleSlotAdjustMode() {
             slotAdjustMode = !slotAdjustMode;
             const btn = document.getElementById('slot-adjust-toggle-btn');
             setSlotPartAdjustVisibility(slotAdjustMode);
@@ -869,7 +869,7 @@
             }
         }
         // 対象を切り替えた時、前の対象の枠線を消して、新しい対象にだけ付け直す
-        function onSlotAdjustTargetChange() {
+        export function onSlotAdjustTargetChange() {
             SLOT_ADJUSTABLE_PARTS.forEach(p => {
                 const el = document.getElementById(p.id);
                 if (el) { el.style.outline = ''; el.style.zIndex = ''; }
@@ -883,7 +883,7 @@
             }
             updateSlotAdjustReadout();
         }
-        function setupSlotAdjustDrag() {
+        export function setupSlotAdjustDrag() {
             const stage = document.getElementById('slot-machine-stage');
             if (stage.dataset.dragSetup) return;
             stage.dataset.dragSetup = '1';
@@ -946,7 +946,7 @@
             stage.addEventListener('pointerup', () => { slotAdjustDragState = null; });
             stage.addEventListener('pointercancel', () => { slotAdjustDragState = null; });
         }
-        function adjustSlotLeverRotation(delta) {
+        export function adjustSlotLeverRotation(delta) {
             const lever = document.getElementById('slot-lever');
             const cur = parseFloat(lever.dataset.rotation || '0');
             const next = cur + delta;
@@ -956,7 +956,7 @@
         }
         // 高さを、そのパーツの実際の描画結果(getBoundingClientRect)から%で計算する。
         // style.heightが「auto」のままの場合でも、必ず具体的な数値を返す
-        function getSlotPartHeightPct(el) {
+        export function getSlotPartHeightPct(el) {
             const stage = document.getElementById('slot-machine-stage');
             const stageRect = stage.getBoundingClientRect();
             const elRect = el.getBoundingClientRect();
@@ -966,7 +966,7 @@
             }
             return (elRect.height / stageRect.height * 100).toFixed(4) + '%';
         }
-        function updateSlotAdjustReadout() {
+        export function updateSlotAdjustReadout() {
             const partId = document.getElementById('slot-adjust-target').value;
             const part = SLOT_ADJUSTABLE_PARTS.find(p => p.id === partId);
             const target = document.getElementById(partId);
@@ -977,7 +977,7 @@
             el.textContent = text;
         }
         // 全パーツぶんの座標を、名前つきでまとめてテキスト化する
-        function copyAllSlotCoords() {
+        export function copyAllSlotCoords() {
             const lines = SLOT_ADJUSTABLE_PARTS.map(p => {
                 const el = document.getElementById(p.id);
                 if (!el) return `${p.label}(${p.id}): 要素が見つかりません`;
@@ -995,7 +995,7 @@
             }
         }
 
-        function toggleSlotHelpOverlay() {
+        export function toggleSlotHelpOverlay() {
             const overlay = document.getElementById('slot-help-overlay');
             if (!overlay) return;
             const opening = overlay.style.display !== 'block';
@@ -1012,18 +1012,18 @@
         }
 
         // 残りプレイ回数に応じて、次に光らせるべきパーツを決める（残っていればレバー、無くなっていればコイン投入口）
-        function inviteNextSlotStep() {
+        export function inviteNextSlotStep() {
             if (slotPlaysRemaining > 0) {
                 document.getElementById('slot-lever').classList.add('slot-invite-glow');
             } else {
                 document.getElementById('slot-coin-slot-in').classList.add('slot-invite-glow-ring');
             }
         }
-        function updateSlotPlaysRemainingDisplay() {
+        export function updateSlotPlaysRemainingDisplay() {
             const el = document.getElementById('slot-plays-remaining');
             if (el) el.innerText = slotPlaysRemaining > 0 ? `（あと${slotPlaysRemaining}回引けます）` : '';
         }
-        function updateSlotBonusZoneDisplay() {
+        export function updateSlotBonusZoneDisplay() {
             const el = document.getElementById('slot-bonus-zone-text');
             const active = slotBonusZoneSpinsLeft > 0;
             if (el) el.innerText = active ? `✨ 特化ゾーン 残り${slotBonusZoneSpinsLeft}回 ✨` : '';
@@ -1032,12 +1032,12 @@
                 if (win) win.classList.toggle('slot-bonus-zone-active', active);
             });
         }
-        function updateSlotPullsSinceJackpotDisplay() {
+        export function updateSlotPullsSinceJackpotDisplay() {
             const el = document.getElementById('slot-pulls-since-jackpot');
             if (el) el.innerText = `前回のマーモットから ${slotPullsSinceJackpot}回転`;
         }
 
-        function pickWeightedSlotSymbol() {
+        export function pickWeightedSlotSymbol() {
             const pool = slotBonusZoneSpinsLeft > 0 ? SLOT_BONUS_ZONE_SYMBOLS : SLOT_ALL_SYMBOLS;
             const total = pool.reduce((s, sym) => s + sym.weight, 0);
             let roll = Math.random() * total;
@@ -1048,7 +1048,7 @@
             return pool[0];
         }
 
-        function buildSlotReelStripHtml() {
+        export function buildSlotReelStripHtml() {
             let html = '';
             for (let rep = 0; rep < SLOT_STRIP_REPEATS; rep++) {
                 SLOT_ALL_SYMBOLS.forEach(s => {
@@ -1059,7 +1059,7 @@
         }
 
         // 🛠️ 調整対象のパーツ一覧（位置調整ツールがこのリストを見て動く）
-        const SLOT_ADJUSTABLE_PARTS = [
+        export const SLOT_ADJUSTABLE_PARTS = [
             { id: 'slot-machine-body', label: '本体' },
             { id: 'slot-lever-mount', label: 'レバー取り付け部品' },
             { id: 'slot-lever', label: 'レバー', hasRotation: true },
@@ -1074,7 +1074,7 @@
             { id: 'slot-coin-slot-out', label: 'コイン払い出し口', isBox: true },
         ];
 
-        function startSlotGame(container) {
+        export function startSlotGame(container) {
             slotIsSpinning = false; slotStoppedCount = 0; slotNextSpinFree = false; // slotPlaysRemainingは、離脱しても引き継がれるようリセットしない
             container.style.background = 'transparent'; // 機体イラストの後ろに白い箱が見えないよう、この画面だけ背景を消す
             container.innerHTML = `
@@ -1178,7 +1178,7 @@
         }
 
         // 🪙 コインを投入口にポトッと落とす演出。位置は#slot-coin-slot-inの座標を実測して使う
-        function playSlotCoinInsertAnim() {
+        export function playSlotCoinInsertAnim() {
             const stage = document.getElementById('slot-machine-stage');
             const slotIn = document.getElementById('slot-coin-slot-in');
             const coinImg = document.getElementById('slot-coin-insert-img');
@@ -1205,7 +1205,7 @@
         }
 
         // 🪙① コインをタップして投入する（1枚=1プレイぶん）。投入し終わったら、次はレバーが光って誘導する
-        function insertSlotCoin() {
+        export function insertSlotCoin() {
             if (slotIsSpinning) return; // 回っている最中だけは投入できない
             const coinSlot = document.getElementById('slot-coin-slot-in');
             if (!IS_DEV_MODE && minigameCoins < SLOT_COIN_COST) {
@@ -1225,7 +1225,7 @@
             }, 300);
         }
 
-        function pullSlotLever() {
+        export function pullSlotLever() {
             if (slotIsSpinning) return;
             const lever = document.getElementById('slot-lever');
             if (!slotNextSpinFree && !lever.classList.contains('slot-invite-glow')) return; // コイン投入がまだの時は引けない
@@ -1282,7 +1282,7 @@
             });
         }
 
-        function stopSlotReel(reelIndex) {
+        export function stopSlotReel(reelIndex) {
             const btn = document.getElementById(`slot-stop-btn-${reelIndex}`);
             if (!btn || btn.dataset.stoppable !== '1') return; // 回っていない・すでに止めた列は無視
             btn.dataset.stoppable = '0';
@@ -1329,7 +1329,7 @@
         }
 
         // 🎰 リーチ判定：2つ止まった時点で、5ラインのどこかで2つとも同じ絵柄が揃っていれば「リーチ」
-        function checkSlotReach() {
+        export function checkSlotReach() {
             if (slotStoppedReels.length !== 2) return;
             const cols = {};
             slotStoppedReels.forEach(i => { cols[i] = getSlotReelColumn(slotReelResults[i]); });
@@ -1353,7 +1353,7 @@
         }
 
         // 🎰 リーチ演出：効果音・絵柄の強調・大きな当たりの時だけカットイン
-        function triggerSlotReachEffect(symbol, matchingLines) {
+        export function triggerSlotReachEffect(symbol, matchingLines) {
             playAudioFile('audio/slot/reach.mp3');
             vibrate([20, 30, 20]);
             document.getElementById('slot-result-text').style.color = '#ff3d00';
@@ -1376,7 +1376,7 @@
         }
 
         // 🎬 カットイン：もちすけの驚き顔が、横から勢いよく滑り込んでくる演出
-        function showSlotCutin() {
+        export function showSlotCutin() {
             const stage = document.getElementById('slot-machine-stage');
             if (!stage) return;
             const cutin = document.createElement('img');
@@ -1388,7 +1388,7 @@
         }
 
         // 🪙 払い出し口から、コインが実際に出てくる演出。countが多いほど「あふれ出す」感じになる
-        function spawnSlotPayoutCoins(count, pitchRate = 1) {
+        export function spawnSlotPayoutCoins(count, pitchRate = 1) {
             const stage = document.getElementById('slot-machine-stage');
             const slotOut = document.getElementById('slot-coin-slot-out');
             if (!stage || !slotOut) return;
@@ -1422,14 +1422,14 @@
         }
 
         // 真ん中の絵柄から、帯の並び順にもとづいて上・下の絵柄を求める（実際に窓に見えている3段ぶん）
-        function getSlotReelColumn(centerSymbol) {
+        export function getSlotReelColumn(centerSymbol) {
             const n = SLOT_ALL_SYMBOLS.length;
             const idx = SLOT_ALL_SYMBOLS.findIndex(s => s.id === centerSymbol.id);
             return [SLOT_ALL_SYMBOLS[(idx - 1 + n) % n], centerSymbol, SLOT_ALL_SYMBOLS[(idx + 1) % n]]; // [上段, 中段, 下段]
         }
 
         // 揃ったラインの、実際に画面に見えている絵柄の要素を光らせる（rowOffsets=[各リールの段:0上/1中/2下]）
-        function highlightSlotWinLine(rowOffsets) {
+        export function highlightSlotWinLine(rowOffsets) {
             rowOffsets.forEach((rowOffset, reelIndex) => {
                 const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
                 const landingRow = slotReelLandingRow[reelIndex];
@@ -1439,11 +1439,11 @@
             });
         }
         // 次にコインを投入する時（新しい回）に、前回光っていた絵柄をすべて消しておく
-        function clearSlotWinPulse() {
+        export function clearSlotWinPulse() {
             document.querySelectorAll('.slot-win-pulse').forEach(el => el.classList.remove('slot-win-pulse'));
         }
 
-        const SLOT_LINE_ROW_OFFSETS = [
+        export const SLOT_LINE_ROW_OFFSETS = [
             [0, 0, 0], // 上段
             [1, 1, 1], // 中段
             [2, 2, 2], // 下段
@@ -1451,7 +1451,7 @@
             [2, 1, 0], // 斜め ↗
         ];
 
-        function evaluateSlotResult() {
+        export function evaluateSlotResult() {
             slotIsSpinning = false;
             const resultText = document.getElementById('slot-result-text');
             if (!resultText) return; // 回転中に画面を離れていたら、何もしない
@@ -1539,7 +1539,7 @@
 
 
         // 🐹 マーモット揃いの、専用の豪華演出（画面暗転→大きなマーモット→もちすけの専用セリフ）
-        function showSlotMarmotCelebration(payout, bonusGachaCoins) {
+        export function showSlotMarmotCelebration(payout, bonusGachaCoins) {
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:background 0.4s;';
             overlay.innerHTML = `
@@ -1565,3 +1565,129 @@
             });
         }
 
+
+
+        // ===================================================================
+        // 🌉 一時的な橋渡し（migration bridge）
+        // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
+        // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
+        // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
+        // そのため、window.名前 = 名前 という形で、今まで通りwindowオブジェクト経由でも
+        // 見えるようにしています（windowに生えた値は、他の<script>からは普通のグローバル変数として
+        // 見えます）。全ファイルの移行が終わったら、この橋渡しブロックはまとめて削除します。
+        // ===================================================================
+        window.getMinigameRewardMultiplier = getMinigameRewardMultiplier;
+        window.minigames = minigames;
+        window.SLOT_SYMBOLS = SLOT_SYMBOLS;
+        window.SLOT_REPLAY_SYMBOL = SLOT_REPLAY_SYMBOL;
+        window.SLOT_ALL_SYMBOLS = SLOT_ALL_SYMBOLS;
+        window.SLOT_COIN_COST = SLOT_COIN_COST;
+        window.SLOT_PLAYS_PER_COIN = SLOT_PLAYS_PER_COIN;
+        window.slotPlaysRemaining = slotPlaysRemaining;
+        window.minigameLastResetDate = minigameLastResetDate;
+        window.minigamePlaysUsedToday = minigamePlaysUsedToday;
+        window.minigameSeenUnlocked = minigameSeenUnlocked;
+        window.minigameBests = minigameBests;
+        window.isMinigameActive = isMinigameActive;
+        window.getMinigameBaseReward = getMinigameBaseReward;
+        window.hasNewlyUnlockedMinigame = hasNewlyUnlockedMinigame;
+        window.resetMinigameCountsIfNewDay = resetMinigameCountsIfNewDay;
+        window.openMinigameCenter = openMinigameCenter;
+        window.closeMinigameCenter = closeMinigameCenter;
+        window.cleanupActiveMinigameTimers = cleanupActiveMinigameTimers;
+        window.renderMinigameTiles = renderMinigameTiles;
+        window.startMinigame = startMinigame;
+        window.endMinigameToTiles = endMinigameToTiles;
+        window.consumeMinigamePlay = consumeMinigamePlay;
+        window.minigameCoins = minigameCoins;
+        window.getMinigameCoinGain = getMinigameCoinGain;
+        window.grantMinigameReward = grantMinigameReward;
+        window.showMinigameResult = showMinigameResult;
+        window.QUIZ_REWARD_BY_CORRECT = QUIZ_REWARD_BY_CORRECT;
+        window.startQuizGame = startQuizGame;
+        window.generateQuizQuestion = generateQuizQuestion;
+        window.renderQuizQuestion = renderQuizQuestion;
+        window.answerQuizQuestion = answerQuizQuestion;
+        window.TIME_ATTACK_DURATION_SEC = TIME_ATTACK_DURATION_SEC;
+        window.TIME_ATTACK_THRESHOLDS = TIME_ATTACK_THRESHOLDS;
+        window.timeAttackState = timeAttackState;
+        window.startTimeAttackGame = startTimeAttackGame;
+        window.beginTimeAttack = beginTimeAttack;
+        window.onTimeAttackTap = onTimeAttackTap;
+        window.finishTimeAttack = finishTimeAttack;
+        window.CONCENTRATION_THRESHOLDS = CONCENTRATION_THRESHOLDS;
+        window.concentrationState = concentrationState;
+        window.startConcentrationGame = startConcentrationGame;
+        window.buildConcentrationBoard = buildConcentrationBoard;
+        window.updateConcentrationCardVisual = updateConcentrationCardVisual;
+        window.flipConcentrationCard = flipConcentrationCard;
+        window.finishConcentration = finishConcentration;
+        window.MOCHITSUKI_BEATS = MOCHITSUKI_BEATS;
+        window.MOCHITSUKI_INITIAL_PERIOD_MS = MOCHITSUKI_INITIAL_PERIOD_MS;
+        window.MOCHITSUKI_MIN_PERIOD_MS = MOCHITSUKI_MIN_PERIOD_MS;
+        window.MOCHITSUKI_SPEEDUP_RATE = MOCHITSUKI_SPEEDUP_RATE;
+        window.MOCHITSUKI_RANKS = MOCHITSUKI_RANKS;
+        window.MOCHITSUKI_REWARD_CAP = MOCHITSUKI_REWARD_CAP;
+        window.mochitsukiState = mochitsukiState;
+        window.buildMochitsukiBandsHtml = buildMochitsukiBandsHtml;
+        window.hexToRgba = hexToRgba;
+        window.startMochitsukiGame = startMochitsukiGame;
+        window.getMochitsukiIndicatorPercent = getMochitsukiIndicatorPercent;
+        window.animateMochitsukiIndicator = animateMochitsukiIndicator;
+        window.onMochitsukiTap = onMochitsukiTap;
+        window.finishMochitsuki = finishMochitsuki;
+        window.SLOT_SYMBOL_HEIGHT = SLOT_SYMBOL_HEIGHT;
+        window.SLOT_STRIP_REPEATS = SLOT_STRIP_REPEATS;
+        window.slotIsSpinning = slotIsSpinning;
+        window.slotSpinLoopSource = slotSpinLoopSource;
+        window.playSlotSpinLoopSound = playSlotSpinLoopSound;
+        window.stopSlotSpinLoopSound = stopSlotSpinLoopSound;
+        window.slotStoppedCount = slotStoppedCount;
+        window.slotReelResults = slotReelResults;
+        window.slotReelAnimations = slotReelAnimations;
+        window.slotReelLandingRow = slotReelLandingRow;
+        window.slotStoppedReels = slotStoppedReels;
+        window.slotBonusZoneSpinsLeft = slotBonusZoneSpinsLeft;
+        window.slotTotalPulls = slotTotalPulls;
+        window.slotPullsSinceJackpot = slotPullsSinceJackpot;
+        window.slotJackpotCount = slotJackpotCount;
+        window.slotShortestJackpotPulls = slotShortestJackpotPulls;
+        window.slotLongestJackpotPulls = slotLongestJackpotPulls;
+        window.SLOT_BONUS_ZONE_SPINS = SLOT_BONUS_ZONE_SPINS;
+        window.SLOT_BONUS_ZONE_SYMBOLS = SLOT_BONUS_ZONE_SYMBOLS;
+        window.slotNextSpinFree = slotNextSpinFree;
+        window.slotAdjustMode = slotAdjustMode;
+        window.slotAdjustDragState = slotAdjustDragState;
+        window.setSlotPartAdjustVisibility = setSlotPartAdjustVisibility;
+        window.bringSlotTargetToFront = bringSlotTargetToFront;
+        window.positionSlotHandles = positionSlotHandles;
+        window.toggleSlotAdjustMode = toggleSlotAdjustMode;
+        window.onSlotAdjustTargetChange = onSlotAdjustTargetChange;
+        window.setupSlotAdjustDrag = setupSlotAdjustDrag;
+        window.adjustSlotLeverRotation = adjustSlotLeverRotation;
+        window.getSlotPartHeightPct = getSlotPartHeightPct;
+        window.updateSlotAdjustReadout = updateSlotAdjustReadout;
+        window.copyAllSlotCoords = copyAllSlotCoords;
+        window.toggleSlotHelpOverlay = toggleSlotHelpOverlay;
+        window.inviteNextSlotStep = inviteNextSlotStep;
+        window.updateSlotPlaysRemainingDisplay = updateSlotPlaysRemainingDisplay;
+        window.updateSlotBonusZoneDisplay = updateSlotBonusZoneDisplay;
+        window.updateSlotPullsSinceJackpotDisplay = updateSlotPullsSinceJackpotDisplay;
+        window.pickWeightedSlotSymbol = pickWeightedSlotSymbol;
+        window.buildSlotReelStripHtml = buildSlotReelStripHtml;
+        window.SLOT_ADJUSTABLE_PARTS = SLOT_ADJUSTABLE_PARTS;
+        window.startSlotGame = startSlotGame;
+        window.playSlotCoinInsertAnim = playSlotCoinInsertAnim;
+        window.insertSlotCoin = insertSlotCoin;
+        window.pullSlotLever = pullSlotLever;
+        window.stopSlotReel = stopSlotReel;
+        window.checkSlotReach = checkSlotReach;
+        window.triggerSlotReachEffect = triggerSlotReachEffect;
+        window.showSlotCutin = showSlotCutin;
+        window.spawnSlotPayoutCoins = spawnSlotPayoutCoins;
+        window.getSlotReelColumn = getSlotReelColumn;
+        window.highlightSlotWinLine = highlightSlotWinLine;
+        window.clearSlotWinPulse = clearSlotWinPulse;
+        window.SLOT_LINE_ROW_OFFSETS = SLOT_LINE_ROW_OFFSETS;
+        window.evaluateSlotResult = evaluateSlotResult;
+        window.showSlotMarmotCelebration = showSlotMarmotCelebration;
