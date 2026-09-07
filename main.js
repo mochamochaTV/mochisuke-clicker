@@ -683,8 +683,18 @@
             });
         }
 
-        const updateAndRenderParticles = () => {
+        // 🐛パフォーマンス修正：タップ演出（particleList/rippleList/floatingTextList）が全部空＝
+        // 「今まさに反応が必要なものは何もない、環境演出だけが動いているアイドル状態」の時だけ、
+        // 描画を約30fpsに間引いて負荷とバッテリー消費を抑える。タップした瞬間にこれらのリストへ
+        // 要素が入るので、その場で即座に60fpsへ戻り、タップの反応速度には一切影響しない
+        let lastAmbientFrameTs = 0;
+        const updateAndRenderParticles = (ts) => {
             if (!ctx || !canvas) { requestAnimationFrame(updateAndRenderParticles); return; }
+            const isAmbientIdle = particleList.length === 0 && rippleList.length === 0 && floatingTextList.length === 0;
+            if (isAmbientIdle) {
+                if (ts - lastAmbientFrameTs < 33) { requestAnimationFrame(updateAndRenderParticles); return; }
+                lastAmbientFrameTs = ts;
+            }
             renderMochiRainFrame(); // もちの雨も同じフレームでまとめて処理する（RAFを2重に走らせない）
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let i = particleList.length - 1; i >= 0; i--) {

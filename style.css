@@ -1113,8 +1113,12 @@
         /* 😱 マイルーム版の叫び演出。タップ画面の.mochi-scream(scale 1.5)をそのまま使うと、
            もともと小さい(部屋の22%幅)もちすけがさらに大きくなりすぎて部屋からはみ出したり、
            もう1人のもちすけと重なったりするため、拡大率を控えめ(1.32)にした専用版
-           （ご要望により1.18→1.32に拡大。1.5に近づけすぎるとはみ出しリスクが増すため中間的な値に調整） */
-        .myroom-avatar-scream { animation: myroomAvatarScreamShake 0.5s ease-in-out; }
+           （ご要望により1.18→1.32に拡大。1.5に近づけすぎるとはみ出しリスクが増すため中間的な値に調整）
+           🐛修正：animation-fill-modeを指定していなかったため、0.5秒のアニメーションが終わった瞬間に
+           「アニメーションを何も当てていない状態」に戻ってしまい、まだ叫んでいる最中（画像はimage_scream.webp
+           のまま）なのに大きさだけ通常サイズに戻ってしまっていた。forwardsを指定し、アニメーション終了後も
+           最後のキーフレーム（拡大した状態）を保ち続けるようにした（class自体は叫び終わりまで付いたまま） */
+        .myroom-avatar-scream { animation: myroomAvatarScreamShake 0.5s ease-in-out forwards; }
         @keyframes myroomAvatarScreamShake {
             0%, 100% { transform: translate(0, 0) rotate(0) scale(1.32); }
             10% { transform: translate(-4px, -2px) rotate(-3deg) scale(1.32); }

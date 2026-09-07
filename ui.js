@@ -1128,6 +1128,28 @@
             }
             scheduleNextVisitWalk(wrapId, key);
         }
+        // 👄🐛修正：以前は「歩く」と「叫ぶ」がそれぞれ独立して口閉じパーツ(mouth-anchor)の
+        // display を直接 'none'/'block' で上書きしていたため、叫んでいる最中に歩行が止まる
+        // （＝歩行側のsetTimeoutが「止まったから口を閉じよう」と割り込む）と、まだ叫んでいる
+        // 途中なのに口閉じパーツが復活してしまう不具合があった。
+        // 「歩行中」「叫び中」など複数の理由(reason)をSetで管理し、どれか1つでも理由が残っていれば
+        // 非表示のままにする方式に変更。全ての理由が消えた時だけ表示を戻すので、
+        // 歩行と叫びが重なっても正しい状態に保たれる
+        const myroomMouthHideReasons = {};
+        function isMyroomPrefixFullbody(prefix) {
+            // 「マイルーム（一人用/もようがえ）」画面のもちすけだけは applyVisitOutfit を使わず
+            // dataset.fullbody を持たないため、グローバルなequippedKisekaeを直接見る
+            if (prefix === 'myroom-mochisuke') return !!(equippedKisekae && equippedKisekae.fullbody);
+            const el = document.getElementById(prefix + '-mouth-anchor');
+            return !!(el && el.dataset.fullbody === '1');
+        }
+        function setMyroomMouthHidden(prefix, reason, hidden) {
+            const mouthAnchor = document.getElementById(prefix + '-mouth-anchor');
+            if (!mouthAnchor || isMyroomPrefixFullbody(prefix)) return; // 全身衣装中は触らない
+            const reasons = myroomMouthHideReasons[prefix] || (myroomMouthHideReasons[prefix] = new Set());
+            if (hidden) reasons.add(reason); else reasons.delete(reason);
+            mouthAnchor.style.display = reasons.size > 0 ? 'none' : 'block';
+        }
         // 🚶 実際にDOMへ反映する部分（自分の意思による移動でも、相手から届いた移動でも同じ関数を使うことで、
         // 見た目・速度の計算方法を完全に一致させる）
         function applyVisitWalkTarget(wrapId, newLeftPct, newBottomPct) {
@@ -1142,11 +1164,11 @@
             const inner = document.getElementById(wrapId.replace('-breathe-wrap', '-inner'));
             if (inner) inner.classList.add('myroom-walking');
             playAudioFile('audio/move_small.mp3', 0.12);
-            const mouthAnchor = document.getElementById(wrapId.replace('-breathe-wrap', '-mouth-anchor'));
-            if (mouthAnchor && mouthAnchor.dataset.fullbody !== '1') mouthAnchor.style.display = 'none'; // 👄 歩いている間は口を開ける（全身衣装中は触らない）
+            const prefix = wrapId.replace('-breathe-wrap', '');
+            setMyroomMouthHidden(prefix, 'walk', true); // 👄 歩いている間は口を開ける（叫び中なら叫び終わるまでは戻さない）
             setTimeout(() => {
                 if (inner) inner.classList.remove('myroom-walking');
-                if (mouthAnchor && mouthAnchor.dataset.fullbody !== '1') mouthAnchor.style.display = 'block'; // 止まったら口を閉じる
+                setMyroomMouthHidden(prefix, 'walk', false); // 止まったら口を閉じる（他に理由が残っていなければ）
             }, moveDuration * 1000);
         }
 
@@ -1329,7 +1351,6 @@
             const hatEl = document.getElementById(prefix + '-hat');
             const faceEl = document.getElementById(prefix + '-face');
             const fullbodyEl = document.getElementById(prefix + '-fullbody');
-            const mouthAnchorEl = document.getElementById(prefix + '-mouth-anchor');
             let state = myroomScreamState[prefix];
             if (state) {
                 clearTimeout(state.revertTimeout); // 連続で叫んだ場合、古いタイマーに巻き戻されないようにする
@@ -1339,8 +1360,7 @@
                     prevClothesOpacity: clothesEl.style.opacity,
                     prevHatDisplay: hatEl ? hatEl.style.display : '',
                     prevFaceDisplay: faceEl ? faceEl.style.display : '',
-                    prevFullbodyDisplay: fullbodyEl ? fullbodyEl.style.display : '',
-                    prevMouthAnchorDisplay: mouthAnchorEl ? mouthAnchorEl.style.display : ''
+                    prevFullbodyDisplay: fullbodyEl ? fullbodyEl.style.display : ''
                 };
                 myroomScreamState[prefix] = state;
             }
@@ -1349,8 +1369,9 @@
             if (hatEl) hatEl.style.display = 'none';
             if (faceEl) faceEl.style.display = 'none';
             if (fullbodyEl) fullbodyEl.style.display = 'none';
-            // 👄 歩く時と同様、叫んでいる間は口を閉じたパーツ(mouth-anchor)を消す（全身衣装中は触らない）
-            if (mouthAnchorEl && mouthAnchorEl.dataset.fullbody !== '1') mouthAnchorEl.style.display = 'none';
+            // 👄🐛修正：歩行中に叫んで、叫んでいる途中で歩行が止まっても口閉じパーツが復活しないよう、
+            // 歩行と共通の理由ベースの管理(setMyroomMouthHidden)を使う（全身衣装中は自動で触らない）
+            setMyroomMouthHidden(prefix, 'scream', true);
             // 🐛修正：タップ画面用の.mochi-screamはscale(1.5)固定で、部屋の中では小さいもちすけが
             // 急に大きくなりすぎて浮いて見える（他の一人と重なることもある）ため、拡大率を控えめにした
             // マイルーム専用クラスを使う（見た目の大きさへの配慮）
@@ -1379,13 +1400,12 @@
             const hatEl = document.getElementById(prefix + '-hat');
             const faceEl = document.getElementById(prefix + '-face');
             const fullbodyEl = document.getElementById(prefix + '-fullbody');
-            const mouthAnchorEl = document.getElementById(prefix + '-mouth-anchor');
             if (inner) inner.classList.remove('myroom-avatar-scream');
             if (clothesEl) { clothesEl.src = state.prevClothesSrc; clothesEl.style.opacity = state.prevClothesOpacity; }
             if (hatEl) hatEl.style.display = state.prevHatDisplay;
             if (faceEl) faceEl.style.display = state.prevFaceDisplay;
             if (fullbodyEl) fullbodyEl.style.display = state.prevFullbodyDisplay;
-            if (mouthAnchorEl) mouthAnchorEl.style.display = state.prevMouthAnchorDisplay;
+            setMyroomMouthHidden(prefix, 'scream', false); // 叫び終わり（他に理由が残っていなければ口閉じパーツを復活させる）
             delete myroomScreamState[prefix];
         }
         function playMyroomFeedEffect(prefix, idx) {
@@ -2027,11 +2047,10 @@
             const inner = document.getElementById('myroom-mochisuke-inner');
             if (inner) inner.classList.add('myroom-walking'); // 🚶 スーッと滑るのではなく、とことこ歩いて見えるようにする（内側要素だけをアニメーションさせ、外側の中央寄せtransformとぶつからないようにする）
             playAudioFile('audio/move_small.mp3', 0.12); // 歩く音を小さめにつける
-            const mouthAnchor = document.getElementById('myroom-mochisuke-mouth-anchor');
-            if (mouthAnchor && !equippedKisekae.fullbody) mouthAnchor.style.display = 'none'; // 👄 歩いている間は口を開ける（口閉じパーツを隠す。全身衣装中は触らない）
+            setMyroomMouthHidden('myroom-mochisuke', 'walk', true); // 👄 歩いている間は口を開ける（叫び中なら叫び終わるまでは戻さない。全身衣装中は触らない）
             setTimeout(() => {
                 if (inner) inner.classList.remove('myroom-walking');
-                if (mouthAnchor && !equippedKisekae.fullbody) mouthAnchor.style.display = 'block'; // 止まったら口を閉じる
+                setMyroomMouthHidden('myroom-mochisuke', 'walk', false); // 止まったら口を閉じる（他に理由が残っていなければ）
             }, moveDuration * 1000);
             scheduleNextMyroomWalk();
         }
