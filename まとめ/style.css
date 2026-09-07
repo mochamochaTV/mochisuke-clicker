@@ -1204,25 +1204,6 @@
         /* 波紋・浮き文字はcanvas描画に統合したためCSSアニメーションは不要になった */
         .balloon-show { opacity: 1 !important; transform: scale(1) !important; }
 
-        /* 💬 マイルーム1対1ライブチャットの吹き出し（もちすけの頭上にセリフとして表示） */
-        .room-chat-bubble {
-            position: absolute; bottom: 100%; left: 50%; margin-bottom: 8px;
-            transform: translateX(-50%) scale(0.8); transform-origin: center bottom;
-            background: white; padding: 8px 12px; border-radius: 16px; font-size: 0.76rem; font-weight: bold;
-            color: #4a3622; border: 3px solid #ff9800; box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-            white-space: normal; max-width: 150px; text-align: center; line-height: 1.35; word-break: break-word;
-            z-index: 1000; opacity: 0; transition: all 0.2s ease-out; pointer-events: none;
-        }
-        .room-chat-bubble.chat-bubble-show { opacity: 1; transform: translateX(-50%) scale(1); }
-        .room-chat-bubble::after {
-            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-            border-width: 9px 7px 0; border-style: solid; border-color: white transparent; width: 0;
-        }
-        .room-chat-bubble::before {
-            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: -1px;
-            border-width: 10px 8px 0; border-style: solid; border-color: #ff9800 transparent; width: 0; z-index: -1;
-        }
-
         #combo-display-wrap {
             width: 100%; min-height: 34px;
             display: flex; align-items: flex-start; justify-content: center;

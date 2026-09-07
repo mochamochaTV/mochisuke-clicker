@@ -56,7 +56,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-09-07-002">
+    <link rel="stylesheet" href="style.css?v=2026-08-05-195">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -65,7 +65,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
         const firebaseConfig = {
@@ -318,99 +318,6 @@
                 const data = d.data();
                 return { myroom: data.myroom || null, name: data.name || '名無しさん', outfit: data.outfit || null };
             } catch (e) { console.error("マイルーム取得エラー:", e); return null; }
-        };
-
-        // 🆔 他のwindow関数からも自分のuidを参照できるようにする（部屋チャットのメッセージ描画で「自分の発言か」判定に使う）
-        window.getMyUid = function () { return currentUid; };
-
-        // ===================================================================
-        // 💬🏠 マイルーム 1対1ライブチャット
-        // 招待した側(ホスト)・された側(ゲスト)のペアごとに roomSessions/{roomId} を1つ持ち、
-        // onSnapshotでリアルタイム監視することで「相手が今部屋に来た/退出した」を即座に検知する。
-        // roomIdは2人のuidをソートして連結しただけの固定値なので、毎回同じ部屋に合流できる。
-        // ===================================================================
-        function getRoomSessionId(uidA, uidB) {
-            return [uidA, uidB].sort().join('_');
-        }
-
-        // 🚪🟢 招待を送った側(ホスト)が、ゲストを待つ部屋セッションを開始する
-        window.startRoomHostSession = async function (guestUid) {
-            if (!fbReady || !db || !currentUid) return null;
-            const roomId = getRoomSessionId(currentUid, guestUid);
-            try {
-                await setDoc(doc(db, "roomSessions", roomId), {
-                    hostUid: currentUid, guestUid,
-                    hostPresentAt: Date.now(), guestPresentAt: null, endedAt: null,
-                }, { merge: true });
-                return roomId;
-            } catch (e) { console.error("ホストセッション開始エラー:", e); return null; }
-        };
-
-        // 🚪🟢 招待された側(ゲスト)が、実際に部屋に入る時に呼ぶ
-        window.joinRoomHostSession = async function (hostUid) {
-            if (!fbReady || !db || !currentUid) return null;
-            const roomId = getRoomSessionId(hostUid, currentUid);
-            try {
-                await setDoc(doc(db, "roomSessions", roomId), {
-                    hostUid, guestUid: currentUid,
-                    guestPresentAt: Date.now(), endedAt: null,
-                }, { merge: true });
-                return roomId;
-            } catch (e) { console.error("入室エラー:", e); return null; }
-        };
-
-        // 👀 部屋セッションの状態をリアルタイム監視する（相手の到着・退出を検知）。戻り値は監視解除用の関数
-        window.listenRoomSession = function (roomId, onChange) {
-            if (!fbReady || !db || !roomId) return () => {};
-            try {
-                return onSnapshot(doc(db, "roomSessions", roomId), (snap) => {
-                    onChange(snap.exists() ? snap.data() : null);
-                }, (e) => console.error("セッション監視エラー:", e));
-            } catch (e) { console.error("セッション監視エラー:", e); return () => {}; }
-        };
-
-        // 💓 セッション中の生存確認（アプリが落ちる等で退出処理を挟めなかった場合の保険として、定期的に自分の在室時刻を更新する）
-        window.sendRoomSessionHeartbeat = async function (roomId, isHost) {
-            if (!fbReady || !db || !roomId) return;
-            try {
-                await setDoc(doc(db, "roomSessions", roomId), isHost ? { hostLastSeenAt: Date.now() } : { guestLastSeenAt: Date.now() }, { merge: true });
-            } catch (e) { /* 生存確認の失敗は致命的ではないので無視 */ }
-        };
-
-        // 🚪🔴 部屋セッションを終了する（どちらかが退出ボタン/戻るボタンを押した時）
-        window.leaveRoomSession = async function (roomId) {
-            if (!fbReady || !db || !roomId) return;
-            try {
-                await setDoc(doc(db, "roomSessions", roomId), { endedAt: Date.now() }, { merge: true });
-            } catch (e) { console.error("退室エラー:", e); }
-        };
-
-        // 💬 自由入力チャットメッセージを送信する
-        window.sendRoomChatMessage = async function (roomId, text) {
-            if (!fbReady || !db || !currentUid || !roomId) return { success: false };
-            const clean = String(text || '').trim().slice(0, 200);
-            if (!clean) return { success: false };
-            try {
-                const myDoc = await getDoc(doc(db, "rankings", currentUid));
-                const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';
-                await addDoc(collection(db, "roomSessions", roomId, "messages"), {
-                    fromUid: currentUid, fromName: myName, text: clean, createdAt: Date.now()
-                });
-                return { success: true };
-            } catch (e) { console.error("チャット送信エラー:", e); return { success: false }; }
-        };
-
-        // 👂 チャットメッセージをリアルタイム監視する（新着が来るたびonMessagesに全件が渡される）。戻り値は監視解除用の関数
-        window.listenRoomChatMessages = function (roomId, onMessages) {
-            if (!fbReady || !db || !roomId) return () => {};
-            try {
-                const q = query(collection(db, "roomSessions", roomId, "messages"), orderBy("createdAt", "asc"), limit(100));
-                return onSnapshot(q, (snap) => {
-                    const msgs = [];
-                    snap.forEach((d) => msgs.push({ id: d.id, ...d.data() }));
-                    onMessages(msgs);
-                }, (e) => console.error("チャット監視エラー:", e));
-            } catch (e) { console.error("チャット監視エラー:", e); return () => {}; }
         };
 
         // ===================================================================
@@ -817,7 +724,6 @@
                 <img id="visit-myroom-flooring" src="" alt="" style="position:absolute; top:62%; left:0; width:100%; height:38%; object-fit:cover;">
                 <div id="visit-myroom-furniture-layer" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
                 <div id="visit-myroom-mochisuke-breathe-wrap" class="breathe-idle" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999;">
-                    <div id="visit-myroom-mochisuke-chat-bubble" class="room-chat-bubble"></div>
                     <div id="visit-myroom-mochisuke-inner" style="position:relative;">
                         <img id="visit-myroom-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="visit-myroom-mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
@@ -831,7 +737,6 @@
                     </div>
                 </div>
                 <div id="visit-myroom-myself-breathe-wrap" class="breathe-idle" style="display:none; position:absolute; bottom:2%; left:30%; transform:translateX(-50%); width:22%; z-index:998;">
-                    <div id="visit-myroom-myself-chat-bubble" class="room-chat-bubble"></div>
                     <div id="visit-myroom-myself-inner" style="position:relative;">
                         <img id="visit-myroom-myself-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="visit-myroom-myself-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
@@ -844,22 +749,12 @@
                         <img id="visit-myroom-myself-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
                     </div>
                 </div>
-                <!-- 🕐 ゲスト到着待ちの間だけ表示するインジケーター -->
-                <div id="visit-waiting-indicator" style="display:none; position:absolute; bottom:14%; left:50%; transform:translateX(-50%); z-index:16; background:rgba(93,64,55,0.88); color:#fff; font-weight:700; font-size:0.78rem; padding:8px 16px; border-radius:16px; white-space:nowrap;">⏳ お部屋に来るのを待っています…</div>
-                <!-- 💬 メッセージ入力バー：💬ボタンを押すと開く -->
-                <div id="visit-chat-input-bar" style="display:none; position:absolute; left:8px; right:8px; bottom:calc(72px + env(safe-area-inset-bottom, 0px)); z-index:21; background:#fff; border-radius:22px; box-shadow:0 3px 12px rgba(0,0,0,0.3); padding:6px; gap:6px; align-items:center;">
-                    <input id="visit-chat-input" type="text" maxlength="200" placeholder="メッセージを入力…" autocomplete="off" style="flex:1; min-width:0; border:none; outline:none; padding:9px 12px; font-size:0.85rem; border-radius:18px; background:#f5f0e8; color:#5d4037;">
-                    <button onclick="sendFreeChatMessage()" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:18px; padding:9px 16px; font-size:0.8rem; font-weight:900;">送信</button>
-                </div>
-                <!-- 📜 履歴ボタン（左下）・💬 メッセージボタン（右下）：ライブチャット中だけ表示 -->
-                <button id="visit-chat-history-btn" onclick="openChatHistoryModal()" style="display:none; position:absolute; left:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:20; width:50px; height:50px; border-radius:50%; background:#795548; border:none; box-shadow:0 3px 10px rgba(0,0,0,0.3); font-size:1.4rem; align-items:center; justify-content:center;">📜</button>
-                <button id="visit-chat-toggle-btn" onclick="toggleChatInputBar()" style="display:none; position:absolute; right:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:20; width:50px; height:50px; border-radius:50%; background:#ff9800; border:none; box-shadow:0 3px 10px rgba(0,0,0,0.3); font-size:1.4rem; align-items:center; justify-content:center;">💬</button>
             </div>
-            <div id="visit-action-buttons-row" style="padding:6px 10px 0; background:#fff8ec; flex-shrink:0; display:flex; gap:6px; justify-content:flex-end;">
+            <div style="padding:6px 10px 0; background:#fff8ec; flex-shrink:0; display:flex; gap:6px; justify-content:flex-end;">
                 <button onclick="onBlockUserTap()" style="flex-shrink:0; background:#78909c; color:#fff; border:none; border-radius:14px; padding:5px 10px; font-size:0.65rem; font-weight:900;">🚫 ブロック</button>
                 <button onclick="onReportUserTap()" style="flex-shrink:0; background:#e53935; color:#fff; border:none; border-radius:14px; padding:5px 10px; font-size:0.65rem; font-weight:900;">🚨 通報</button>
             </div>
-            <div id="visit-stamp-buttons-row" style="padding:6px 10px calc(10px + env(safe-area-inset-bottom, 0px)); background:#fff8ec; flex-shrink:0; display:flex; gap:6px; overflow-x:auto;">
+            <div style="padding:6px 10px calc(10px + env(safe-area-inset-bottom, 0px)); background:#fff8ec; flex-shrink:0; display:flex; gap:6px; overflow-x:auto;">
                 <button id="visit-like-btn" onclick="onLikeRoomTap()" style="flex-shrink:0; background:#e91e63; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">❤️ いいね</button>
                 <button onclick="sendVisitStamp('素敵な部屋だね！')" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">素敵な部屋だね！</button>
                 <button onclick="sendVisitStamp('お邪魔します')" style="flex-shrink:0; background:#ff9800; color:#fff; border:none; border-radius:16px; padding:8px 14px; font-size:0.75rem; font-weight:900;">お邪魔します</button>
@@ -868,34 +763,7 @@
         </div>
     </div>
 
-    <!-- 📜 チャット履歴モーダル -->
-    <div id="visit-chat-history-modal" class="modal">
-        <div class="modal-content" style="display:flex; flex-direction:column; max-width:420px;">
-            <button class="modal-close-x" onclick="closeModal('visit-chat-history-modal')">×</button>
-            <h2 style="font-size:1.05rem;">📜 会話の履歴</h2>
-            <div id="visit-chat-history-list" style="flex:1; overflow-y:auto; text-align:left; padding:4px 2px; font-size:0.8rem; color:#4a3622; line-height:1.7;"></div>
-        </div>
-    </div>
-
-    <!-- 📜 お部屋チャットの利用規約＆プライバシーポリシー：招待する・される、その都度表示 -->
-    <div id="room-chat-terms-modal" class="modal">
-        <div class="modal-content" style="display:flex; flex-direction:column; max-width:440px;">
-            <h2 style="font-size:1rem;">📜 お部屋チャットについて</h2>
-            <div style="flex:1; overflow-y:auto; text-align:left; font-size:0.72rem; color:#4a3622; line-height:1.7; padding:4px 2px;">
-                <p><b>■ 利用規約（抜粋）</b><br>
-                ・他のプレイヤーを不快にさせる発言、誹謗中傷、個人情報のやり取り、なりすまし、勧誘・宣伝行為は禁止です。<br>
-                ・違反が確認された場合、ブロック・通報の対象、および今後のオンライン機能のご利用を制限させていただく場合があります。<br>
-                ・ユーザー同士のトラブルについて、運営は責任を負いかねます。困ったことがあれば、その場でブロック・通報機能をご利用ください。</p>
-                <p><b>■ プライバシーポリシー（チャットログについて）</b><br>
-                ・送信されたメッセージは、送信者の登録名・送信日時とともにサーバーに保存されます。<br>
-                ・保存された記録は、不正利用の調査・通報への対応、および法令に基づき捜査機関等から開示を求められた場合の対応のために利用することがあり、それ以外の目的で第三者に開示することはありません。</p>
-            </div>
-            <div style="display:flex; gap:8px; margin-top:10px;">
-                <button onclick="onCancelRoomChatTerms()" style="flex:1; background:#bdbdbd; color:#fff; border:none; border-radius:14px; padding:10px; font-weight:900; font-size:0.8rem;">やめる</button>
-                <button onclick="onAgreeRoomChatTerms()" style="flex:1; background:#4caf50; color:#fff; border:none; border-radius:14px; padding:10px; font-weight:900; font-size:0.8rem;">同意して続ける</button>
-            </div>
-        </div>
-    </div>
+    <div id="friend-modal" class="modal">
         <div class="modal-content modal-fullscreen">
             <button class="modal-back-btn" onclick="closeFriendScreen()"></button>
             <div style="height: env(safe-area-inset-top, 0px); flex-shrink:0; background:#fff8ec;"></div>
@@ -1421,13 +1289,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-09-07-002"></script>
-    <script src="state.js?v=2026-09-07-002"></script>
-    <script src="tap.js?v=2026-09-07-002"></script>
-    <script src="shop.js?v=2026-09-07-002"></script>
-    <script src="progress.js?v=2026-09-07-002"></script>
-    <script src="minigames.js?v=2026-09-07-002"></script>
-    <script src="ui.js?v=2026-09-07-002"></script>
-    <script src="main.js?v=2026-09-07-002"></script>
+    <script src="data.js?v=2026-08-05-195"></script>
+    <script src="state.js?v=2026-08-05-195"></script>
+    <script src="tap.js?v=2026-08-05-195"></script>
+    <script src="shop.js?v=2026-08-05-195"></script>
+    <script src="progress.js?v=2026-08-05-195"></script>
+    <script src="minigames.js?v=2026-08-05-195"></script>
+    <script src="ui.js?v=2026-08-05-195"></script>
+    <script src="main.js?v=2026-08-05-195"></script>
 </body>
 </html>

@@ -616,258 +616,6 @@
             }
         }
 
-        // ===================================================================
-        // 💬🏠 マイルーム 1対1ライブチャット
-        // 招待する/されるフローの間だけ、Firestoreの roomSessions/{roomId} をonSnapshotで監視し、
-        // 相手の入退室・チャットメッセージをリアルタイムに反映する。
-        // ===================================================================
-        let activeChatRoomId = null;      // 今参加している部屋セッションのID（未参加ならnull）
-        let activeChatOtherUid = null;    // 一緒にいる相手のuid
-        let activeChatIsHost = false;     // 自分が部屋の主(ホスト)かどうか
-        let myAvatarPrefix = null;        // 自分の見た目が表示されているDOM要素のprefix（ホストなら主役枠、ゲストなら訪問者枠）
-        let otherAvatarPrefix = null;     // 相手の見た目が表示されているDOM要素のprefix
-        let unsubRoomSession = null;      // セッション監視の解除関数
-        let unsubRoomMessages = null;     // チャット監視の解除関数
-        let roomHeartbeatTimer = null;
-        let lastChatSendAt = 0;
-        let lastRenderedChatMsgId = null;
-        let chatMessageHistory = [];      // 履歴モーダル表示用に、今回のセッションの全メッセージを保持
-        const CHAT_SEND_COOLDOWN_MS = 1200; // 連投防止（これより短い間隔では送信できない）
-        const CHAT_MAX_LEN = 200;
-        const CHAT_BUBBLE_DURATION_MS = 5000;
-        // 🚫 簡易NGワードフィルタ（完全ではないが、うっかり系の暴言・個人情報っぽいワードを軽く抑止する）
-        // 必要に応じてここに単語を追加してください。完璧な検閲ではなく、あくまで抑止目的です。
-        const CHAT_NG_WORDS = ['死ね', 'ころす', '殺す', 'きえろ', '消えろ'];
-        function containsNgWord(text) {
-            return CHAT_NG_WORDS.some(w => text.includes(w));
-        }
-
-        // 🕐 招待を送った側(ホスト)：ゲストを待つ部屋を開く
-        async function openHostWaitingRoom(guestUid, guestName) {
-            if (!window.startRoomHostSession) { alert('通信環境を確認して、もう一度試してください'); return; }
-            const roomId = await window.startRoomHostSession(guestUid);
-            if (!roomId) { alert('招待の開始に失敗しました。時間を置いて試してください'); return; }
-            activeChatRoomId = roomId;
-            activeChatOtherUid = guestUid;
-            activeChatIsHost = true;
-            myAvatarPrefix = 'visit-myroom-mochisuke'; // ホストの自分＝部屋の主＝主役スロット
-            otherAvatarPrefix = 'visit-myroom-myself';  // ゲストが来たら訪問者スロットに表示される
-            visitingUid = null; // 自分の部屋なので「いいね」対象ではない
-
-            document.getElementById('visit-myroom-name-label').textContent = `🏠 ${guestName}さんを招待中…`;
-            renderVisitMyroomLayout(equippedMyroom); // 自分の部屋なのでローカルデータをそのまま使う（通信不要）
-            applyVisitOutfit(equippedKisekae, 'visit-myroom-mochisuke');
-            const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
-            myselfWrap.style.display = 'none';
-            delete myselfWrap.dataset.shown;
-
-            setVisitActionButtonsForHosting(true);
-            setChatUiVisible(false);
-            document.getElementById('visit-waiting-indicator').style.display = 'block';
-
-            openModal('visit-myroom-modal');
-            startVisitMochisukeWalk('visit-myroom-mochisuke-breathe-wrap', 'visitHost');
-            startRoomSessionWatch(roomId, guestName);
-        }
-
-        // 🚪 招待された側(ゲスト)：実際に部屋に入って、ホストと一緒に過ごす
-        async function joinFriendRoomAndChat(hostUid, hostNameFallback) {
-            if (!window.fetchMyroomData || !window.joinRoomHostSession) return;
-            const data = await window.fetchMyroomData(hostUid);
-            if (!data || !data.myroom) { alert('🏠 まだお部屋が公開されていません'); return; }
-            const roomId = await window.joinRoomHostSession(hostUid);
-            if (!roomId) { alert('入室できませんでした。時間を置いて試してください'); return; }
-
-            activeChatRoomId = roomId;
-            activeChatOtherUid = hostUid;
-            activeChatIsHost = false;
-            myAvatarPrefix = 'visit-myroom-myself';     // ゲストの自分＝訪問者スロット
-            otherAvatarPrefix = 'visit-myroom-mochisuke'; // 部屋の主(ホスト)＝主役スロット
-            visitingUid = hostUid; // 既存の「いいね」機能もそのまま使えるようにする
-
-            const hostName = data.name || hostNameFallback || '名無しさん';
-            document.getElementById('visit-myroom-name-label').textContent = `🏠 ${hostName}さんと一緒にお部屋タイム`;
-            renderVisitMyroomLayout(data.myroom);
-            applyVisitOutfit(data.outfit, 'visit-myroom-mochisuke');
-            const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
-            myselfWrap.style.display = 'block';
-            myselfWrap.dataset.shown = '1';
-            applyVisitOutfit(equippedKisekae, 'visit-myroom-myself');
-
-            setVisitActionButtonsForHosting(false);
-            setChatUiVisible(true);
-            document.getElementById('visit-waiting-indicator').style.display = 'none';
-            const likeBtn = document.getElementById('visit-like-btn');
-            likeBtn.disabled = false;
-            likeBtn.textContent = '❤️ いいね';
-            likeBtn.style.background = '#e91e63';
-
-            openModal('visit-myroom-modal');
-            startVisitMochisukeWalk('visit-myroom-mochisuke-breathe-wrap', 'visitHost');
-            startVisitMochisukeWalk('visit-myroom-myself-breathe-wrap', 'visitSelf');
-            startRoomSessionWatch(roomId, hostName);
-        }
-
-        // 👀 セッション監視（相手の到着・退出を検知）＋チャット監視＋生存確認を、まとめて開始する
-        function startRoomSessionWatch(roomId, otherName) {
-            stopRoomSessionWatch();
-            unsubRoomSession = window.listenRoomSession(roomId, (data) => {
-                if (!activeChatRoomId || roomId !== activeChatRoomId) return; // 既に退室済みなら無視
-                if (!data || data.endedAt) {
-                    handleRoomSessionEnded(otherName);
-                    return;
-                }
-                if (activeChatIsHost && data.guestPresentAt) {
-                    const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
-                    if (!myselfWrap.dataset.shown) onGuestArrived(otherName);
-                }
-            });
-            unsubRoomMessages = window.listenRoomChatMessages(roomId, renderChatMessages);
-            roomHeartbeatTimer = setInterval(() => {
-                if (activeChatRoomId) window.sendRoomSessionHeartbeat(activeChatRoomId, activeChatIsHost);
-            }, 15000);
-        }
-
-        function stopRoomSessionWatch() {
-            if (unsubRoomSession) { unsubRoomSession(); unsubRoomSession = null; }
-            if (unsubRoomMessages) { unsubRoomMessages(); unsubRoomMessages = null; }
-            if (roomHeartbeatTimer) { clearInterval(roomHeartbeatTimer); roomHeartbeatTimer = null; }
-            lastRenderedChatMsgId = null;
-            chatMessageHistory = [];
-            hideChatBubble('visit-myroom-mochisuke');
-            hideChatBubble('visit-myroom-myself');
-        }
-
-        // 🎉 ホスト側：待っていたゲストが実際に部屋に来た瞬間の演出
-        async function onGuestArrived(guestName) {
-            const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
-            myselfWrap.dataset.shown = '1';
-            myselfWrap.style.display = 'block';
-            document.getElementById('visit-waiting-indicator').style.display = 'none';
-            document.getElementById('visit-myroom-name-label').textContent = `🏠 ${guestName}さんと一緒にお部屋タイム`;
-            setChatUiVisible(true);
-            playAudioFile('audio/levelup.mp3');
-            if (activeChatOtherUid && window.fetchMyroomData) {
-                const data = await window.fetchMyroomData(activeChatOtherUid);
-                applyVisitOutfit(data && data.outfit, 'visit-myroom-myself');
-            }
-            startVisitMochisukeWalk('visit-myroom-myself-breathe-wrap', 'visitSelf');
-        }
-
-        // 🚪🔴 相手が退出した／セッションが切れた時
-        function handleRoomSessionEnded(otherName) {
-            if (!activeChatRoomId) return; // 既に自分から退室済み
-            activeChatRoomId = null; activeChatOtherUid = null; activeChatIsHost = false;
-            myAvatarPrefix = null; otherAvatarPrefix = null;
-            stopRoomSessionWatch();
-            if (document.getElementById('visit-myroom-modal').style.display === 'flex' || document.getElementById('visit-myroom-modal').classList.contains('modal-open')) {
-                alert(`${otherName || 'お相手'}さんが部屋を後にしました`);
-                closeVisitMyroom();
-            }
-        }
-
-        // 💬📜 チャット用フローティングボタン（メッセージ・履歴）の表示切替。開くたびに入力バーは閉じた状態から始める
-        function setChatUiVisible(visible) {
-            const toggleBtn = document.getElementById('visit-chat-toggle-btn');
-            const historyBtn = document.getElementById('visit-chat-history-btn');
-            const inputBar = document.getElementById('visit-chat-input-bar');
-            if (toggleBtn) toggleBtn.style.display = visible ? 'flex' : 'none';
-            if (historyBtn) historyBtn.style.display = visible ? 'flex' : 'none';
-            if (inputBar) inputBar.style.display = 'none';
-        }
-
-        // 🏠 自分の部屋をホスト中は、他人の部屋にしか意味のないボタン（いいね・スタンプ行）を隠す
-        function setVisitActionButtonsForHosting(isHosting) {
-            const stampRow = document.getElementById('visit-stamp-buttons-row');
-            if (stampRow) stampRow.style.display = isHosting ? 'none' : 'flex';
-        }
-
-        // 💬 入力バーの開閉（💬ボタンを押した時）。開く時は入力欄にフォーカスしてキーボードを呼び出す
-        function toggleChatInputBar() {
-            const bar = document.getElementById('visit-chat-input-bar');
-            if (!bar) return;
-            const showing = bar.style.display === 'flex';
-            bar.style.display = showing ? 'none' : 'flex';
-            if (!showing) {
-                setTimeout(() => {
-                    const input = document.getElementById('visit-chat-input');
-                    if (input) input.focus();
-                }, 50);
-            }
-        }
-
-        // 💭 指定したアバターの頭上に、セリフとしてメッセージを表示する
-        function showChatBubble(prefix, text) {
-            const bubble = document.getElementById(prefix + '-chat-bubble');
-            if (!bubble) return;
-            clearTimeout(bubble._hideTimer);
-            bubble.textContent = text;
-            bubble.classList.add('chat-bubble-show');
-            bubble._hideTimer = setTimeout(() => bubble.classList.remove('chat-bubble-show'), CHAT_BUBBLE_DURATION_MS);
-        }
-        function hideChatBubble(prefix) {
-            const bubble = document.getElementById(prefix + '-chat-bubble');
-            if (!bubble) return;
-            clearTimeout(bubble._hideTimer);
-            bubble.classList.remove('chat-bubble-show');
-        }
-
-        // 👂 新着メッセージが来るたびに呼ばれる：最新の1件をセリフ吹き出しで表示し、履歴も更新する
-        function renderChatMessages(msgs) {
-            if (!activeChatRoomId) return;
-            chatMessageHistory = msgs;
-            if (msgs.length > 0) {
-                const last = msgs[msgs.length - 1];
-                if (last.id !== lastRenderedChatMsgId) {
-                    lastRenderedChatMsgId = last.id;
-                    const myUid = window.getMyUid && window.getMyUid();
-                    const mine = last.fromUid === myUid;
-                    showChatBubble(mine ? myAvatarPrefix : otherAvatarPrefix, last.text || '');
-                }
-            }
-            renderChatHistoryModalContent();
-        }
-
-        // 📜 履歴モーダルの中身を「プレイヤー名：内容」の形式で描画する
-        function renderChatHistoryModalContent() {
-            const el = document.getElementById('visit-chat-history-list');
-            if (!el) return;
-            if (chatMessageHistory.length === 0) {
-                el.innerHTML = '<div style="text-align:center; color:#aaa; padding:20px 0;">まだメッセージがありません</div>';
-                return;
-            }
-            el.innerHTML = chatMessageHistory.map(m =>
-                `<div style="margin-bottom:8px;"><b>${escapeHtml(m.fromName || '???')}</b>：${escapeHtml(m.text || '')}</div>`
-            ).join('');
-            el.scrollTop = el.scrollHeight;
-        }
-        function openChatHistoryModal() {
-            renderChatHistoryModalContent();
-            openModal('visit-chat-history-modal');
-        }
-
-        function sendFreeChatMessage() {
-            if (!activeChatRoomId) return;
-            const input = document.getElementById('visit-chat-input');
-            const text = input.value.trim();
-            if (!text) return;
-            const now = Date.now();
-            if (now - lastChatSendAt < CHAT_SEND_COOLDOWN_MS) return; // 連投防止
-            if (containsNgWord(text)) { alert('⚠️ その言葉は送信できません'); return; }
-            lastChatSendAt = now;
-            input.value = '';
-            window.sendRoomChatMessage(activeChatRoomId, text.slice(0, CHAT_MAX_LEN));
-        }
-
-        // ⌨️ Enterキーで送信できるようにする（起動時に1回だけ登録）
-        function setupChatInputEnterKey() {
-            const input = document.getElementById('visit-chat-input');
-            if (!input) return;
-            input.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') { e.preventDefault(); sendFreeChatMessage(); }
-            });
-        }
-
         // 🤝 フレンド機能
         async function openFriendPlaceholder() {
             openModal('friend-modal');
@@ -957,15 +705,6 @@
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
-            if (activeChatRoomId) {
-                window.leaveRoomSession(activeChatRoomId);
-                stopRoomSessionWatch();
-                activeChatRoomId = null; activeChatOtherUid = null; activeChatIsHost = false;
-                myAvatarPrefix = null; otherAvatarPrefix = null;
-            }
-            setChatUiVisible(false);
-            document.getElementById('visit-waiting-indicator').style.display = 'none';
-            setVisitActionButtonsForHosting(false);
             setTimeout(() => {
                 closeModal('visit-myroom-modal');
                 visitingUid = null;
@@ -1085,14 +824,6 @@
         }
         // 🚫🚨 訪問中の相手をブロック・通報する
         async function sendVisitStamp(text) {
-            // 💬 ライブチャット中は、定型文もそのままチャットへ即送信する（相手にリアルタイムで届く）
-            if (activeChatRoomId) {
-                const now = Date.now();
-                if (now - lastChatSendAt < CHAT_SEND_COOLDOWN_MS) return;
-                lastChatSendAt = now;
-                window.sendRoomChatMessage(activeChatRoomId, text);
-                return;
-            }
             if (!visitingUid || !window.sendVisitStampMsg) return;
             const res = await window.sendVisitStampMsg(visitingUid, text);
             if (res.success) {
@@ -1102,23 +833,21 @@
             }
         }
         function onBlockUserTap() {
-            const targetUid = visitingUid || activeChatOtherUid;
-            if (!targetUid) return;
+            if (!visitingUid) return;
             const label = document.getElementById('visit-myroom-name-label').textContent;
-            if (!confirm(`${label}\n\nこの人をブロックしますか？\n今後、この人からの招待・スタンプ・チャットが届かなくなります。`)) return;
-            if (!blockedUserIds.includes(targetUid)) blockedUserIds.push(targetUid);
+            if (!confirm(`${label}\n\nこの人をブロックしますか？\n今後、この人からの招待・スタンプが届かなくなります。`)) return;
+            if (!blockedUserIds.includes(visitingUid)) blockedUserIds.push(visitingUid);
             saveGame();
             alert('🚫 ブロックしました');
             closeVisitMyroom();
         }
         async function onReportUserTap() {
-            const targetUid = visitingUid || activeChatOtherUid;
-            if (!targetUid) return;
+            if (!visitingUid) return;
             const reason = prompt('通報の理由を教えてください（任意）');
             if (reason === null) return; // キャンセル
             const label = document.getElementById('visit-myroom-name-label').textContent;
             if (window.reportUser) {
-                const res = await window.reportUser(targetUid, label, reason);
+                const res = await window.reportUser(visitingUid, label, reason);
                 if (res.success) alert('🚨 通報しました。ご協力ありがとうございます。');
                 else alert('通報を送信できませんでした。時間を置いて試してください');
             }
@@ -1261,24 +990,17 @@
                 listEl.appendChild(row);
             });
         }
-        // 📜 招待する・される、その都度ごとに利用規約＆プライバシーポリシーへの同意を求める
-        let pendingRoomChatTermsAction = null;
-        function showRoomChatTermsModal(onAgree) {
-            pendingRoomChatTermsAction = onAgree;
-            openModal('room-chat-terms-modal');
-        }
-        function onAgreeRoomChatTerms() {
-            closeModal('room-chat-terms-modal');
-            const action = pendingRoomChatTermsAction;
-            pendingRoomChatTermsAction = null;
-            if (action) action();
-        }
-        function onCancelRoomChatTerms() {
-            closeModal('room-chat-terms-modal');
-            pendingRoomChatTermsAction = null;
+        // 🎁 起動時に、自分宛の未受領ギフトが無いか確認する
+        // ⚠️ 招待する・される時、一度だけ注意喚起を表示する
+        let hasSeenInviteEtiquetteNotice = false;
+        function showInviteEtiquetteNotice() {
+            if (hasSeenInviteEtiquetteNotice) return;
+            hasSeenInviteEtiquetteNotice = true;
+            alert('✉️ お部屋への招待について\n\n相手を不快にさせる行動・言動はお控えください。悪質な行為が確認された場合、アカウントのご利用を制限することがあります。\n\nユーザー間のトラブルについて、運営は責任を負いかねます。困ったことがあれば、ブロック・通報機能をご利用ください。');
         }
         // ✉️ フレンドをマイルームに招待する
         function openMyroomInvitePanel() {
+            showInviteEtiquetteNotice();
             document.getElementById('myroom-invite-panel').style.display = 'flex';
             renderMyroomInviteFriendList();
         }
@@ -1305,31 +1027,26 @@
                 row.innerHTML = `
                     <div style="flex-shrink:0; position:relative; width:36px; height:36px;">${renderRankOutfitPreviewHtml(f.outfit)}</div>
                     <div style="flex:1; min-width:0; font-size:0.8rem; color:#5d4037; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(f.name)}</div>
-                    <button onclick="onSendRoomInviteTap('${f.uid}', this)" data-friend-name="${escapeHtml(f.name)}" style="flex-shrink:0; background:#42a5f5; color:#fff; border:none; border-radius:10px; padding:6px 12px; font-size:0.72rem; font-weight:900;">招待</button>
+                    <button onclick="onSendRoomInviteTap('${f.uid}', this)" style="flex-shrink:0; background:#42a5f5; color:#fff; border:none; border-radius:10px; padding:6px 12px; font-size:0.72rem; font-weight:900;">招待</button>
                 `;
                 listEl.appendChild(row);
             });
         }
         async function onSendRoomInviteTap(uid, btnEl) {
-            const guestName = btnEl.dataset.friendName || '名無しさん';
-            showRoomChatTermsModal(async () => {
-                btnEl.disabled = true;
-                btnEl.textContent = '...';
-                const res = await window.sendRoomInvite(uid);
-                if (res.success) {
-                    btnEl.textContent = '✅送信済';
-                    closeMyroomInvitePanel();
-                    openHostWaitingRoom(uid, guestName);
+            btnEl.disabled = true;
+            btnEl.textContent = '...';
+            const res = await window.sendRoomInvite(uid);
+            if (res.success) {
+                btnEl.textContent = '✅送信済';
+            } else {
+                btnEl.disabled = false;
+                btnEl.textContent = '招待';
+                if (res.reason === 'offline_target') {
+                    alert('🔴 相手は今オフラインのようです。オンラインの時にまた誘ってみてください');
                 } else {
-                    btnEl.disabled = false;
-                    btnEl.textContent = '招待';
-                    if (res.reason === 'offline_target') {
-                        alert('🔴 相手は今オフラインのようです。オンラインの時にまた誘ってみてください');
-                    } else {
-                        alert('招待を送信できませんでした。時間を置いて試してください');
-                    }
+                    alert('招待を送信できませんでした。時間を置いて試してください');
                 }
-            });
+            }
         }
         // 💌 起動時・定期的に、自分宛の未確認のスタンプが無いか確認する
         async function checkIncomingVisitStampsOnLaunch() {
@@ -1352,10 +1069,9 @@
             if (validInvites.length === 0) return;
             const latest = validInvites[validInvites.length - 1]; // 複数来ていても、直近1件だけ案内する
             setTimeout(() => {
+                showInviteEtiquetteNotice();
                 if (confirm(`✉️ ${latest.fromName}さんが、あなたをお部屋に招待してくれたよ！\n見に行く？`)) {
-                    showRoomChatTermsModal(() => {
-                        joinFriendRoomAndChat(latest.fromUid, latest.fromName);
-                    });
+                    visitMyroomOf(latest.fromUid, true);
                 }
             }, 1200);
         }
@@ -3451,6 +3167,3 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         }
         function nextPage() { if (diaryPageIndex < currentStageIndex && diaryPageIndex < stages.length - 1) { diaryPageIndex++; flipDiaryPage(false); renderDiaryPage(); } }
         function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; flipDiaryPage(false); renderDiaryPage(); } }
-
-        // 💬 マイルームのライブチャット：入力欄でEnterキーを押した時に送信できるようにする
-        setupChatInputEnterKey();
