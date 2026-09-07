@@ -639,6 +639,23 @@
             }
         }
 
+        // 🎭 マイルームのタップ・叫ぶ・ごはん演出用：モーダルの手前に浮かび上がって消えるテキスト。
+        // createFloatingText()はタップ画面専用のcanvasに描くため、マイルームのモーダル内では見えない。
+        // こちらはposition:fixedのDOM要素なので、どのモーダルの上にいても確実に見える
+        function spawnModalFloatingText(x, y, text, color = '#ff9800', size = '1.2rem') {
+            const el = document.createElement('div');
+            el.textContent = text;
+            el.style.cssText = `position:fixed; left:${x}px; top:${y}px; transform:translate(-50%,-50%); font-size:${size};
+                font-weight:900; color:${color}; z-index:30000; pointer-events:none; text-shadow:0 2px 4px rgba(0,0,0,0.25);
+                transition: transform 1.1s ease-out, opacity 1.1s ease-out; opacity:1;`;
+            document.body.appendChild(el);
+            requestAnimationFrame(() => {
+                el.style.transform = 'translate(-50%, calc(-50% - 60px))';
+                el.style.opacity = '0';
+            });
+            setTimeout(() => el.remove(), 1150);
+        }
+
         function createRippleEffect(x, y) {
             const rect = getGameScreenRect();
             rippleList.push({ x: x - rect.left, y: y - rect.top, start: performance.now() });

@@ -81,7 +81,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-09-07-005">
+    <link rel="stylesheet" href="style.css?v=2026-09-07-008">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
@@ -401,10 +401,17 @@
                 // 実際の可否はFirestoreルール側でも同じ条件をget()で再計算して検証するので、
                 // ここで送る値を偽ってもチャット送信は許可されない
                 const chatEnabled = await computeChatEnabled(currentUid, guestUid);
+                // 🐛修正：roomSessionsのドキュメントは同じ2人の間で半永久的に使い回されるため、
+                // 過去に何度訪問し合っても会話ログ(messagesサブコレクション)は同じ場所に積み上がり続けていた。
+                // その結果「一度退室してまた通信し直しても、前回までの会話が見えてしまう」状態になっていた。
+                // ここでホストが新しく部屋を開くたび(＝新しい訪問セッションの開始)に
+                // sessionStartedAtを打ち直し、クライアント側の表示をこの時刻以降のメッセージだけに
+                // 絞ることで「その回だけの履歴」に見せる。Firestore側にはメッセージ自体は削除せず
+                // 全件残るので、過去分が必要な場合は開発者がFirebaseコンソール側から確認できる
                 await setDoc(doc(db, "roomSessions", roomId), {
                     hostUid: currentUid, guestUid,
                     hostPresentAt: Date.now(), guestPresentAt: null, endedAt: null,
-                    chatEnabled,
+                    chatEnabled, sessionStartedAt: Date.now(),
                 }, { merge: true });
                 return roomId;
             } catch (e) { console.error("ホストセッション開始エラー:", e); return null; }
@@ -442,6 +449,24 @@
             try {
                 await setDoc(doc(db, "roomSessions", roomId), isHost ? { hostLastSeenAt: Date.now() } : { guestLastSeenAt: Date.now() }, { merge: true });
             } catch (e) { /* 生存確認の失敗は致命的ではないので無視 */ }
+        };
+
+        // 🚶 マイルームの「歩き回る目的地」を、自分の役割(ホスト/ゲスト)側のフィールドにだけ書き込む。
+        // これを見た相手のクライアントは、自分でランダムな目的地を選ぶのではなく、この値に合わせて
+        // 同じアニメーションを再生することで、2人の画面で見た目の動きを揃える（Firestoreルール側でも
+        // hostWalkはホスト本人、guestWalkはゲスト本人しか書けないよう制限している）
+        window.sendRoomWalkTarget = async function (roomId, isHost, walkData) {
+            if (!fbReady || !db || !roomId) return;
+            try {
+                await setDoc(doc(db, "roomSessions", roomId), isHost ? { hostWalk: walkData } : { guestWalk: walkData }, { merge: true });
+            } catch (e) { /* 見た目だけの同期なので、失敗しても致命的ではない */ }
+        };
+        // 🎭🍙 叫ぶ・ごはん・タップなどの単発の演出イベントを、両者で共有する1つのフィールドに書き込む
+        window.sendRoomAction = async function (roomId, actionData) {
+            if (!fbReady || !db || !roomId) return;
+            try {
+                await setDoc(doc(db, "roomSessions", roomId), { roomAction: actionData }, { merge: true });
+            } catch (e) { /* 見た目だけの同期なので、失敗しても致命的ではない */ }
         };
 
         // 🚪🔴 部屋セッションを終了する（どちらかが退出ボタン/戻るボタンを押した時）
@@ -616,6 +641,7 @@
         // 🪙 フレンドに、無料のガチャコインを1枚送る
         window.sendGiftCoin = async function (toUid) {
             if (!fbReady || !db || !currentUid) return { success: false };
+            if (toUid === currentUid) return { success: false, reason: 'self' }; // 🐛修正：自分宛ギフトの量産防止（サーバー側のルールでも別途禁止済み）
             try {
                 const myDoc = await getDoc(doc(db, "rankings", currentUid));
                 const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';
@@ -690,7 +716,7 @@
             <button onclick="copyCornerBtnCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
             <textarea id="corner-btn-copy-textarea" readonly style="display:none; width:100%; height:100px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
         </div>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-07-005</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-07-008</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -855,7 +881,7 @@
                 <img id="myroom-wallpaper-layer" src="" alt="" style="position:absolute; top:0; left:0; width:100%; height:62%; object-fit:cover; object-position:bottom; z-index:1;">
                 <img id="myroom-flooring-layer" src="" alt="" style="position:absolute; bottom:0; left:0; width:100%; height:38%; object-fit:cover; object-position:top; z-index:1;">
 
-                <div id="myroom-mochisuke-breathe-wrap" class="breathe-idle" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999; cursor:pointer;">
+                <div id="myroom-mochisuke-breathe-wrap" class="breathe-idle" onclick="if (!myroomIsEditMode) onMyroomAvatarTap('myroom-mochisuke')" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999; cursor:pointer;">
                     <div id="myroom-mochisuke-inner" style="position:relative;">
                         <img id="myroom-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="myroom-mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
@@ -875,6 +901,12 @@
                 <div id="myroom-item-name-label" style="display:none; position:absolute; top:17%; left:50%; transform:translateX(-50%); z-index:9; background:rgba(255,255,255,0.95); color:#5d4037; font-weight:900; font-size:0.85rem; padding:5px 14px; border-radius:16px; box-shadow:0 2px 6px rgba(0,0,0,0.2); white-space:nowrap;"></div>
 
                 <button id="myroom-decorate-btn" onclick="toggleMyroomEditMode()" style="position:absolute; top:calc(6px + env(safe-area-inset-top, 0px)); right:8px; z-index:15; background:linear-gradient(135deg,#ff9800,#ff6fa5); color:#fff; border:none; border-radius:20px; padding:8px 16px; font-weight:900; font-size:0.8rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">🎨 もようがえ</button>
+                <!-- 🎭 アクション（叫ぶ・ごはん）：もようがえ中は邪魔なのでtoggleMyroomEditMode()側で消す -->
+                <button id="myroom-action-btn" class="myroom-action-btn" onclick="toggleMyroomActionMenu('edit')">🎭</button>
+                <div id="edit-myroom-action-submenu" class="myroom-action-submenu">
+                    <button class="myroom-action-sub-btn" onclick="onMyroomScreamTap('edit')" title="叫ぶ">🗣️</button>
+                    <button class="myroom-action-sub-btn" onclick="onMyroomFeedTap('edit')" title="ごはん">🍙</button>
+                </div>
                 <button onclick="openMyroomInvitePanel()" style="position:absolute; top:calc(60px + env(safe-area-inset-top, 0px)); left:4px; z-index:15; background:#42a5f5; color:#fff; border:none; border-radius:20px; padding:8px 14px; font-weight:900; font-size:0.78rem; box-shadow:0 3px 8px rgba(0,0,0,0.25);">✉️ 招待する</button>
 
                 <div id="myroom-invite-panel" style="display:none; position:absolute; inset:0; z-index:80; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; flex-direction:column;">
@@ -906,6 +938,15 @@
         </div>
     </div>
 
+    <!-- 🍙 マイルームのごはん選択パネル。もようがえ画面・訪問画面のどちらの🍙ボタンからも共有で使う -->
+    <div id="myroom-feed-picker-panel">
+        <div style="background:#fff8ec; border-radius:16px; padding:16px; width:88%; max-width:360px; max-height:75vh; box-sizing:border-box; overflow:hidden; display:flex; flex-direction:column;">
+            <div style="font-weight:900; color:#5d4037; margin-bottom:10px; text-align:center;">どのおみやげをあげる？</div>
+            <div id="myroom-feed-picker-grid"></div>
+            <button onclick="closeMyroomFeedPicker()" style="margin-top:12px; width:100%; background:#e57373; color:#fff; border:none; border-radius:12px; padding:8px; font-weight:900; flex-shrink:0;">閉じる</button>
+        </div>
+    </div>
+
     <div id="furniture-preview-modal" class="modal">
         <div class="modal-content modal-fullscreen">
             <button class="modal-back-btn" onclick="closeFurniturePreview()"></button>
@@ -930,7 +971,7 @@
                 <img id="visit-myroom-wallpaper" src="" alt="" style="position:absolute; top:0; left:0; width:100%; height:62%; object-fit:cover;">
                 <img id="visit-myroom-flooring" src="" alt="" style="position:absolute; top:62%; left:0; width:100%; height:38%; object-fit:cover;">
                 <div id="visit-myroom-furniture-layer" style="position:absolute; top:0; left:0; width:100%; height:100%;"></div>
-                <div id="visit-myroom-mochisuke-breathe-wrap" class="breathe-idle" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999;">
+                <div id="visit-myroom-mochisuke-breathe-wrap" class="breathe-idle" onclick="onMyroomAvatarTap('visit-myroom-mochisuke')" style="position:absolute; bottom:2%; left:50%; transform:translateX(-50%); width:22%; z-index:999; cursor:pointer;">
                     <div id="visit-myroom-mochisuke-chat-bubble" class="room-chat-bubble"></div>
                     <div id="visit-myroom-mochisuke-inner" style="position:relative;">
                         <img id="visit-myroom-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
@@ -944,7 +985,7 @@
                         <img id="visit-myroom-mochisuke-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
                     </div>
                 </div>
-                <div id="visit-myroom-myself-breathe-wrap" class="breathe-idle" style="display:none; position:absolute; bottom:2%; left:30%; transform:translateX(-50%); width:22%; z-index:998;">
+                <div id="visit-myroom-myself-breathe-wrap" class="breathe-idle" onclick="onMyroomAvatarTap('visit-myroom-myself')" style="display:none; position:absolute; bottom:2%; left:30%; transform:translateX(-50%); width:22%; z-index:998; cursor:pointer;">
                     <div id="visit-myroom-myself-chat-bubble" class="room-chat-bubble"></div>
                     <div id="visit-myroom-myself-inner" style="position:relative;">
                         <img id="visit-myroom-myself-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
@@ -969,6 +1010,12 @@
                 <!-- 🐛修正：z-indexが20のままだと、もちすけ本体(z-index:999/998)の下に隠れてタップできないことがあった。1000超に引き上げる -->
                 <button id="visit-chat-history-btn" onclick="openChatHistoryModal()" style="display:none; position:absolute; left:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:1000; width:50px; height:50px; border-radius:50%; background:#795548; border:none; box-shadow:0 3px 10px rgba(0,0,0,0.3); font-size:1.4rem; align-items:center; justify-content:center;">📜</button>
                 <button id="visit-chat-toggle-btn" onclick="toggleChatInputBar()" style="display:none; position:absolute; right:12px; bottom:calc(12px + env(safe-area-inset-bottom, 0px)); z-index:1000; width:50px; height:50px; border-radius:50%; background:#ff9800; border:none; box-shadow:0 3px 10px rgba(0,0,0,0.3); font-size:1.4rem; align-items:center; justify-content:center;">💬</button>
+                <!-- 🎭 アクション（叫ぶ・ごはん）：ライブ訪問中(一人で待機中/相手と一緒)だけ表示。一方通行の閲覧では非表示 -->
+                <button id="visit-myroom-action-btn" class="myroom-action-btn" style="display:none;" onclick="toggleMyroomActionMenu('visit')">🎭</button>
+                <div id="visit-myroom-action-submenu" class="myroom-action-submenu">
+                    <button class="myroom-action-sub-btn" onclick="onMyroomScreamTap('visit')" title="叫ぶ">🗣️</button>
+                    <button class="myroom-action-sub-btn" onclick="onMyroomFeedTap('visit')" title="ごはん">🍙</button>
+                </div>
             </div>
             <div id="visit-action-buttons-row" style="padding:6px 10px 0; background:#fff8ec; flex-shrink:0; display:flex; gap:6px; justify-content:flex-end;">
                 <button onclick="onBlockUserTap()" style="flex-shrink:0; background:#78909c; color:#fff; border:none; border-radius:14px; padding:5px 10px; font-size:0.65rem; font-weight:900;">🚫 ブロック</button>
@@ -1559,13 +1606,13 @@
         </div>
     </div>
 
-    <script src="data.js?v=2026-09-07-005"></script>
-    <script src="state.js?v=2026-09-07-005"></script>
-    <script src="tap.js?v=2026-09-07-005"></script>
-    <script src="shop.js?v=2026-09-07-005"></script>
-    <script src="progress.js?v=2026-09-07-005"></script>
-    <script src="minigames.js?v=2026-09-07-005"></script>
-    <script src="ui.js?v=2026-09-07-005"></script>
-    <script src="main.js?v=2026-09-07-005"></script>
+    <script src="data.js?v=2026-09-07-008"></script>
+    <script src="state.js?v=2026-09-07-008"></script>
+    <script src="tap.js?v=2026-09-07-008"></script>
+    <script src="shop.js?v=2026-09-07-008"></script>
+    <script src="progress.js?v=2026-09-07-008"></script>
+    <script src="minigames.js?v=2026-09-07-008"></script>
+    <script src="ui.js?v=2026-09-07-008"></script>
+    <script src="main.js?v=2026-09-07-008"></script>
 </body>
 </html>

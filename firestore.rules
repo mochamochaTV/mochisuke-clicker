@@ -91,8 +91,14 @@ service cloud.firestore {
 
     match /gifts/{giftId} {
       allow read: if request.auth != null && resource.data.toUid == request.auth.uid;
+      // 🐛修正：toUidが自分自身になることを禁止していなかったため、`addDoc(collection(db,"gifts"), {toUid: 自分,
+      // fromUid: 自分, amount:10, claimed:false})` のように、ブラウザのコンソールから直接自分宛の
+      // ギフトを量産してガチャコインを無限に入手できてしまっていた（sendGiftCoin側はtoUidを検証しておらず、
+      // ルール側でも他人へのいいね(roomLikes)は既にownerUid != 自分を要求していたのに、こちらは抜けていた）
       allow create: if request.auth != null
                     && request.resource.data.fromUid == request.auth.uid
+                    && request.resource.data.toUid is string
+                    && request.resource.data.toUid != request.auth.uid
                     && request.resource.data.amount is number
                     && request.resource.data.amount > 0
                     && request.resource.data.amount <= 10;
@@ -173,7 +179,7 @@ service cloud.firestore {
                        )
                      )
                   && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['hostUid', 'guestUid', 'hostPresentAt', 'guestPresentAt', 'hostLastSeenAt', 'guestLastSeenAt', 'endedAt', 'chatEnabled']);
+                       .hasOnly(['hostUid', 'guestUid', 'hostPresentAt', 'guestPresentAt', 'hostLastSeenAt', 'guestLastSeenAt', 'endedAt', 'chatEnabled', 'sessionStartedAt']);
       allow delete: if false;
 
       match /messages/{messageId} {

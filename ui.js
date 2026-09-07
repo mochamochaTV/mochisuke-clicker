@@ -632,6 +632,10 @@
         let lastChatSendAt = 0;
         let lastRenderedChatMsgId = null;
         let chatMessageHistory = [];      // 履歴モーダル表示用に、今回のセッションの全メッセージを保持
+        // 🐛修正：roomSessionsドキュメントは同じ2人の間で使い回されるため、messagesサブコレクションには
+        // 過去すべての訪問回の会話が積み上がっている。表示だけをこの時刻(=今回の訪問開始時刻)以降に
+        // 絞ることで「その回だけの履歴」に見せる（Firestore上のデータそのものは削除しない）
+        let activeChatSessionStartedAt = 0;
         const CHAT_SEND_COOLDOWN_MS = 1200; // 連投防止（これより短い間隔では送信できない）
         const CHAT_MAX_LEN = 200;
         const CHAT_BUBBLE_DURATION_MS = 5000;
@@ -714,6 +718,7 @@
             document.getElementById('visit-waiting-indicator').style.display = 'block';
 
             openModal('visit-myroom-modal');
+            document.getElementById('visit-myroom-action-btn').style.display = 'flex'; // 🎭 一人で待っている間から使える
             startVisitMochisukeWalk('visit-myroom-mochisuke-breathe-wrap', 'visitHost');
             startRoomSessionWatch(roomId, guestName);
         }
@@ -753,14 +758,21 @@
             likeBtn.style.background = '#e91e63';
 
             openModal('visit-myroom-modal');
-            startVisitMochisukeWalk('visit-myroom-mochisuke-breathe-wrap', 'visitHost');
+            document.getElementById('visit-myroom-action-btn').style.display = 'flex'; // 🎭 ライブ訪問中はアクションボタンを表示する
+            // 🚶🐛修正：ホスト側(相手)の見た目は自分ではランダムに歩かせず、相手から届く目的地(hostWalk)を
+            // そのまま再生する。自分のアバターだけをここでランダムに歩かせ、目的地を相手にも伝える
             startVisitMochisukeWalk('visit-myroom-myself-breathe-wrap', 'visitSelf');
             startRoomSessionWatch(roomId, hostName);
         }
 
+        let lastRawChatMessages = []; // messagesサブコレクションの生データ（session開始時刻が後から判明した時の再フィルタ用）
+
         // 👀 セッション監視（相手の到着・退出を検知）＋チャット監視＋生存確認を、まとめて開始する
         function startRoomSessionWatch(roomId, otherName) {
             stopRoomSessionWatch();
+            // 🐛修正：本当のsessionStartedAtがFirestoreから届くまでの一瞬、フィルタが0のままだと
+            // 過去の全履歴が一瞬だけ見えてしまう。届くまではInfinityにして「何も出さない」側に倒す
+            activeChatSessionStartedAt = Infinity;
             unsubRoomSession = window.listenRoomSession(roomId, (data) => {
                 if (!activeChatRoomId || roomId !== activeChatRoomId) return; // 既に退室済みなら無視
                 if (!data || data.endedAt) {
@@ -770,9 +782,29 @@
                 // 🎂 chatEnabled（双方が13歳以上と確認できたペアかどうか）に応じて、
                 // チャット用ボタン/入力欄の表示・非表示をここで一元的に切り替える
                 setChatUiVisible(data.chatEnabled === true);
+                // 🐛修正：今回の訪問セッションの開始時刻が判明/更新されたら、既に受信済みの
+                // メッセージ一覧をこの時刻基準で再フィルタして表示し直す
+                const newStart = typeof data.sessionStartedAt === 'number' ? data.sessionStartedAt : 0;
+                if (newStart !== activeChatSessionStartedAt) {
+                    activeChatSessionStartedAt = newStart;
+                    renderChatMessages(lastRawChatMessages);
+                }
                 if (activeChatIsHost && data.guestPresentAt) {
                     const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
                     if (!myselfWrap.dataset.shown) onGuestArrived(otherName);
+                }
+                // 🚶 相手側が選んだ歩行の目的地が届いたら、自分の画面でも同じ場所へ同じ速さで歩かせる
+                // （自分でランダムに歩かせるのではなく、相手の選択をそのまま再生することで動きを揃える）
+                const otherWalk = activeChatIsHost ? data.guestWalk : data.hostWalk;
+                if (otherWalk && typeof otherWalk.ts === 'number' && otherWalk.ts !== lastAppliedOtherWalkTs && otherAvatarPrefix) {
+                    lastAppliedOtherWalkTs = otherWalk.ts;
+                    applyVisitWalkTarget(otherAvatarPrefix + '-breathe-wrap', otherWalk.leftPct, otherWalk.bottomPct);
+                }
+                // 🎭 相手が起こした叫ぶ/ごはん/タップの演出イベントが届いたら、自分の画面でも同じ演出を再生する
+                if (data.roomAction && typeof data.roomAction.ts === 'number' && data.roomAction.ts !== lastAppliedRoomActionTs) {
+                    lastAppliedRoomActionTs = data.roomAction.ts;
+                    const myUid = window.getMyUid && window.getMyUid();
+                    if (data.roomAction.byUid !== myUid) applyRemoteRoomAction(data.roomAction);
                 }
             });
             unsubRoomMessages = window.listenRoomChatMessages(roomId, renderChatMessages);
@@ -786,7 +818,11 @@
             if (unsubRoomMessages) { unsubRoomMessages(); unsubRoomMessages = null; }
             if (roomHeartbeatTimer) { clearInterval(roomHeartbeatTimer); roomHeartbeatTimer = null; }
             lastRenderedChatMsgId = null;
+            activeChatSessionStartedAt = 0;
+            lastRawChatMessages = [];
             chatMessageHistory = [];
+            lastAppliedRoomActionTs = 0;
+            lastAppliedOtherWalkTs = 0;
             hideChatBubble('visit-myroom-mochisuke');
             hideChatBubble('visit-myroom-myself');
         }
@@ -804,7 +840,8 @@
                 const data = await window.fetchMyroomData(activeChatOtherUid);
                 applyVisitOutfit(data && data.outfit, 'visit-myroom-myself');
             }
-            startVisitMochisukeWalk('visit-myroom-myself-breathe-wrap', 'visitSelf');
+            // 🚶🐛修正：ゲスト(相手)の見た目は自分ではランダムに歩かせず、相手から届く目的地(guestWalk)を
+            // そのまま再生する（=listenRoomSessionのコールバック側で処理）。ここでは何もしない
         }
 
         // 🚪🔴 相手が退出した／セッションが切れた時
@@ -871,8 +908,13 @@
         }
 
         // 👂 新着メッセージが来るたびに呼ばれる：最新の1件をセリフ吹き出しで表示し、履歴も更新する
-        function renderChatMessages(msgs) {
+        // 🐛修正：roomSessionsのドキュメントは同じ2人の間で使い回され続けるため、messagesには
+        // 過去すべての訪問回の会話が積み上がっている。ここでactiveChatSessionStartedAt以降の
+        // メッセージだけに絞ることで、履歴には「今回の訪問分だけ」が表示されるようにする
+        function renderChatMessages(rawMsgs) {
             if (!activeChatRoomId) return;
+            lastRawChatMessages = rawMsgs;
+            const msgs = rawMsgs.filter(m => (m.createdAt || 0) >= activeChatSessionStartedAt);
             chatMessageHistory = msgs;
             if (msgs.length > 0) {
                 const last = msgs[msgs.length - 1];
@@ -973,6 +1015,9 @@
                 myselfWrap.style.display = 'none';
             }
             openModal('visit-myroom-modal');
+            // 🎭 ここはライブ接続のない一方通行の閲覧（相手はその場にいない）なので、
+            // 同期のしようがないアクションボタンは表示しない
+            document.getElementById('visit-myroom-action-btn').style.display = 'none';
             startVisitMochisukeWalk('visit-myroom-mochisuke-breathe-wrap', 'visitHost');
             if (showBoth) startVisitMochisukeWalk('visit-myroom-myself-breathe-wrap', 'visitSelf');
             // ❤️ 既にいいね済みかどうか確認して、ボタンの状態を反映する
@@ -980,15 +1025,16 @@
             likeBtn.disabled = false;
             likeBtn.textContent = '❤️ いいね';
             likeBtn.style.background = '#e91e63';
-            // 🚧テスト用：いったん「いいね済み」判定も無効化しています（確認できたら元に戻します）
-            // if (window.checkRoomLiked) {
-            //     const alreadyLiked = await window.checkRoomLiked(uid);
-            //     if (alreadyLiked) {
-            //         likeBtn.disabled = true;
-            //         likeBtn.textContent = '❤️ いいね済み';
-            //         likeBtn.style.background = '#ccc';
-            //     }
-            // }
+            // いいね連打対策(likeRoomの atomic batch化)の動作確認が取れたので、コメントアウトしていた
+            // 「いいね済み」判定を復活。再訪問時に、既にいいね済みならボタンをその表示にする
+            if (window.checkRoomLiked) {
+                const alreadyLiked = await window.checkRoomLiked(uid);
+                if (alreadyLiked) {
+                    likeBtn.disabled = true;
+                    likeBtn.textContent = '❤️ いいね済み';
+                    likeBtn.style.background = '#ccc';
+                }
+            }
         }
         async function onLikeRoomTap() {
             if (!visitingUid || !window.likeRoom) return;
@@ -1033,6 +1079,10 @@
             setChatUiVisible(false);
             document.getElementById('visit-waiting-indicator').style.display = 'none';
             setVisitActionButtonsForHosting(false);
+            closeMyroomActionMenu('visit');
+            closeMyroomFeedPicker();
+            const placedIcon = document.getElementById('myroom-feed-placed-icon');
+            if (placedIcon) placedIcon.remove();
             setTimeout(() => {
                 closeModal('visit-myroom-modal');
                 visitingUid = null;
@@ -1047,7 +1097,11 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
         }
-        // 🚶 部屋訪問中も、ホスト・自分それぞれ独立してランダムに歩き回らせる
+        // 🚶🐛修正：以前はホスト・ゲスト双方の見た目を、host側とguest側それぞれの画面が独立して
+        // ランダムに歩かせていたため、2人の画面でもちすけの位置がバラバラになっていた。
+        // これ以降は「自分のアバター」だけをこのタイマーでランダムに歩かせ、選んだ目的地を
+        // roomSessionsドキュメントに書き込む。相手側は自分で歩かせず、届いた目的地をそのまま
+        // 再生する（=applyVisitWalkTarget）ことで、2人の画面の動きを一致させる
         const visitWalkTimers = { visitHost: null, visitSelf: null };
         function startVisitMochisukeWalk(wrapId, key) {
             stopVisitMochisukeWalk(key);
@@ -1063,10 +1117,23 @@
         }
         function walkVisitMochisukeToRandomSpot(wrapId, key) {
             const wrap = document.getElementById(wrapId);
-            if (!wrap || wrap.style.display === 'none') return;
-            const currentLeft = parseFloat(wrap.style.left) || 50;
+            if (!wrap || wrap.style.display === 'none') { scheduleNextVisitWalk(wrapId, key); return; }
             const newLeftPct = 12 + Math.random() * 76;
             const newBottomPct = 1 + Math.random() * 8;
+            applyVisitWalkTarget(wrapId, newLeftPct, newBottomPct);
+            // 🐛修正：ライブセッション中なら、自分が選んだ目的地を相手にも伝える（コストを抑えるため
+            // 目的地が変わった時だけ書き込む。1回の訪問セッションで数秒に1回程度の頻度）
+            if (activeChatRoomId && window.sendRoomWalkTarget) {
+                window.sendRoomWalkTarget(activeChatRoomId, activeChatIsHost, { leftPct: newLeftPct, bottomPct: newBottomPct, ts: Date.now() });
+            }
+            scheduleNextVisitWalk(wrapId, key);
+        }
+        // 🚶 実際にDOMへ反映する部分（自分の意思による移動でも、相手から届いた移動でも同じ関数を使うことで、
+        // 見た目・速度の計算方法を完全に一致させる）
+        function applyVisitWalkTarget(wrapId, newLeftPct, newBottomPct) {
+            const wrap = document.getElementById(wrapId);
+            if (!wrap || wrap.style.display === 'none') return;
+            const currentLeft = parseFloat(wrap.style.left) || 50;
             const distance = Math.abs(newLeftPct - currentLeft);
             const moveDuration = Math.max(0.5, distance / MYROOM_WALK_SPEED_PCT_PER_SEC).toFixed(2); // 一定速度になるよう距離から逆算
             wrap.style.transition = `left ${moveDuration}s linear, bottom ${moveDuration}s linear`;
@@ -1081,7 +1148,217 @@
                 if (inner) inner.classList.remove('myroom-walking');
                 if (mouthAnchor && mouthAnchor.dataset.fullbody !== '1') mouthAnchor.style.display = 'block'; // 止まったら口を閉じる
             }, moveDuration * 1000);
-            scheduleNextVisitWalk(wrapId, key);
+        }
+
+        // ===================================================================
+        // 🎭 マイルームのアクション（叫ぶ・ごはん・タップ）：一人で遊ぶ時も、二人で遊ぶ時も使える。
+        // ライブセッション中は、自分が起こした演出をroomSessions.roomActionに書き込み、相手の画面にも
+        // 同じ演出を再生させることで、2人の見え方をなるべく揃える（報酬・スコアには一切影響しない）
+        // ===================================================================
+        let myroomFeedDragState = null;
+        let myroomFeedPickerContext = 'visit';
+        let lastMyroomTapSentAt = 0;
+        let lastAppliedRoomActionTs = 0; // 相手発の演出イベントの二重再生防止
+        let lastAppliedOtherWalkTs = 0;  // 相手発の歩行イベントの二重再生防止
+
+        // 今の画面文脈（'visit'=訪問/招待中の部屋、'edit'=自分の部屋のプレビュー画面）における
+        // 「自分のアバターのprefix」「（いれば）相手のアバターのprefix」を返す
+        function getMyroomActionContext(context) {
+            if (context === 'edit') return { selfPrefix: 'myroom-mochisuke', otherPrefix: null };
+            if (activeChatRoomId && myAvatarPrefix) return { selfPrefix: myAvatarPrefix, otherPrefix: otherAvatarPrefix };
+            return { selfPrefix: 'visit-myroom-mochisuke', otherPrefix: null };
+        }
+        function toggleMyroomActionMenu(context) {
+            const menu = document.getElementById(context + '-myroom-action-submenu');
+            if (menu) menu.classList.toggle('show');
+        }
+        function closeMyroomActionMenu(context) {
+            const menu = document.getElementById(context + '-myroom-action-submenu');
+            if (menu) menu.classList.remove('show');
+        }
+
+        // 👉 もちすけをタップ：自分・相手どちらのもちすけをタップしても遊べる、報酬なしの触れ合い演出
+        function onMyroomAvatarTap(prefix) {
+            playMyroomTapEffect(prefix);
+            const now = Date.now();
+            // 🐛連打対策：タップは瞬間的に大量発生しうるので、見た目の反映は毎回でも、
+            // Firestoreへの同期だけは間引く（300msに1回まで）。通信コストを抑えるため
+            if (activeChatRoomId && window.sendRoomAction && now - lastMyroomTapSentAt > 300) {
+                lastMyroomTapSentAt = now;
+                window.sendRoomAction(activeChatRoomId, { type: 'tap', targetPrefix: prefix, byUid: window.getMyUid && window.getMyUid(), ts: now });
+            }
+        }
+
+        // 🗣️ 叫ぶ：自分のもちすけだけが対象（タップ画面の「じらされ過ぎて叫ぶ」演出の使い回し）
+        function onMyroomScreamTap(context) {
+            closeMyroomActionMenu(context);
+            const { selfPrefix } = getMyroomActionContext(context);
+            playMyroomScreamEffect(selfPrefix);
+            if (activeChatRoomId && window.sendRoomAction) {
+                window.sendRoomAction(activeChatRoomId, { type: 'scream', targetPrefix: selfPrefix, byUid: window.getMyUid && window.getMyUid(), ts: Date.now() });
+            }
+        }
+
+        // 🍙 ごはん：倉庫で持っているおみやげから選ばせる（タップ画面と違い、無制限・タップ力バフなし）
+        function onMyroomFeedTap(context) {
+            closeMyroomActionMenu(context);
+            myroomFeedPickerContext = context;
+            renderMyroomFeedPicker();
+            document.getElementById('myroom-feed-picker-panel').classList.add('show');
+        }
+        function closeMyroomFeedPicker() {
+            document.getElementById('myroom-feed-picker-panel').classList.remove('show');
+        }
+        function renderMyroomFeedPicker() {
+            const grid = document.getElementById('myroom-feed-picker-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            const owned = stages.map((s, i) => ({ s, i, lv: purchasedItems[i] || 0 })).filter(o => o.lv > 0);
+            if (owned.length === 0) {
+                grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#fff; font-size:0.8rem; padding:20px;">まだ持っているおみやげがありません</div>`;
+                return;
+            }
+            owned.forEach(({ s, i }) => {
+                const cell = document.createElement('div');
+                cell.style.cssText = 'text-align:center; cursor:pointer; padding:6px; border-radius:10px; background:#fff8ec;';
+                cell.innerHTML = `<img src="${s.itemImg}" alt="${escapeHtml(s.item)}" style="width:100%; aspect-ratio:1; object-fit:contain;">
+                    <div style="font-size:0.6rem; font-weight:bold; color:#5d4037; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(s.item)}</div>`;
+                cell.onclick = () => { closeMyroomFeedPicker(); placeMyroomFeedIcon(i); };
+                grid.appendChild(cell);
+            });
+        }
+        // 選んだおみやげのアイコンを自分のもちすけの近くに置く。タップ画面と同じく、これをドラッグして
+        // どちらかのもちすけの上まで運んで離すと食べてくれる（離した場所で対象が自動的に決まる）
+        function placeMyroomFeedIcon(idx) {
+            const stage = stages[idx];
+            const { selfPrefix } = getMyroomActionContext(myroomFeedPickerContext);
+            const selfWrap = document.getElementById(selfPrefix + '-breathe-wrap');
+            if (!stage || !selfWrap) return;
+            const old = document.getElementById('myroom-feed-placed-icon');
+            if (old) old.remove();
+            const rect = selfWrap.getBoundingClientRect();
+            const icon = document.createElement('img');
+            icon.id = 'myroom-feed-placed-icon';
+            icon.src = stage.itemImg;
+            icon.alt = stage.item;
+            icon.className = 'myroom-feed-icon-drop-in';
+            icon.style.cssText = `position:fixed; width:64px; height:64px; object-fit:contain; z-index:99999;
+                left:${rect.left + rect.width / 2}px; top:${rect.bottom + 20}px; transform:translate(-50%,-50%);
+                filter:drop-shadow(0 4px 8px rgba(0,0,0,0.4)); touch-action:none; cursor:grab;`;
+            document.body.appendChild(icon);
+            icon.addEventListener('pointerdown', (e) => startMyroomFeedDrag(idx, icon, e));
+        }
+        function startMyroomFeedDrag(idx, icon, e) {
+            e.preventDefault();
+            icon.classList.remove('myroom-feed-icon-drop-in');
+            icon.style.cursor = 'grabbing';
+            icon.style.transition = 'none';
+            myroomFeedDragState = { idx, icon };
+            document.addEventListener('pointermove', onMyroomFeedDragMove);
+            document.addEventListener('pointerup', onMyroomFeedDragEnd);
+            document.addEventListener('pointercancel', onMyroomFeedDragEnd);
+        }
+        function onMyroomFeedDragMove(e) {
+            if (!myroomFeedDragState) return;
+            myroomFeedDragState.icon.style.left = e.clientX + 'px';
+            myroomFeedDragState.icon.style.top = e.clientY + 'px';
+        }
+        function onMyroomFeedDragEnd(e) {
+            if (!myroomFeedDragState) return;
+            const { idx, icon } = myroomFeedDragState;
+            document.removeEventListener('pointermove', onMyroomFeedDragMove);
+            document.removeEventListener('pointerup', onMyroomFeedDragEnd);
+            document.removeEventListener('pointercancel', onMyroomFeedDragEnd);
+            myroomFeedDragState = null;
+            const { selfPrefix, otherPrefix } = getMyroomActionContext(myroomFeedPickerContext);
+            const x = e.clientX, y = e.clientY;
+            let targetPrefix = null;
+            for (const p of [selfPrefix, otherPrefix]) {
+                if (!p) continue;
+                const wrap = document.getElementById(p + '-breathe-wrap');
+                if (!wrap || wrap.style.display === 'none') continue;
+                const r = wrap.getBoundingClientRect();
+                if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) { targetPrefix = p; break; }
+            }
+            if (targetPrefix) {
+                icon.remove();
+                playMyroomFeedEffect(targetPrefix, idx);
+                if (activeChatRoomId && window.sendRoomAction) {
+                    window.sendRoomAction(activeChatRoomId, { type: 'feed', targetPrefix, itemIdx: idx, byUid: window.getMyUid && window.getMyUid(), ts: Date.now() });
+                }
+            } else {
+                // 的を外したら、自分のもちすけの足元に戻して、またやり直せるようにする
+                const selfWrap = document.getElementById(selfPrefix + '-breathe-wrap');
+                if (selfWrap) {
+                    const r = selfWrap.getBoundingClientRect();
+                    icon.style.transition = 'left 0.3s ease-out, top 0.3s ease-out';
+                    icon.style.left = (r.left + r.width / 2) + 'px';
+                    icon.style.top = (r.bottom + 20) + 'px';
+                    icon.style.cursor = 'grab';
+                    setTimeout(() => { icon.style.transition = 'none'; }, 320);
+                }
+            }
+        }
+
+        // ===== 実際の見た目の演出（自分の操作でも、相手から届いた同期でも、この共通関数を使う） =====
+        function playMyroomTapEffect(prefix) {
+            const wrap = document.getElementById(prefix + '-breathe-wrap');
+            const inner = document.getElementById(prefix + '-inner');
+            if (!wrap || wrap.style.display === 'none' || !inner) return;
+            playAudioFile('audio/tap.mp3');
+            inner.animate([
+                { transform: 'scale(1, 1)' },
+                { transform: 'scale(1.15, 0.85)', offset: 0.4 },
+                { transform: 'scale(1, 1)' }
+            ], { duration: 220, easing: 'ease-out' });
+            const rect = wrap.getBoundingClientRect();
+            spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 6, '#ffcc80');
+        }
+        function playMyroomScreamEffect(prefix) {
+            const wrap = document.getElementById(prefix + '-breathe-wrap');
+            const inner = document.getElementById(prefix + '-inner');
+            if (!wrap || wrap.style.display === 'none' || !inner) return;
+            playAudioFile('audio/mochisuke/mochi_scream.mp3');
+            vibrate([20, 30, 20]);
+            inner.classList.remove('mochi-scream');
+            void inner.offsetWidth;
+            inner.classList.add('mochi-scream');
+            setTimeout(() => inner.classList.remove('mochi-scream'), 550);
+            const rect = wrap.getBoundingClientRect();
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 30 + Math.random() * 50;
+                    const x = rect.left + rect.width / 2 + Math.cos(angle) * dist;
+                    const y = rect.top + rect.height / 3 + Math.sin(angle) * dist - 20;
+                    spawnModalFloatingText(x, y, 'あ゛', '#e91e63', (1.1 + Math.random() * 0.7) + 'rem');
+                }, i * 55);
+            }
+        }
+        function playMyroomFeedEffect(prefix, idx) {
+            const wrap = document.getElementById(prefix + '-breathe-wrap');
+            const inner = document.getElementById(prefix + '-inner');
+            const stage = stages[idx];
+            if (!wrap || wrap.style.display === 'none' || !inner || !stage) return;
+            playAudioFile('audio/mochisuke/mochi_eat.mp3');
+            vibrate([20, 40, 20]);
+            inner.animate([
+                { transform: 'scale(1, 1) rotate(0deg)' },
+                { transform: 'scale(1.25, 0.8) rotate(-4deg)', offset: 0.25 },
+                { transform: 'scale(0.85, 1.2) rotate(4deg)', offset: 0.5 },
+                { transform: 'scale(1.1, 0.92) rotate(-2deg)', offset: 0.75 },
+                { transform: 'scale(1, 1) rotate(0deg)' }
+            ], { duration: 500, easing: 'ease-in-out' });
+            const rect = wrap.getBoundingClientRect();
+            spawnModalFloatingText(rect.left + rect.width / 2, rect.top + rect.height / 3, `${stage.item}おいしい〜！`, '#ff9800', '1rem');
+            spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 10, '#ffd54f');
+        }
+        // 🎭 相手から届いた演出イベントを、自分の画面でも再生する（自分自身の書き込みは無視する）
+        function applyRemoteRoomAction(action) {
+            if (!action || !action.targetPrefix) return;
+            if (action.type === 'scream') playMyroomScreamEffect(action.targetPrefix);
+            else if (action.type === 'feed') playMyroomFeedEffect(action.targetPrefix, action.itemIdx);
+            else if (action.type === 'tap') playMyroomTapEffect(action.targetPrefix);
         }
         function renderVisitMyroomLayout(myroomData) {
             const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === myroomData.wallpaper) || MYROOM_ITEMS.wallpaper[0];
@@ -1661,6 +1938,10 @@
                 if (sizePanel) sizePanel.style.display = myroomIsEditMode ? 'block' : 'none';
             }
             document.getElementById('myroom-decorate-btn').textContent = myroomIsEditMode ? '👁️ プレビュー' : '🎨 もようがえ';
+            // 🎭 もようがえモード中は、家具配置の邪魔になるのでアクションボタンを消す
+            const actionBtn = document.getElementById('myroom-action-btn');
+            if (actionBtn) actionBtn.style.display = myroomIsEditMode ? 'none' : 'flex';
+            if (myroomIsEditMode) closeMyroomActionMenu('edit');
             renderMyroomLayout(); // 削除ボタンの表示/非表示を確実に同期させる
         }
         // 🚶 マイルームでは、もちすけがランダムに歩き回る・立ち止まるを繰り返す
