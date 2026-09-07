@@ -1314,16 +1314,46 @@
             const rect = wrap.getBoundingClientRect();
             spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 6, '#ffcc80');
         }
+        // 😱🐛修正：タップ画面と同じimage_scream.webpに差し替えるようにした。マイルームの体は
+        // 「衣装(clothes)」「帽子/顔」「フルボディ衣装」に分かれた重ね着き構造なので、タップ画面の
+        // 単一画像(mochiBtnElement.src)swapと同じ見た目にするため、叫んでいる間だけ帽子・顔・
+        // フルボディ衣装を隠して衣装レイヤーだけをimage_scream.webpに差し替え、終わったら全て元に戻す
+        const myroomScreamState = {}; // prefixごとに、叫ぶ前の状態を覚えておいて正確に巻き戻す
         function playMyroomScreamEffect(prefix) {
             const wrap = document.getElementById(prefix + '-breathe-wrap');
             const inner = document.getElementById(prefix + '-inner');
-            if (!wrap || wrap.style.display === 'none' || !inner) return;
+            const clothesEl = document.getElementById(prefix + '-clothes');
+            if (!wrap || wrap.style.display === 'none' || !inner || !clothesEl) return;
             playAudioFile('audio/mochisuke/mochi_scream.mp3');
             vibrate([20, 30, 20]);
-            inner.classList.remove('mochi-scream');
+            const hatEl = document.getElementById(prefix + '-hat');
+            const faceEl = document.getElementById(prefix + '-face');
+            const fullbodyEl = document.getElementById(prefix + '-fullbody');
+            let state = myroomScreamState[prefix];
+            if (state) {
+                clearTimeout(state.revertTimeout); // 連続で叫んだ場合、古いタイマーに巻き戻されないようにする
+            } else {
+                state = {
+                    prevClothesSrc: clothesEl.src,
+                    prevClothesOpacity: clothesEl.style.opacity,
+                    prevHatDisplay: hatEl ? hatEl.style.display : '',
+                    prevFaceDisplay: faceEl ? faceEl.style.display : '',
+                    prevFullbodyDisplay: fullbodyEl ? fullbodyEl.style.display : ''
+                };
+                myroomScreamState[prefix] = state;
+            }
+            clothesEl.src = 'ui_images/mochisuke/image_scream.webp';
+            clothesEl.style.opacity = '1'; // 🤖フルボディ衣装中は衣装レイヤーが隠れている(opacity:0)ので、叫ぶ間だけ見せる
+            if (hatEl) hatEl.style.display = 'none';
+            if (faceEl) faceEl.style.display = 'none';
+            if (fullbodyEl) fullbodyEl.style.display = 'none';
+            // 🐛修正：タップ画面用の.mochi-screamはscale(1.5)固定で、部屋の中では小さいもちすけが
+            // 急に大きくなりすぎて浮いて見える（他の一人と重なることもある）ため、拡大率を控えめにした
+            // マイルーム専用クラスを使う（見た目の大きさへの配慮）
+            inner.classList.remove('myroom-avatar-scream');
             void inner.offsetWidth;
-            inner.classList.add('mochi-scream');
-            setTimeout(() => inner.classList.remove('mochi-scream'), 550);
+            inner.classList.add('myroom-avatar-scream');
+            state.revertTimeout = setTimeout(() => revertMyroomScreamEffect(prefix), 2600); // タップ画面と同じ長さキープ
             const rect = wrap.getBoundingClientRect();
             for (let i = 0; i < 5; i++) {
                 setTimeout(() => {
@@ -1334,6 +1364,23 @@
                     spawnModalFloatingText(x, y, 'あ゛', '#e91e63', (1.1 + Math.random() * 0.7) + 'rem');
                 }, i * 55);
             }
+        }
+        // 叫び終わったら、衣装・帽子・顔・フルボディ衣装の表示状態を叫ぶ前と完全に一致するよう戻す
+        function revertMyroomScreamEffect(prefix) {
+            const state = myroomScreamState[prefix];
+            if (!state) return;
+            clearTimeout(state.revertTimeout);
+            const inner = document.getElementById(prefix + '-inner');
+            const clothesEl = document.getElementById(prefix + '-clothes');
+            const hatEl = document.getElementById(prefix + '-hat');
+            const faceEl = document.getElementById(prefix + '-face');
+            const fullbodyEl = document.getElementById(prefix + '-fullbody');
+            if (inner) inner.classList.remove('myroom-avatar-scream');
+            if (clothesEl) { clothesEl.src = state.prevClothesSrc; clothesEl.style.opacity = state.prevClothesOpacity; }
+            if (hatEl) hatEl.style.display = state.prevHatDisplay;
+            if (faceEl) faceEl.style.display = state.prevFaceDisplay;
+            if (fullbodyEl) fullbodyEl.style.display = state.prevFullbodyDisplay;
+            delete myroomScreamState[prefix];
         }
         function playMyroomFeedEffect(prefix, idx) {
             const wrap = document.getElementById(prefix + '-breathe-wrap');
