@@ -5,27 +5,35 @@
 // ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
 // 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
 // ===================================================================
+// ===================================================================
+// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
+// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
+// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
+// ===================================================================
 import {
   CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-08-001';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-08-001';
+} from './data.js?v=2026-09-08-002';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-08-002';
 import {
   checkAndRotateMissions, checkOfflineEarnings, checkStageProgress, currentStageIndex,
-  equippedKisekae, ownedKisekaeItems, ownedMyroomItems, prestigeCount, selectedStageIndex
-} from './progress.js?v=2026-09-08-001';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-08-001';
-import { checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, totalTapsCount } from './state.js?v=2026-09-08-001';
+  currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems, prestigeCount,
+  selectedStageIndex, setCurrentStageProgress
+} from './progress.js?v=2026-09-08-002';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-08-002';
 import {
-  bunshinCloneRects, endSkillVisualEffect, getMps, isFever, lastTappedTime,
-  refreshBunshinCloneRects, resetMochiFilter, skills, startFeverSpawningLoop, triggerFeverTime,
-  updateSkillUI
-} from './tap.js?v=2026-09-08-001';
+  checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
+} from './state.js?v=2026-09-08-002';
+import {
+  bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
+  refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
+  triggerFeverTime, updateSkillUI
+} from './tap.js?v=2026-09-08-002';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-08-001';
+} from './ui.js?v=2026-09-08-002';
 
         // 🚧🚧🚧 メンテナンスモード 🚧🚧🚧
         // 大きな更新をする直前に true にしてから公開すると、プレイヤーには「メンテナンス中」画面だけが表示され、
@@ -408,9 +416,9 @@ import {
 
         export function debugAddMochi() {
             const currentReq = stages[currentStageIndex] ? stages[currentStageIndex].distance : 1000000;
-            score += currentReq;
+            setScore(score + (currentReq));
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
-                currentStageProgress += currentReq; checkStageProgress();
+                setCurrentStageProgress(currentStageProgress + (currentReq)); checkStageProgress();
             }
             updateDisplay(); saveGame();
         }
@@ -458,7 +466,7 @@ import {
 
         export function resizeParticleCanvas() {
             const rect = document.getElementById('game-screen').getBoundingClientRect();
-            gameScreenRect = rect; // タップ演出（リップル/文字/パーティクル）で使い回すキャッシュ
+            setGameScreenRect(rect); // タップ演出（リップル/文字/パーティクル）で使い回すキャッシュ
             if (bunshinCloneRects.length > 0) refreshBunshinCloneRects();
             if (rainCanvas) { rainCanvas.width = rect.width; rainCanvas.height = rect.height; }
             if (!canvas) return;
@@ -940,7 +948,7 @@ import {
                 }
                 const currentStage = stages[currentStageIndex] || stages[0];
                 const bonus = Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
-                score += bonus;
+                setScore(score + (bonus));
                 createFloatingText(e.clientX, e.clientY, `🎁福もちボーナス +${formatMochi(bonus)}`, "#ff9800", "1.5rem");
                 saveGame(); updateDisplay();
                 present.remove();
@@ -977,6 +985,15 @@ import {
 
 
         // ===================================================================
+        // フェーズ3：他ファイルから書き換えるためのsetter関数
+        // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
+        // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
+        // ===================================================================
+        export function setBgmVolumeMult(v) { bgmVolumeMult = v; }
+        export function setLastGreetingHourBucket(v) { lastGreetingHourBucket = v; }
+        export function setSfxVolumeMult(v) { sfxVolumeMult = v; }
+
+
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
         // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
         // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
@@ -1006,10 +1023,7 @@ import {
         Object.defineProperty(window, 'mochiRainList', { configurable: true, get: () => mochiRainList, set: (v) => { mochiRainList = v; } });
         Object.defineProperty(window, 'ambientSparkles', { configurable: true, get: () => ambientSparkles, set: (v) => { ambientSparkles = v; } });
         Object.defineProperty(window, 'goldParticleImg', { configurable: true, get: () => goldParticleImg, set: (v) => { goldParticleImg = v; } });
-        Object.defineProperty(window, 'lastGreetingHourBucket', { configurable: true, get: () => lastGreetingHourBucket, set: (v) => { lastGreetingHourBucket = v; } });
         Object.defineProperty(window, 'audioCtx', { configurable: true, get: () => audioCtx, set: (v) => { audioCtx = v; } });
-        Object.defineProperty(window, 'bgmVolumeMult', { configurable: true, get: () => bgmVolumeMult, set: (v) => { bgmVolumeMult = v; } });
-        Object.defineProperty(window, 'sfxVolumeMult', { configurable: true, get: () => sfxVolumeMult, set: (v) => { sfxVolumeMult = v; } });
         Object.defineProperty(window, 'bgmGainNode', { configurable: true, get: () => bgmGainNode, set: (v) => { bgmGainNode = v; } });
         Object.defineProperty(window, 'bgmSourceNode', { configurable: true, get: () => bgmSourceNode, set: (v) => { bgmSourceNode = v; } });
         Object.defineProperty(window, 'currentBgmFile', { configurable: true, get: () => currentBgmFile, set: (v) => { currentBgmFile = v; } });

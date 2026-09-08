@@ -5,48 +5,63 @@
 // ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
 // 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
 // ===================================================================
+// ===================================================================
+// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
+// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
+// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
+// ===================================================================
 import {
-  CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, DEFAULT_MOUTH_POSITION,
+  CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, DEFAULT_MOUTH_POSITION,
   KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_CATEGORY_LABELS,
   MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS,
   MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS,
-  WAREHOUSE_ITEM_PARTS, dialogueData, stages
-} from './data.js?v=2026-09-08-001';
+  WAREHOUSE_ITEM_PARTS, dialogueData, setCORNER_BTN_SIZE, stages
+} from './data.js?v=2026-09-08-002';
 import {
-  IS_DEV_MODE, applyBgmVolume, createFloatingText, createParticle, escapeHtml, fixBottomGap,
-  formatMochi, getTimeBucketIndex, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
-  playBgmLoop, screenFlash, screenShake, spawnModalFloatingText, spawnModalParticleBurst, vibrate
-} from './main.js?v=2026-09-08-001';
-import { hasNewlyUnlockedMinigame } from './minigames.js?v=2026-09-08-001';
+  IS_DEV_MODE, applyBgmVolume, bgmVolumeMult, createFloatingText, createParticle, escapeHtml,
+  fixBottomGap, formatMochi, getTimeBucketIndex, isRunningStandalone, lazyLoadImage, pickRandom,
+  playAudioFile, playBgmLoop, screenFlash, screenShake, setBgmVolumeMult,
+  setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult, spawnModalFloatingText,
+  spawnModalParticleBurst, vibrate
+} from './main.js?v=2026-09-08-002';
+import { hasNewlyUnlockedMinigame } from './minigames.js?v=2026-09-08-002';
 import {
-  canPrestige, checkAndRotateMissions, claimMission, collectedStamps, currentStageIndex,
-  currentStageProgress, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon,
-  isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected,
-  missionWeeklySelected, myroomSlots, ownedKisekaeItems, ownedMyroomItems, prestigeCount,
-  showPrefTrophyDetail, stageArrivalTime, trackMissionEvent, triggerAreaTransition,
-  tutorialMissionStep
-} from './progress.js?v=2026-09-08-001';
+  canPrestige, checkAndRotateMissions, claimMission, collectedStamps, currentMyroomSlotIndex,
+  currentStageIndex, currentStageProgress, equippedKisekae, equippedMyroom, gachaCoins,
+  getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete,
+  isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, myroomSlots,
+  ownedKisekaeItems, ownedMyroomItems, prestigeCount, previewKisekae, selectedStageIndex,
+  setCurrentMyroomSlotIndex, setEquippedKisekae, setEquippedMyroom, setGachaCoins,
+  setPreviewKisekae, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode,
+  showPrefTrophyDetail, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent,
+  triggerAreaTransition, tutorialMissionStep
+} from './progress.js?v=2026-09-08-002';
 import {
-  blockedUserIds, favoriteFriendIds, getOmiyagePrice, purchasedItems, sprayInventory,
-  ticketInventory, updateGachaCoinDisplay
-} from './shop.js?v=2026-09-08-001';
-import { refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, totalTapsCount } from './state.js?v=2026-09-08-001';
+  activeSprayId, blockedUserIds, favoriteFriendIds, getOmiyagePrice, purchasedItems,
+  setActiveSprayId, setSprayBuffActiveUntil, sprayBuffActiveUntil, sprayInventory, ticketInventory,
+  updateGachaCoinDisplay
+} from './shop.js?v=2026-09-08-002';
 import {
-  FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, cancelFeedDragIfActive, feedTeaseTimer, feverTimeLeft,
-  getMps, getTapPower, isDraggingSqueeze, isFever, isScreamActive, isSqueezeSettling,
-  mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, skills,
-  startFeedBuffIndicator
-} from './tap.js?v=2026-09-08-001';
+  playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName,
+  totalTapsCount
+} from './state.js?v=2026-09-08-002';
+import {
+  FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, cancelFeedDragIfActive, feedPlaysUsedToday,
+  feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isDraggingSqueeze, isFever, isScreamActive,
+  isSqueezeSettling, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay,
+  revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel,
+  setLastTappedTime, skills, startFeedBuffIndicator
+} from './tap.js?v=2026-09-08-002';
 
         export function onBgmVolumeChange(val) {
-            bgmVolumeMult = val / 100;
+            setBgmVolumeMult(val / 100);
             document.getElementById('bgm-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_bgm_volume', bgmVolumeMult);
             applyBgmVolume();
         }
 
         export function onSfxVolumeChange(val) {
-            sfxVolumeMult = val / 100;
+            setSfxVolumeMult(val / 100);
             document.getElementById('sfx-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_sfx_volume', sfxVolumeMult);
         }
@@ -112,7 +127,7 @@ import {
             if (!balloon) return;
             balloon.innerText = text;
             balloon.classList.add('balloon-show');
-            lastTappedTime = Date.now(); // 表示直後にすぐ別のセリフへ切り替わらないようにリセット
+            setLastTappedTime(Date.now()); // 表示直後にすぐ別のセリフへ切り替わらないようにリセット
             clearTimeout(balloonAutoHideTimer);
             if (!isTutorialActive) {
                 balloonAutoHideTimer = setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000);
@@ -274,7 +289,7 @@ import {
             const input = document.getElementById('tutorial-name-input');
             const result = sanitizePlayerName(input.value);
             if (!result.ok) { alert(result.reason); return; }
-            playerName = result.name;
+            setPlayerName(result.name);
             localStorage.setItem('punicker_player_name', playerName);
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             closeModal('tutorial-name-modal');
@@ -308,7 +323,7 @@ import {
         export let cornerBtnAdjustMode = false;
         export let cornerBtnDragState = null;
         export function adjustCornerBtnSize(delta) {
-            CORNER_BTN_SIZE = Math.max(20, CORNER_BTN_SIZE + delta);
+            setCORNER_BTN_SIZE(Math.max(20, CORNER_BTN_SIZE + delta));
             document.getElementById('corner-btn-size-readout').textContent = CORNER_BTN_SIZE + 'px';
             applyCornerBtnPositions();
         }
@@ -403,7 +418,7 @@ import {
                 text = pickRandom(dialogueData.timeGreetings[bucketName]);
                 localStorage.setItem(GREETING_STATE_KEY, todayKey);
             }
-            lastGreetingHourBucket = bucketIdx; // アイドルループがすぐ二重に挨拶し直さないように
+            setLastGreetingHourBucket(bucketIdx); // アイドルループがすぐ二重に挨拶し直さないように
             showMochiComment(text);
         }
 
@@ -1063,7 +1078,7 @@ import {
                 likeBtn.textContent = '❤️ いいね済み';
                 likeBtn.style.background = '#ccc';
                 playAudioFile('audio/levelup.mp3');
-                gachaCoins += 1; // 🪙 いいねを送った自分も、ガチャコインを1枚もらう
+                setGachaCoins(gachaCoins + (1)); // 🪙 いいねを送った自分も、ガチャコインを1枚もらう
                 saveGame();
                 updateGachaCoinDisplay();
                 showLikeCoinPopup(likeBtn);
@@ -1849,7 +1864,7 @@ import {
             const gifts = await window.checkIncomingGifts();
             if (!gifts || gifts.length === 0) return;
             const totalAmount = gifts.reduce((sum, g) => sum + (g.amount || 0), 0);
-            gachaCoins += totalAmount;
+            setGachaCoins(gachaCoins + (totalAmount));
             saveGame(); updateDisplay();
 
             // 🏠❤️ 部屋のいいね由来と、フレンドからの直接送付を分けて、分かりやすく通知する
@@ -2598,7 +2613,7 @@ import {
             if (myroomSwitcherPreviewIndex === currentMyroomSlotIndex) { closeMyroomSwitcher(); return; }
             // 今編集中の部屋を、抜ける前にスロットへ保存しておく
             myroomSlots[currentMyroomSlotIndex] = JSON.parse(JSON.stringify(previewMyroom));
-            currentMyroomSlotIndex = myroomSwitcherPreviewIndex;
+            setCurrentMyroomSlotIndex(myroomSwitcherPreviewIndex);
             if (!myroomSlots[currentMyroomSlotIndex]) {
                 // 新規部屋は、デフォルトの壁紙・床だけの状態で作る
                 myroomSlots[currentMyroomSlotIndex] = {
@@ -2607,14 +2622,14 @@ import {
                 };
             }
             previewMyroom = JSON.parse(JSON.stringify(myroomSlots[currentMyroomSlotIndex]));
-            equippedMyroom = JSON.parse(JSON.stringify(myroomSlots[currentMyroomSlotIndex]));
+            setEquippedMyroom(JSON.parse(JSON.stringify(myroomSlots[currentMyroomSlotIndex])));
             selectedMyroomInstance = null;
             renderMyroomLayout();
             saveGame();
             closeMyroomSwitcher();
         }
         export function confirmMyroomLayout() {
-            equippedMyroom = JSON.parse(JSON.stringify(previewMyroom)); // 配列(家具配置)も含めて完全に独立させる
+            setEquippedMyroom(JSON.parse(JSON.stringify(previewMyroom))); // 配列(家具配置)も含めて完全に独立させる
             saveGame();
             const btn = document.getElementById('myroom-confirm-btn');
             const original = btn.innerText;
@@ -2624,7 +2639,7 @@ import {
         // 🌐 「決定」とは別に、実際にランキング・フレンドから見られるようにするには「公開する」を押す必要がある
         export function onPublishMyroomTap() {
             if (!confirm('この部屋を公開しますか？\nランキング・フレンドから見られるようになります。')) return;
-            equippedMyroom = JSON.parse(JSON.stringify(previewMyroom)); // 公開時点の内容を、決定扱いにもしておく
+            setEquippedMyroom(JSON.parse(JSON.stringify(previewMyroom))); // 公開時点の内容を、決定扱いにもしておく
             saveGame();
             if (window.submitMyroomData) {
                 window.submitMyroomData(equippedMyroom);
@@ -2675,8 +2690,8 @@ import {
         export function useSpray(itemId) {
             if ((sprayInventory[itemId] || 0) <= 0) return;
             sprayInventory[itemId]--;
-            activeSprayId = itemId;
-            sprayBuffActiveUntil = Date.now() + 24 * 60 * 60 * 1000;
+            setActiveSprayId(itemId);
+            setSprayBuffActiveUntil(Date.now() + 24 * 60 * 60 * 1000);
             saveGame(); updateDisplay(); updateSprayEffectDisplay();
             openTicketInventory(); // 一覧を開いている場合、表示を更新する
         }
@@ -2686,7 +2701,7 @@ import {
         // ===================================================================
         export function openKisekaeRoom() {
             openModal('kisekae-room-modal'); // タップ音のみでOK、フェード・移動音は不要
-            previewKisekae = { ...equippedKisekae }; // 確定済みの状態から、試着用のコピーを作る
+            setPreviewKisekae({ ...equippedKisekae }); // 確定済みの状態から、試着用のコピーを作る
             renderKisekaeMochisuke();
             openKisekaeCategory('clothes');
         }
@@ -3052,7 +3067,7 @@ import {
 
         // 🎯「決定」ボタン：試着中の服装を、実際に確定して保存・タップ画面にも反映する
         export function confirmKisekaeOutfit() {
-            equippedKisekae = { ...previewKisekae };
+            setEquippedKisekae({ ...previewKisekae });
             saveGame();
             applyKisekaeToMainScreen();
             const btn = document.getElementById('kisekae-confirm-btn');
@@ -3383,10 +3398,10 @@ import {
 
             clearTimeout(feedTeaseTimer);
             if (isScreamActive) revertScreamFace(); // 叫び中に給餌で中断された場合も、確実に元の姿へ戻す
-            feedTeaseLevel = 0;
+            setFeedTeaseLevel(0);
 
-            feedBuffActiveUntil = Date.now() + FEED_BUFF_DURATION_MS;
-            feedPlaysUsedToday++;
+            setFeedBuffActiveUntil(Date.now() + FEED_BUFF_DURATION_MS);
+            setFeedPlaysUsedToday(feedPlaysUsedToday + 1);
             trackMissionEvent('feedToday', 1);
             saveGame();
             startFeedBuffIndicator();
@@ -3468,7 +3483,7 @@ import {
         export function mapMoveTo(idx) {
             closeModal('map-modal');
             triggerAreaTransition(stages[idx].bg, () => {
-                selectedStageIndex = idx; updateDisplay(); saveGame();
+                setSelectedStageIndex(idx); updateDisplay(); saveGame();
                 const name = stages[idx].name;
                 const prefPool = dialogueData.prefectureComments[name];
                 showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
@@ -3571,9 +3586,9 @@ import {
         }
 
         export function toggleStampDebug() {
-            stampDebugMode = !stampDebugMode;
+            setStampDebugMode(!stampDebugMode);
             if (stampDebugMode) {
-                stampDebugInterval = setInterval(updateStampDebugReadout, 300);
+                setStampDebugInterval(setInterval(updateStampDebugReadout, 300));
                 updateStampDebugReadout();
             } else {
                 clearInterval(stampDebugInterval);
@@ -3944,6 +3959,17 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
 
 
         // ===================================================================
+        // フェーズ3：他ファイルから書き換えるためのsetter関数
+        // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
+        // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
+        // ===================================================================
+        export function setBalloonAutoHideTimer(v) { balloonAutoHideTimer = v; }
+        export function setDiaryPageIndex(v) { diaryPageIndex = v; }
+        export function setHasSeenTutorial(v) { hasSeenTutorial = v; }
+        export function setLastGiftSentDateStr(v) { lastGiftSentDateStr = v; }
+        export function setSeenButtonHints(v) { seenButtonHints = v; }
+
+
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
         // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
         // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
@@ -3964,13 +3990,10 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
         Object.defineProperty(window, 'uiDeclutterState', { configurable: true, get: () => uiDeclutterState, set: (v) => { uiDeclutterState = v; } });
-        Object.defineProperty(window, 'hasSeenTutorial', { configurable: true, get: () => hasSeenTutorial, set: (v) => { hasSeenTutorial = v; } });
-        Object.defineProperty(window, 'balloonAutoHideTimer', { configurable: true, get: () => balloonAutoHideTimer, set: (v) => { balloonAutoHideTimer = v; } });
         Object.defineProperty(window, 'roboMouthAnimTimer', { configurable: true, get: () => roboMouthAnimTimer, set: (v) => { roboMouthAnimTimer = v; } });
         Object.defineProperty(window, 'mouthAdjustMode', { configurable: true, get: () => mouthAdjustMode, set: (v) => { mouthAdjustMode = v; } });
         Object.defineProperty(window, 'tutorialStepIndex', { configurable: true, get: () => tutorialStepIndex, set: (v) => { tutorialStepIndex = v; } });
         Object.defineProperty(window, 'tutorialTimer', { configurable: true, get: () => tutorialTimer, set: (v) => { tutorialTimer = v; } });
-        Object.defineProperty(window, 'seenButtonHints', { configurable: true, get: () => seenButtonHints, set: (v) => { seenButtonHints = v; } });
         Object.defineProperty(window, 'cornerBtnAdjustMode', { configurable: true, get: () => cornerBtnAdjustMode, set: (v) => { cornerBtnAdjustMode = v; } });
         Object.defineProperty(window, 'cornerBtnDragState', { configurable: true, get: () => cornerBtnDragState, set: (v) => { cornerBtnDragState = v; } });
         Object.defineProperty(window, 'mouthDragState', { configurable: true, get: () => mouthDragState, set: (v) => { mouthDragState = v; } });
@@ -3996,7 +4019,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         Object.defineProperty(window, 'lastAppliedRoomActionTs', { configurable: true, get: () => lastAppliedRoomActionTs, set: (v) => { lastAppliedRoomActionTs = v; } });
         Object.defineProperty(window, 'lastAppliedOtherWalkTs', { configurable: true, get: () => lastAppliedOtherWalkTs, set: (v) => { lastAppliedOtherWalkTs = v; } });
         Object.defineProperty(window, 'currentFriendTab', { configurable: true, get: () => currentFriendTab, set: (v) => { currentFriendTab = v; } });
-        Object.defineProperty(window, 'lastGiftSentDateStr', { configurable: true, get: () => lastGiftSentDateStr, set: (v) => { lastGiftSentDateStr = v; } });
         Object.defineProperty(window, 'pendingRoomChatTermsAction', { configurable: true, get: () => pendingRoomChatTermsAction, set: (v) => { pendingRoomChatTermsAction = v; } });
         Object.defineProperty(window, 'inviteFriendDotRefreshTimer', { configurable: true, get: () => inviteFriendDotRefreshTimer, set: (v) => { inviteFriendDotRefreshTimer = v; } });
         Object.defineProperty(window, 'moveMochisukeLoopTimer', { configurable: true, get: () => moveMochisukeLoopTimer, set: (v) => { moveMochisukeLoopTimer = v; } });
@@ -4033,7 +4055,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         Object.defineProperty(window, 'lastRecommendCheckTime', { configurable: true, get: () => lastRecommendCheckTime, set: (v) => { lastRecommendCheckTime = v; } });
         Object.defineProperty(window, 'sprayParticleTimer', { configurable: true, get: () => sprayParticleTimer, set: (v) => { sprayParticleTimer = v; } });
         Object.defineProperty(window, 'currentRankingTab', { configurable: true, get: () => currentRankingTab, set: (v) => { currentRankingTab = v; } });
-        Object.defineProperty(window, 'diaryPageIndex', { configurable: true, get: () => diaryPageIndex, set: (v) => { diaryPageIndex = v; } });
         Object.defineProperty(window, 'diaryShowingBack', { configurable: true, get: () => diaryShowingBack, set: (v) => { diaryShowingBack = v; } });
         window.onBgmVolumeChange = onBgmVolumeChange;
         window.onSfxVolumeChange = onSfxVolumeChange;

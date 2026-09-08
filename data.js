@@ -491,6 +491,13 @@
 
 
         // ===================================================================
+        // フェーズ3：他ファイルから書き換えるためのsetter関数
+        // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
+        // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
+        // ===================================================================
+        export function setCORNER_BTN_SIZE(v) { CORNER_BTN_SIZE = v; }
+
+
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
         // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
         // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
@@ -510,7 +517,6 @@
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'CORNER_BTN_SIZE', { configurable: true, get: () => CORNER_BTN_SIZE, set: (v) => { CORNER_BTN_SIZE = v; } });
         window.stages = stages;
         window.clothesData = clothesData;
         window.PRESTIGE_SHOP_ITEMS = PRESTIGE_SHOP_ITEMS;

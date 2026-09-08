@@ -5,26 +5,31 @@
 // ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
 // 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
 // ===================================================================
+// ===================================================================
+// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
+// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
+// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
+// ===================================================================
 import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-08-001';
+} from './data.js?v=2026-09-08-002';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-08-001';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-08-001';
+} from './main.js?v=2026-09-08-002';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-08-002';
 import {
-  currentStageIndex, equippedMyroom, getPrefTrophy, ownedKisekaeItems, ownedMyroomItems,
-  prestigeShopLv, trackMissionEvent
-} from './progress.js?v=2026-09-08-001';
-import { saveGame } from './state.js?v=2026-09-08-001';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-08-001';
+  currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
+  ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
+} from './progress.js?v=2026-09-08-002';
+import { saveGame, score, setScore } from './state.js?v=2026-09-08-002';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-08-002';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-001';
+} from './ui.js?v=2026-09-08-002';
 
         export function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
         export function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
@@ -195,7 +200,7 @@ import {
             } else if (itemId === 'cooldownTicket') {
                 Object.keys(skills).forEach(k => { skills[k].currentCd = 0; });
             } else if (itemId === 'mochi30minTicket') {
-                score += getMps() * 1800; // 30分ぶんの自動増加を即座に付与
+                setScore(score + (getMps() * 1800)); // 30分ぶんの自動増加を即座に付与
             }
             ticketInventory[itemId]--;
             saveGame(); updateDisplay();
@@ -295,7 +300,7 @@ import {
                 alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_SINGLE - gachaCoins}枚必要です）\n\nステージクリア（スタンプ）やおしごとミッションのクリア、日本制覇・転生でも手に入ります！`);
                 return;
             }
-            if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_SINGLE;
+            if (!IS_DEV_MODE) setGachaCoins(gachaCoins - (GACHA_COST_SINGLE));
             trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
 
             currentGachaRarity = pickGachaRarity(); // 🎨 この回で出るレア度を先に決めておく（カプセルの色に反映する）
@@ -432,7 +437,7 @@ import {
                 ownedKisekaeItems[picked.category].push(picked.id);
             } else {
                 refundCoins = DUPLICATE_REFUND_BY_STAR[star] || 0;
-                gachaCoins += refundCoins;
+                setGachaCoins(gachaCoins + (refundCoins));
             }
             return { item: picked, isDuplicate, refundCoins };
         }
@@ -526,7 +531,7 @@ import {
                 alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_TEN - gachaCoins}枚必要です）\n\nステージクリア（スタンプ）やおしごとミッションのクリア、日本制覇・転生でも手に入ります！`);
                 return;
             }
-            if (!IS_DEV_MODE) gachaCoins -= GACHA_COST_TEN;
+            if (!IS_DEV_MODE) setGachaCoins(gachaCoins - (GACHA_COST_TEN));
             trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
             const rarities10 = [];
             for (let i = 0; i < 10; i++) rarities10.push(pickGachaRarity());
@@ -755,7 +760,7 @@ import {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             if (!item) return;
             if (!IS_DEV_MODE && score < item.price) return;
-            if (!IS_DEV_MODE) score -= item.price;
+            if (!IS_DEV_MODE) setScore(score - (item.price));
             if (!ownedMyroomItems[cat]) ownedMyroomItems[cat] = [];
             ownedMyroomItems[cat].push(itemId); // 複数個買えるよう、重複を許可する（所持数は個数で管理）
             playAudioFile('audio/levelup.mp3');
@@ -1194,7 +1199,7 @@ import {
             const stage = stages[idx]; const currentLv = purchasedItems[idx] || 0;
             const nextPrice = getOmiyagePrice(stage, currentLv);
             if (score >= nextPrice) {
-                score -= nextPrice; purchasedItems[idx] = currentLv + 1;
+                setScore(score - (nextPrice)); purchasedItems[idx] = currentLv + 1;
                 trackMissionEvent('omiyageBoughtTotal', 1); trackMissionEvent('omiyageBoughtToday', 1);
                 playAudioFile('audio/levelup.mp3');
                 showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
@@ -1205,7 +1210,7 @@ import {
         export function buyKisekae(id) {
             const target = clothesData.find(c => c.id === id);
             if (score >= target.price && !purchasedClothes[id]) {
-                score -= target.price; purchasedClothes[id] = true;
+                setScore(score - (target.price)); purchasedClothes[id] = true;
                 equipClothe(id); // 🐛修正：装備専用のUIを廃止したので、買ったらその場で自動装備する（能力ボーナスが有効になるように）
                 saveGame(); renderShopList(); updateDisplay();
             }
@@ -1223,6 +1228,21 @@ import {
 
 
         // ===================================================================
+        // フェーズ3：他ファイルから書き換えるためのsetter関数
+        // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
+        // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
+        // ===================================================================
+        export function setActiveSprayId(v) { activeSprayId = v; }
+        export function setBlockedUserIds(v) { blockedUserIds = v; }
+        export function setEquippedClotheId(v) { equippedClotheId = v; }
+        export function setFavoriteFriendIds(v) { favoriteFriendIds = v; }
+        export function setPurchasedClothes(v) { purchasedClothes = v; }
+        export function setPurchasedItems(v) { purchasedItems = v; }
+        export function setSprayBuffActiveUntil(v) { sprayBuffActiveUntil = v; }
+        export function setSprayInventory(v) { sprayInventory = v; }
+        export function setTicketInventory(v) { ticketInventory = v; }
+
+
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
         // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
         // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
@@ -1242,16 +1262,7 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'purchasedItems', { configurable: true, get: () => purchasedItems, set: (v) => { purchasedItems = v; } });
-        Object.defineProperty(window, 'purchasedClothes', { configurable: true, get: () => purchasedClothes, set: (v) => { purchasedClothes = v; } });
-        Object.defineProperty(window, 'equippedClotheId', { configurable: true, get: () => equippedClotheId, set: (v) => { equippedClotheId = v; } });
         Object.defineProperty(window, 'currentGachaRarity', { configurable: true, get: () => currentGachaRarity, set: (v) => { currentGachaRarity = v; } });
-        Object.defineProperty(window, 'ticketInventory', { configurable: true, get: () => ticketInventory, set: (v) => { ticketInventory = v; } });
-        Object.defineProperty(window, 'sprayInventory', { configurable: true, get: () => sprayInventory, set: (v) => { sprayInventory = v; } });
-        Object.defineProperty(window, 'activeSprayId', { configurable: true, get: () => activeSprayId, set: (v) => { activeSprayId = v; } });
-        Object.defineProperty(window, 'sprayBuffActiveUntil', { configurable: true, get: () => sprayBuffActiveUntil, set: (v) => { sprayBuffActiveUntil = v; } });
-        Object.defineProperty(window, 'favoriteFriendIds', { configurable: true, get: () => favoriteFriendIds, set: (v) => { favoriteFriendIds = v; } });
-        Object.defineProperty(window, 'blockedUserIds', { configurable: true, get: () => blockedUserIds, set: (v) => { blockedUserIds = v; } });
         Object.defineProperty(window, 'currentGachaRateTab', { configurable: true, get: () => currentGachaRateTab, set: (v) => { currentGachaRateTab = v; } });
         Object.defineProperty(window, 'pendingGachaResult', { configurable: true, get: () => pendingGachaResult, set: (v) => { pendingGachaResult = v; } });
         Object.defineProperty(window, 'pendingGachaResults10', { configurable: true, get: () => pendingGachaResults10, set: (v) => { pendingGachaResults10 = v; } });

@@ -5,30 +5,36 @@
 // ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
 // 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
 // ===================================================================
+// ===================================================================
+// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
+// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
+// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
+// ===================================================================
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-08-001';
+} from './data.js?v=2026-09-08-002';
 import {
   audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
   getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-08-001';
-import { isMinigameActive } from './minigames.js?v=2026-09-08-001';
+} from './main.js?v=2026-09-08-002';
+import { isMinigameActive } from './minigames.js?v=2026-09-08-002';
 import {
-  checkStageProgress, currentStageIndex, equippedKisekae, getPrefTrophy,
+  checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
-  selectedStageIndex, trackMissionEvent
-} from './progress.js?v=2026-09-08-001';
+  selectedStageIndex, setCurrentStageProgress, trackMissionEvent
+} from './progress.js?v=2026-09-08-002';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-08-001';
-import { saveGame } from './state.js?v=2026-09-08-001';
+} from './shop.js?v=2026-09-08-002';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-08-002';
 import {
-  closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays, getLocalDateString,
-  hideMochiComment, isTutorialActive, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-08-001';
+  balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
+  getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
+  showMochiComment, updateDisplay, updateMouthPatchVisibility
+} from './ui.js?v=2026-09-08-002';
 
         export let skills = {
             skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 0, unlockPrice: 300, lvPriceMult: 1.9, desc: "発動中はタップでパーティクルが3倍出る" },
@@ -161,7 +167,7 @@ import {
                 clearTimeout(balloonAutoHideTimer);
                 balloon.innerText = pickRandom(cheerLines[tier]);
                 balloon.classList.add('balloon-show');
-                balloonAutoHideTimer = setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000);
+                setBalloonAutoHideTimer(setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000));
             }
         }
 
@@ -173,7 +179,7 @@ import {
             clearTimeout(balloonAutoHideTimer);
             balloon.innerText = text;
             balloon.classList.add('balloon-show');
-            balloonAutoHideTimer = setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000);
+            setBalloonAutoHideTimer(setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000));
         }
 
         export let hasComboTitle1000 = false; // 1000コンボ到達の称号を、初回だけお祝いするためのフラグ
@@ -389,9 +395,9 @@ import {
 
             // スコア・進捗加算
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
-                score += power; currentStageProgress += power; checkStageProgress();
+                setScore(score + (power)); setCurrentStageProgress(currentStageProgress + (power)); checkStageProgress();
             } else {
-                score += power;
+                setScore(score + (power));
             }
 
             // 新SE視覚演出（音を先に鳴らしてから見た目の処理をする＝DOM生成が音の発火を遅らせないようにする）
@@ -433,7 +439,7 @@ import {
             try { mochiBtnElement.setPointerCapture(e.pointerId); } catch (err) {}
             initAndPlayBGM();
             playAudioFile('audio/tap.mp3'); 
-            totalTapsCount++;
+            setTotalTapsCount(totalTapsCount + 1);
             trackMissionEvent('totalTaps', 1); trackMissionEvent('tapsToday', 1); trackMissionEvent('tapsThisWeek', 1);
             chargeHissatsuByTap();
             prefTaps[selectedStageIndex] = (prefTaps[selectedStageIndex] || 0) + 1;
@@ -892,7 +898,7 @@ import {
             if (!s || currentStageIndex < s.unlockStage) return;
             const price = s.lv === 0 ? s.unlockPrice : Math.floor(s.unlockPrice * Math.pow(s.lvPriceMult, s.lv));
             if (score < price) return;
-            score -= price;
+            setScore(score - (price));
             s.lv += 1;
             playAudioFile('audio/levelup.mp3');
             showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
@@ -1105,8 +1111,8 @@ import {
         setInterval(() => {
             let mps = getMps();
             if (mps > 0) {
-                let gain = mps / 10; score += gain;
-                if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) { currentStageProgress += gain; checkStageProgress(); }
+                let gain = mps / 10; setScore(score + (gain));
+                if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) { setCurrentStageProgress(currentStageProgress + (gain)); checkStageProgress(); }
                 if (!document.body.classList.contains('modal-open')) updateDisplay();
             }
             updateSkillTimers(0.1); // スキルのクールタイムや持続タイマーを100ms単位でリアルタイム更新
@@ -1130,6 +1136,19 @@ import {
 
 
         // ===================================================================
+        // フェーズ3：他ファイルから書き換えるためのsetter関数
+        // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
+        // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
+        // ===================================================================
+        export function setFeedBuffActiveUntil(v) { feedBuffActiveUntil = v; }
+        export function setFeedLastResetDate(v) { feedLastResetDate = v; }
+        export function setFeedPlaysUsedToday(v) { feedPlaysUsedToday = v; }
+        export function setFeedTeaseLevel(v) { feedTeaseLevel = v; }
+        export function setGameScreenRect(v) { gameScreenRect = v; }
+        export function setHasComboTitle1000(v) { hasComboTitle1000 = v; }
+        export function setLastTappedTime(v) { lastTappedTime = v; }
+
+
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
         // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
         // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
@@ -1149,16 +1168,12 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'feedBuffActiveUntil', { configurable: true, get: () => feedBuffActiveUntil, set: (v) => { feedBuffActiveUntil = v; } });
-        Object.defineProperty(window, 'feedLastResetDate', { configurable: true, get: () => feedLastResetDate, set: (v) => { feedLastResetDate = v; } });
-        Object.defineProperty(window, 'feedPlaysUsedToday', { configurable: true, get: () => feedPlaysUsedToday, set: (v) => { feedPlaysUsedToday = v; } });
         Object.defineProperty(window, 'feverInterval', { configurable: true, get: () => feverInterval, set: (v) => { feverInterval = v; } });
         Object.defineProperty(window, 'comboCount', { configurable: true, get: () => comboCount, set: (v) => { comboCount = v; } });
         Object.defineProperty(window, 'comboTimer', { configurable: true, get: () => comboTimer, set: (v) => { comboTimer = v; } });
         Object.defineProperty(window, 'comboEndCommentId', { configurable: true, get: () => comboEndCommentId, set: (v) => { comboEndCommentId = v; } });
         Object.defineProperty(window, 'lastComboReflowTime', { configurable: true, get: () => lastComboReflowTime, set: (v) => { lastComboReflowTime = v; } });
         Object.defineProperty(window, 'mochiLongPressTimer', { configurable: true, get: () => mochiLongPressTimer, set: (v) => { mochiLongPressTimer = v; } });
-        Object.defineProperty(window, 'lastTappedTime', { configurable: true, get: () => lastTappedTime, set: (v) => { lastTappedTime = v; } });
         Object.defineProperty(window, 'breatheTimer', { configurable: true, get: () => breatheTimer, set: (v) => { breatheTimer = v; } });
         Object.defineProperty(window, 'isMochiPressed', { configurable: true, get: () => isMochiPressed, set: (v) => { isMochiPressed = v; } });
         Object.defineProperty(window, 'squeezeStartX', { configurable: true, get: () => squeezeStartX, set: (v) => { squeezeStartX = v; } });
@@ -1167,16 +1182,13 @@ import {
         Object.defineProperty(window, 'squeezeLastDy', { configurable: true, get: () => squeezeLastDy, set: (v) => { squeezeLastDy = v; } });
         Object.defineProperty(window, 'stretchSoundSource', { configurable: true, get: () => stretchSoundSource, set: (v) => { stretchSoundSource = v; } });
         Object.defineProperty(window, 'stretchSoundGain', { configurable: true, get: () => stretchSoundGain, set: (v) => { stretchSoundGain = v; } });
-        Object.defineProperty(window, 'gameScreenRect', { configurable: true, get: () => gameScreenRect, set: (v) => { gameScreenRect = v; } });
         Object.defineProperty(window, 'bunshinCloneEls', { configurable: true, get: () => bunshinCloneEls, set: (v) => { bunshinCloneEls = v; } });
         Object.defineProperty(window, 'lastCheerTier', { configurable: true, get: () => lastCheerTier, set: (v) => { lastCheerTier = v; } });
         Object.defineProperty(window, 'lastCheerChangeTime', { configurable: true, get: () => lastCheerChangeTime, set: (v) => { lastCheerChangeTime = v; } });
-        Object.defineProperty(window, 'hasComboTitle1000', { configurable: true, get: () => hasComboTitle1000, set: (v) => { hasComboTitle1000 = v; } });
         Object.defineProperty(window, 'screamRevertTimeout', { configurable: true, get: () => screamRevertTimeout, set: (v) => { screamRevertTimeout = v; } });
         Object.defineProperty(window, 'critFilterTimeout', { configurable: true, get: () => critFilterTimeout, set: (v) => { critFilterTimeout = v; } });
         Object.defineProperty(window, 'critTapId', { configurable: true, get: () => critTapId, set: (v) => { critTapId = v; } });
         Object.defineProperty(window, 'feedDragState', { configurable: true, get: () => feedDragState, set: (v) => { feedDragState = v; } });
-        Object.defineProperty(window, 'feedTeaseLevel', { configurable: true, get: () => feedTeaseLevel, set: (v) => { feedTeaseLevel = v; } });
         Object.defineProperty(window, 'feedBuffIndicatorTimer', { configurable: true, get: () => feedBuffIndicatorTimer, set: (v) => { feedBuffIndicatorTimer = v; } });
         Object.defineProperty(window, 'hissatsuAutoChargeAccum', { configurable: true, get: () => hissatsuAutoChargeAccum, set: (v) => { hissatsuAutoChargeAccum = v; } });
         window.FEED_BUFF_DURATION_MS = FEED_BUFF_DURATION_MS;

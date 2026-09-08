@@ -5,22 +5,29 @@
 // ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
 // 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
 // ===================================================================
+// ===================================================================
+// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
+// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
+// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
+// ===================================================================
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-08-001';
+} from './data.js?v=2026-09-08-002';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-08-001';
+} from './main.js?v=2026-09-08-002';
+import { setPurchasedItems } from './shop.js?v=2026-09-08-002';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
-  lastActiveTimestamp, playerName, saveGame, totalTapsCount
-} from './state.js?v=2026-09-08-001';
-import { getMps, skills } from './tap.js?v=2026-09-08-001';
+  lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
+} from './state.js?v=2026-09-08-002';
+import { getMps, skills } from './tap.js?v=2026-09-08-002';
 import {
-  closeModal, flipDiaryPage, openDiary, openModal, renderDiaryPage, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-001';
+  closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
+  setDiaryPageIndex, showMochiComment, updateDisplay
+} from './ui.js?v=2026-09-08-002';
 
         export let prestigeCount = 0;      // 転生した回数
 
@@ -149,7 +156,7 @@ import {
             const earnings = Math.floor(mps * cappedSeconds);
             if (earnings <= 0) return;
 
-            score += earnings;
+            setScore(score + (earnings));
             saveGame(); updateDisplay();
 
             const totalMinutes = Math.floor(elapsedSeconds / 60);
@@ -221,11 +228,11 @@ import {
             prestigeCount++;
             prestigePoints += PRESTIGE_POINTS_PER_RUN;
             gachaCoins += GACHA_COIN_PER_PRESTIGE; // ガチャコインは転生しても引き継がれる（他の進行データと違い、リセットしない）
-            score = 0;
+            setScore(0);
             currentStageIndex = 0;
             selectedStageIndex = 0;
             currentStageProgress = 0;
-            purchasedItems = {};
+            setPurchasedItems({});
             hasSeenJapanClear = false; // 🐛修正：これが無いと、2回目以降は沖縄クリア無しで転生し放題になってしまっていた
             collectedStamps = {}; // スタンプ帳も、絵日記の記録と同様に周回ごとリセットする
             Object.keys(skills).forEach(k => {
@@ -411,7 +418,7 @@ import {
             if (btn) btn.style.display = 'none';
             isPendingStampMoment = true;
             openDiary();
-            diaryPageIndex = currentStageIndex; // openDiary()内でselectedStageIndexに上書きされるため、必ずその後に設定する
+            setDiaryPageIndex(currentStageIndex); // openDiary()内でselectedStageIndexに上書きされるため、必ずその後に設定する
             renderDiaryPage();
             flipDiaryPage(true);
         }
@@ -544,6 +551,39 @@ import {
 
 
         // ===================================================================
+        // フェーズ3：他ファイルから書き換えるためのsetter関数
+        // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
+        // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
+        // ===================================================================
+        export function setCollectedStamps(v) { collectedStamps = v; }
+        export function setCurrentMyroomSlotIndex(v) { currentMyroomSlotIndex = v; }
+        export function setCurrentStageIndex(v) { currentStageIndex = v; }
+        export function setCurrentStageProgress(v) { currentStageProgress = v; }
+        export function setEquippedKisekae(v) { equippedKisekae = v; }
+        export function setEquippedMyroom(v) { equippedMyroom = v; }
+        export function setGachaCoins(v) { gachaCoins = v; }
+        export function setHasSeenJapanClear(v) { hasSeenJapanClear = v; }
+        export function setMissionClaimed(v) { missionClaimed = v; }
+        export function setMissionCounters(v) { missionCounters = v; }
+        export function setMissionDailyDate(v) { missionDailyDate = v; }
+        export function setMissionDailySelected(v) { missionDailySelected = v; }
+        export function setMissionWeeklySelected(v) { missionWeeklySelected = v; }
+        export function setMissionWeeklyWeekKey(v) { missionWeeklyWeekKey = v; }
+        export function setMyroomSlots(v) { myroomSlots = v; }
+        export function setOwnedKisekaeItems(v) { ownedKisekaeItems = v; }
+        export function setOwnedMyroomItems(v) { ownedMyroomItems = v; }
+        export function setPrefTaps(v) { prefTaps = v; }
+        export function setPrestigeCount(v) { prestigeCount = v; }
+        export function setPrestigePoints(v) { prestigePoints = v; }
+        export function setPrestigeScoreHistory(v) { prestigeScoreHistory = v; }
+        export function setPrestigeShopLv(v) { prestigeShopLv = v; }
+        export function setPreviewKisekae(v) { previewKisekae = v; }
+        export function setSelectedStageIndex(v) { selectedStageIndex = v; }
+        export function setStampDebugInterval(v) { stampDebugInterval = v; }
+        export function setStampDebugMode(v) { stampDebugMode = v; }
+        export function setTutorialMissionStep(v) { tutorialMissionStep = v; }
+
+
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
         // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
         // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
@@ -563,34 +603,7 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'prestigeCount', { configurable: true, get: () => prestigeCount, set: (v) => { prestigeCount = v; } });
-        Object.defineProperty(window, 'ownedKisekaeItems', { configurable: true, get: () => ownedKisekaeItems, set: (v) => { ownedKisekaeItems = v; } });
-        Object.defineProperty(window, 'equippedKisekae', { configurable: true, get: () => equippedKisekae, set: (v) => { equippedKisekae = v; } });
-        Object.defineProperty(window, 'missionCounters', { configurable: true, get: () => missionCounters, set: (v) => { missionCounters = v; } });
-        Object.defineProperty(window, 'missionDailyDate', { configurable: true, get: () => missionDailyDate, set: (v) => { missionDailyDate = v; } });
-        Object.defineProperty(window, 'missionWeeklyWeekKey', { configurable: true, get: () => missionWeeklyWeekKey, set: (v) => { missionWeeklyWeekKey = v; } });
-        Object.defineProperty(window, 'missionDailySelected', { configurable: true, get: () => missionDailySelected, set: (v) => { missionDailySelected = v; } });
-        Object.defineProperty(window, 'missionWeeklySelected', { configurable: true, get: () => missionWeeklySelected, set: (v) => { missionWeeklySelected = v; } });
-        Object.defineProperty(window, 'missionClaimed', { configurable: true, get: () => missionClaimed, set: (v) => { missionClaimed = v; } });
-        Object.defineProperty(window, 'tutorialMissionStep', { configurable: true, get: () => tutorialMissionStep, set: (v) => { tutorialMissionStep = v; } });
-        Object.defineProperty(window, 'ownedMyroomItems', { configurable: true, get: () => ownedMyroomItems, set: (v) => { ownedMyroomItems = v; } });
-        Object.defineProperty(window, 'equippedMyroom', { configurable: true, get: () => equippedMyroom, set: (v) => { equippedMyroom = v; } });
-        Object.defineProperty(window, 'myroomSlots', { configurable: true, get: () => myroomSlots, set: (v) => { myroomSlots = v; } });
-        Object.defineProperty(window, 'currentMyroomSlotIndex', { configurable: true, get: () => currentMyroomSlotIndex, set: (v) => { currentMyroomSlotIndex = v; } });
-        Object.defineProperty(window, 'previewKisekae', { configurable: true, get: () => previewKisekae, set: (v) => { previewKisekae = v; } });
-        Object.defineProperty(window, 'prestigeScoreHistory', { configurable: true, get: () => prestigeScoreHistory, set: (v) => { prestigeScoreHistory = v; } });
-        Object.defineProperty(window, 'prestigePoints', { configurable: true, get: () => prestigePoints, set: (v) => { prestigePoints = v; } });
-        Object.defineProperty(window, 'gachaCoins', { configurable: true, get: () => gachaCoins, set: (v) => { gachaCoins = v; } });
-        Object.defineProperty(window, 'prestigeShopLv', { configurable: true, get: () => prestigeShopLv, set: (v) => { prestigeShopLv = v; } });
-        Object.defineProperty(window, 'hasSeenJapanClear', { configurable: true, get: () => hasSeenJapanClear, set: (v) => { hasSeenJapanClear = v; } });
-        Object.defineProperty(window, 'prefTaps', { configurable: true, get: () => prefTaps, set: (v) => { prefTaps = v; } });
-        Object.defineProperty(window, 'currentStageIndex', { configurable: true, get: () => currentStageIndex, set: (v) => { currentStageIndex = v; } });
-        Object.defineProperty(window, 'selectedStageIndex', { configurable: true, get: () => selectedStageIndex, set: (v) => { selectedStageIndex = v; } });
-        Object.defineProperty(window, 'currentStageProgress', { configurable: true, get: () => currentStageProgress, set: (v) => { currentStageProgress = v; } });
-        Object.defineProperty(window, 'collectedStamps', { configurable: true, get: () => collectedStamps, set: (v) => { collectedStamps = v; } });
         Object.defineProperty(window, 'stampGuardRecheckTimer', { configurable: true, get: () => stampGuardRecheckTimer, set: (v) => { stampGuardRecheckTimer = v; } });
-        Object.defineProperty(window, 'stampDebugMode', { configurable: true, get: () => stampDebugMode, set: (v) => { stampDebugMode = v; } });
-        Object.defineProperty(window, 'stampDebugInterval', { configurable: true, get: () => stampDebugInterval, set: (v) => { stampDebugInterval = v; } });
         window.PRESTIGE_BONUS_PER_COUNT = PRESTIGE_BONUS_PER_COUNT;
         window.getPrestigeBonusMultiplier = getPrestigeBonusMultiplier;
         window.GACHA_COIN_PER_STAMP = GACHA_COIN_PER_STAMP;

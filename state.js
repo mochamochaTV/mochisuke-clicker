@@ -5,9 +5,48 @@
 // ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
 // 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
 // ===================================================================
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-08-001';
-import { minigames } from './minigames.js?v=2026-09-08-001';
-import { skills } from './tap.js?v=2026-09-08-001';
+// ===================================================================
+// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
+// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
+// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
+// ===================================================================
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-08-002';
+import {
+  minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
+  minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
+  setMinigamePlaysUsedToday, setMinigameSeenUnlocked, setSlotBonusZoneSpinsLeft,
+  setSlotJackpotCount, setSlotLongestJackpotPulls, setSlotPlaysRemaining, setSlotPullsSinceJackpot,
+  setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
+  slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
+  slotTotalPulls
+} from './minigames.js?v=2026-09-08-002';
+import {
+  collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
+  equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
+  missionDailyDate, missionDailySelected, missionWeeklySelected, missionWeeklyWeekKey, myroomSlots,
+  ownedKisekaeItems, ownedMyroomItems, prefTaps, prestigeCount, prestigePoints,
+  prestigeScoreHistory, prestigeShopLv, selectedStageIndex, setCollectedStamps,
+  setCurrentMyroomSlotIndex, setCurrentStageIndex, setCurrentStageProgress, setEquippedKisekae,
+  setEquippedMyroom, setGachaCoins, setHasSeenJapanClear, setMissionClaimed, setMissionCounters,
+  setMissionDailyDate, setMissionDailySelected, setMissionWeeklySelected, setMissionWeeklyWeekKey,
+  setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
+  setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
+  setTutorialMissionStep, tutorialMissionStep
+} from './progress.js?v=2026-09-08-002';
+import {
+  activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
+  purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
+  setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
+  setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
+} from './shop.js?v=2026-09-08-002';
+import {
+  feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
+  setFeedPlaysUsedToday, setHasComboTitle1000, skills
+} from './tap.js?v=2026-09-08-002';
+import {
+  hasSeenTutorial, lastGiftSentDateStr, seenButtonHints, setHasSeenTutorial,
+  setLastGiftSentDateStr, setSeenButtonHints
+} from './ui.js?v=2026-09-08-002';
 
         export function menuSaveGame() {
             saveGame();
@@ -215,25 +254,25 @@ import { skills } from './tap.js?v=2026-09-08-001';
                 try {
                     const state = JSON.parse(data);
                     score = state.score ?? 0;
-                    currentStageIndex = state.currentStageIndex ?? 0;
-                    selectedStageIndex = state.selectedStageIndex ?? 0;
-                    currentStageProgress = state.currentStageProgress ?? 0;
-                    purchasedItems = state.purchasedItems ?? {};
-                    purchasedClothes = state.purchasedClothes ?? { normal: true };
-                    equippedClotheId = state.equippedClotheId ?? "normal";
+                    setCurrentStageIndex(state.currentStageIndex ?? 0);
+                    setSelectedStageIndex(state.selectedStageIndex ?? 0);
+                    setCurrentStageProgress(state.currentStageProgress ?? 0);
+                    setPurchasedItems(state.purchasedItems ?? {});
+                    setPurchasedClothes(state.purchasedClothes ?? { normal: true });
+                    setEquippedClotheId(state.equippedClotheId ?? "normal");
                     totalTapsCount = state.totalTapsCount ?? 0;
                     firstPlayTimestamp = state.firstPlayTimestamp ?? null;
-                    hasSeenJapanClear = state.hasSeenJapanClear ?? false;
-                    hasComboTitle1000 = state.hasComboTitle1000 ?? false;
-                    seenButtonHints = state.seenButtonHints ?? { map: false, menu: false, ui: false, feed: false };
+                    setHasSeenJapanClear(state.hasSeenJapanClear ?? false);
+                    setHasComboTitle1000(state.hasComboTitle1000 ?? false);
+                    setSeenButtonHints(state.seenButtonHints ?? { map: false, menu: false, ui: false, feed: false });
                     const hasAnyStamps = state.collectedStamps && Object.keys(state.collectedStamps).length > 0;
                     if (hasAnyStamps) {
-                        collectedStamps = state.collectedStamps;
+                        setCollectedStamps(state.collectedStamps);
                     } else {
                         // 🩹 まだ一度もスタンプが記録されていない場合（この機能が無かった頃のセーブ、
                         // または移行処理を入れる前の版で空のまま保存されてしまったセーブ）、
                         // 既に通過済みの県ぶん、スタンプを遡って押しておく
-                        collectedStamps = {};
+                        setCollectedStamps({});
                         const passedIndex = state.currentStageIndex ?? 0;
                         const stampUpTo = (state.hasSeenJapanClear === true) ? stages.length : passedIndex; // 既に全制覇済みなら、最後の県ぶんも含める
                         for (let i = 0; i < stampUpTo; i++) collectedStamps[i] = true;
@@ -242,59 +281,59 @@ import { skills } from './tap.js?v=2026-09-08-001';
                     // 読み込むたびに実際の進行状況と照らし合わせて自動で正しい状態に戻す
                     const actuallyCleared = (state.currentStageIndex === stages.length - 1) && (state.currentStageProgress >= stages[stages.length - 1].distance);
                     if (hasSeenJapanClear && !actuallyCleared) {
-                        hasSeenJapanClear = false;
+                        setHasSeenJapanClear(false);
                     }
-                    hasSeenTutorial = state.hasSeenTutorial ?? false;
-                    minigameLastResetDate = state.minigameLastResetDate ?? null;
-                    minigamePlaysUsedToday = state.minigamePlaysUsedToday ?? { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 };
-                    feedLastResetDate = state.feedLastResetDate ?? '';
-                    feedPlaysUsedToday = state.feedPlaysUsedToday ?? 0;
+                    setHasSeenTutorial(state.hasSeenTutorial ?? false);
+                    setMinigameLastResetDate(state.minigameLastResetDate ?? null);
+                    setMinigamePlaysUsedToday(state.minigamePlaysUsedToday ?? { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0 });
+                    setFeedLastResetDate(state.feedLastResetDate ?? '');
+                    setFeedPlaysUsedToday(state.feedPlaysUsedToday ?? 0);
                     if (state.minigameSeenUnlocked) {
-                        minigameSeenUnlocked = state.minigameSeenUnlocked;
+                        setMinigameSeenUnlocked(state.minigameSeenUnlocked);
                     } else {
                         // 旧セーブ(この機能が無かった頃)からの移行：既に解放済みのものは「既知」扱いにして、いきなり全部光らないようにする
-                        minigameSeenUnlocked = {};
+                        setMinigameSeenUnlocked({});
                         Object.values(minigames).forEach(g => {
                             minigameSeenUnlocked[g.id] = (state.currentStageIndex ?? 0) >= g.unlockStage;
                         });
                     }
-                    minigameBests = state.minigameBests ?? { timeattack: 0, concentration: null };
-                    prefTaps = state.prefTaps ?? new Array(47).fill(0);
+                    setMinigameBests(state.minigameBests ?? { timeattack: 0, concentration: null });
+                    setPrefTaps(state.prefTaps ?? new Array(47).fill(0));
                     lastActiveTimestamp = state.lastActiveTimestamp ?? null;
-                    prestigeCount = state.prestigeCount ?? 0;
-                    prestigeScoreHistory = state.prestigeScoreHistory ?? [];
-                    prestigePoints = state.prestigePoints ?? 0;
-                    gachaCoins = state.gachaCoins ?? 0;
-                    minigameCoins = state.minigameCoins ?? 0;
-                    ticketInventory = state.ticketInventory ?? { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 };
-                    sprayInventory = state.sprayInventory ?? { spray_normalRare: 0, spray_rare: 0 };
-                    activeSprayId = state.activeSprayId ?? null;
-                    sprayBuffActiveUntil = state.sprayBuffActiveUntil ?? 0;
-                    favoriteFriendIds = state.favoriteFriendIds ?? [];
-                    blockedUserIds = state.blockedUserIds ?? [];
-                    lastGiftSentDateStr = state.lastGiftSentDateStr ?? null;
-                    slotPlaysRemaining = state.slotPlaysRemaining ?? 0;
-                    slotBonusZoneSpinsLeft = state.slotBonusZoneSpinsLeft ?? 0;
-                    slotTotalPulls = state.slotTotalPulls ?? 0;
-                    slotPullsSinceJackpot = state.slotPullsSinceJackpot ?? 0;
-                    slotJackpotCount = state.slotJackpotCount ?? 0;
-                    slotShortestJackpotPulls = state.slotShortestJackpotPulls ?? null;
-                    slotLongestJackpotPulls = state.slotLongestJackpotPulls ?? null;
-                    ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [], ...(state.ownedKisekaeItems || {}) };
-                    equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null, ...(state.equippedKisekae || {}) };
-                    missionCounters = { ...missionCounters, ...(state.missionCounters || {}) };
-                    missionDailyDate = state.missionDailyDate ?? '';
-                    missionWeeklyWeekKey = state.missionWeeklyWeekKey ?? '';
-                    missionDailySelected = state.missionDailySelected ?? [];
-                    missionWeeklySelected = state.missionWeeklySelected ?? [];
-                    missionClaimed = state.missionClaimed ?? {};
-                    tutorialMissionStep = state.tutorialMissionStep ?? 0;
-                    ownedMyroomItems = { wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [], ...(state.ownedMyroomItems || {}) };
-                    equippedMyroom = {
+                    setPrestigeCount(state.prestigeCount ?? 0);
+                    setPrestigeScoreHistory(state.prestigeScoreHistory ?? []);
+                    setPrestigePoints(state.prestigePoints ?? 0);
+                    setGachaCoins(state.gachaCoins ?? 0);
+                    setMinigameCoins(state.minigameCoins ?? 0);
+                    setTicketInventory(state.ticketInventory ?? { minigameTicket: 0, cooldownTicket: 0, mochi30minTicket: 0 });
+                    setSprayInventory(state.sprayInventory ?? { spray_normalRare: 0, spray_rare: 0 });
+                    setActiveSprayId(state.activeSprayId ?? null);
+                    setSprayBuffActiveUntil(state.sprayBuffActiveUntil ?? 0);
+                    setFavoriteFriendIds(state.favoriteFriendIds ?? []);
+                    setBlockedUserIds(state.blockedUserIds ?? []);
+                    setLastGiftSentDateStr(state.lastGiftSentDateStr ?? null);
+                    setSlotPlaysRemaining(state.slotPlaysRemaining ?? 0);
+                    setSlotBonusZoneSpinsLeft(state.slotBonusZoneSpinsLeft ?? 0);
+                    setSlotTotalPulls(state.slotTotalPulls ?? 0);
+                    setSlotPullsSinceJackpot(state.slotPullsSinceJackpot ?? 0);
+                    setSlotJackpotCount(state.slotJackpotCount ?? 0);
+                    setSlotShortestJackpotPulls(state.slotShortestJackpotPulls ?? null);
+                    setSlotLongestJackpotPulls(state.slotLongestJackpotPulls ?? null);
+                    setOwnedKisekaeItems({ hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [], ...(state.ownedKisekaeItems || {}) });
+                    setEquippedKisekae({ hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null, ...(state.equippedKisekae || {}) });
+                    setMissionCounters({ ...missionCounters, ...(state.missionCounters || {}) });
+                    setMissionDailyDate(state.missionDailyDate ?? '');
+                    setMissionWeeklyWeekKey(state.missionWeeklyWeekKey ?? '');
+                    setMissionDailySelected(state.missionDailySelected ?? []);
+                    setMissionWeeklySelected(state.missionWeeklySelected ?? []);
+                    setMissionClaimed(state.missionClaimed ?? {});
+                    setTutorialMissionStep(state.tutorialMissionStep ?? 0);
+                    setOwnedMyroomItems({ wallpaper: ['wallpaper_default'], flooring: ['flooring_default'], wall_deco: [], big_furniture: [], table: [], small_deco: [], ...(state.ownedMyroomItems || {}) });
+                    setEquippedMyroom({
                         wallpaper: 'wallpaper_default', flooring: 'flooring_default',
                         wall_deco: [], big_furniture: [], table: [], small_deco: [],
                         ...(state.equippedMyroom || {}),
-                    };
+                    });
                     // 🐛互換性：旧セーブ（単一アイテムID形式）が残っていた場合は、配列形式に安全変換する
                     ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
                         if (!Array.isArray(equippedMyroom[cat])) {
@@ -302,15 +341,15 @@ import { skills } from './tap.js?v=2026-09-08-001';
                             equippedMyroom[cat] = oldId ? [{ itemId: oldId, top: MYROOM_SLOT_POSITIONS[cat].top, left: MYROOM_SLOT_POSITIONS[cat].left, flip: false }] : [];
                         }
                     });
-                    myroomSlots = state.myroomSlots ?? [null, null, null];
-                    currentMyroomSlotIndex = state.currentMyroomSlotIndex ?? 0;
+                    setMyroomSlots(state.myroomSlots ?? [null, null, null]);
+                    setCurrentMyroomSlotIndex(state.currentMyroomSlotIndex ?? 0);
                     // 旧セーブ(offlineCapBonusHours/minigameDailyBonusPlays)からの引き継ぎに対応しつつ、新形式へ統合
-                    prestigeShopLv = state.prestigeShopLv ?? {
+                    setPrestigeShopLv(state.prestigeShopLv ?? {
                         offlineCap: state.offlineCapBonusHours ?? 0,
                         minigamePlays: state.minigameDailyBonusPlays ?? 0,
                         omiyagePriceDiscount: 0, omiyagePriceCurve: 0,
                         startingBonus: 0, skillCdReduction: 0, minigameReward: 0,
-                    };
+                    });
                     if (state.skills) {
                         Object.keys(state.skills).forEach(k => {
                             if (skills[k]) skills[k].lv = state.skills[k].lv ?? skills[k].lv;
@@ -354,6 +393,15 @@ import { skills } from './tap.js?v=2026-09-08-001';
 
 
         // ===================================================================
+        // フェーズ3：他ファイルから書き換えるためのsetter関数
+        // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
+        // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
+        // ===================================================================
+        export function setPlayerName(v) { playerName = v; }
+        export function setScore(v) { score = v; }
+        export function setTotalTapsCount(v) { totalTapsCount = v; }
+
+
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
         // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
         // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
@@ -373,9 +421,6 @@ import { skills } from './tap.js?v=2026-09-08-001';
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'score', { configurable: true, get: () => score, set: (v) => { score = v; } });
-        Object.defineProperty(window, 'totalTapsCount', { configurable: true, get: () => totalTapsCount, set: (v) => { totalTapsCount = v; } });
-        Object.defineProperty(window, 'playerName', { configurable: true, get: () => playerName, set: (v) => { playerName = v; } });
         Object.defineProperty(window, 'hadLocalSaveOnLoad', { configurable: true, get: () => hadLocalSaveOnLoad, set: (v) => { hadLocalSaveOnLoad = v; } });
         window.menuSaveGame = menuSaveGame;
         window.menuSaveAndQuit = menuSaveAndQuit;

@@ -5,16 +5,26 @@
 // ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
 // 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
 // ===================================================================
-import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-001';
+// ===================================================================
+// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
+// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
+// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
+// ===================================================================
+import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-002';
 import {
   IS_DEV_MODE, PRESENT_REWARD_DISTANCE_RATE, PRESENT_REWARD_MIN, PRESENT_REWARD_MPS_RATE,
   getAudioContext, loadAudioBuffer, pickRandom, playAudioFile, playAudioFilePitched, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnModalParticleBurst, vibrate
-} from './main.js?v=2026-09-08-001';
-import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from './progress.js?v=2026-09-08-001';
-import { saveGame } from './state.js?v=2026-09-08-001';
-import { getMps } from './tap.js?v=2026-09-08-001';
-import { closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComment, updateDisplay } from './ui.js?v=2026-09-08-001';
+} from './main.js?v=2026-09-08-002';
+import {
+  currentStageIndex, gachaCoins, getMinigameDailyLimit, prestigeShopLv, setGachaCoins,
+  trackMissionEvent
+} from './progress.js?v=2026-09-08-002';
+import { saveGame } from './state.js?v=2026-09-08-002';
+import { getMps } from './tap.js?v=2026-09-08-002';
+import {
+  closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComment, updateDisplay
+} from './ui.js?v=2026-09-08-002';
 
         export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
 
@@ -1539,7 +1549,7 @@ import { closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComme
             if (bestSymbol.isJackpot) {
                 // 🐹 マーモット：最上位の大当たり演出。コインだけでは物足りないので、ガチャコインも一緒に付与する
                 const bonusGachaCoins = 30;
-                gachaCoins += bonusGachaCoins;
+                setGachaCoins(gachaCoins + (bonusGachaCoins));
                 slotJackpotCount++;
                 trackMissionEvent('jackpotsThisWeek', 1);
                 slotShortestJackpotPulls = (slotShortestJackpotPulls == null) ? slotPullsSinceJackpot : Math.min(slotShortestJackpotPulls, slotPullsSinceJackpot);
@@ -1592,6 +1602,24 @@ import { closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComme
 
 
         // ===================================================================
+        // フェーズ3：他ファイルから書き換えるためのsetter関数
+        // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
+        // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
+        // ===================================================================
+        export function setMinigameBests(v) { minigameBests = v; }
+        export function setMinigameCoins(v) { minigameCoins = v; }
+        export function setMinigameLastResetDate(v) { minigameLastResetDate = v; }
+        export function setMinigamePlaysUsedToday(v) { minigamePlaysUsedToday = v; }
+        export function setMinigameSeenUnlocked(v) { minigameSeenUnlocked = v; }
+        export function setSlotBonusZoneSpinsLeft(v) { slotBonusZoneSpinsLeft = v; }
+        export function setSlotJackpotCount(v) { slotJackpotCount = v; }
+        export function setSlotLongestJackpotPulls(v) { slotLongestJackpotPulls = v; }
+        export function setSlotPlaysRemaining(v) { slotPlaysRemaining = v; }
+        export function setSlotPullsSinceJackpot(v) { slotPullsSinceJackpot = v; }
+        export function setSlotShortestJackpotPulls(v) { slotShortestJackpotPulls = v; }
+        export function setSlotTotalPulls(v) { slotTotalPulls = v; }
+
+
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
         // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
         // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
@@ -1611,12 +1639,6 @@ import { closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComme
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'slotPlaysRemaining', { configurable: true, get: () => slotPlaysRemaining, set: (v) => { slotPlaysRemaining = v; } });
-        Object.defineProperty(window, 'minigameLastResetDate', { configurable: true, get: () => minigameLastResetDate, set: (v) => { minigameLastResetDate = v; } });
-        Object.defineProperty(window, 'minigamePlaysUsedToday', { configurable: true, get: () => minigamePlaysUsedToday, set: (v) => { minigamePlaysUsedToday = v; } });
-        Object.defineProperty(window, 'minigameSeenUnlocked', { configurable: true, get: () => minigameSeenUnlocked, set: (v) => { minigameSeenUnlocked = v; } });
-        Object.defineProperty(window, 'minigameBests', { configurable: true, get: () => minigameBests, set: (v) => { minigameBests = v; } });
-        Object.defineProperty(window, 'minigameCoins', { configurable: true, get: () => minigameCoins, set: (v) => { minigameCoins = v; } });
         Object.defineProperty(window, 'timeAttackState', { configurable: true, get: () => timeAttackState, set: (v) => { timeAttackState = v; } });
         Object.defineProperty(window, 'concentrationState', { configurable: true, get: () => concentrationState, set: (v) => { concentrationState = v; } });
         Object.defineProperty(window, 'mochitsukiState', { configurable: true, get: () => mochitsukiState, set: (v) => { mochitsukiState = v; } });
@@ -1627,12 +1649,6 @@ import { closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComme
         Object.defineProperty(window, 'slotReelAnimations', { configurable: true, get: () => slotReelAnimations, set: (v) => { slotReelAnimations = v; } });
         Object.defineProperty(window, 'slotReelLandingRow', { configurable: true, get: () => slotReelLandingRow, set: (v) => { slotReelLandingRow = v; } });
         Object.defineProperty(window, 'slotStoppedReels', { configurable: true, get: () => slotStoppedReels, set: (v) => { slotStoppedReels = v; } });
-        Object.defineProperty(window, 'slotBonusZoneSpinsLeft', { configurable: true, get: () => slotBonusZoneSpinsLeft, set: (v) => { slotBonusZoneSpinsLeft = v; } });
-        Object.defineProperty(window, 'slotTotalPulls', { configurable: true, get: () => slotTotalPulls, set: (v) => { slotTotalPulls = v; } });
-        Object.defineProperty(window, 'slotPullsSinceJackpot', { configurable: true, get: () => slotPullsSinceJackpot, set: (v) => { slotPullsSinceJackpot = v; } });
-        Object.defineProperty(window, 'slotJackpotCount', { configurable: true, get: () => slotJackpotCount, set: (v) => { slotJackpotCount = v; } });
-        Object.defineProperty(window, 'slotShortestJackpotPulls', { configurable: true, get: () => slotShortestJackpotPulls, set: (v) => { slotShortestJackpotPulls = v; } });
-        Object.defineProperty(window, 'slotLongestJackpotPulls', { configurable: true, get: () => slotLongestJackpotPulls, set: (v) => { slotLongestJackpotPulls = v; } });
         Object.defineProperty(window, 'slotNextSpinFree', { configurable: true, get: () => slotNextSpinFree, set: (v) => { slotNextSpinFree = v; } });
         Object.defineProperty(window, 'slotAdjustMode', { configurable: true, get: () => slotAdjustMode, set: (v) => { slotAdjustMode = v; } });
         Object.defineProperty(window, 'slotAdjustDragState', { configurable: true, get: () => slotAdjustDragState, set: (v) => { slotAdjustDragState = v; } });
