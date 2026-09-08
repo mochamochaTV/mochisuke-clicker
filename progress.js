@@ -1,3 +1,27 @@
+// ===================================================================
+// Phase 2: 他ファイルの値を読むためのimport（フェーズ1の暫定的なwindow橋渡しに代えて、
+// 実際にどのファイルの何を使っているかがここを見れば分かるようにしています）。
+// これらはすべて「読み取り専用」の使い方だけをしている名前です。値を書き換える必要がある
+// ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
+// 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
+// ===================================================================
+import {
+  DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
+  WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
+} from './data.js?v=2026-09-08-001';
+import {
+  createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
+  setGameBackground, vibrate
+} from './main.js?v=2026-09-08-001';
+import {
+  OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
+  lastActiveTimestamp, playerName, saveGame, totalTapsCount
+} from './state.js?v=2026-09-08-001';
+import { getMps, skills } from './tap.js?v=2026-09-08-001';
+import {
+  closeModal, flipDiaryPage, openDiary, openModal, renderDiaryPage, showMochiComment, updateDisplay
+} from './ui.js?v=2026-09-08-001';
+
         export let prestigeCount = 0;      // 転生した回数
 
         // 👗 着せ替え部屋：所持アイテムと、今装着中のアイテム（カテゴリごとに1つだけ）
@@ -520,23 +544,24 @@
 
 
         // ===================================================================
-        // 🌉 一時的な橋渡し（migration bridge）
-        // このファイルはES Modules化の第一段階として、上のグローバル変数・関数すべてに
-        // exportを付けました。しかし他のファイルがまだ全部モジュール化されていない移行期間中は、
-        // 従来通り「暗黙のグローバル変数」としても読めるようにしておく必要があります。
+        // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
+        // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
+        // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
+        //   箇所は、ファイル先頭の import文 に置き換えた（各ファイルの一番上を見れば、そのファイルが
+        //   他のどのファイルの何を使っているかが一目で分かるようになった）。
+        //   下に残っているのは、他ファイルがこの変数へ「代入」もしている（書き換える）ものだけ。
+        //   ESモジュールのimportは読み取り専用の束縛なので、書き換えが必要な変数はまだ
+        //   window経由の暗黙グローバルに頼っている。
         //
-        // 🐛重要な修正：以前はここを window.名前 = 名前 という「値の一回きりのコピー」にしていましたが、
-        // これだと let で宣言された（後から書き換わる）変数は、コピーした瞬間の値のまま凍結されて
-        // しまい、このファイル側で値が変わっても window 側には反映されない、という重大なバグがありました。
-        // 逆に、他のファイル（まだimport化されていない）がこの変数へ代入すると、それは window 側だけが
-        // 書き換わり、このファイル本来の変数には反映されません。その結果、例えば「もち数」がタップ画面側の
-        // window.score だけ増えて、実際にセーブされるのはこのファイルの score（増えていない方）……という
-        // ズレが起き、セーブするたびに増えた分が消えてしまっていました（起動のたびに0に戻るバグの原因）。
+        // 🐛関連の重大バグの記録：以前ここを window.名前 = 名前 という「値の一回きりのコピー」に
+        // していたところ、let で宣言された変数はコピーした瞬間の値のまま凍結され、後から
+        // 値が変わってもwindow側に反映されない、というバグがあった（もち数が起動のたびに0に戻る
+        // 原因になった。詳しくは解体新書 第4章）。そこで書き換わる可能性がある変数（let）は
+        // Object.defineProperty で「get/setする度に必ずこのファイル本来の変数を読み書きする」
+        // ようにしてある。書き換わらない値（const・関数・クラス）は単純コピーのままで問題ない。
         //
-        // そこで、書き換わる可能性がある変数（let）は Object.defineProperty で「get/setする度に
-        // 必ずこのファイル本来の変数を読み書きする」ようにし、window側とこのファイル側で常に
-        // 同じ実体を指すようにしました。書き換わらない値（const・関数・クラス）は今まで通り
-        // 単純コピーのままで問題ありません。全ファイルの移行が終わったら、このブロックごと削除します。
+        // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
+        // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
         Object.defineProperty(window, 'prestigeCount', { configurable: true, get: () => prestigeCount, set: (v) => { prestigeCount = v; } });
         Object.defineProperty(window, 'ownedKisekaeItems', { configurable: true, get: () => ownedKisekaeItems, set: (v) => { ownedKisekaeItems = v; } });
@@ -563,11 +588,9 @@
         Object.defineProperty(window, 'selectedStageIndex', { configurable: true, get: () => selectedStageIndex, set: (v) => { selectedStageIndex = v; } });
         Object.defineProperty(window, 'currentStageProgress', { configurable: true, get: () => currentStageProgress, set: (v) => { currentStageProgress = v; } });
         Object.defineProperty(window, 'collectedStamps', { configurable: true, get: () => collectedStamps, set: (v) => { collectedStamps = v; } });
-        Object.defineProperty(window, 'stageArrivalTime', { configurable: true, get: () => stageArrivalTime, set: (v) => { stageArrivalTime = v; } });
         Object.defineProperty(window, 'stampGuardRecheckTimer', { configurable: true, get: () => stampGuardRecheckTimer, set: (v) => { stampGuardRecheckTimer = v; } });
         Object.defineProperty(window, 'stampDebugMode', { configurable: true, get: () => stampDebugMode, set: (v) => { stampDebugMode = v; } });
         Object.defineProperty(window, 'stampDebugInterval', { configurable: true, get: () => stampDebugInterval, set: (v) => { stampDebugInterval = v; } });
-        Object.defineProperty(window, 'isPendingStampMoment', { configurable: true, get: () => isPendingStampMoment, set: (v) => { isPendingStampMoment = v; } });
         window.PRESTIGE_BONUS_PER_COUNT = PRESTIGE_BONUS_PER_COUNT;
         window.getPrestigeBonusMultiplier = getPrestigeBonusMultiplier;
         window.GACHA_COIN_PER_STAMP = GACHA_COIN_PER_STAMP;
