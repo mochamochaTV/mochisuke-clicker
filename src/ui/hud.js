@@ -1,21 +1,15 @@
-        // ===================================================================
-        // ui.js から分割されたファイルです（常時表示UI（マップ・スコア表示・おすすめアクション・おみやげ・スプレー演出・updateDisplay））。
-        // 元々は1つの巨大な ui.js（4000行超）にすべて入っていましたが、見通しを良くするため
-        // 機能ごとに src/ui/ 以下のファイルへ分割しました。ui.js 自身は今、この下の7ファイルを
-        // まとめて re-export するだけの「窓口」になっています（他のファイルからの
-        // import { X } from './ui.js' は今まで通りそのまま動きます）。
-        // ===================================================================
+        // ui.js を機能ごとに分割したファイルの1つ（常時表示UI（マップ・スコア表示・おすすめアクション・おみやげ・スプレー演出・updateDisplay））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { SPRAY_ITEMS, dialogueData, stages } from '../../data.js?v=2026-09-08-005';
-        import { createFloatingText, createParticle, formatMochi, lazyLoadImage, pickRandom, playAudioFile, screenFlash, screenShake, vibrate } from '../../main.js?v=2026-09-08-005';
-        import { hasNewlyUnlockedMinigame } from '../../minigames.js?v=2026-09-08-005';
-        import { canPrestige, collectedStamps, currentStageIndex, currentStageProgress, isPendingStampMoment, selectedStageIndex, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent, triggerAreaTransition } from '../../progress.js?v=2026-09-08-005';
-        import { activeSprayId, getOmiyagePrice, purchasedItems, sprayBuffActiveUntil } from '../../shop.js?v=2026-09-08-005';
-        import { saveGame, score } from '../../state.js?v=2026-09-08-005';
-        import { FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, feedPlaysUsedToday, feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isFever, isScreamActive, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel, skills, startFeedBuffIndicator } from '../../tap.js?v=2026-09-08-005';
-        import { closeModal, isTutorialActive, openModal, showMochiComment } from './core.js?v=2026-09-08-005';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-08-005';
-        import { diaryPageIndex } from './ranking.js?v=2026-09-08-005';
+        import { SPRAY_ITEMS, dialogueData, stages } from '../../data.js?v=2026-09-08-006';
+        import { createFloatingText, createParticle, formatMochi, lazyLoadImage, pickRandom, playAudioFile, screenFlash, screenShake, vibrate } from '../../main.js?v=2026-09-08-006';
+        import { hasNewlyUnlockedMinigame } from '../../minigames.js?v=2026-09-08-006';
+        import { canPrestige, collectedStamps, currentStageIndex, currentStageProgress, isPendingStampMoment, selectedStageIndex, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent, triggerAreaTransition } from '../../progress.js?v=2026-09-08-006';
+        import { activeSprayId, getOmiyagePrice, purchasedItems, sprayBuffActiveUntil } from '../../shop.js?v=2026-09-08-006';
+        import { saveGame, score } from '../../state.js?v=2026-09-08-006';
+        import { FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, feedPlaysUsedToday, feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isFever, isScreamActive, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel, skills, startFeedBuffIndicator } from '../../tap.js?v=2026-09-08-006';
+        import { closeModal, isTutorialActive, openModal, showMochiComment } from './core.js?v=2026-09-08-006';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-08-006';
+        import { diaryPageIndex } from './ranking.js?v=2026-09-08-006';
 
 
         export function openOmiyageCollection() {
@@ -343,7 +337,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             }
         }
 
-        // 新しく解放されて、まだ一度も遊んでいないミニゲームがあるか判定
+        // 未獲得(lv===0)で、解放済み(ステージ条件クリア)かつ購入できるスキルがあるか判定（レベルアップは対象外）
         export function hasNewlyPurchasableSkill() {
             return Object.values(skills).some(s => s.lv === 0 && currentStageIndex >= s.unlockStage && score >= s.unlockPrice);
         }
@@ -403,8 +397,6 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             }
             document.getElementById('current-location-text').innerText = stages[selectedStageIndex].name;
             document.getElementById('mps-display').innerText = `↗ 自動増加: ${formatMochi(getMps())} もち/秒`;
-            
-            // 【修正】関数を正しく実行し、カンマ区切りで表示
             document.getElementById('tap-power-display').innerText = `👆 タップ力: +${formatMochi(getTapPower())}`;
 
             const distText = document.getElementById('distance-text');

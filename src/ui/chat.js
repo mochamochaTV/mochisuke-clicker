@@ -1,15 +1,9 @@
-        // ===================================================================
-        // ui.js から分割されたファイルです（マイルーム1対1ライブチャット（招待/参加・メッセージ送受信・年齢ゲート））。
-        // 元々は1つの巨大な ui.js（4000行超）にすべて入っていましたが、見通しを良くするため
-        // 機能ごとに src/ui/ 以下のファイルへ分割しました。ui.js 自身は今、この下の7ファイルを
-        // まとめて re-export するだけの「窓口」になっています（他のファイルからの
-        // import { X } from './ui.js' は今まで通りそのまま動きます）。
-        // ===================================================================
+        // ui.js を機能ごとに分割したファイルの1つ（マイルーム1対1ライブチャット（招待/参加・メッセージ送受信・年齢ゲート））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-08-005';
-        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-08-005';
-        import { closeModal, openModal } from './core.js?v=2026-09-08-005';
-        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-08-005';
+        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-08-006';
+        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-08-006';
+        import { closeModal, openModal } from './core.js?v=2026-09-08-006';
+        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-08-006';
 
 
         // ===================================================================
@@ -310,9 +304,7 @@
         }
 
         // 👂 新着メッセージが来るたびに呼ばれる：最新の1件をセリフ吹き出しで表示し、履歴も更新する
-        // 🐛修正：roomSessionsのドキュメントは同じ2人の間で使い回され続けるため、messagesには
-        // 過去すべての訪問回の会話が積み上がっている。ここでactiveChatSessionStartedAt以降の
-        // メッセージだけに絞ることで、履歴には「今回の訪問分だけ」が表示されるようにする
+        // （activeChatSessionStartedAt以降だけに絞る理由は、その変数の宣言部を参照）
         export function renderChatMessages(rawMsgs) {
             if (!activeChatRoomId) return;
             lastRawChatMessages = rawMsgs;

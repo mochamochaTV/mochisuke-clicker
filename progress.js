@@ -1,33 +1,23 @@
-// ===================================================================
-// Phase 2: 他ファイルの値を読むためのimport（フェーズ1の暫定的なwindow橋渡しに代えて、
-// 実際にどのファイルの何を使っているかがここを見れば分かるようにしています）。
-// これらはすべて「読み取り専用」の使い方だけをしている名前です。値を書き換える必要がある
-// ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
-// 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
-// ===================================================================
-// ===================================================================
-// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
-// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
-// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
-// ===================================================================
+// 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
+// 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-08-005';
+} from './data.js?v=2026-09-08-006';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-08-005';
-import { setPurchasedItems } from './shop.js?v=2026-09-08-005';
+} from './main.js?v=2026-09-08-006';
+import { setPurchasedItems } from './shop.js?v=2026-09-08-006';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-08-005';
-import { getMps, skills } from './tap.js?v=2026-09-08-005';
+} from './state.js?v=2026-09-08-006';
+import { getMps, skills } from './tap.js?v=2026-09-08-006';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-005';
+} from './ui.js?v=2026-09-08-006';
 
         export let prestigeCount = 0;      // 転生した回数
 
@@ -174,8 +164,6 @@ import {
             openModal('offline-earnings-modal', true);
         }
 
-        // 実機で今どうなっているかを数値で見るための簡易パネル。
-        // 推測でCSSを直すのではなく、ここに出た実際の数字をスクショで送ってもらえれば原因を一発で特定できます。
         export function triggerAreaTransition(newBgUrl, callback) {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
@@ -346,7 +334,6 @@ import {
                 const dw = bg.width * scale, dh = bg.height * scale;
                 ctx.drawImage(bg, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
 
-                // 下部グラデーション
                 const grad = ctx.createLinearGradient(0, ch * 0.55, 0, ch);
                 grad.addColorStop(0, 'rgba(0,0,0,0)');
                 grad.addColorStop(0.45, 'rgba(0,0,0,0.55)');
@@ -354,7 +341,6 @@ import {
                 ctx.fillStyle = grad;
                 ctx.fillRect(0, ch * 0.55, cw, ch * 0.45);
 
-                // テキスト
                 ctx.textAlign = 'center';
                 ctx.fillStyle = '#fff';
                 ctx.font = 'bold 52px sans-serif';
@@ -474,7 +460,7 @@ import {
                     selectedStageIndex = nextIdx; stageArrivalTime = Date.now(); updateDisplay(); saveGame();
                     clearTimeout(stampGuardRecheckTimer); // 前のエリアから予約されていた再チェックが、後から誤発火しないようにする
                     const stampBtn = document.getElementById('stamp-press-btn');
-                    if (stampBtn) stampBtn.style.display = 'none'; // 新しいエリアに来た時点で、必ずいったん隠す
+                    if (stampBtn) stampBtn.style.display = 'none';
                     const name = stages[nextIdx].name;
                     const prefPool = dialogueData.prefectureComments[name];
                     showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
@@ -585,25 +571,12 @@ import {
         export function setTutorialMissionStep(v) { tutorialMissionStep = v; }
 
 
-        // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
-        // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
-        // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
-        //   箇所は、ファイル先頭の import文 に置き換えた（各ファイルの一番上を見れば、そのファイルが
-        //   他のどのファイルの何を使っているかが一目で分かるようになった）。
-        //   下に残っているのは、他ファイルがこの変数へ「代入」もしている（書き換える）ものだけ。
-        //   ESモジュールのimportは読み取り専用の束縛なので、書き換えが必要な変数はまだ
-        //   window経由の暗黙グローバルに頼っている。
-        //
-        // 🐛関連の重大バグの記録：以前ここを window.名前 = 名前 という「値の一回きりのコピー」に
-        // していたところ、let で宣言された変数はコピーした瞬間の値のまま凍結され、後から
-        // 値が変わってもwindow側に反映されない、というバグがあった（もち数が起動のたびに0に戻る
-        // 原因になった。詳しくは解体新書 第4章）。そこで書き換わる可能性がある変数（let）は
-        // Object.defineProperty で「get/setする度に必ずこのファイル本来の変数を読み書きする」
-        // ようにしてある。書き換わらない値（const・関数・クラス）は単純コピーのままで問題ない。
-        //
-        // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
-        // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
-        // ===================================================================
+        // window橋渡し：ここから下は、index.htmlのonclick=""（静的または動的に生成される
+        // 文字列の両方）から直接呼ばれる関数を中心に、window経由のアクセスがまだ必要なものをまとめている。
+        // ブラウザはonclick="foo()"の実行時にwindow.fooを探すため、橋渡しが無いとボタンを押しても
+        // 静かに何も起きない（実際にこれで一度事故を起こした。解体新書 第9章参照）。削除する時は、
+        // 他ファイルからのimport参照・index.html内の静的onclick・動的に組み立てられるonclick文字列の
+        // 3経路すべてを確認すること。
         window.openPrestigeShop = openPrestigeShop;
         window.openPrestigeConfirm = openPrestigeConfirm;
         window.confirmCloseJapanClear = confirmCloseJapanClear;

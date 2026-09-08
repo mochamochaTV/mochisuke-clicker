@@ -1,19 +1,13 @@
-        // ===================================================================
-        // ui.js から分割されたファイルです（自分のマイルーム（家具配置・部屋の編集・スロット切り替え））。
-        // 元々は1つの巨大な ui.js（4000行超）にすべて入っていましたが、見通しを良くするため
-        // 機能ごとに src/ui/ 以下のファイルへ分割しました。ui.js 自身は今、この下の7ファイルを
-        // まとめて re-export するだけの「窓口」になっています（他のファイルからの
-        // import { X } from './ui.js' は今まで通りそのまま動きます）。
-        // ===================================================================
+        // ui.js を機能ごとに分割したファイルの1つ（自分のマイルーム（家具配置・部屋の編集・スロット切り替え））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { MYROOM_CATEGORY_LABELS, MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS, MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, stages } from '../../data.js?v=2026-09-08-005';
-        import { IS_DEV_MODE, playAudioFile, playBgmLoop } from '../../main.js?v=2026-09-08-005';
-        import { currentMyroomSlotIndex, equippedMyroom, myroomSlots, ownedMyroomItems, setCurrentMyroomSlotIndex, setEquippedMyroom } from '../../progress.js?v=2026-09-08-005';
-        import { activeSprayId, purchasedItems, sprayBuffActiveUntil, sprayInventory, ticketInventory } from '../../shop.js?v=2026-09-08-005';
-        import { saveGame } from '../../state.js?v=2026-09-08-005';
-        import { closeModal, openModal } from './core.js?v=2026-09-08-005';
-        import { closeMyroomActionMenu, moveMenuGoTo, openMoveMenu, renderWarehouseItems, setMyroomMouthHidden } from './social.js?v=2026-09-08-005';
-        import { applyKisekaeToMyroom, stopWingFlapLoop } from './kisekae.js?v=2026-09-08-005';
+        import { MYROOM_CATEGORY_LABELS, MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS, MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, stages } from '../../data.js?v=2026-09-08-006';
+        import { IS_DEV_MODE, playAudioFile, playBgmLoop } from '../../main.js?v=2026-09-08-006';
+        import { currentMyroomSlotIndex, equippedMyroom, myroomSlots, ownedMyroomItems, setCurrentMyroomSlotIndex, setEquippedMyroom } from '../../progress.js?v=2026-09-08-006';
+        import { activeSprayId, purchasedItems, sprayBuffActiveUntil, sprayInventory, ticketInventory } from '../../shop.js?v=2026-09-08-006';
+        import { saveGame } from '../../state.js?v=2026-09-08-006';
+        import { closeModal, openModal } from './core.js?v=2026-09-08-006';
+        import { closeMyroomActionMenu, moveMenuGoTo, openMoveMenu, renderWarehouseItems, setMyroomMouthHidden } from './social.js?v=2026-09-08-006';
+        import { applyKisekaeToMyroom, stopWingFlapLoop } from './kisekae.js?v=2026-09-08-006';
 
         // ===================================================================
         // 🛋️ マイルーム
@@ -101,7 +95,7 @@
             wrap.style.bottom = newBottomPct + '%';
             const inner = document.getElementById('myroom-mochisuke-inner');
             if (inner) inner.classList.add('myroom-walking'); // 🚶 スーッと滑るのではなく、とことこ歩いて見えるようにする（内側要素だけをアニメーションさせ、外側の中央寄せtransformとぶつからないようにする）
-            playAudioFile('audio/move_small.mp3', 0.12); // 歩く音を小さめにつける
+            playAudioFile('audio/move_small.mp3', 0.12);
             setMyroomMouthHidden('myroom-mochisuke', 'walk', true); // 👄 歩いている間は口を開ける（叫び中なら叫び終わるまでは戻さない。全身衣装中は触らない）
             setTimeout(() => {
                 if (inner) inner.classList.remove('myroom-walking');
@@ -146,7 +140,7 @@
             renderMyroomLayout();
             applyKisekaeToMyroom();
             openModal('myroom-modal');
-            playBgmLoop('audio/bgm/bgm_myroom.mp3'); // マイルーム専用BGMに切り替え
+            playBgmLoop('audio/bgm/bgm_myroom.mp3');
             const mochisukeWrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (mochisukeWrap) { mochisukeWrap.style.transition = 'none'; mochisukeWrap.style.left = '50%'; mochisukeWrap.style.bottom = '2%'; }
             startMyroomMochisukeWalk();
@@ -166,7 +160,7 @@
                 closeModal('myroom-modal');
                 stopWingFlapLoop('myroom');
                 stopMyroomMochisukeWalk();
-                playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
+                playBgmLoop('audio/bgm/bgm.mp3');
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), 150);
             }, 300);
@@ -179,7 +173,7 @@
             document.getElementById('myroom-flooring-layer').src = flooringItem.img;
 
             const layer = document.getElementById('myroom-furniture-layer');
-            layer.innerHTML = ''; // 一旦全部消してから配置し直す
+            layer.innerHTML = '';
 
             ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
                 (previewMyroom[cat] || []).forEach((inst, idx) => {
@@ -678,7 +672,7 @@
             if (badge) badge.textContent = `${boughtCount}/${stages.length}`;
             renderWarehouseItems();
             openModal('warehouse-modal');
-            playBgmLoop('audio/bgm/bgm_warehouse.mp3'); // ものおき専用BGMに切り替え
+            playBgmLoop('audio/bgm/bgm_warehouse.mp3');
         }
 
         // 🎫 ガチャで手に入れたチケットの一覧。個数を確認しながら、好きなタイミングで使える
@@ -712,25 +706,12 @@
         }
 
 
-        // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
-        // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
-        // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
-        //   箇所は、ファイル先頭の import文 に置き換えた（各ファイルの一番上を見れば、そのファイルが
-        //   他のどのファイルの何を使っているかが一目で分かるようになった）。
-        //   下に残っているのは、他ファイルがこの変数へ「代入」もしている（書き換える）ものだけ。
-        //   ESモジュールのimportは読み取り専用の束縛なので、書き換えが必要な変数はまだ
-        //   window経由の暗黙グローバルに頼っている。
-        //
-        // 🐛関連の重大バグの記録：以前ここを window.名前 = 名前 という「値の一回きりのコピー」に
-        // していたところ、let で宣言された変数はコピーした瞬間の値のまま凍結され、後から
-        // 値が変わってもwindow側に反映されない、というバグがあった（もち数が起動のたびに0に戻る
-        // 原因になった。詳しくは解体新書 第4章）。そこで書き換わる可能性がある変数（let）は
-        // Object.defineProperty で「get/setする度に必ずこのファイル本来の変数を読み書きする」
-        // ようにしてある。書き換わらない値（const・関数・クラス）は単純コピーのままで問題ない。
-        //
-        // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
-        // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
-        // ===================================================================
+        // window橋渡し：ここから下は、index.htmlのonclick=""（静的または動的に生成される
+        // 文字列の両方）から直接呼ばれる関数を中心に、window経由のアクセスがまだ必要なものをまとめている。
+        // ブラウザはonclick="foo()"の実行時にwindow.fooを探すため、橋渡しが無いとボタンを押しても
+        // 静かに何も起きない（実際にこれで一度事故を起こした。解体新書 第9章参照）。削除する時は、
+        // 他ファイルからのimport参照・index.html内の静的onclick・動的に組み立てられるonclick文字列の
+        // 3経路すべてを確認すること。
         Object.defineProperty(window, 'myroomIsEditMode', { configurable: true, get: () => myroomIsEditMode, set: (v) => { myroomIsEditMode = v; } });
         window.openMyRoomEntry = openMyRoomEntry;
         window.toggleMyroomEditMode = toggleMyroomEditMode;

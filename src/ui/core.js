@@ -1,18 +1,12 @@
-        // ===================================================================
-        // ui.js から分割されたファイルです（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。
-        // 元々は1つの巨大な ui.js（4000行超）にすべて入っていましたが、見通しを良くするため
-        // 機能ごとに src/ui/ 以下のファイルへ分割しました。ui.js 自身は今、この下の7ファイルを
-        // まとめて re-export するだけの「窓口」になっています（他のファイルからの
-        // import { X } from './ui.js' は今まで通りそのまま動きます）。
-        // ===================================================================
+        // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-08-005';
-        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-08-005';
-        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-08-005';
-        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-08-005';
-        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-08-005';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-08-005';
-        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-08-005';
+        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-08-006';
+        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-08-006';
+        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-08-006';
+        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-08-006';
+        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-08-006';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-08-006';
+        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-08-006';
 
 
         export function onBgmVolumeChange(val) {
@@ -35,7 +29,6 @@
             document.getElementById('sfx-vol-slider').value = 100;
         }
 
-        // 明らかにスパム/おかしな名前を弾く簡易チェック（記号だけ・同じ文字の連続など）
         export function initVolumeSliders() {
             const bgmSlider = document.getElementById('bgm-vol-slider');
             const sfxSlider = document.getElementById('sfx-vol-slider');
@@ -45,8 +38,6 @@
             if (nameInput) nameInput.value = playerName;
         }
 
-        // ✏️ 意見・要望の送信（サーバーが無いので、メールアプリに下書きを渡す形にしています。
-        // 実際に使う時は下のFEEDBACK_EMAILを自分の受け取りたいメールアドレスに書き換えてください）
         export let uiDeclutterState = 0;
         export function toggleUiDeclutter() {
             uiDeclutterState = (uiDeclutterState + 1) % 4;
@@ -80,7 +71,7 @@
 
         // スマホ環境の2本指ズーム・ダブルタップズームを制限
         document.addEventListener('touchstart', (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-        export let hasSeenTutorial = false; // 初回チュートリアルを見せたかどうか
+        export let hasSeenTutorial = false;
 
         // 🍴 もちすけにお土産をあげる機能（回数制限なし）
         export let balloonAutoHideTimer = null;
@@ -160,7 +151,7 @@
 
         // 🫁 口パーツの呼吸は、もちすけ画像と共通の親要素(#mochisuke-breathe-wrap)にアニメーションをかけることで、
         // 追いかけて同期させるのではなく、そもそもズレようがない形で実現している（詳細はHTML側を参照）
-        export let mouthAdjustMode = false; // 調整モード中かどうか
+        export let mouthAdjustMode = false;
 
         // 時間帯の並び順（インデックスは他の場所でも共通して使う）
         export const TIME_BUCKETS = ['morning', 'noon', 'evening', 'lateNight'];

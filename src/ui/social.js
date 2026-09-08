@@ -1,21 +1,15 @@
-        // ===================================================================
-        // ui.js から分割されたファイルです（フレンド・他人の部屋への訪問（フレンドリスト・招待・訪問中の演出・移動メニュー・ものおき））。
-        // 元々は1つの巨大な ui.js（4000行超）にすべて入っていましたが、見通しを良くするため
-        // 機能ごとに src/ui/ 以下のファイルへ分割しました。ui.js 自身は今、この下の7ファイルを
-        // まとめて re-export するだけの「窓口」になっています（他のファイルからの
-        // import { X } from './ui.js' は今まで通りそのまま動きます）。
-        // ===================================================================
+        // ui.js を機能ごとに分割したファイルの1つ（フレンド・他人の部屋への訪問（フレンドリスト・招待・訪問中の演出・移動メニュー・ものおき））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-08-005';
-        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-08-005';
-        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-08-005';
-        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-08-005';
-        import { saveGame } from '../../state.js?v=2026-09-08-005';
-        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-08-005';
-        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-08-005';
-        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-08-005';
-        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-08-005';
-        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-08-005';
+        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-08-006';
+        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-08-006';
+        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-08-006';
+        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-08-006';
+        import { saveGame } from '../../state.js?v=2026-09-08-006';
+        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-08-006';
+        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-08-006';
+        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-08-006';
+        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-08-006';
+        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-08-006';
 
 
         // 🤝 フレンド機能
@@ -941,7 +935,6 @@
             mochi.style.top = (signPart.top + signPart.height * 0.15) + '%';
             mochi.style.left = (signPart.left + signPart.width + 1.5) + '%';
         }
-        // MOVE_MENU_PARTSの座標を、実際の画像に反映する
         export function renderMoveMenuParts() {
             MOVE_MENU_PARTS.forEach(p => {
                 const el = document.getElementById(p.id);

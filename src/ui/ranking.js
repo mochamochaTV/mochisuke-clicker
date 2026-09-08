@@ -1,23 +1,14 @@
-        // ===================================================================
-        // ui.js から分割されたファイルです（ランキング・日記帳）。
-        // 元々は1つの巨大な ui.js（4000行超）にすべて入っていましたが、見通しを良くするため
-        // 機能ごとに src/ui/ 以下のファイルへ分割しました。ui.js 自身は今、この下の7ファイルを
-        // まとめて re-export するだけの「窓口」になっています（他のファイルからの
-        // import { X } from './ui.js' は今まで通りそのまま動きます）。
-        // ===================================================================
+        // ui.js を機能ごとに分割したファイルの1つ（ランキング・日記帳）。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-08-005';
-        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-08-005';
-        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-08-005';
-        import { purchasedItems } from '../../shop.js?v=2026-09-08-005';
-        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-08-005';
-        import { closeModal, openModal } from './core.js?v=2026-09-08-005';
-        import { setupChatInputEnterKey } from './chat.js?v=2026-09-08-005';
+        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-08-006';
+        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-08-006';
+        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-08-006';
+        import { purchasedItems } from '../../shop.js?v=2026-09-08-006';
+        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-08-006';
+        import { closeModal, openModal } from './core.js?v=2026-09-08-006';
+        import { setupChatInputEnterKey } from './chat.js?v=2026-09-08-006';
 
 
-        // ===================================================================
-        // 🎮 ミニゲームセンター：共通ロジック
-        // ===================================================================
         export let currentRankingTab = 'score';
 
         export function closeRanking() {
@@ -164,7 +155,6 @@
             });
         }
 
-        // 定期メインループ（100ms周期で自動加算＆スキル秒数減算を一元管理）
         export let diaryPageIndex = 0;
         export function openDiary() {
             diaryPageIndex = selectedStageIndex;

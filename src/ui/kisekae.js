@@ -1,19 +1,13 @@
-        // ===================================================================
-        // ui.js から分割されたファイルです（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。
-        // 元々は1つの巨大な ui.js（4000行超）にすべて入っていましたが、見通しを良くするため
-        // 機能ごとに src/ui/ 以下のファイルへ分割しました。ui.js 自身は今、この下の7ファイルを
-        // まとめて re-export するだけの「窓口」になっています（他のファイルからの
-        // import { X } from './ui.js' は今まで通りそのまま動きます）。
-        // ===================================================================
+        // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-08-005';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-08-005';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-08-005';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-08-005';
-        import { saveGame } from '../../state.js?v=2026-09-08-005';
-        import { closeModal, openModal } from './core.js?v=2026-09-08-005';
-        import { openTicketInventory } from './myroom.js?v=2026-09-08-005';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-08-005';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-08-006';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-08-006';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-08-006';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-08-006';
+        import { saveGame } from '../../state.js?v=2026-09-08-006';
+        import { closeModal, openModal } from './core.js?v=2026-09-08-006';
+        import { openTicketInventory } from './myroom.js?v=2026-09-08-006';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-08-006';
 
         // ✨ スプレーを使う：1日だけ自動増加バフ＋見た目エフェクトが有効になる
         export function useSpray(itemId) {
@@ -200,8 +194,7 @@
             const fullbodyId = equippedKisekae.fullbody;
 
             if (fullbodyId) {
-                // 全身装備中は、帽子・顔パーツ・通常の口パーツを隠し、もちすけ本体は visibility:hidden で完全に見えなくする
-                // （display:noneだと箱のサイズの土台が無くなり全身画像も消えてしまうため、レイアウトのスペースだけ残す）
+                // 全身装備中は、帽子・顔パーツ・通常の口パーツを隠す（display:noneではなくvisibility:hiddenで消す理由はrenderKisekaeMochisukeと同様）
                 const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
                 mainFullbody.src = fbItem.img;
                 mainFullbody.style.display = 'block';
@@ -297,7 +290,6 @@
         }
 
         export let kisekaeCurrentCategory = 'clothes';
-        // カテゴリを開いて、名前順・Zの字並びで左右にアイテムを並べる
         // 🛠️ 開発者用：翼の羽ばたき速度を実機で調整する（位置調整パネルとは独立して、常に使える）
         export function adjustWingFlapSpeed(delta) {
             WING_FLAP_INTERVAL_MS = Math.max(20, WING_FLAP_INTERVAL_MS + delta);
@@ -314,6 +306,7 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
             alert(`コピーしました\n${text}`);
         }
+        // カテゴリを開いて、名前順・Zの字並びで左右にアイテムを並べる
         export function openKisekaeCategory(cat) {
             playAudioFile('audio/skill_tap.mp3');
             if (cat !== 'back') clearWingGhostFrames(); // 背中カテゴリから離れる時は、翼のゴースト表示を片付ける

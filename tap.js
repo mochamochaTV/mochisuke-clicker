@@ -1,40 +1,30 @@
-// ===================================================================
-// Phase 2: 他ファイルの値を読むためのimport（フェーズ1の暫定的なwindow橋渡しに代えて、
-// 実際にどのファイルの何を使っているかがここを見れば分かるようにしています）。
-// これらはすべて「読み取り専用」の使い方だけをしている名前です。値を書き換える必要がある
-// ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
-// 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
-// ===================================================================
-// ===================================================================
-// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
-// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
-// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
-// ===================================================================
+// 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
+// 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-08-005';
+} from './data.js?v=2026-09-08-006';
 import {
   audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
   getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-08-005';
-import { isMinigameActive } from './minigames.js?v=2026-09-08-005';
+} from './main.js?v=2026-09-08-006';
+import { isMinigameActive } from './minigames.js?v=2026-09-08-006';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-08-005';
+} from './progress.js?v=2026-09-08-006';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-08-005';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-08-005';
+} from './shop.js?v=2026-09-08-006';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-08-006';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-08-005';
+} from './ui.js?v=2026-09-08-006';
 
         export let skills = {
             skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 0, unlockPrice: 300, lvPriceMult: 1.9, desc: "発動中はタップでパーティクルが3倍出る" },
@@ -140,6 +130,7 @@ import {
             return mps;
         }
 
+        // 10コンボ毎に+2%（例：50コンボで+10%、100コンボで+20%）。控えめな伸び方にして、頭打ちなく積み上げていける
         export function getComboBonusPercent() {
             return Math.floor(comboCount / 10) * 2;
         }
@@ -683,14 +674,12 @@ import {
                 screenFlash('#fff59d', 0.18);
             }
 
-            // 効果持続時間セット
             s.activeTimer = s.duration;
             
             // クールタイム計算 (Lvアップに応じて段階的に短縮)
             let calculatedCd = getSkillCalculatedCd(key, s);
             s.currentCd = calculatedCd;
 
-            // スキル個別発動ビジュアル演出の開始
             startSkillVisualEffect(key);
             updateSkillUI();
             updateDisplay();
@@ -788,7 +777,6 @@ import {
             let needsUiUpdate = false;
             Object.keys(skills).forEach(key => {
                 const s = skills[key];
-                // 持続終了の判定
                 if (s.activeTimer > 0) {
                     needsUiUpdate = true;
                     s.activeTimer -= dt;
@@ -831,18 +819,15 @@ import {
                 const btn = document.getElementById('btn-' + key);
                 if (!btn) return;
 
-                // 各種Lv表示の同期
                 const lvText = document.getElementById('lv-' + key);
                 if (lvText) lvText.innerText = `Lv.${s.lv}`;
 
-                // 解放ロック状態のデザイン分岐
                 if (s.lv === 0) {
                     btn.classList.add('locked');
                 } else {
                     btn.classList.remove('locked');
                 }
 
-                // クールタイム目標計算
                 let calculatedCd = getSkillCalculatedCd(key, s);
 
                 const overlay = btn.querySelector('.cd-overlay');
@@ -906,8 +891,6 @@ import {
         }
         window.buySkillLevel = buySkillLevel; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
-        // 🎁 おみやげ屋さんの棚UI（イラスト上に座標指定で商品を配置する）
-        // 棚イラスト内の各枠の位置（%）。row=段、col=列。イラスト自体を差し替えない限りここは固定でOK。
         export function resetFeedCountIfNewDay() {
             const today = getLocalDateString(new Date());
             if (feedLastResetDate !== today) {
@@ -1077,7 +1060,6 @@ import {
             }, 250);
         }
 
-        // 「×」ボタン用：選択も解除する
         export function startFeverSpawningLoop() {
             setInterval(() => { if (!isTutorialActive && !isFever && !document.getElementById('fever-pop') && Math.random() < 0.08) spawnGoldMochi(); }, 25000);
         }
@@ -1097,7 +1079,6 @@ import {
             }, 1000);
         }
 
-        // 🎉 日本全国制覇の演出
         export let hissatsuAutoChargeAccum = 0;
         // 🐛パフォーマンス修正（第2版）：以前はここで3回に1回だけ画面に反映する間引きをしていたが、
         // タップ画面を見ている間の反応が鈍く感じられたため、間引きはやめて元通り毎回(100ms毎)反映する。
@@ -1150,23 +1131,10 @@ import {
         export function setLastTappedTime(v) { lastTappedTime = v; }
 
 
-        // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み
-        // ・フェーズ1（ES Modules化）：このファイルの変数・関数すべてにexportを付けた。
-        // ・フェーズ2（このブロック）：他ファイルがこのファイルの値を「読むだけ」で使っている
-        //   箇所は、ファイル先頭の import文 に置き換えた（各ファイルの一番上を見れば、そのファイルが
-        //   他のどのファイルの何を使っているかが一目で分かるようになった）。
-        //   下に残っているのは、他ファイルがこの変数へ「代入」もしている（書き換える）ものだけ。
-        //   ESモジュールのimportは読み取り専用の束縛なので、書き換えが必要な変数はまだ
-        //   window経由の暗黙グローバルに頼っている。
-        //
-        // 🐛関連の重大バグの記録：以前ここを window.名前 = 名前 という「値の一回きりのコピー」に
-        // していたところ、let で宣言された変数はコピーした瞬間の値のまま凍結され、後から
-        // 値が変わってもwindow側に反映されない、というバグがあった（もち数が起動のたびに0に戻る
-        // 原因になった。詳しくは解体新書 第4章）。そこで書き換わる可能性がある変数（let）は
-        // Object.defineProperty で「get/setする度に必ずこのファイル本来の変数を読み書きする」
-        // ようにしてある。書き換わらない値（const・関数・クラス）は単純コピーのままで問題ない。
-        //
-        // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
-        // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
-        // ===================================================================
+        // window橋渡し：ここから下は、index.htmlのonclick=""（静的または動的に生成される
+        // 文字列の両方）から直接呼ばれる関数を中心に、window経由のアクセスがまだ必要なものをまとめている。
+        // ブラウザはonclick="foo()"の実行時にwindow.fooを探すため、橋渡しが無いとボタンを押しても
+        // 静かに何も起きない（実際にこれで一度事故を起こした。解体新書 第9章参照）。削除する時は、
+        // 他ファイルからのimport参照・index.html内の静的onclick・動的に組み立てられるonclick文字列の
+        // 3経路すべてを確認すること。
         window.useSkill = useSkill;

@@ -1,16 +1,6 @@
-// ===================================================================
-// Phase 2: 他ファイルの値を読むためのimport（フェーズ1の暫定的なwindow橋渡しに代えて、
-// 実際にどのファイルの何を使っているかがここを見れば分かるようにしています）。
-// これらはすべて「読み取り専用」の使い方だけをしている名前です。値を書き換える必要がある
-// ものは、importした束縛には代入できない（ESモジュールの仕様）ため、まだ下の橋渡しブロックを
-// 経由しています。全ファイルの書き換え側もsetter関数に置き換えたら、橋渡しごと消せます。
-// ===================================================================
-// ===================================================================
-// 他ファイルの値を使うためのimport（読み取り専用の名前はPhase 2で、書き換えが
-// 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
-// setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
-// ===================================================================
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-08-005';
+// 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
+// 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-08-006';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -19,7 +9,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-08-005';
+} from './minigames.js?v=2026-09-08-006';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -32,21 +22,21 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-08-005';
+} from './progress.js?v=2026-09-08-006';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-08-005';
+} from './shop.js?v=2026-09-08-006';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-08-005';
+} from './tap.js?v=2026-09-08-006';
 import {
   hasSeenTutorial, lastGiftSentDateStr, seenButtonHints, setHasSeenTutorial,
   setLastGiftSentDateStr, setSeenButtonHints
-} from './ui.js?v=2026-09-08-005';
+} from './ui.js?v=2026-09-08-006';
 
         export function menuSaveGame() {
             saveGame();
@@ -157,6 +147,7 @@ import {
             location.reload();
         }
 
+        // 明らかにスパム/おかしな名前を弾く簡易チェック（記号だけ・同じ文字の連続など）
         export function sanitizePlayerName(rawName) {
             let n = String(rawName || '').trim();
             if (!n) return { ok: false, reason: '名前を入力してください' };
@@ -183,12 +174,8 @@ import {
         export const OFFLINE_EARNINGS_CAP_HOURS_BASE = 4; // オフライン収益として計算する時間の上限（これ以上離れていても4時間分だけ）
         export const OFFLINE_EARNINGS_MIN_SECONDS = 90; // これより短い離席では出さない（毎回のリロードで鬱陶しくならないように）
 
-        // 🔄 転生システム
         export let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
 
-        // ===================================================================
-        // 🎮 ミニゲームセンター
-        // ===================================================================
         export function saveGame() {
             lastActiveTimestamp = Date.now();
             const state = {
@@ -363,7 +350,7 @@ import {
         // 🛟 ローカルにセーブが全く無い状態で起動した時、クラウドにバックアップが残っていないか自動でチェックする
         // （「データが消えたことに気づかないまま最初からプレイしてしまう」事故を防ぐための保険）
         export function checkForCloudRestoreOnLoad() {
-            if (hadLocalSaveOnLoad) return; // ローカルにセーブがあれば何もしない
+            if (hadLocalSaveOnLoad) return;
             let attempts = 0;
             const poll = setInterval(async () => {
                 attempts++;
