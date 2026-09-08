@@ -13,21 +13,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-08-002';
+} from './data.js?v=2026-09-08-003';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-08-002';
-import { setPurchasedItems } from './shop.js?v=2026-09-08-002';
+} from './main.js?v=2026-09-08-003';
+import { setPurchasedItems } from './shop.js?v=2026-09-08-003';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-08-002';
-import { getMps, skills } from './tap.js?v=2026-09-08-002';
+} from './state.js?v=2026-09-08-003';
+import { getMps, skills } from './tap.js?v=2026-09-08-003';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-002';
+} from './ui.js?v=2026-09-08-003';
 
         export let prestigeCount = 0;      // 転生した回数
 
@@ -603,42 +603,10 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'stampGuardRecheckTimer', { configurable: true, get: () => stampGuardRecheckTimer, set: (v) => { stampGuardRecheckTimer = v; } });
-        window.PRESTIGE_BONUS_PER_COUNT = PRESTIGE_BONUS_PER_COUNT;
-        window.getPrestigeBonusMultiplier = getPrestigeBonusMultiplier;
-        window.GACHA_COIN_PER_STAMP = GACHA_COIN_PER_STAMP;
-        window.GACHA_COIN_JAPAN_CLEAR = GACHA_COIN_JAPAN_CLEAR;
-        window.GACHA_COIN_PER_PRESTIGE = GACHA_COIN_PER_PRESTIGE;
-        window.getOfflineEarningsCapHours = getOfflineEarningsCapHours;
-        window.getMinigameDailyLimit = getMinigameDailyLimit;
-        window.getPrestigeStartingBonus = getPrestigeStartingBonus;
-        window.getPrestigeCdReductionSec = getPrestigeCdReductionSec;
-        window.buyPrestigeShopItem = buyPrestigeShopItem;
-        window.renderPrestigeShop = renderPrestigeShop;
-        window.MINIGAME_DAILY_LIMIT_BASE = MINIGAME_DAILY_LIMIT_BASE;
-        window.getPrefTrophyLines = getPrefTrophyLines;
-        window.getPrefTrophy = getPrefTrophy;
-        window.getPrefTrophyIcon = getPrefTrophyIcon;
-        window.checkOfflineEarnings = checkOfflineEarnings;
-        window.triggerAreaTransition = triggerAreaTransition;
-        window.showPrefTrophyDetail = showPrefTrophyDetail;
-        window.PRESTIGE_POINTS_PER_RUN = PRESTIGE_POINTS_PER_RUN;
         window.openPrestigeShop = openPrestigeShop;
-        window.canPrestige = canPrestige;
         window.openPrestigeConfirm = openPrestigeConfirm;
-        window.doPrestige = doPrestige;
-        window.triggerJapanClearCelebration = triggerJapanClearCelebration;
         window.confirmCloseJapanClear = confirmCloseJapanClear;
         window.closeJapanClearAndExplainPrestige = closeJapanClearAndExplainPrestige;
         window.saveJapanClearImage = saveJapanClearImage;
-        window.checkStageProgress = checkStageProgress;
         window.openDiaryForStamping = openDiaryForStamping;
         window.tapStampFrame = tapStampFrame;
-        window.trackMissionEvent = trackMissionEvent;
-        window.getWeekKey = getWeekKey;
-        window.pickRandomMissions = pickRandomMissions;
-        window.checkAndRotateMissions = checkAndRotateMissions;
-        window.getMissionDef = getMissionDef;
-        window.getMissionProgress = getMissionProgress;
-        window.isMissionComplete = isMissionComplete;
-        window.claimMission = claimMission;

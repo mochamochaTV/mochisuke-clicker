@@ -12,28 +12,28 @@
 // ===================================================================
 import {
   CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-08-002';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-08-002';
+} from './data.js?v=2026-09-08-003';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-08-003';
 import {
   checkAndRotateMissions, checkOfflineEarnings, checkStageProgress, currentStageIndex,
   currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems, prestigeCount,
   selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-08-002';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-08-002';
+} from './progress.js?v=2026-09-08-003';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-08-003';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-08-002';
+} from './state.js?v=2026-09-08-003';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-08-002';
+} from './tap.js?v=2026-09-08-003';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-08-002';
+} from './ui.js?v=2026-09-08-003';
 
         // 🚧🚧🚧 メンテナンスモード 🚧🚧🚧
         // 大きな更新をする直前に true にしてから公開すると、プレイヤーには「メンテナンス中」画面だけが表示され、
@@ -1013,95 +1013,10 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'deferredInstallPrompt', { configurable: true, get: () => deferredInstallPrompt, set: (v) => { deferredInstallPrompt = v; } });
-        Object.defineProperty(window, 'lastTouchEnd', { configurable: true, get: () => lastTouchEnd, set: (v) => { lastTouchEnd = v; } });
-        Object.defineProperty(window, 'canvas', { configurable: true, get: () => canvas, set: (v) => { canvas = v; } });
-        Object.defineProperty(window, 'ctx', { configurable: true, get: () => ctx, set: (v) => { ctx = v; } });
-        Object.defineProperty(window, 'particleList', { configurable: true, get: () => particleList, set: (v) => { particleList = v; } });
-        Object.defineProperty(window, 'rainCanvas', { configurable: true, get: () => rainCanvas, set: (v) => { rainCanvas = v; } });
-        Object.defineProperty(window, 'rainCtx', { configurable: true, get: () => rainCtx, set: (v) => { rainCtx = v; } });
-        Object.defineProperty(window, 'mochiRainList', { configurable: true, get: () => mochiRainList, set: (v) => { mochiRainList = v; } });
-        Object.defineProperty(window, 'ambientSparkles', { configurable: true, get: () => ambientSparkles, set: (v) => { ambientSparkles = v; } });
-        Object.defineProperty(window, 'goldParticleImg', { configurable: true, get: () => goldParticleImg, set: (v) => { goldParticleImg = v; } });
-        Object.defineProperty(window, 'audioCtx', { configurable: true, get: () => audioCtx, set: (v) => { audioCtx = v; } });
-        Object.defineProperty(window, 'bgmGainNode', { configurable: true, get: () => bgmGainNode, set: (v) => { bgmGainNode = v; } });
-        Object.defineProperty(window, 'bgmSourceNode', { configurable: true, get: () => bgmSourceNode, set: (v) => { bgmSourceNode = v; } });
-        Object.defineProperty(window, 'currentBgmFile', { configurable: true, get: () => currentBgmFile, set: (v) => { currentBgmFile = v; } });
         Object.defineProperty(window, 'IS_DEV_MODE', { configurable: true, get: () => IS_DEV_MODE, set: (v) => { IS_DEV_MODE = v; } });
-        Object.defineProperty(window, 'shakeTimeout', { configurable: true, get: () => shakeTimeout, set: (v) => { shakeTimeout = v; } });
-        Object.defineProperty(window, 'lastScreenShakeTime', { configurable: true, get: () => lastScreenShakeTime, set: (v) => { lastScreenShakeTime = v; } });
-        Object.defineProperty(window, 'lastScreenFlashTime', { configurable: true, get: () => lastScreenFlashTime, set: (v) => { lastScreenFlashTime = v; } });
-        Object.defineProperty(window, 'rippleList', { configurable: true, get: () => rippleList, set: (v) => { rippleList = v; } });
-        Object.defineProperty(window, 'floatingTextList', { configurable: true, get: () => floatingTextList, set: (v) => { floatingTextList = v; } });
-        Object.defineProperty(window, 'lastAmbientFrameTs', { configurable: true, get: () => lastAmbientFrameTs, set: (v) => { lastAmbientFrameTs = v; } });
-        window.MAINTENANCE_MODE = MAINTENANCE_MODE;
-        window.installBanner = installBanner;
-        window.installBannerText = installBannerText;
-        window.installBannerAction = installBannerAction;
-        window.installBannerClose = installBannerClose;
-        window.INSTALL_DISMISS_KEY = INSTALL_DISMISS_KEY;
-        window.isRunningStandalone = isRunningStandalone;
-        window.showInstallBanner = showInstallBanner;
-        window.ua = ua;
-        window.isIOSDevice = isIOSDevice;
-        window.isInAppBrowser = isInAppBrowser;
-        window.fixBottomGap = fixBottomGap;
-        window.FEEDBACK_EMAIL = FEEDBACK_EMAIL;
         window.sendFeedback = sendFeedback;
-        window.MOCHI_RAIN_MAX = MOCHI_RAIN_MAX;
-        window.spawnMochiRain = spawnMochiRain;
-        window.spawnAmbientSparkle = spawnAmbientSparkle;
-        window.particleImg = particleImg;
-        window.pickRandom = pickRandom;
-        window.getTimeBucketIndex = getTimeBucketIndex;
-        window.audioBuffers = audioBuffers;
-        window.audioBufferPromises = audioBufferPromises;
-        window.getAudioContext = getAudioContext;
-        window.loadAudioBuffer = loadAudioBuffer;
-        window.preloadAllSfx = preloadAllSfx;
-        window.ensureBgmGain = ensureBgmGain;
-        window.playBgmLoop = playBgmLoop;
-        window.stopBgm = stopBgm;
-        window.applyBgmVolume = applyBgmVolume;
-        window.playBufferNow = playBufferNow;
-        window.playAudioFile = playAudioFile;
-        window.playAudioFilePitched = playAudioFilePitched;
-        window.unlockAllPooledAudio = unlockAllPooledAudio;
-        window.capturedErrors = capturedErrors;
-        window.initDevMode = initDevMode;
         window.debugAddMochi = debugAddMochi;
         window.debugLevelUpSkill = debugLevelUpSkill;
         window.debugLevelUpAllSkills = debugLevelUpAllSkills;
         window.debugResetCooldowns = debugResetCooldowns;
-        window.initAndPlayBGM = initAndPlayBGM;
         window.startGameFromOpScreen = startGameFromOpScreen;
-        window.resizeParticleCanvas = resizeParticleCanvas;
-        window.getGameScreenRect = getGameScreenRect;
-        window.setGameBackground = setGameBackground;
-        window.MOCHI_DECIMAL_PLACES = MOCHI_DECIMAL_PLACES;
-        window.escapeHtml = escapeHtml;
-        window.formatMochi = formatMochi;
-        window.vibrate = vibrate;
-        window.screenShake = screenShake;
-        window.screenFlash = screenFlash;
-        window.remToPx = remToPx;
-        window.spawnModalParticleBurst = spawnModalParticleBurst;
-        window.spawnModalFloatingText = spawnModalFloatingText;
-        window.createRippleEffect = createRippleEffect;
-        window.createFloatingText = createFloatingText;
-        window.createParticle = createParticle;
-        window.updateAndRenderParticles = updateAndRenderParticles;
-        window.renderMochiRainFrame = renderMochiRainFrame;
-        window.lazyLoadImage = lazyLoadImage;
-        window.startMochiLifeLoop = startMochiLifeLoop;
-        window.PRESENT_SPAWN_CHANCE = PRESENT_SPAWN_CHANCE;
-        window.PRESENT_SPAWN_INTERVAL_MS = PRESENT_SPAWN_INTERVAL_MS;
-        window.PRESENT_REWARD_MIN = PRESENT_REWARD_MIN;
-        window.PRESENT_REWARD_DISTANCE_RATE = PRESENT_REWARD_DISTANCE_RATE;
-        window.PRESENT_REWARD_MPS_RATE = PRESENT_REWARD_MPS_RATE;
-        window.startPresentSpawningLoop = startPresentSpawningLoop;
-        window.PRESENT_TAPS_REQUIRED = PRESENT_TAPS_REQUIRED;
-        window.spawnLuckyPresent = spawnLuckyPresent;
-        window.spawnGoldMochi = spawnGoldMochi;
-        window.appStartTime = appStartTime;
-        window.AUTOSAVE_CLOUD_GRACE_MS = AUTOSAVE_CLOUD_GRACE_MS;

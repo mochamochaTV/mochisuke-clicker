@@ -13,28 +13,28 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-08-002';
+} from './data.js?v=2026-09-08-003';
 import {
   audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
   getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-08-002';
-import { isMinigameActive } from './minigames.js?v=2026-09-08-002';
+} from './main.js?v=2026-09-08-003';
+import { isMinigameActive } from './minigames.js?v=2026-09-08-003';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-08-002';
+} from './progress.js?v=2026-09-08-003';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-08-002';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-08-002';
+} from './shop.js?v=2026-09-08-003';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-08-003';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-08-002';
+} from './ui.js?v=2026-09-08-003';
 
         export let skills = {
             skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 0, unlockPrice: 300, lvPriceMult: 1.9, desc: "発動中はタップでパーティクルが3倍出る" },
@@ -1168,81 +1168,4 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'feverInterval', { configurable: true, get: () => feverInterval, set: (v) => { feverInterval = v; } });
-        Object.defineProperty(window, 'comboCount', { configurable: true, get: () => comboCount, set: (v) => { comboCount = v; } });
-        Object.defineProperty(window, 'comboTimer', { configurable: true, get: () => comboTimer, set: (v) => { comboTimer = v; } });
-        Object.defineProperty(window, 'comboEndCommentId', { configurable: true, get: () => comboEndCommentId, set: (v) => { comboEndCommentId = v; } });
-        Object.defineProperty(window, 'lastComboReflowTime', { configurable: true, get: () => lastComboReflowTime, set: (v) => { lastComboReflowTime = v; } });
-        Object.defineProperty(window, 'mochiLongPressTimer', { configurable: true, get: () => mochiLongPressTimer, set: (v) => { mochiLongPressTimer = v; } });
-        Object.defineProperty(window, 'breatheTimer', { configurable: true, get: () => breatheTimer, set: (v) => { breatheTimer = v; } });
-        Object.defineProperty(window, 'isMochiPressed', { configurable: true, get: () => isMochiPressed, set: (v) => { isMochiPressed = v; } });
-        Object.defineProperty(window, 'squeezeStartX', { configurable: true, get: () => squeezeStartX, set: (v) => { squeezeStartX = v; } });
-        Object.defineProperty(window, 'squeezeStartY', { configurable: true, get: () => squeezeStartY, set: (v) => { squeezeStartY = v; } });
-        Object.defineProperty(window, 'squeezeLastDx', { configurable: true, get: () => squeezeLastDx, set: (v) => { squeezeLastDx = v; } });
-        Object.defineProperty(window, 'squeezeLastDy', { configurable: true, get: () => squeezeLastDy, set: (v) => { squeezeLastDy = v; } });
-        Object.defineProperty(window, 'stretchSoundSource', { configurable: true, get: () => stretchSoundSource, set: (v) => { stretchSoundSource = v; } });
-        Object.defineProperty(window, 'stretchSoundGain', { configurable: true, get: () => stretchSoundGain, set: (v) => { stretchSoundGain = v; } });
-        Object.defineProperty(window, 'bunshinCloneEls', { configurable: true, get: () => bunshinCloneEls, set: (v) => { bunshinCloneEls = v; } });
-        Object.defineProperty(window, 'lastCheerTier', { configurable: true, get: () => lastCheerTier, set: (v) => { lastCheerTier = v; } });
-        Object.defineProperty(window, 'lastCheerChangeTime', { configurable: true, get: () => lastCheerChangeTime, set: (v) => { lastCheerChangeTime = v; } });
-        Object.defineProperty(window, 'screamRevertTimeout', { configurable: true, get: () => screamRevertTimeout, set: (v) => { screamRevertTimeout = v; } });
-        Object.defineProperty(window, 'critFilterTimeout', { configurable: true, get: () => critFilterTimeout, set: (v) => { critFilterTimeout = v; } });
-        Object.defineProperty(window, 'critTapId', { configurable: true, get: () => critTapId, set: (v) => { critTapId = v; } });
-        Object.defineProperty(window, 'feedDragState', { configurable: true, get: () => feedDragState, set: (v) => { feedDragState = v; } });
-        Object.defineProperty(window, 'feedBuffIndicatorTimer', { configurable: true, get: () => feedBuffIndicatorTimer, set: (v) => { feedBuffIndicatorTimer = v; } });
-        Object.defineProperty(window, 'hissatsuAutoChargeAccum', { configurable: true, get: () => hissatsuAutoChargeAccum, set: (v) => { hissatsuAutoChargeAccum = v; } });
-        window.FEED_BUFF_DURATION_MS = FEED_BUFF_DURATION_MS;
-        window.FEED_DAILY_LIMIT = FEED_DAILY_LIMIT;
-        window.MOCHI_LONGPRESS_MS = MOCHI_LONGPRESS_MS;
-        window.SQUEEZE_MAX_DRAG = SQUEEZE_MAX_DRAG;
-        window.SQUEEZE_MAX_STRETCH = SQUEEZE_MAX_STRETCH;
-        window.SQUEEZE_MAX_SQUASH = SQUEEZE_MAX_SQUASH;
-        window.SQUEEZE_MIN_DRAG = SQUEEZE_MIN_DRAG;
-        window.SQUEEZE_ELEMENT_RADIUS = SQUEEZE_ELEMENT_RADIUS;
-        window.refreshBunshinCloneRects = refreshBunshinCloneRects;
-        window.getTapPower = getTapPower;
-        window.getMps = getMps;
-        window.getComboBonusPercent = getComboBonusPercent;
-        window.getCheerTier = getCheerTier;
-        window.CHEER_MIN_DISPLAY_MS = CHEER_MIN_DISPLAY_MS;
-        window.updateCheerBalloon = updateCheerBalloon;
-        window.forceCheerLine = forceCheerLine;
-        window.handleCombo = handleCombo;
-        window.startScreamFace = startScreamFace;
-        window.revertScreamFace = revertScreamFace;
-        window.triggerAwakeningScream = triggerAwakeningScream;
-        window.executeSingleTap = executeSingleTap;
-        window.mochiBtnElement = mochiBtnElement;
-        window.mochiDeformWrap = mochiDeformWrap;
-        window.mochiBreatheWrapEl = mochiBreatheWrapEl;
-        window.squeezeTransformFor = squeezeTransformFor;
-        window.applySqueezeTransform = applySqueezeTransform;
-        window.startStretchSound = startStretchSound;
-        window.updateStretchSound = updateStretchSound;
-        window.stopStretchSound = stopStretchSound;
-        window.releaseSqueezeWithOvershoot = releaseSqueezeWithOvershoot;
-        window.releaseMochiSucre = releaseMochiSucre;
-        window.getHissatsuTapsRequired = getHissatsuTapsRequired;
-        window.getSkillCalculatedCd = getSkillCalculatedCd;
         window.useSkill = useSkill;
-        window.startSkillVisualEffect = startSkillVisualEffect;
-        window.endSkillVisualEffect = endSkillVisualEffect;
-        window.getMochisukeBaseImg = getMochisukeBaseImg;
-        window.resetMochiFilter = resetMochiFilter;
-        window.updateSkillTimers = updateSkillTimers;
-        window.chargeHissatsuByTap = chargeHissatsuByTap;
-        window.updateSkillUI = updateSkillUI;
-        window.buySkillLevel = buySkillLevel;
-        window.resetFeedCountIfNewDay = resetFeedCountIfNewDay;
-        window.cancelFeedDragIfActive = cancelFeedDragIfActive;
-        window.FEED_TEASE_TIME_MS = FEED_TEASE_TIME_MS;
-        window.scheduleFeedTeaseEscalation = scheduleFeedTeaseEscalation;
-        window.showFeedTeaseComment = showFeedTeaseComment;
-        window.spawnScreamKanaBurst = spawnScreamKanaBurst;
-        window.placeFeedIconNearMochisuke = placeFeedIconNearMochisuke;
-        window.startFeedDrag = startFeedDrag;
-        window.onFeedDragMove = onFeedDragMove;
-        window.onFeedDragEnd = onFeedDragEnd;
-        window.startFeedBuffIndicator = startFeedBuffIndicator;
-        window.startFeverSpawningLoop = startFeverSpawningLoop;
-        window.triggerFeverTime = triggerFeverTime;

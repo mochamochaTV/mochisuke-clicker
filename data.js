@@ -517,37 +517,3 @@
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        window.stages = stages;
-        window.clothesData = clothesData;
-        window.PRESTIGE_SHOP_ITEMS = PRESTIGE_SHOP_ITEMS;
-        window.dialogueData = dialogueData;
-        window.TUTORIAL_STEPS = TUTORIAL_STEPS;
-        window.SFX_FILES = SFX_FILES;
-        window.cheerLines = cheerLines;
-        window.comboEndLines = comboEndLines;
-        window.NORMAL_CONSUMABLE_ITEMS = NORMAL_CONSUMABLE_ITEMS;
-        window.SPRAY_ITEMS = SPRAY_ITEMS;
-        window.GACHA_RARITIES = GACHA_RARITIES;
-        window.OMIYAGE_ROWS = OMIYAGE_ROWS;
-        window.OMIYAGE_COLS = OMIYAGE_COLS;
-        window.feedTeaseComments = feedTeaseComments;
-        window.FEED_TEASE_MAX_LEVEL = FEED_TEASE_MAX_LEVEL;
-        window.KISEKAE_ITEMS = KISEKAE_ITEMS;
-        window.KISEKAE_CATEGORY_LABELS = KISEKAE_CATEGORY_LABELS;
-        window.DEFAULT_MOUTH_POSITION = DEFAULT_MOUTH_POSITION;
-        window.TUTORIAL_MISSIONS = TUTORIAL_MISSIONS;
-        window.DAILY_MISSION_POOL = DAILY_MISSION_POOL;
-        window.WEEKLY_MISSION_POOL = WEEKLY_MISSION_POOL;
-        window.DAILY_MISSION_COUNT = DAILY_MISSION_COUNT;
-        window.WEEKLY_MISSION_COUNT = WEEKLY_MISSION_COUNT;
-        window.MOVE_MENU_PARTS = MOVE_MENU_PARTS;
-        window.ARCADE_CABINET_PARTS = ARCADE_CABINET_PARTS;
-        window.WAREHOUSE_ITEM_PARTS = WAREHOUSE_ITEM_PARTS;
-        window.MYROOM_ITEMS = MYROOM_ITEMS;
-        window.MYROOM_CATEGORY_LABELS = MYROOM_CATEGORY_LABELS;
-        window.MYROOM_SLOT_POSITIONS = MYROOM_SLOT_POSITIONS;
-        window.MYROOM_WALL_ZONE_BOTTOM = MYROOM_WALL_ZONE_BOTTOM;
-        window.MYROOM_FURNITURE_LIMIT_PER_CATEGORY = MYROOM_FURNITURE_LIMIT_PER_CATEGORY;
-        window.CORNER_BTN_ADJUST_TOOL_ENABLED = CORNER_BTN_ADJUST_TOOL_ENABLED;
-        window.CORNER_BTN_OFFSETS = CORNER_BTN_OFFSETS;
-        window.CORNER_BTN_OFFSETS_PWA_OVERRIDE = CORNER_BTN_OFFSETS_PWA_OVERRIDE;

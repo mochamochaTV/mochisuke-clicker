@@ -10,21 +10,21 @@
 // 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
 // setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
 // ===================================================================
-import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-002';
+import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-003';
 import {
   IS_DEV_MODE, PRESENT_REWARD_DISTANCE_RATE, PRESENT_REWARD_MIN, PRESENT_REWARD_MPS_RATE,
   getAudioContext, loadAudioBuffer, pickRandom, playAudioFile, playAudioFilePitched, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnModalParticleBurst, vibrate
-} from './main.js?v=2026-09-08-002';
+} from './main.js?v=2026-09-08-003';
 import {
   currentStageIndex, gachaCoins, getMinigameDailyLimit, prestigeShopLv, setGachaCoins,
   trackMissionEvent
-} from './progress.js?v=2026-09-08-002';
-import { saveGame } from './state.js?v=2026-09-08-002';
-import { getMps } from './tap.js?v=2026-09-08-002';
+} from './progress.js?v=2026-09-08-003';
+import { saveGame } from './state.js?v=2026-09-08-003';
+import { getMps } from './tap.js?v=2026-09-08-003';
 import {
   closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-002';
+} from './ui.js?v=2026-09-08-003';
 
         export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
 
@@ -1639,105 +1639,5 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'timeAttackState', { configurable: true, get: () => timeAttackState, set: (v) => { timeAttackState = v; } });
-        Object.defineProperty(window, 'concentrationState', { configurable: true, get: () => concentrationState, set: (v) => { concentrationState = v; } });
-        Object.defineProperty(window, 'mochitsukiState', { configurable: true, get: () => mochitsukiState, set: (v) => { mochitsukiState = v; } });
-        Object.defineProperty(window, 'slotIsSpinning', { configurable: true, get: () => slotIsSpinning, set: (v) => { slotIsSpinning = v; } });
-        Object.defineProperty(window, 'slotSpinLoopSource', { configurable: true, get: () => slotSpinLoopSource, set: (v) => { slotSpinLoopSource = v; } });
-        Object.defineProperty(window, 'slotStoppedCount', { configurable: true, get: () => slotStoppedCount, set: (v) => { slotStoppedCount = v; } });
-        Object.defineProperty(window, 'slotReelResults', { configurable: true, get: () => slotReelResults, set: (v) => { slotReelResults = v; } });
-        Object.defineProperty(window, 'slotReelAnimations', { configurable: true, get: () => slotReelAnimations, set: (v) => { slotReelAnimations = v; } });
-        Object.defineProperty(window, 'slotReelLandingRow', { configurable: true, get: () => slotReelLandingRow, set: (v) => { slotReelLandingRow = v; } });
-        Object.defineProperty(window, 'slotStoppedReels', { configurable: true, get: () => slotStoppedReels, set: (v) => { slotStoppedReels = v; } });
-        Object.defineProperty(window, 'slotNextSpinFree', { configurable: true, get: () => slotNextSpinFree, set: (v) => { slotNextSpinFree = v; } });
-        Object.defineProperty(window, 'slotAdjustMode', { configurable: true, get: () => slotAdjustMode, set: (v) => { slotAdjustMode = v; } });
-        Object.defineProperty(window, 'slotAdjustDragState', { configurable: true, get: () => slotAdjustDragState, set: (v) => { slotAdjustDragState = v; } });
-        window.getMinigameRewardMultiplier = getMinigameRewardMultiplier;
-        window.minigames = minigames;
-        window.SLOT_SYMBOLS = SLOT_SYMBOLS;
-        window.SLOT_REPLAY_SYMBOL = SLOT_REPLAY_SYMBOL;
-        window.SLOT_ALL_SYMBOLS = SLOT_ALL_SYMBOLS;
-        window.SLOT_COIN_COST = SLOT_COIN_COST;
-        window.SLOT_PLAYS_PER_COIN = SLOT_PLAYS_PER_COIN;
-        window.getMinigameBaseReward = getMinigameBaseReward;
-        window.hasNewlyUnlockedMinigame = hasNewlyUnlockedMinigame;
-        window.resetMinigameCountsIfNewDay = resetMinigameCountsIfNewDay;
         window.openMinigameCenter = openMinigameCenter;
         window.closeMinigameCenter = closeMinigameCenter;
-        window.cleanupActiveMinigameTimers = cleanupActiveMinigameTimers;
-        window.renderMinigameTiles = renderMinigameTiles;
-        window.startMinigame = startMinigame;
-        window.endMinigameToTiles = endMinigameToTiles;
-        window.consumeMinigamePlay = consumeMinigamePlay;
-        window.getMinigameCoinGain = getMinigameCoinGain;
-        window.grantMinigameReward = grantMinigameReward;
-        window.showMinigameResult = showMinigameResult;
-        window.QUIZ_REWARD_BY_CORRECT = QUIZ_REWARD_BY_CORRECT;
-        window.startQuizGame = startQuizGame;
-        window.generateQuizQuestion = generateQuizQuestion;
-        window.renderQuizQuestion = renderQuizQuestion;
-        window.answerQuizQuestion = answerQuizQuestion;
-        window.TIME_ATTACK_DURATION_SEC = TIME_ATTACK_DURATION_SEC;
-        window.TIME_ATTACK_THRESHOLDS = TIME_ATTACK_THRESHOLDS;
-        window.startTimeAttackGame = startTimeAttackGame;
-        window.beginTimeAttack = beginTimeAttack;
-        window.onTimeAttackTap = onTimeAttackTap;
-        window.finishTimeAttack = finishTimeAttack;
-        window.CONCENTRATION_THRESHOLDS = CONCENTRATION_THRESHOLDS;
-        window.startConcentrationGame = startConcentrationGame;
-        window.buildConcentrationBoard = buildConcentrationBoard;
-        window.updateConcentrationCardVisual = updateConcentrationCardVisual;
-        window.flipConcentrationCard = flipConcentrationCard;
-        window.finishConcentration = finishConcentration;
-        window.MOCHITSUKI_BEATS = MOCHITSUKI_BEATS;
-        window.MOCHITSUKI_INITIAL_PERIOD_MS = MOCHITSUKI_INITIAL_PERIOD_MS;
-        window.MOCHITSUKI_MIN_PERIOD_MS = MOCHITSUKI_MIN_PERIOD_MS;
-        window.MOCHITSUKI_SPEEDUP_RATE = MOCHITSUKI_SPEEDUP_RATE;
-        window.MOCHITSUKI_RANKS = MOCHITSUKI_RANKS;
-        window.MOCHITSUKI_REWARD_CAP = MOCHITSUKI_REWARD_CAP;
-        window.buildMochitsukiBandsHtml = buildMochitsukiBandsHtml;
-        window.hexToRgba = hexToRgba;
-        window.startMochitsukiGame = startMochitsukiGame;
-        window.getMochitsukiIndicatorPercent = getMochitsukiIndicatorPercent;
-        window.animateMochitsukiIndicator = animateMochitsukiIndicator;
-        window.onMochitsukiTap = onMochitsukiTap;
-        window.finishMochitsuki = finishMochitsuki;
-        window.SLOT_SYMBOL_HEIGHT = SLOT_SYMBOL_HEIGHT;
-        window.SLOT_STRIP_REPEATS = SLOT_STRIP_REPEATS;
-        window.playSlotSpinLoopSound = playSlotSpinLoopSound;
-        window.stopSlotSpinLoopSound = stopSlotSpinLoopSound;
-        window.SLOT_BONUS_ZONE_SPINS = SLOT_BONUS_ZONE_SPINS;
-        window.SLOT_BONUS_ZONE_SYMBOLS = SLOT_BONUS_ZONE_SYMBOLS;
-        window.setSlotPartAdjustVisibility = setSlotPartAdjustVisibility;
-        window.bringSlotTargetToFront = bringSlotTargetToFront;
-        window.positionSlotHandles = positionSlotHandles;
-        window.toggleSlotAdjustMode = toggleSlotAdjustMode;
-        window.onSlotAdjustTargetChange = onSlotAdjustTargetChange;
-        window.setupSlotAdjustDrag = setupSlotAdjustDrag;
-        window.adjustSlotLeverRotation = adjustSlotLeverRotation;
-        window.getSlotPartHeightPct = getSlotPartHeightPct;
-        window.updateSlotAdjustReadout = updateSlotAdjustReadout;
-        window.copyAllSlotCoords = copyAllSlotCoords;
-        window.toggleSlotHelpOverlay = toggleSlotHelpOverlay;
-        window.inviteNextSlotStep = inviteNextSlotStep;
-        window.updateSlotPlaysRemainingDisplay = updateSlotPlaysRemainingDisplay;
-        window.updateSlotBonusZoneDisplay = updateSlotBonusZoneDisplay;
-        window.updateSlotPullsSinceJackpotDisplay = updateSlotPullsSinceJackpotDisplay;
-        window.pickWeightedSlotSymbol = pickWeightedSlotSymbol;
-        window.buildSlotReelStripHtml = buildSlotReelStripHtml;
-        window.SLOT_ADJUSTABLE_PARTS = SLOT_ADJUSTABLE_PARTS;
-        window.startSlotGame = startSlotGame;
-        window.playSlotCoinInsertAnim = playSlotCoinInsertAnim;
-        window.insertSlotCoin = insertSlotCoin;
-        window.pullSlotLever = pullSlotLever;
-        window.stopSlotReel = stopSlotReel;
-        window.checkSlotReach = checkSlotReach;
-        window.triggerSlotReachEffect = triggerSlotReachEffect;
-        window.showSlotCutin = showSlotCutin;
-        window.spawnSlotPayoutCoins = spawnSlotPayoutCoins;
-        window.getSlotReelColumn = getSlotReelColumn;
-        window.highlightSlotWinLine = highlightSlotWinLine;
-        window.clearSlotWinPulse = clearSlotWinPulse;
-        window.SLOT_LINE_ROW_OFFSETS = SLOT_LINE_ROW_OFFSETS;
-        window.evaluateSlotResult = evaluateSlotResult;
-        window.showSlotMarmotCelebration = showSlotMarmotCelebration;

@@ -14,22 +14,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-08-002';
+} from './data.js?v=2026-09-08-003';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-08-002';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-08-002';
+} from './main.js?v=2026-09-08-003';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-08-003';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-08-002';
-import { saveGame, score, setScore } from './state.js?v=2026-09-08-002';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-08-002';
+} from './progress.js?v=2026-09-08-003';
+import { saveGame, score, setScore } from './state.js?v=2026-09-08-003';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-08-003';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-002';
+} from './ui.js?v=2026-09-08-003';
 
         export function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
         export function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
@@ -1262,75 +1262,9 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'currentGachaRarity', { configurable: true, get: () => currentGachaRarity, set: (v) => { currentGachaRarity = v; } });
-        Object.defineProperty(window, 'currentGachaRateTab', { configurable: true, get: () => currentGachaRateTab, set: (v) => { currentGachaRateTab = v; } });
-        Object.defineProperty(window, 'pendingGachaResult', { configurable: true, get: () => pendingGachaResult, set: (v) => { pendingGachaResult = v; } });
-        Object.defineProperty(window, 'pendingGachaResults10', { configurable: true, get: () => pendingGachaResults10, set: (v) => { pendingGachaResults10 = v; } });
-        Object.defineProperty(window, 'gachaCrankAdjustMode', { configurable: true, get: () => gachaCrankAdjustMode, set: (v) => { gachaCrankAdjustMode = v; } });
-        Object.defineProperty(window, 'gachaCrankAdjustDragState', { configurable: true, get: () => gachaCrankAdjustDragState, set: (v) => { gachaCrankAdjustDragState = v; } });
-        Object.defineProperty(window, 'omiyagePage', { configurable: true, get: () => omiyagePage, set: (v) => { omiyagePage = v; } });
-        Object.defineProperty(window, 'omiyageSelectedIdx', { configurable: true, get: () => omiyageSelectedIdx, set: (v) => { omiyageSelectedIdx = v; } });
-        window.getOmiyagePriceMultiplier = getOmiyagePriceMultiplier;
-        window.getOmiyagePriceCurveBase = getOmiyagePriceCurveBase;
-        window.getOmiyagePrice = getOmiyagePrice;
-        window.equipClothe = equipClothe;
         window.openShop = openShop;
         window.closeShop = closeShop;
-        window.getItemThumbHtml = getItemThumbHtml;
         window.switchShopTab = switchShopTab;
-        window.pickGachaRarity = pickGachaRarity;
-        window.playGachaCrankSequence = playGachaCrankSequence;
-        window.setGachaButtonsDisabled = setGachaButtonsDisabled;
-        window.grantRandomNormalConsumable = grantRandomNormalConsumable;
-        window.useTicket = useTicket;
-        window.updateGachaCoinDisplay = updateGachaCoinDisplay;
-        window.toggleGachaRatesOverlay = toggleGachaRatesOverlay;
-        window.GACHA_RATE_TAB_LABELS = GACHA_RATE_TAB_LABELS;
-        window.renderGachaRateTabs = renderGachaRateTabs;
-        window.switchGachaRateTab = switchGachaRateTab;
-        window.GACHA_COST_SINGLE = GACHA_COST_SINGLE;
-        window.GACHA_COST_TEN = GACHA_COST_TEN;
-        window.startGachaSpin = startGachaSpin;
-        window.dropGachaCapsule = dropGachaCapsule;
-        window.enableGachaCapsuleTapToOpen = enableGachaCapsuleTapToOpen;
-        window.openGachaCapsule = openGachaCapsule;
-        window.getKisekaeItemsByStar = getKisekaeItemsByStar;
-        window.DUPLICATE_REFUND_BY_STAR = DUPLICATE_REFUND_BY_STAR;
-        window.grantGachaNormalRareOrRareReward = grantGachaNormalRareOrRareReward;
-        window.grantGachaKisekaeItem = grantGachaKisekaeItem;
-        window.grantGachaPrizeForRarity = grantGachaPrizeForRarity;
-        window.revealGachaPrize = revealGachaPrize;
-        window.startGachaSpin10 = startGachaSpin10;
-        window.dropGachaCapsuleOneByOne = dropGachaCapsuleOneByOne;
-        window.showGacha10SummaryGrid = showGacha10SummaryGrid;
-        window.openGacha10CapsulesSequentially = openGacha10CapsulesSequentially;
-        window.finishGachaSpin10 = finishGachaSpin10;
-        window.closeGacha10ResultsAnd = closeGacha10ResultsAnd;
-        window.GACHA_CRANK_POS = GACHA_CRANK_POS;
-        window.GACHA_CRANK_POS_PWA = GACHA_CRANK_POS_PWA;
-        window.GACHA_CRANK_ADJUST_TOOL_ENABLED = GACHA_CRANK_ADJUST_TOOL_ENABLED;
-        window.applyGachaCrankPosition = applyGachaCrankPosition;
         window.onGachaTabTap = onGachaTabTap;
-        window.buyFurnitureItem = buyFurnitureItem;
-        window.previewShopFurniture = previewShopFurniture;
         window.closeFurniturePreview = closeFurniturePreview;
-        window.toggleGachaCrankAdjustMode = toggleGachaCrankAdjustMode;
-        window.positionGachaCrankHandles = positionGachaCrankHandles;
-        window.setupGachaCrankAdjustDrag = setupGachaCrankAdjustDrag;
-        window.updateGachaCrankReadout = updateGachaCrankReadout;
-        window.copyGachaCrankCoords = copyGachaCrankCoords;
-        window.renderShopList = renderShopList;
-        window.OMIYAGE_PAGE_SIZE = OMIYAGE_PAGE_SIZE;
-        window.OMIYAGE_IMG_NATURAL_RATIO = OMIYAGE_IMG_NATURAL_RATIO;
-        window.syncOmiyageImageFrame = syncOmiyageImageFrame;
-        window.renderOmiyageShelf = renderOmiyageShelf;
         window.omiyagePageBy = omiyagePageBy;
-        window.onOmiyageSlotTap = onOmiyageSlotTap;
-        window.showOmiyageDetail = showOmiyageDetail;
-        window.closeOmiyageDetailUI = closeOmiyageDetailUI;
-        window.closeOmiyageDetail = closeOmiyageDetail;
-        window.buyOmiyageFromShelf = buyOmiyageFromShelf;
-        window.flashOmiyageMoneySpent = flashOmiyageMoneySpent;
-        window.buyOmiyage = buyOmiyage;
-        window.buyKisekae = buyKisekae;
-        window.updateShopTabHighlight = updateShopTabHighlight;

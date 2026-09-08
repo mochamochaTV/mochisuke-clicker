@@ -10,7 +10,7 @@
 // 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
 // setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
 // ===================================================================
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-08-002';
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-08-003';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -19,7 +19,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-08-002';
+} from './minigames.js?v=2026-09-08-003';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -32,21 +32,21 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-08-002';
+} from './progress.js?v=2026-09-08-003';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-08-002';
+} from './shop.js?v=2026-09-08-003';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-08-002';
+} from './tap.js?v=2026-09-08-003';
 import {
   hasSeenTutorial, lastGiftSentDateStr, seenButtonHints, setHasSeenTutorial,
   setLastGiftSentDateStr, setSeenButtonHints
-} from './ui.js?v=2026-09-08-002';
+} from './ui.js?v=2026-09-08-003';
 
         export function menuSaveGame() {
             saveGame();
@@ -421,18 +421,10 @@ import {
         // 🚧 フェーズ3の予定：下に残っている「代入もされている」変数を、setter関数
         // （例：addScore(n) のような関数）に置き換えていけば、この橋渡しブロックごと削除できる。
         // ===================================================================
-        Object.defineProperty(window, 'hadLocalSaveOnLoad', { configurable: true, get: () => hadLocalSaveOnLoad, set: (v) => { hadLocalSaveOnLoad = v; } });
         window.menuSaveGame = menuSaveGame;
         window.menuSaveAndQuit = menuSaveAndQuit;
         window.exportSaveData = exportSaveData;
         window.importSaveData = importSaveData;
-        window.refreshCloudBackupStatus = refreshCloudBackupStatus;
         window.manualCloudBackup = manualCloudBackup;
         window.restoreFromCloud = restoreFromCloud;
-        window.sanitizePlayerName = sanitizePlayerName;
         window.savePlayerName = savePlayerName;
-        window.OFFLINE_EARNINGS_CAP_HOURS_BASE = OFFLINE_EARNINGS_CAP_HOURS_BASE;
-        window.OFFLINE_EARNINGS_MIN_SECONDS = OFFLINE_EARNINGS_MIN_SECONDS;
-        window.saveGame = saveGame;
-        window.loadGame = loadGame;
-        window.checkForCloudRestoreOnLoad = checkForCloudRestoreOnLoad;
