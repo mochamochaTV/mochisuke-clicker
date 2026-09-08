@@ -12,28 +12,28 @@
 // ===================================================================
 import {
   CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-08-003';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-08-003';
+} from './data.js?v=2026-09-08-004';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-08-004';
 import {
   checkAndRotateMissions, checkOfflineEarnings, checkStageProgress, currentStageIndex,
   currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems, prestigeCount,
   selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-08-003';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-08-003';
+} from './progress.js?v=2026-09-08-004';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-08-004';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-08-003';
+} from './state.js?v=2026-09-08-004';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-08-003';
+} from './tap.js?v=2026-09-08-004';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-08-003';
+} from './ui.js?v=2026-09-08-004';
 
         // 🚧🚧🚧 メンテナンスモード 🚧🚧🚧
         // 大きな更新をする直前に true にしてから公開すると、プレイヤーには「メンテナンス中」画面だけが表示され、

@@ -10,7 +10,7 @@
 // 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
 // setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
 // ===================================================================
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-08-003';
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-08-004';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -19,7 +19,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-08-003';
+} from './minigames.js?v=2026-09-08-004';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -32,21 +32,21 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-08-003';
+} from './progress.js?v=2026-09-08-004';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-08-003';
+} from './shop.js?v=2026-09-08-004';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-08-003';
+} from './tap.js?v=2026-09-08-004';
 import {
   hasSeenTutorial, lastGiftSentDateStr, seenButtonHints, setHasSeenTutorial,
   setLastGiftSentDateStr, setSeenButtonHints
-} from './ui.js?v=2026-09-08-003';
+} from './ui.js?v=2026-09-08-004';
 
         export function menuSaveGame() {
             saveGame();

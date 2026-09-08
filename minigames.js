@@ -10,21 +10,21 @@
 // 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
 // setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
 // ===================================================================
-import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-003';
+import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-004';
 import {
   IS_DEV_MODE, PRESENT_REWARD_DISTANCE_RATE, PRESENT_REWARD_MIN, PRESENT_REWARD_MPS_RATE,
   getAudioContext, loadAudioBuffer, pickRandom, playAudioFile, playAudioFilePitched, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnModalParticleBurst, vibrate
-} from './main.js?v=2026-09-08-003';
+} from './main.js?v=2026-09-08-004';
 import {
   currentStageIndex, gachaCoins, getMinigameDailyLimit, prestigeShopLv, setGachaCoins,
   trackMissionEvent
-} from './progress.js?v=2026-09-08-003';
-import { saveGame } from './state.js?v=2026-09-08-003';
-import { getMps } from './tap.js?v=2026-09-08-003';
+} from './progress.js?v=2026-09-08-004';
+import { saveGame } from './state.js?v=2026-09-08-004';
+import { getMps } from './tap.js?v=2026-09-08-004';
 import {
   closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-003';
+} from './ui.js?v=2026-09-08-004';
 
         export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
 

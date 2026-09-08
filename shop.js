@@ -14,22 +14,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-08-003';
+} from './data.js?v=2026-09-08-004';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-08-003';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-08-003';
+} from './main.js?v=2026-09-08-004';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-08-004';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-08-003';
-import { saveGame, score, setScore } from './state.js?v=2026-09-08-003';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-08-003';
+} from './progress.js?v=2026-09-08-004';
+import { saveGame, score, setScore } from './state.js?v=2026-09-08-004';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-08-004';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-003';
+} from './ui.js?v=2026-09-08-004';
 
         export function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
         export function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
