@@ -6,16 +6,16 @@
         // import { X } from './ui.js' は今まで通りそのまま動きます）。
         // ===================================================================
 
-        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-08-004';
-        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-08-004';
-        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-08-004';
-        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-08-004';
-        import { saveGame } from '../../state.js?v=2026-09-08-004';
-        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-08-004';
-        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-08-004';
-        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-08-004';
-        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-08-004';
-        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-08-004';
+        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-08-005';
+        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-08-005';
+        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-08-005';
+        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-08-005';
+        import { saveGame } from '../../state.js?v=2026-09-08-005';
+        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-08-005';
+        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-08-005';
+        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-08-005';
+        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-08-005';
+        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-08-005';
 
 
         // 🤝 フレンド機能
@@ -78,6 +78,7 @@
                 }
             }
         }
+        window.visitMyroomOf = visitMyroomOf; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         export async function onLikeRoomTap() {
             if (!visitingUid || !window.likeRoom) return;
             const likeBtn = document.getElementById('visit-like-btn');
@@ -667,6 +668,7 @@
             saveGame();
             renderFriendList();
         }
+        window.toggleFavoriteFriend = toggleFavoriteFriend; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         export let lastGiftSentDateStr = null; // 🐛修正：1日1回までの送信制限。セーブデータにも保存し、リロードでリセットされないようにする
         export async function sendGachaCoinGift(uid, btnEl) {
             const todayStr = new Date().toISOString().slice(0, 10);
@@ -690,6 +692,7 @@
                 alert('送信できませんでした。時間を置いて試してください');
             }
         }
+        window.sendGachaCoinGift = sendGachaCoinGift; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         export async function renderFriendList() {
             const listEl = document.getElementById('friend-list-view');
             listEl.innerHTML = `<div style="text-align:center; color:#aaa; padding:14px;">読み込み中...</div>`;
@@ -832,6 +835,7 @@
                 }
             });
         }
+        window.onSendRoomInviteTap = onSendRoomInviteTap; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         // 💌🐛修正：以前は45秒(招待)/20秒(スタンプ)おきにgetDocsで問い合わせる「ポーリング」方式だったため、
         // 実際に届くまで最大で数十秒の時間差があった。onSnapshotによるリアルタイム監視に切り替えることで、
         // Firestore側の書き込みとほぼ同時に検知できるようにする。

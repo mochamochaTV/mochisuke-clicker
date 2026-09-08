@@ -10,21 +10,21 @@
 // 必要な名前はPhase 3でsetter関数と一緒に追加）。書き換えが必要なものは
 // setXxx(...) という関数を呼ぶ形にしています（importした束縛には直接代入できないため）。
 // ===================================================================
-import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-004';
+import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-005';
 import {
   IS_DEV_MODE, PRESENT_REWARD_DISTANCE_RATE, PRESENT_REWARD_MIN, PRESENT_REWARD_MPS_RATE,
   getAudioContext, loadAudioBuffer, pickRandom, playAudioFile, playAudioFilePitched, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnModalParticleBurst, vibrate
-} from './main.js?v=2026-09-08-004';
+} from './main.js?v=2026-09-08-005';
 import {
   currentStageIndex, gachaCoins, getMinigameDailyLimit, prestigeShopLv, setGachaCoins,
   trackMissionEvent
-} from './progress.js?v=2026-09-08-004';
-import { saveGame } from './state.js?v=2026-09-08-004';
-import { getMps } from './tap.js?v=2026-09-08-004';
+} from './progress.js?v=2026-09-08-005';
+import { saveGame } from './state.js?v=2026-09-08-005';
+import { getMps } from './tap.js?v=2026-09-08-005';
 import {
   closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-004';
+} from './ui.js?v=2026-09-08-005';
 
         export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
 
@@ -198,6 +198,7 @@ import {
             document.getElementById('minigame-tile-view').style.display = 'flex';
             renderMinigameTiles();
         }
+        window.endMinigameToTiles = endMinigameToTiles; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function consumeMinigamePlay(id) {
             minigamePlaysUsedToday[id] = (minigamePlaysUsedToday[id] || 0) + 1;
@@ -337,6 +338,7 @@ import {
                 }
             }, 750); // フィードバックが見えるよう少し間を置いてから次の問題へ
         }
+        window.answerQuizQuestion = answerQuizQuestion; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // -------------------------------------------------------------
         // ⏱️ ② タップタイムアタック
@@ -404,6 +406,7 @@ import {
                 }
             }, 1000);
         }
+        window.beginTimeAttack = beginTimeAttack; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function onTimeAttackTap(e) {
             e.preventDefault();
@@ -558,6 +561,7 @@ import {
                 }
             }
         }
+        window.flipConcentrationCard = flipConcentrationCard; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function finishConcentration() {
             consumeMinigamePlay('concentration');
@@ -896,6 +900,7 @@ import {
                 if (btn) btn.style.background = '#e91e63';
             }
         }
+        window.toggleSlotAdjustMode = toggleSlotAdjustMode; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         // 対象を切り替えた時、前の対象の枠線を消して、新しい対象にだけ付け直す
         export function onSlotAdjustTargetChange() {
             SLOT_ADJUSTABLE_PARTS.forEach(p => {
@@ -911,6 +916,7 @@ import {
             }
             updateSlotAdjustReadout();
         }
+        window.onSlotAdjustTargetChange = onSlotAdjustTargetChange; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         export function setupSlotAdjustDrag() {
             const stage = document.getElementById('slot-machine-stage');
             if (stage.dataset.dragSetup) return;
@@ -982,6 +988,7 @@ import {
             lever.style.transform = `rotate(${next}deg)`;
             updateSlotAdjustReadout();
         }
+        window.adjustSlotLeverRotation = adjustSlotLeverRotation; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         // 高さを、そのパーツの実際の描画結果(getBoundingClientRect)から%で計算する。
         // style.heightが「auto」のままの場合でも、必ず具体的な数値を返す
         export function getSlotPartHeightPct(el) {
@@ -1022,6 +1029,7 @@ import {
                 navigator.clipboard.writeText(text).catch(() => {});
             }
         }
+        window.copyAllSlotCoords = copyAllSlotCoords; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function toggleSlotHelpOverlay() {
             const overlay = document.getElementById('slot-help-overlay');
@@ -1038,6 +1046,7 @@ import {
                 `;
             }
         }
+        window.toggleSlotHelpOverlay = toggleSlotHelpOverlay; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // 残りプレイ回数に応じて、次に光らせるべきパーツを決める（残っていればレバー、無くなっていればコイン投入口）
         export function inviteNextSlotStep() {
@@ -1257,6 +1266,7 @@ import {
                 document.getElementById('slot-lever').classList.add('slot-invite-glow'); // 次はレバーの番、という合図
             }, 300);
         }
+        window.insertSlotCoin = insertSlotCoin; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function pullSlotLever() {
             if (slotIsSpinning) return;
@@ -1314,6 +1324,7 @@ import {
                 btn.dataset.stoppable = '1';
             });
         }
+        window.pullSlotLever = pullSlotLever; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function stopSlotReel(reelIndex) {
             const btn = document.getElementById(`slot-stop-btn-${reelIndex}`);
@@ -1360,6 +1371,7 @@ import {
                 setTimeout(evaluateSlotResult, 300);
             }
         }
+        window.stopSlotReel = stopSlotReel; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // 🎰 リーチ判定：2つ止まった時点で、5ラインのどこかで2つとも同じ絵柄が揃っていれば「リーチ」
         export function checkSlotReach() {

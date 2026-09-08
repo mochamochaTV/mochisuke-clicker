@@ -14,22 +14,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-08-004';
+} from './data.js?v=2026-09-08-005';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-08-004';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-08-004';
+} from './main.js?v=2026-09-08-005';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-08-005';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-08-004';
-import { saveGame, score, setScore } from './state.js?v=2026-09-08-004';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-08-004';
+} from './progress.js?v=2026-09-08-005';
+import { saveGame, score, setScore } from './state.js?v=2026-09-08-005';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-08-005';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-004';
+} from './ui.js?v=2026-09-08-005';
 
         export function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
         export function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
@@ -206,6 +206,7 @@ import {
             saveGame(); updateDisplay();
             openTicketInventory(); // 一覧を開いている場合、個数表示を更新する
         }
+        window.useTicket = useTicket; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function updateGachaCoinDisplay() {
             const el = document.getElementById('gacha-coin-value');
@@ -231,6 +232,7 @@ import {
             renderGachaRateTabs();
             overlay.style.display = 'block';
         }
+        window.toggleGachaRatesOverlay = toggleGachaRatesOverlay; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         // 🎁 レア度ごとに、実際に排出されるアイテムと確率を一覧表示する
         export const GACHA_RATE_TAB_LABELS = { normal: 'ノーマル', normalRare: 'ノーマルレア', rare: 'レア', sr: 'スーパーレア', ur: 'ウルトラレア' };
         export let currentGachaRateTab = 'normal';
@@ -287,6 +289,7 @@ import {
                 </div>
             `).join('');
         }
+        window.switchGachaRateTab = switchGachaRateTab; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // ===== 1連：カプセルが落ちてきて、タップすると開く =====
         export const GACHA_COST_SINGLE = 10;
@@ -338,6 +341,7 @@ import {
                 dropGachaCapsule();
             });
         }
+        window.startGachaSpin = startGachaSpin; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function dropGachaCapsule() {
             const capsuleWrap = document.getElementById('gacha-capsule-wrap');
@@ -556,6 +560,7 @@ import {
                 dropGachaCapsuleOneByOne(rarities10, 0);
             });
         }
+        window.startGachaSpin10 = startGachaSpin10; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // 🔴 10連のカプセルは、まず機体の小さな絵の上（1連と同じ場所）に1個ずつ出す。前のカプセルが残っていると
         // 次と重なって邪魔になるため、バウンドして着地した後、少し間を置いてフェードアウトしてから次に道を譲る。
@@ -738,6 +743,7 @@ import {
             setGachaButtonsDisabled(false);
             if (spinAgain) startGachaSpin10();
         }
+        window.closeGacha10ResultsAnd = closeGacha10ResultsAnd; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // 🎰 クランクの位置：通常URLとPWA(ホーム画面)で見え方が変わるため、別々の座標を持つ
         export const GACHA_CRANK_POS = { top: 62.402035, left: 40.200326, width: 19.031814 };
@@ -768,6 +774,7 @@ import {
             updateDisplay();
             renderShopList();
         }
+        window.buyFurnitureItem = buyFurnitureItem; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         export function previewShopFurniture(cat, itemId) {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             if (!item) return;
@@ -796,6 +803,7 @@ import {
             document.getElementById('furniture-preview-price').textContent = ownedCount > 0 ? `所持:${ownedCount}個 ／ 追加：${formatMochi(item.price)}もち` : `${formatMochi(item.price)}もち`;
             openModal('furniture-preview-modal');
         }
+        window.previewShopFurniture = previewShopFurniture; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         export function closeFurniturePreview() {
             closeModal('furniture-preview-modal');
             // 🐛修正：closeModalがbodyのmodal-openクラスを消してしまうため、ショップがまだ開いたままなら付け直す
@@ -826,6 +834,7 @@ import {
                 btn.style.background = '#e91e63';
             }
         }
+        window.toggleGachaCrankAdjustMode = toggleGachaCrankAdjustMode; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         export function positionGachaCrankHandles() {
             if (!gachaCrankAdjustMode) return;
             const stage = document.getElementById('gacha-illustration-wrap');
@@ -896,6 +905,7 @@ import {
             textarea.select();
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
+        window.copyGachaCrankCoords = copyGachaCrankCoords; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function renderShopList() {
             if (currentShopTab === 'omiyage') {

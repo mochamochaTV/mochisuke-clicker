@@ -6,13 +6,13 @@
         // import { X } from './ui.js' は今まで通りそのまま動きます）。
         // ===================================================================
 
-        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-08-004';
-        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-08-004';
-        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-08-004';
-        import { purchasedItems } from '../../shop.js?v=2026-09-08-004';
-        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-08-004';
-        import { closeModal, openModal } from './core.js?v=2026-09-08-004';
-        import { setupChatInputEnterKey } from './chat.js?v=2026-09-08-004';
+        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-08-005';
+        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-08-005';
+        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-08-005';
+        import { purchasedItems } from '../../shop.js?v=2026-09-08-005';
+        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-08-005';
+        import { closeModal, openModal } from './core.js?v=2026-09-08-005';
+        import { setupChatInputEnterKey } from './chat.js?v=2026-09-08-005';
 
 
         // ===================================================================

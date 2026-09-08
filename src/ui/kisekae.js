@@ -6,14 +6,14 @@
         // import { X } from './ui.js' は今まで通りそのまま動きます）。
         // ===================================================================
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-08-004';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-08-004';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-08-004';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-08-004';
-        import { saveGame } from '../../state.js?v=2026-09-08-004';
-        import { closeModal, openModal } from './core.js?v=2026-09-08-004';
-        import { openTicketInventory } from './myroom.js?v=2026-09-08-004';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-08-004';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-08-005';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-08-005';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-08-005';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-08-005';
+        import { saveGame } from '../../state.js?v=2026-09-08-005';
+        import { closeModal, openModal } from './core.js?v=2026-09-08-005';
+        import { openTicketInventory } from './myroom.js?v=2026-09-08-005';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-08-005';
 
         // ✨ スプレーを使う：1日だけ自動増加バフ＋見た目エフェクトが有効になる
         export function useSpray(itemId) {
@@ -24,6 +24,7 @@
             saveGame(); updateDisplay(); updateSprayEffectDisplay();
             openTicketInventory(); // 一覧を開いている場合、表示を更新する
         }
+        window.useSpray = useSpray; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // ===================================================================
         // 👗 着せ替え部屋

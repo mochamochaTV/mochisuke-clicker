@@ -6,14 +6,14 @@
         // import { X } from './ui.js' は今まで通りそのまま動きます）。
         // ===================================================================
 
-        import { MYROOM_CATEGORY_LABELS, MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS, MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, stages } from '../../data.js?v=2026-09-08-004';
-        import { IS_DEV_MODE, playAudioFile, playBgmLoop } from '../../main.js?v=2026-09-08-004';
-        import { currentMyroomSlotIndex, equippedMyroom, myroomSlots, ownedMyroomItems, setCurrentMyroomSlotIndex, setEquippedMyroom } from '../../progress.js?v=2026-09-08-004';
-        import { activeSprayId, purchasedItems, sprayBuffActiveUntil, sprayInventory, ticketInventory } from '../../shop.js?v=2026-09-08-004';
-        import { saveGame } from '../../state.js?v=2026-09-08-004';
-        import { closeModal, openModal } from './core.js?v=2026-09-08-004';
-        import { closeMyroomActionMenu, moveMenuGoTo, openMoveMenu, renderWarehouseItems, setMyroomMouthHidden } from './social.js?v=2026-09-08-004';
-        import { applyKisekaeToMyroom, stopWingFlapLoop } from './kisekae.js?v=2026-09-08-004';
+        import { MYROOM_CATEGORY_LABELS, MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS, MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, stages } from '../../data.js?v=2026-09-08-005';
+        import { IS_DEV_MODE, playAudioFile, playBgmLoop } from '../../main.js?v=2026-09-08-005';
+        import { currentMyroomSlotIndex, equippedMyroom, myroomSlots, ownedMyroomItems, setCurrentMyroomSlotIndex, setEquippedMyroom } from '../../progress.js?v=2026-09-08-005';
+        import { activeSprayId, purchasedItems, sprayBuffActiveUntil, sprayInventory, ticketInventory } from '../../shop.js?v=2026-09-08-005';
+        import { saveGame } from '../../state.js?v=2026-09-08-005';
+        import { closeModal, openModal } from './core.js?v=2026-09-08-005';
+        import { closeMyroomActionMenu, moveMenuGoTo, openMoveMenu, renderWarehouseItems, setMyroomMouthHidden } from './social.js?v=2026-09-08-005';
+        import { applyKisekaeToMyroom, stopWingFlapLoop } from './kisekae.js?v=2026-09-08-005';
 
         // ===================================================================
         // 🛋️ マイルーム

@@ -13,21 +13,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-08-004';
+} from './data.js?v=2026-09-08-005';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-08-004';
-import { setPurchasedItems } from './shop.js?v=2026-09-08-004';
+} from './main.js?v=2026-09-08-005';
+import { setPurchasedItems } from './shop.js?v=2026-09-08-005';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-08-004';
-import { getMps, skills } from './tap.js?v=2026-09-08-004';
+} from './state.js?v=2026-09-08-005';
+import { getMps, skills } from './tap.js?v=2026-09-08-005';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-004';
+} from './ui.js?v=2026-09-08-005';
 
         export let prestigeCount = 0;      // 転生した回数
 
@@ -95,6 +95,7 @@ import {
             saveGame();
             renderPrestigeShop();
         }
+        window.buyPrestigeShopItem = buyPrestigeShopItem; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         export function renderPrestigeShop() {
             const el = document.getElementById('prestige-shop-list');

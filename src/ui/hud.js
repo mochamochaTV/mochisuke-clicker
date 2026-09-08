@@ -6,16 +6,16 @@
         // import { X } from './ui.js' は今まで通りそのまま動きます）。
         // ===================================================================
 
-        import { SPRAY_ITEMS, dialogueData, stages } from '../../data.js?v=2026-09-08-004';
-        import { createFloatingText, createParticle, formatMochi, lazyLoadImage, pickRandom, playAudioFile, screenFlash, screenShake, vibrate } from '../../main.js?v=2026-09-08-004';
-        import { hasNewlyUnlockedMinigame } from '../../minigames.js?v=2026-09-08-004';
-        import { canPrestige, collectedStamps, currentStageIndex, currentStageProgress, isPendingStampMoment, selectedStageIndex, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent, triggerAreaTransition } from '../../progress.js?v=2026-09-08-004';
-        import { activeSprayId, getOmiyagePrice, purchasedItems, sprayBuffActiveUntil } from '../../shop.js?v=2026-09-08-004';
-        import { saveGame, score } from '../../state.js?v=2026-09-08-004';
-        import { FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, feedPlaysUsedToday, feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isFever, isScreamActive, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel, skills, startFeedBuffIndicator } from '../../tap.js?v=2026-09-08-004';
-        import { closeModal, isTutorialActive, openModal, showMochiComment } from './core.js?v=2026-09-08-004';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-08-004';
-        import { diaryPageIndex } from './ranking.js?v=2026-09-08-004';
+        import { SPRAY_ITEMS, dialogueData, stages } from '../../data.js?v=2026-09-08-005';
+        import { createFloatingText, createParticle, formatMochi, lazyLoadImage, pickRandom, playAudioFile, screenFlash, screenShake, vibrate } from '../../main.js?v=2026-09-08-005';
+        import { hasNewlyUnlockedMinigame } from '../../minigames.js?v=2026-09-08-005';
+        import { canPrestige, collectedStamps, currentStageIndex, currentStageProgress, isPendingStampMoment, selectedStageIndex, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent, triggerAreaTransition } from '../../progress.js?v=2026-09-08-005';
+        import { activeSprayId, getOmiyagePrice, purchasedItems, sprayBuffActiveUntil } from '../../shop.js?v=2026-09-08-005';
+        import { saveGame, score } from '../../state.js?v=2026-09-08-005';
+        import { FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, feedPlaysUsedToday, feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isFever, isScreamActive, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel, skills, startFeedBuffIndicator } from '../../tap.js?v=2026-09-08-005';
+        import { closeModal, isTutorialActive, openModal, showMochiComment } from './core.js?v=2026-09-08-005';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-08-005';
+        import { diaryPageIndex } from './ranking.js?v=2026-09-08-005';
 
 
         export function openOmiyageCollection() {

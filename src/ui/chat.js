@@ -6,10 +6,10 @@
         // import { X } from './ui.js' は今まで通りそのまま動きます）。
         // ===================================================================
 
-        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-08-004';
-        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-08-004';
-        import { closeModal, openModal } from './core.js?v=2026-09-08-004';
-        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-08-004';
+        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-08-005';
+        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-08-005';
+        import { closeModal, openModal } from './core.js?v=2026-09-08-005';
+        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-08-005';
 
 
         // ===================================================================
