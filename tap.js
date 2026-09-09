@@ -3,28 +3,144 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-09-001';
+} from './data.js?v=2026-09-09-002';
 import {
   audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
   getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-09-001';
-import { isMinigameActive } from './minigames.js?v=2026-09-09-001';
+} from './main.js?v=2026-09-09-002';
+import { isMinigameActive } from './minigames.js?v=2026-09-09-002';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-09-001';
+} from './progress.js?v=2026-09-09-002';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-09-001';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-09-001';
+} from './shop.js?v=2026-09-09-002';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-09-002';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-09-001';
+} from './ui.js?v=2026-09-09-002';
+
+        // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
+        // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
+        const CONFIG = {
+          // --- タップ力・自動増加(MPS)計算 ---
+          GOLD_TROPHY_BONUS_MULT: 1.1, // 🥇金トロフィー：その県の効果+10%
+          FEVER_TAP_MULTIPLIER: 5, // フィーバー中はタップ力が5倍
+          FEED_BUFF_MULTIPLIER: 2, // 給餌バフ中はタップ力/MPSが2倍
+          MPS_GLOBAL_BOOST_MULT: 1.5, // 自動増加の全体的な底上げ倍率
+
+          // --- コンボ ---
+          COMBO_BONUS_TAP_INTERVAL: 10, // これだけコンボするごとにボーナス%が上がる
+          COMBO_BONUS_PERCENT_PER_INTERVAL: 2, // 1区間あたりのボーナス%上昇量
+          COMBO_REFLOW_THROTTLE_MS: 150, // 連打中の強制リフローを間引く間隔
+          COMBO_TIER_50: 50,
+          COMBO_TIER_100: 100,
+          COMBO_TIER_500: 500,
+          COMBO_TIER_1000: 1000,
+          COMBO_MILESTONE_FIRST: 10, // 最初の演出節目
+          COMBO_MILESTONE_SECOND: 25, // 2番目の演出節目
+          COMBO_MILESTONE_REPEAT_INTERVAL: 50, // 1000コンボ超え後、これ毎に演出を繰り返す
+          COMBO_1000_PARTICLE_COUNT: 30, // 1000コンボ達成時に散らすパーティクル数
+          COMBO_1000_PARTICLE_SPREAD_X: 200, // パーティクル散布範囲(横)
+          COMBO_1000_PARTICLE_SPREAD_Y: 300, // パーティクル散布範囲(縦)
+          COMBO_TITLE_ALERT_DELAY_MS: 300, // 称号アラート表示までの遅延
+          COMBO_FLASH_ALPHA_1000: 0.45,
+          COMBO_FLASH_ALPHA_500: 0.35,
+          COMBO_FLASH_ALPHA_100: 0.28,
+          COMBO_FLASH_ALPHA_50: 0.25,
+          COMBO_FLASH_ALPHA_DEFAULT: 0.2,
+          COMBO_END_TIMEOUT_MS: 1200, // これだけタップが無いとコンボが終了する
+          COMBO_END_COMMENT_MIN: 5, // これ以上コンボしていた時だけ終了セリフを出す
+          BALLOON_AUTO_HIDE_MS: 4000, // 応援吹き出し・叫びセリフが自動で消えるまでの時間
+
+          // --- 叫び演出 ---
+          SCREAM_REVERT_MS: 2600, // 叫び顔から元に戻るまでの時間
+          SCREAM_KANA_BURST_COUNT: 8, // 「あ゛」を飛び散らせる数
+          SCREAM_KANA_MIN_DIST: 35,
+          SCREAM_KANA_DIST_RANGE: 75,
+          SCREAM_KANA_Y_OFFSET: 20,
+          SCREAM_KANA_STAGGER_MS: 55, // 「あ゛」が時間差で出る間隔
+          SCREAM_KANA_MIN_SIZE_REM: 1.1,
+          SCREAM_KANA_SIZE_RANGE_REM: 0.9,
+          SCREAM_VIBRATE_PATTERN: [60, 40, 60, 40, 80, 40, 100], // 覚醒・じらし限界共通の叫びバイブパターン
+          AWAKENING_FLASH_ALPHA: 0.35,
+          TEASE_LIMIT_FLASH_ALPHA: 0.28,
+          TEASE_LIMIT_KANA_REPEAT: 10, // 我慢の限界で「あ゛」を繰り返す回数
+
+          // --- タップ判定（会心・黄金・覚醒） ---
+          SKILL1_BASE_BONUS_PERCENT: 100,
+          SKILL1_BONUS_PER_LV: 50,
+          SKILL1_PARTICLE_COUNT: 3, // スキル1発動中のパーティクル増加数
+          SKILL2_CRIT_BASE_CHANCE: 0.20,
+          SKILL2_CRIT_CHANCE_PER_LV: 0.05,
+          SKILL3_BASE_BONUS_PERCENT: 200,
+          SKILL3_BONUS_PER_LV: 25,
+          SKILL4_GOLD_BASE_CHANCE: 0.10,
+          SKILL4_GOLD_CHANCE_PER_LV: 0.02,
+          SKILL4_GOLD_BONUS_PERCENT: 100, // 黄金判定成功時に加算されるボーナス%
+          SKILL2_CRIT_BONUS_PERCENT: 100, // 会心判定成功時に加算されるボーナス%
+          AWAKENING_CHANCE: 0.01, // 1/100の確率で覚醒
+          AWAKENING_MULTIPLIER: 10,
+          CRIT_FILTER_RESET_MS: 180, // 会心演出のフィルターを戻すまでの時間
+          CRIT_FLASH_ALPHA: 0.22,
+          CRIT_VIBRATE_MS: 30,
+          GOLD_FLASH_ALPHA: 0.3,
+          HISSATSU_TAP_MULTIPLIER: 5, // 必殺技発動中は1タップが5連打扱い
+
+          // --- スキル共通のクールタイム計算 ---
+          SKILL1_MIN_CD: 6,
+          SKILL2_MIN_CD: 10,
+          SKILL3_MIN_CD: 14,
+          SKILL4_MIN_CD: 18,
+          SKILL4_CD_REDUCTION_PER_LV_MULT: 2, // スキル4はLv毎の短縮量が2倍効く
+          HISSATSU_MIN_TAPS_REQUIRED: 150,
+          HISSATSU_BASE_TAPS_REQUIRED: 400,
+          HISSATSU_TAPS_REDUCTION_PER_LV: 20,
+          HISSATSU_ACTIVATE_FLASH_ALPHA: 0.4,
+          SKILL_ACTIVATE_FLASH_ALPHA: 0.18,
+          READY_SFX_VOLUME: 0.4, // クールタイム完了音の音量
+
+          // --- 分身(スキル3)の見た目 ---
+          BUNSHIN_CLONE_X_OFFSET: 130, // 左右の分身のX軸オフセット(px)
+          BUNSHIN_CLONE_WIDTH_PX: 190,
+          BUNSHIN_CLONE_OPACITY: 0.55,
+
+          // --- スクイーズ（引っ張り伸縮） ---
+          STRETCH_SOUND_BASE_PITCH: 0.85,
+          STRETCH_SOUND_PITCH_RANGE: 0.5,
+          STRETCH_SOUND_MAX_GAIN: 0.35,
+          SQUEEZE_OVERSHOOT_RATIO: 0.55, // 離した時の揺れ戻りの大きさ
+          SQUEEZE_OVERSHOOT_BASE_DURATION_MS: 420,
+          SQUEEZE_OVERSHOOT_DURATION_RANGE_MS: 280,
+          SQUEEZE_TRANSFORM_ORIGIN_RESET_MS: 720,
+          TAP_RELEASE_ANIM_DURATION_MS: 240, // 通常タップ後の「もちっ」アニメーション時間
+          BREATHE_IDLE_DELAY_MS: 1200, // 指を離してから呼吸アニメーションに戻るまでの時間
+
+          // --- 給餌（おみやげ）まわり ---
+          FEED_ICON_Y_OFFSET_PX: 68, // もちすけの足元からのアイコン初期位置オフセット
+          FEED_ICON_PLACEMENT_DELAY_MS: 150, // モーダルが閉じるアニメと被らないための遅延
+          FEED_ICON_RETURN_ANIM_MS: 320, // ドロップ失敗時、足元へ戻るアニメの時間
+          FEED_BUFF_INDICATOR_INTERVAL_MS: 250,
+
+          // --- フィーバー ---
+          FEVER_SPAWN_CHECK_INTERVAL_MS: 25000,
+          FEVER_SPAWN_CHANCE: 0.08,
+          FEVER_DURATION_SEC: 10,
+          FEVER_FLASH_ALPHA: 0.4,
+          FEVER_TICK_INTERVAL_MS: 1000,
+
+          // --- メインループ（100ms毎の自動増加・スキルタイマー更新） ---
+          MAIN_TICK_INTERVAL_MS: 100,
+          MAIN_TICK_DT: 0.1,
+          MAIN_TICK_MPS_DIVISOR: 10,
+          HISSATSU_AUTO_CHARGE_PER_TICK: 0.05, // タップしなくても少しずつたまる必殺技ゲージ
+        };
 
         export let skills = {
             skill1: { id: "skill1", name: "もちもちクリック", lv: 0, cd: 30, currentCd: 0, duration: 10, activeTimer: 0, unlockStage: 0, unlockPrice: 300, lvPriceMult: 1.9, desc: "発動中はタップでパーティクルが3倍出る" },
@@ -81,26 +197,34 @@ import {
         export let gameScreenRect = null;
         export let bunshinCloneRects = [];
         export let bunshinCloneEls = [];
+        /**
+         * 分身(スキル3)のDOM要素を取得し直し、それぞれの矩形をキャッシュし直す。
+         * @returns {void}
+         */
         export function refreshBunshinCloneRects() {
             bunshinCloneEls = Array.from(document.querySelectorAll('.bunshin-clone-img'));
             bunshinCloneRects = bunshinCloneEls.map(c => c.getBoundingClientRect());
         }
+        /**
+         * 現在の基礎タップ力（1回タップで得られるもちの量）を各種ボーナスを反映して計算する。
+         * @returns {number} 整数に切り捨てたタップ力
+         */
         export function getTapPower() {
-            let power = 1 + getPrestigeStartingBonus(); 
+            let power = 1 + getPrestigeStartingBonus();
             stages.forEach((stage, idx) => {
                 const lv = purchasedItems[idx] || 0;
                 if (lv > 0) {
                     let bonus = stage.tapBonus * lv;
-                    if (getPrefTrophy(idx) === 'gold') bonus *= 1.1; // 🥇金トロフィー：その県の効果+10%
+                    if (getPrefTrophy(idx) === 'gold') bonus *= CONFIG.GOLD_TROPHY_BONUS_MULT; // 🥇金トロフィー：その県の効果+10%
                     power += bonus;
                 }
             });
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) power += activeClothe.tapBonus;
             // コンボのボーナスはここではなく、executeSingleTap側の加算方式(bonusPercent)で一括管理する
-            if (isFever) power *= 5;
+            if (isFever) power *= CONFIG.FEVER_TAP_MULTIPLIER;
             power *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
-            if (Date.now() < feedBuffActiveUntil) power *= 2; // もちすけにお土産をあげた効果（一時的）
+            if (Date.now() < feedBuffActiveUntil) power *= CONFIG.FEED_BUFF_MULTIPLIER; // もちすけにお土産をあげた効果（一時的）
 
             // 【重要】スキル1(もちもちクリック)・スキル3(分身)によるタップ力ブーストは、
             // ここではなくexecuteSingleTap()側の加算方式(bonusPercent)でのみ適用する。
@@ -108,21 +232,25 @@ import {
             return Math.floor(power);
         }
 
+        /**
+         * 現在の自動増加量(もち/秒＝MPS)を各種ボーナスを反映して計算する。
+         * @returns {number} 自動増加量(もち/秒)
+         */
         export function getMps() {
-            let mps = getPrestigeStartingBonus(); 
+            let mps = getPrestigeStartingBonus();
             stages.forEach((stage, idx) => {
                 const lv = purchasedItems[idx] || 0;
                 if (lv > 0) {
                     let bonus = stage.mpsBonus * lv;
-                    if (getPrefTrophy(idx) === 'gold') bonus *= 1.1; // 🥇金トロフィー：その県の効果+10%
+                    if (getPrefTrophy(idx) === 'gold') bonus *= CONFIG.GOLD_TROPHY_BONUS_MULT; // 🥇金トロフィー：その県の効果+10%
                     mps += bonus;
                 }
             });
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) mps += activeClothe.mpsBonus;
-            mps *= 1.5; // 🔧 自動増加の恩恵を全体的に強化（プレイヤーからの要望を受けて底上げ）
+            mps *= CONFIG.MPS_GLOBAL_BOOST_MULT; // 🔧 自動増加の恩恵を全体的に強化（プレイヤーからの要望を受けて底上げ）
             mps *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
-            if (Date.now() < feedBuffActiveUntil) mps *= 2; // もちすけにお土産をあげた効果（一時的）
+            if (Date.now() < feedBuffActiveUntil) mps *= CONFIG.FEED_BUFF_MULTIPLIER; // もちすけにお土産をあげた効果（一時的）
             if (Date.now() < sprayBuffActiveUntil && activeSprayId) {
                 const sprayItem = SPRAY_ITEMS.find(i => i.id === activeSprayId);
                 if (sprayItem) mps *= sprayItem.mpsMultiplier; // ✨ スプレーの自動増加バフ（1日）
@@ -131,21 +259,35 @@ import {
         }
 
         // 10コンボ毎に+2%（例：50コンボで+10%、100コンボで+20%）。控えめな伸び方にして、頭打ちなく積み上げていける
+        /**
+         * 現在のコンボ数から、タップ力に加算するコンボボーナス(%)を計算する。
+         * @returns {number} ボーナス割合(%)
+         */
         export function getComboBonusPercent() {
-            return Math.floor(comboCount / 10) * 2;
+            return Math.floor(comboCount / CONFIG.COMBO_BONUS_TAP_INTERVAL) * CONFIG.COMBO_BONUS_PERCENT_PER_INTERVAL;
         }
 
         // 🎉 応援セリフ（コンボ中、タップしても消えない専用のセリフ。段階ごとに複数用意し、確率でランダムに選ぶ）
+        /**
+         * 現在のコンボ数がどの応援セリフ段階に属するかを判定する。
+         * @param {number} count - 現在のコンボ数
+         * @returns {number} 段階を表す閾値（1000/500/100/50/0）
+         */
         export function getCheerTier(count) {
-            if (count >= 1000) return 1000;
-            if (count >= 500) return 500;
-            if (count >= 100) return 100;
-            if (count >= 50) return 50;
+            if (count >= CONFIG.COMBO_TIER_1000) return CONFIG.COMBO_TIER_1000;
+            if (count >= CONFIG.COMBO_TIER_500) return CONFIG.COMBO_TIER_500;
+            if (count >= CONFIG.COMBO_TIER_100) return CONFIG.COMBO_TIER_100;
+            if (count >= CONFIG.COMBO_TIER_50) return CONFIG.COMBO_TIER_50;
             return 0;
         }
         export let lastCheerTier = -1;
         export let lastCheerChangeTime = 0;
         export const CHEER_MIN_DISPLAY_MS = 1800; // これより短い間隔では、セリフを切り替えない（読めないほど頻繁に変わるのを防ぐ）
+        /**
+         * コンボ段階が変わったか、前回切り替えから一定時間経過していれば、応援セリフを吹き出しに表示する。
+         * @param {number} count - 現在のコンボ数
+         * @returns {void}
+         */
         export function updateCheerBalloon(count) {
             if (count <= 0 || isTutorialActive) return;
             const tier = getCheerTier(count);
@@ -158,11 +300,17 @@ import {
                 clearTimeout(balloonAutoHideTimer);
                 balloon.innerText = pickRandom(cheerLines[tier]);
                 balloon.classList.add('balloon-show');
-                setBalloonAutoHideTimer(setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000));
+                setBalloonAutoHideTimer(setTimeout(() => { balloon.classList.remove('balloon-show'); }, CONFIG.BALLOON_AUTO_HIDE_MS));
             }
         }
 
         // 節目ちょうどの瞬間だけ、スロットリングを無視して即座に専用セリフへ切り替える
+        /**
+         * スロットリングを無視して、指定テキストを即座に応援吹き出しへ表示する。
+         * @param {string} text - 表示するセリフ
+         * @param {number} tierMarker - lastCheerTierに保存する段階マーカー
+         * @returns {void}
+         */
         export function forceCheerLine(text, tierMarker) {
             lastCheerTier = tierMarker;
             lastCheerChangeTime = Date.now();
@@ -170,10 +318,15 @@ import {
             clearTimeout(balloonAutoHideTimer);
             balloon.innerText = text;
             balloon.classList.add('balloon-show');
-            setBalloonAutoHideTimer(setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000));
+            setBalloonAutoHideTimer(setTimeout(() => { balloon.classList.remove('balloon-show'); }, CONFIG.BALLOON_AUTO_HIDE_MS));
         }
 
         export let hasComboTitle1000 = false; // 1000コンボ到達の称号を、初回だけお祝いするためのフラグ
+        /**
+         * コンボ数を加算し、コンボ表示・演出（節目のシェイク/フラッシュ/パーティクル等）を更新する。
+         * @param {number} [times=1] - 加算するコンボ数
+         * @returns {void}
+         */
         export function handleCombo(times = 1) {
             const prevCount = comboCount;
             comboCount += times;
@@ -192,7 +345,7 @@ import {
             // 強制リフロー(void .offsetWidth)は、超連打中に毎回走ると重くなるため、直近150ms以内は間引く
             // （テキスト自体はスキップせず毎回更新、"ポンと弾む"再アニメーションだけを間引く）
             const nowCombo = performance.now();
-            if (nowCombo - lastComboReflowTime > 150) {
+            if (nowCombo - lastComboReflowTime > CONFIG.COMBO_REFLOW_THROTTLE_MS) {
                 lastComboReflowTime = nowCombo;
                 comboEl.classList.remove('combo-bounce', 'combo-tier-50', 'combo-tier-100', 'combo-tier-500', 'combo-tier-1000');
                 void comboEl.offsetWidth;
@@ -200,35 +353,35 @@ import {
             } else {
                 comboEl.classList.add('combo-bounce'); // 既に表示中なら、reflow無しでそのまま維持
             }
-            if (comboCount >= 1000) comboEl.classList.add('combo-tier-1000');
-            else if (comboCount >= 500) comboEl.classList.add('combo-tier-500');
-            else if (comboCount >= 100) comboEl.classList.add('combo-tier-100');
-            else if (comboCount >= 50) comboEl.classList.add('combo-tier-50');
+            if (comboCount >= CONFIG.COMBO_TIER_1000) comboEl.classList.add('combo-tier-1000');
+            else if (comboCount >= CONFIG.COMBO_TIER_500) comboEl.classList.add('combo-tier-500');
+            else if (comboCount >= CONFIG.COMBO_TIER_100) comboEl.classList.add('combo-tier-100');
+            else if (comboCount >= CONFIG.COMBO_TIER_50) comboEl.classList.add('combo-tier-50');
 
             // 節目のコンボ数で、画面にも一段大きなご褒美演出を出す（大きな節目ほど豪華に）
             const namedMilestones = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000];
             const bigMilestone = namedMilestones.find(m => prevCount < m && comboCount >= m);
-            if (comboCount === 10 || comboCount === 25 || bigMilestone || (comboCount > 1000 && comboCount % 50 === 0)) {
+            if (comboCount === CONFIG.COMBO_MILESTONE_FIRST || comboCount === CONFIG.COMBO_MILESTONE_SECOND || bigMilestone || (comboCount > CONFIG.COMBO_TIER_1000 && comboCount % CONFIG.COMBO_MILESTONE_REPEAT_INTERVAL === 0)) {
                 comboEl.classList.remove('combo-milestone-pop');
                 void comboEl.offsetWidth;
                 comboEl.classList.add('combo-milestone-pop');
 
-                if (bigMilestone === 1000) {
-                    screenShake('big'); screenFlash('#ffd700', 0.45);
-                    for (let i = 0; i < 30; i++) createParticle(window.innerWidth / 2 + (Math.random() - 0.5) * 200, window.innerHeight / 2 + (Math.random() - 0.5) * 300, true);
+                if (bigMilestone === CONFIG.COMBO_TIER_1000) {
+                    screenShake('big'); screenFlash('#ffd700', CONFIG.COMBO_FLASH_ALPHA_1000);
+                    for (let i = 0; i < CONFIG.COMBO_1000_PARTICLE_COUNT; i++) createParticle(window.innerWidth / 2 + (Math.random() - 0.5) * CONFIG.COMBO_1000_PARTICLE_SPREAD_X, window.innerHeight / 2 + (Math.random() - 0.5) * CONFIG.COMBO_1000_PARTICLE_SPREAD_Y, true);
                     if (!hasComboTitle1000) {
                         hasComboTitle1000 = true;
                         saveGame();
-                        setTimeout(() => alert('🏆 称号「もちマスター」を獲得しました！\n1000コンボ、本当にお疲れさまでした！'), 300);
+                        setTimeout(() => alert('🏆 称号「もちマスター」を獲得しました！\n1000コンボ、本当にお疲れさまでした！'), CONFIG.COMBO_TITLE_ALERT_DELAY_MS);
                     }
-                } else if (bigMilestone >= 500) {
-                    screenShake('big'); screenFlash('#e0e0e0', 0.35);
-                } else if (bigMilestone >= 100) {
-                    screenShake('small'); screenFlash('#ff5252', 0.28);
-                } else if (bigMilestone === 50) {
-                    screenShake('small'); screenFlash('#fff176', 0.25);
+                } else if (bigMilestone >= CONFIG.COMBO_TIER_500) {
+                    screenShake('big'); screenFlash('#e0e0e0', CONFIG.COMBO_FLASH_ALPHA_500);
+                } else if (bigMilestone >= CONFIG.COMBO_TIER_100) {
+                    screenShake('small'); screenFlash('#ff5252', CONFIG.COMBO_FLASH_ALPHA_100);
+                } else if (bigMilestone === CONFIG.COMBO_TIER_50) {
+                    screenShake('small'); screenFlash('#fff176', CONFIG.COMBO_FLASH_ALPHA_50);
                 } else {
-                    screenShake('small'); screenFlash('#ffab00', 0.2);
+                    screenShake('small'); screenFlash('#ffab00', CONFIG.COMBO_FLASH_ALPHA_DEFAULT);
                 }
             }
 
@@ -246,20 +399,24 @@ import {
                 comboCount = 0;
                 lastCheerTier = -1;
                 comboEl.classList.remove('combo-bounce', 'combo-tier-50', 'combo-tier-100', 'combo-tier-500', 'combo-tier-1000');
-                if (finishedCombo >= 5 && !isTutorialActive) {
+                if (finishedCombo >= CONFIG.COMBO_END_COMMENT_MIN && !isTutorialActive) {
                     showMochiComment(pickRandom(comboEndLines));
                     // 通常のセリフと同様、しばらく経ってもタップされなければ自然に引っ込める
                     const myEndCommentId = ++comboEndCommentId;
                     setTimeout(() => {
                         if (myEndCommentId === comboEndCommentId) hideMochiComment();
-                    }, 4000);
+                    }, CONFIG.BALLOON_AUTO_HIDE_MS);
                 }
-            }, 1200);
+            }, CONFIG.COMBO_END_TIMEOUT_MS);
         }
 
         // 単一タップの計算と個別エフェクト処理の分離
         // 🗣️ 叫び演出（覚醒・お腹すいた、共通）：どちらから呼ばれても、タイマーを1本化して競合を防ぐ
         export let screamRevertTimeout = null;
+        /**
+         * もちすけの見た目を叫び顔に切り替え、帽子・顔パーツを吹き飛ばし、一定時間後に元へ戻すタイマーをセットする。
+         * @returns {void}
+         */
         export function startScreamFace() {
             isScreamActive = true;
             mochiBreatheWrapEl.classList.remove('breathe-idle');
@@ -277,9 +434,13 @@ import {
             updateMouthPatchVisibility();
 
             clearTimeout(screamRevertTimeout);
-            screamRevertTimeout = setTimeout(revertScreamFace, 2600); // 連打中でも「叫んでいる」とちゃんと分かるよう、数秒間キープする
+            screamRevertTimeout = setTimeout(revertScreamFace, CONFIG.SCREAM_REVERT_MS); // 連打中でも「叫んでいる」とちゃんと分かるよう、数秒間キープする
         }
         // タイマー経過でも、給餌などによる途中中断でも、必ずこの1箇所を通して確実に元へ戻す
+        /**
+         * 叫び顔状態を解除して通常のもちすけ画像に戻し、帽子・顔パーツを元通りに戻す。
+         * @returns {void}
+         */
         export function revertScreamFace() {
             clearTimeout(screamRevertTimeout);
             isScreamActive = false;
@@ -298,11 +459,15 @@ import {
 
         // 🌟 覚醒：ごく低確率でもちすけが覚醒して叫び、そのタップだけ10倍のもちを吐き出す
         // （おみやげをあげないときの「我慢の限界」の叫びとは完全に別の仕組み。見た目・音は使い回すが、もちの量には影響しない）
+        /**
+         * ごく低確率の覚醒演出一式（効果音・バイブ・画面シェイク/フラッシュ・叫び顔・専用セリフ）をまとめて実行する。
+         * @returns {void}
+         */
         export function triggerAwakeningScream() {
             playAudioFile('audio/mochisuke/mochi_scream.mp3');
-            vibrate([60, 40, 60, 40, 80, 40, 100]);
+            vibrate(CONFIG.SCREAM_VIBRATE_PATTERN);
             screenShake('big');
-            screenFlash('#ffd700', 0.35);
+            screenFlash('#ffd700', CONFIG.AWAKENING_FLASH_ALPHA);
 
             startScreamFace();
 
@@ -310,6 +475,12 @@ import {
             showMochiComment('もちもちパワー全開やああああ！！');
         }
 
+        /**
+         * 1回分のタップ処理の中核。ボーナス%を積み上げてタップ力を確定し、会心/黄金/覚醒抽選、パーティクル・スコア・演出処理までを行う。
+         * @param {number} clientX - タップされたクライアントX座標
+         * @param {number} clientY - タップされたクライアントY座標
+         * @returns {void}
+         */
         export function executeSingleTap(clientX, clientY) {
             let power = getTapPower();
             let isCrit = false;
@@ -324,24 +495,24 @@ import {
 
             // スキル1：もちもちクリック効果（Lvに応じて加算）。旧・掛け算式(2 + (lv-1)*0.5)の等価値
             if (skills.skill1.activeTimer > 0) {
-                bonusPercent += 100 + (skills.skill1.lv - 1) * 50;
+                bonusPercent += CONFIG.SKILL1_BASE_BONUS_PERCENT + (skills.skill1.lv - 1) * CONFIG.SKILL1_BONUS_PER_LV;
             }
 
             // スキル4：黄金のもち福の判定（会心と重ねて乗ってOK）
             if (skills.skill4.activeTimer > 0) {
-                const goldChance = 0.10 + (skills.skill4.lv - 1) * 0.02;
+                const goldChance = CONFIG.SKILL4_GOLD_BASE_CHANCE + (skills.skill4.lv - 1) * CONFIG.SKILL4_GOLD_CHANCE_PER_LV;
                 if (Math.random() < goldChance) {
                     isGold = true;
-                    bonusPercent += 100;
+                    bonusPercent += CONFIG.SKILL4_GOLD_BONUS_PERCENT;
                 }
             }
 
             // スキル2：会心のもち肌の判定（黄金と重複してOK）
             if (skills.skill2.activeTimer > 0) {
-                const critChance = 0.20 + (skills.skill2.lv - 1) * 0.05;
+                const critChance = CONFIG.SKILL2_CRIT_BASE_CHANCE + (skills.skill2.lv - 1) * CONFIG.SKILL2_CRIT_CHANCE_PER_LV;
                 if (Math.random() < critChance) {
                     isCrit = true;
-                    bonusPercent += 100;
+                    bonusPercent += CONFIG.SKILL2_CRIT_BONUS_PERCENT;
                 }
             }
 
@@ -350,8 +521,8 @@ import {
             const SKILL3_SCALING_LV = 8;
             if (skills.skill3.activeTimer > 0) {
                 const skill3Bonus = skills.skill3.lv < SKILL3_SCALING_LV
-                    ? 200
-                    : 200 + (skills.skill3.lv - SKILL3_SCALING_LV) * 25;
+                    ? CONFIG.SKILL3_BASE_BONUS_PERCENT
+                    : CONFIG.SKILL3_BASE_BONUS_PERCENT + (skills.skill3.lv - SKILL3_SCALING_LV) * CONFIG.SKILL3_BONUS_PER_LV;
                 bonusPercent += skill3Bonus;
             }
 
@@ -359,16 +530,16 @@ import {
 
             // 🌟 覚醒判定：1/100の確率で、このタップだけもちが10倍になる
             let isAwakening = false;
-            if (!isTutorialActive && Math.random() < 0.01) {
+            if (!isTutorialActive && Math.random() < CONFIG.AWAKENING_CHANCE) {
                 isAwakening = true;
-                power *= 10;
+                power *= CONFIG.AWAKENING_MULTIPLIER;
             }
 
             // パーティクルの色設定（スキル4の確率判定(isGold)に当たった時だけ金色にする）
             let isGoldParticle = isGold;
 
             // スキル1：もちもちクリック発動時は弾ける量をさらに追加
-            let pCount = skills.skill1.activeTimer > 0 ? 3 : 1;
+            let pCount = skills.skill1.activeTimer > 0 ? CONFIG.SKILL1_PARTICLE_COUNT : 1;
             for (let i = 0; i < pCount; i++) {
                 createParticle(clientX, clientY, isGoldParticle);
             }
@@ -397,21 +568,21 @@ import {
                 createFloatingText(clientX, clientY, `😱覚醒！×10 +${formatMochi(power)}`, "#ff1744", "2rem");
             } else if (isCrit) {
                 playAudioFile('audio/critical.mp3');
-                vibrate(30);
+                vibrate(CONFIG.CRIT_VIBRATE_MS);
                 screenShake('small');
-                screenFlash('#ff5722', 0.22);
+                screenFlash('#ff5722', CONFIG.CRIT_FLASH_ALPHA);
                 createFloatingText(clientX, clientY, `🔥会心! +${formatMochi(power)}`, "#ff3d00", "1.65rem");
                 mochiBtnElement.style.filter = "contrast(2.5) brightness(1.1) grayscale(0.2)";
                 clearTimeout(critFilterTimeout); // 連続で会心が出た時に前のタイマーが後から発火して消し合うのを防ぐ
                 const myCritId = ++critTapId;
                 critFilterTimeout = setTimeout(() => {
                     if (myCritId === critTapId) resetMochiFilter(); // 自分より後の会心が発生していなければリセット
-                }, 180);
+                }, CONFIG.CRIT_FILTER_RESET_MS);
             } else if (isGold) {
                 playAudioFile('audio/gold_mochi.mp3');
                 vibrate([20, 30, 20]);
                 screenShake('big');
-                screenFlash('#ffd700', 0.3);
+                screenFlash('#ffd700', CONFIG.GOLD_FLASH_ALPHA);
                 createFloatingText(clientX, clientY, `✨黄金! +${formatMochi(power)}`, "#ffd700", "1.65rem");
             } else {
                 createFloatingText(clientX, clientY, `+${formatMochi(power)} もち`);
@@ -503,6 +674,13 @@ import {
         // d が正＝引っ張り/つぶし方向、負＝その逆方向（オーバーシュート用）に使える共通関数。
         // 下向き成分の方が大きい場合は「伸ばす」のではなく「つぶす」動きにする（体積保存的に横へ少し膨らむ）。
         // 横・斜め方向は、引っ張った側だけに伸びるよう、反対側を起点に固定して見せる（transformOriginではなくtranslateで実現）。
+        /**
+         * 引っ張り/つぶし量dと方向(dx,dy)から、伸縮とオフセットを含むCSS transform文字列を組み立てる。
+         * @param {number} dx - 引っ張り方向のX成分
+         * @param {number} dy - 引っ張り方向のY成分
+         * @param {number} d - 伸縮量（正=伸び/つぶし方向、負=逆方向のオーバーシュート）
+         * @returns {string} CSSのtransformプロパティ用文字列
+         */
         export function squeezeTransformFor(dx, dy, d) {
             const angleRad = Math.atan2(dy, dx);
             const angleDeg = angleRad * (180 / Math.PI);
@@ -517,6 +695,12 @@ import {
         }
 
         // 引っ張った方向・距離から、今の伸縮状態を反映する（ドラッグ中に毎回呼ばれる）
+        /**
+         * ドラッグ移動量から伸縮比率を計算し、もちすけ要素にtransformと伸び音を反映する。
+         * @param {number} dx - 開始位置からのX移動量
+         * @param {number} dy - 開始位置からのY移動量
+         * @returns {number} 0〜1の伸縮比率
+         */
         export function applySqueezeTransform(dx, dy) {
             const dist = Math.min(Math.sqrt(dx * dx + dy * dy), SQUEEZE_MAX_DRAG);
             const ratio = dist / SQUEEZE_MAX_DRAG;
@@ -527,6 +711,10 @@ import {
         }
 
         // 🔊 伸ばしている間だけ鳴る、ループ再生＋伸びに応じてピッチが変わる効果音
+        /**
+         * 伸ばしている間だけ鳴らす、ループ再生の伸び音を音量0の状態で再生開始する。
+         * @returns {void}
+         */
         export function startStretchSound() {
             if (stretchSoundSource) return;
             const ctx = getAudioContext();
@@ -541,11 +729,20 @@ import {
             stretchSoundSource.connect(stretchSoundGain).connect(ctx.destination);
             stretchSoundSource.start(0);
         }
+        /**
+         * 伸縮比率に応じて、再生中の伸び音のピッチと音量を更新する。
+         * @param {number} ratio - 0〜1の伸縮比率
+         * @returns {void}
+         */
         export function updateStretchSound(ratio) {
             if (!stretchSoundSource) return;
-            stretchSoundSource.playbackRate.value = 0.85 + ratio * 0.5; // 伸びるほど音が高くなる
-            stretchSoundGain.gain.value = ratio * 0.35 * sfxVolumeMult; // 伸びるほど音が大きくなる
+            stretchSoundSource.playbackRate.value = CONFIG.STRETCH_SOUND_BASE_PITCH + ratio * CONFIG.STRETCH_SOUND_PITCH_RANGE; // 伸びるほど音が高くなる
+            stretchSoundGain.gain.value = ratio * CONFIG.STRETCH_SOUND_MAX_GAIN * sfxVolumeMult; // 伸びるほど音が大きくなる
         }
+        /**
+         * 再生中の伸び音を停止し、参照をクリアする。
+         * @returns {void}
+         */
         export function stopStretchSound() {
             if (!stretchSoundSource) return;
             try { stretchSoundSource.stop(); } catch (e) {}
@@ -554,10 +751,16 @@ import {
         }
 
         // 指を離した時、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻ってから通常に収束する
+        /**
+         * 指を離した瞬間、伸ばして/つぶしていた分だけオーバーシュートする揺れ戻りアニメーションを再生する。
+         * @param {number} dx - 引っ張り方向のX成分
+         * @param {number} dy - 引っ張り方向のY成分
+         * @returns {void}
+         */
         export function releaseSqueezeWithOvershoot(dx, dy) {
             const dist = Math.min(Math.sqrt(dx * dx + dy * dy), SQUEEZE_MAX_DRAG);
             const ratio = dist / SQUEEZE_MAX_DRAG;
-            const overshoot = ratio * 0.55; // 伸ばした/つぶした分だけ、戻る時のプルンも大きくなる
+            const overshoot = ratio * CONFIG.SQUEEZE_OVERSHOOT_RATIO; // 伸ばした/つぶした分だけ、戻る時のプルンも大きくなる
 
             mochiDeformWrap.animate([
                 { transform: squeezeTransformFor(dx, dy, ratio) },
@@ -565,10 +768,14 @@ import {
                 { transform: squeezeTransformFor(dx, dy, overshoot * 0.32), offset: 0.58 },
                 { transform: squeezeTransformFor(dx, dy, -overshoot * 0.12), offset: 0.8 },
                 { transform: 'scale(1, 1)' },
-            ], { duration: 420 + ratio * 280, easing: 'ease-out' });
+            ], { duration: CONFIG.SQUEEZE_OVERSHOOT_BASE_DURATION_MS + ratio * CONFIG.SQUEEZE_OVERSHOOT_DURATION_RANGE_MS, easing: 'ease-out' });
             mochiDeformWrap.style.transform = 'scale(1, 1)';
         }
 
+        /**
+         * ポインタが離れた時の後処理全体を行い、必殺技中/スクイーズ中/通常タップの3パターンで戻りアニメーションを再生する。
+         * @returns {void}
+         */
         export function releaseMochiSucre() {
             if (!isMochiPressed) return;
             isMochiPressed = false;
@@ -583,14 +790,14 @@ import {
             } else if (isDraggingSqueeze && Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy) >= SQUEEZE_MIN_DRAG) {
                 // 🫧 スクイーズ：一定以上引っ張られていた時だけ、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻る
                 releaseSqueezeWithOvershoot(squeezeLastDx, squeezeLastDy);
-                setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, 720);
+                setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.86, 1.14)', offset: 0.4 },
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.04, 0.96)', offset: 0.75 },
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)' }
-                    ], { duration: 240, easing: 'ease-out' });
+                    ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
                 });
             } else {
@@ -601,7 +808,7 @@ import {
                     { transform: 'scale(0.86, 1.14)', offset: 0.4 }, 
                     { transform: 'scale(1.04, 0.96)', offset: 0.75 }, 
                     { transform: 'scale(1, 1)' }
-                ], { duration: 240, easing: 'ease-out' });
+                ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                 mochiDeformWrap.style.transform = 'scale(1, 1)';
                 
                 clones.forEach(c => {
@@ -610,7 +817,7 @@ import {
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.86, 1.14)', offset: 0.4 }, 
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.04, 0.96)', offset: 0.75 }, 
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)' }
-                    ], { duration: 240, easing: 'ease-out' });
+                    ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
                 });
             }
@@ -625,7 +832,7 @@ import {
                 }
                 isSqueezeSettling = false;
                 updateMouthPatchVisibility();
-            }, 1200);
+            }, CONFIG.BREATHE_IDLE_DELAY_MS);
         }
 
         mochiBtnElement.addEventListener('pointerup', releaseMochiSucre);
@@ -642,21 +849,37 @@ import {
 
         /* 🔮 スキル発動＆タイマー管理システムロジック */
         // 必殺技だけはクールタイムが「時間経過」ではなく「一定回数タップ」で回復する特別仕様
+        /**
+         * 必殺技のLvに応じて、クールタイム回復に必要なタップ数を計算する。
+         * @param {number} lv - 必殺技のLv
+         * @returns {number} 回復に必要なタップ数
+         */
         export function getHissatsuTapsRequired(lv) {
-            return Math.max(150, 400 - (lv - 1) * 20);
+            return Math.max(CONFIG.HISSATSU_MIN_TAPS_REQUIRED, CONFIG.HISSATSU_BASE_TAPS_REQUIRED - (lv - 1) * CONFIG.HISSATSU_TAPS_REDUCTION_PER_LV);
         }
 
         // 各スキルの実際のクールタイムを計算する共通関数（レベルによる短縮＋転生ポイントショップの恒久短縮を反映）
+        /**
+         * スキルの種類ごとに、Lvによる短縮量と転生ショップの恒久短縮を反映した実際のクールタイムを計算する。
+         * @param {string} key - スキルのキー（'skill1'〜'skill4'/'hissatsu'）
+         * @param {Object} s - 対象スキルのデータオブジェクト
+         * @returns {number} 実際のクールタイム（秒、必殺技のみ必要タップ数）
+         */
         export function getSkillCalculatedCd(key, s) {
             const reduce = getPrestigeCdReductionSec();
-            if (key === 'skill1') return Math.max(6, s.cd - (s.lv - 1) - reduce);
-            if (key === 'skill2') return Math.max(10, s.cd - (s.lv - 1) - reduce);
-            if (key === 'skill3') return Math.max(14, s.cd - (s.lv - 1) - reduce);
-            if (key === 'skill4') return Math.max(18, s.cd - (s.lv - 1) * 2 - reduce);
+            if (key === 'skill1') return Math.max(CONFIG.SKILL1_MIN_CD, s.cd - (s.lv - 1) - reduce);
+            if (key === 'skill2') return Math.max(CONFIG.SKILL2_MIN_CD, s.cd - (s.lv - 1) - reduce);
+            if (key === 'skill3') return Math.max(CONFIG.SKILL3_MIN_CD, s.cd - (s.lv - 1) - reduce);
+            if (key === 'skill4') return Math.max(CONFIG.SKILL4_MIN_CD, s.cd - (s.lv - 1) * CONFIG.SKILL4_CD_REDUCTION_PER_LV_MULT - reduce);
             if (key === 'hissatsu') return getHissatsuTapsRequired(s.lv); // タップ数なので短縮対象外
             return s.cd;
         }
 
+        /**
+         * 指定したスキルを発動する。未獲得ならアラートを出し、クールタイム中/発動中なら何もしない。
+         * @param {string} key - スキルのキー
+         * @returns {void}
+         */
         export function useSkill(key) {
             const s = skills[key];
             if (s.lv === 0) {
@@ -669,9 +892,9 @@ import {
             playAudioFile('audio/skill_tap.mp3');
             if (key === 'hissatsu') {
                 screenShake('big');
-                screenFlash('#ff9800', 0.4);
+                screenFlash('#ff9800', CONFIG.HISSATSU_ACTIVATE_FLASH_ALPHA);
             } else {
-                screenFlash('#fff59d', 0.18);
+                screenFlash('#fff59d', CONFIG.SKILL_ACTIVATE_FLASH_ALPHA);
             }
 
             s.activeTimer = s.duration;
@@ -685,6 +908,11 @@ import {
             updateDisplay();
         }
 
+        /**
+         * スキルごとの発動時の見た目演出を開始する（skill3は分身生成、hissatsuはBGM切り替え＋巨大化）。
+         * @param {string} key - スキルのキー
+         * @returns {void}
+         */
         export function startSkillVisualEffect(key) {
             const btn = document.getElementById('btn-' + key);
             if (btn) btn.classList.remove('ready');
@@ -693,17 +921,17 @@ import {
                 // 分身の術：中央のもちすけ＋左右に1匹ずつ、計3人体制に
                 const container = document.getElementById('bunshin-container');
                 container.innerHTML = '';
-                
+
                 // 左右に1匹ずつ配置するためのX軸オフセット値
-                const xOffsets = [-130, 130];
+                const xOffsets = [-CONFIG.BUNSHIN_CLONE_X_OFFSET, CONFIG.BUNSHIN_CLONE_X_OFFSET];
                 for (let i = 0; i < 2; i++) {
                     const img = document.createElement('img');
                     img.src = 'ui_images/mochisuke/image_0.webp';
                     img.className = 'bunshin-clone-img';
-                    img.style.position = 'absolute'; 
-                    img.style.width = '190px'; 
+                    img.style.position = 'absolute';
+                    img.style.width = CONFIG.BUNSHIN_CLONE_WIDTH_PX + 'px';
                     img.style.height = 'auto';
-                    img.style.opacity = '0.55'; 
+                    img.style.opacity = String(CONFIG.BUNSHIN_CLONE_OPACITY);
                     img.style.left = '50%';
                     img.style.top = '50%';
                     img.style.setProperty('--tx', `${xOffsets[i]}px`);
@@ -729,6 +957,11 @@ import {
             }
         }
 
+        /**
+         * スキルの発動時間終了時に見た目演出を元に戻す（skill3は分身DOM削除、hissatsuはBGM・サイズ・フィルターを復元）。
+         * @param {string} key - スキルのキー
+         * @returns {void}
+         */
         export function endSkillVisualEffect(key) {
             if (key === 'skill3') { document.getElementById('bunshin-container').innerHTML = ''; bunshinCloneRects = []; bunshinCloneEls = []; }
             if (key === 'hissatsu') {
@@ -748,6 +981,10 @@ import {
         export let isScreamActive = false; // 叫び演出中は、会心などの他の演出が画像を上書きしないようにするためのフラグ
         // 🐛修正：以前はここが古い衣装システム(clothesData)だけを見ていたため、タップのたびに
         // 着せ替え部屋で選んだ服が初期状態に戻ってしまっていた。今は着せ替え部屋の選択を優先する。
+        /**
+         * 着せ替え部屋・旧衣装システムの優先順位に沿って、現在表示すべきもちすけの基準画像パスを返す。
+         * @returns {string} 画像パス
+         */
         export function getMochisukeBaseImg() {
             const clothesItem = (typeof KISEKAE_ITEMS !== 'undefined' && typeof equippedKisekae !== 'undefined')
                 ? KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes)
@@ -756,6 +993,10 @@ import {
             const target = clothesData.find(c => c.id === equippedClotheId);
             return (target && target.img) ? target.img : 'ui_images/mochisuke/image_0.webp';
         }
+        /**
+         * 叫び演出中でなければもちすけ画像を基準画像に戻し、装備中衣装のfilterを適用する。
+         * @returns {void}
+         */
         export function resetMochiFilter() {
             if (!isScreamActive) {
                 mochiBtnElement.src = getMochisukeBaseImg();
@@ -767,6 +1008,11 @@ import {
             mochiBtnElement.style.filter = baseFilter;
         }
 
+        /**
+         * 全スキルのactiveTimer/currentCdをdt分だけ経過させ、発動終了やクールタイム完了に応じた処理を行う。
+         * @param {number} dt - 経過時間（秒）
+         * @returns {void}
+         */
         export function updateSkillTimers(dt) {
             // 🐛パフォーマンス修正：このupdateSkillTimers自体は100ms毎（1秒に10回）に呼ばれ続けるが、
             // 以前は「発動中・クールダウン中のスキルが1つも無い（＝完全に待機中）」時でも毎回
@@ -789,7 +1035,7 @@ import {
                     if (s.currentCd <= 0) {
                         s.currentCd = 0;
                         if (s.lv > 0) {
-                            playAudioFile('audio/ready.mp3', 0.4);
+                            playAudioFile('audio/ready.mp3', CONFIG.READY_SFX_VOLUME);
                         }
                     }
                 }
@@ -800,18 +1046,26 @@ import {
         }
 
         // 必殺技のクールタイムをタップ数で回復させる（実際のタップの度に呼ぶ）
+        /**
+         * 必殺技のクールタイムをタップ数で回復させる。0になったら効果音を鳴らしUIを更新する。
+         * @returns {void}
+         */
         export function chargeHissatsuByTap() {
             const s = skills.hissatsu;
             if (s.lv > 0 && s.activeTimer <= 0 && s.currentCd > 0) {
                 s.currentCd -= 1;
                 if (s.currentCd <= 0) {
                     s.currentCd = 0;
-                    playAudioFile('audio/ready.mp3', 0.4);
+                    playAudioFile('audio/ready.mp3', CONFIG.READY_SFX_VOLUME);
                 }
                 updateSkillUI();
             }
         }
 
+        /**
+         * 各スキルボタンのLv表示・ロック状態・クールタイム/発動中ゲージの見た目を現在の状態に合わせて更新する。
+         * @returns {void}
+         */
         export function updateSkillUI() {
             updateMouthPatchVisibility();
             Object.keys(skills).forEach(key => {
@@ -878,6 +1132,11 @@ import {
         }
 
         /* モーダル関連 */
+        /**
+         * 指定スキルの次Lvを購入する。価格を計算し、購入可能ならscoreを消費してLvを1上げ演出・保存・UI更新を行う。
+         * @param {string} key - スキルのキー
+         * @returns {void}
+         */
         export function buySkillLevel(key) {
             const s = skills[key];
             if (!s || currentStageIndex < s.unlockStage) return;
@@ -891,6 +1150,10 @@ import {
         }
         window.buySkillLevel = buySkillLevel; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * 日付が変わっていたら、給餌のデイリー使用回数をリセットして保存する。
+         * @returns {void}
+         */
         export function resetFeedCountIfNewDay() {
             const today = getLocalDateString(new Date());
             if (feedLastResetDate !== today) {
@@ -904,6 +1167,10 @@ import {
 
         // 🐛修正：給餌中に他のボタン（ランキング等）を押して別画面へ移動しても、
         // 置きっぱなしのおみやげアイコンが最前面に残り続けてしまっていたのを片付ける
+        /**
+         * 給餌中に置いたおみやげアイコンをDOMから削除し、ドラッグ関連のリスナー・状態・じらしタイマーを片付ける。
+         * @returns {void}
+         */
         export function cancelFeedDragIfActive() {
             const icon = document.getElementById('feed-placed-icon');
             if (icon) icon.remove();
@@ -919,6 +1186,10 @@ import {
         export let feedTeaseLevel = 0;
         export let feedTeaseTimer = null;
 
+        /**
+         * FEED_TEASE_TIME_MSごとに、ドロップ失敗が無くてもfeedTeaseLevelを1段階上げてセリフを表示し、自分自身を再スケジュールする。
+         * @returns {void}
+         */
         export function scheduleFeedTeaseEscalation() {
             clearTimeout(feedTeaseTimer);
             if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) return; // 最大まで達したら、時間経過では増やさない（外した時だけ増える）
@@ -929,40 +1200,53 @@ import {
             }, FEED_TEASE_TIME_MS);
         }
 
+        /**
+         * feedTeaseLevelに応じたじらしセリフを表示する。最大レベルなら専用の叫び演出を出す。
+         * @returns {void}
+         */
         export function showFeedTeaseComment() {
             if (isTutorialActive) return;
             if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) {
                 // 我慢の限界：専用の叫び効果音＋専用イラスト＋周りに散る「あ゛」で叫んでる感を強化
                 playAudioFile('audio/mochisuke/mochi_scream.mp3');
-                vibrate([60, 40, 60, 40, 80, 40, 100]);
+                vibrate(CONFIG.SCREAM_VIBRATE_PATTERN);
                 screenShake('big');
-                screenFlash('#ff1744', 0.28);
+                screenFlash('#ff1744', CONFIG.TEASE_LIMIT_FLASH_ALPHA);
 
                 startScreamFace();
 
                 spawnScreamKanaBurst();
-                showMochiComment('あ\u3099'.repeat(10) + '！！');
+                showMochiComment('あ\u3099'.repeat(CONFIG.TEASE_LIMIT_KANA_REPEAT) + '！！');
             } else {
                 showMochiComment(feedTeaseComments[feedTeaseLevel]);
             }
         }
 
         // もちすけの周りに「あ゛」を何個も時間差で飛び散らせる（叫んでいる迫力を強化）
+        /**
+         * もちすけの周りに「あ゛」の浮遊テキストを時間差で複数飛び散らせる叫び演出。
+         * @returns {void}
+         */
         export function spawnScreamKanaBurst() {
             const rect = mochiBtnElement.getBoundingClientRect();
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < CONFIG.SCREAM_KANA_BURST_COUNT; i++) {
                 setTimeout(() => {
                     const angle = Math.random() * Math.PI * 2;
-                    const dist = 35 + Math.random() * 75;
+                    const dist = CONFIG.SCREAM_KANA_MIN_DIST + Math.random() * CONFIG.SCREAM_KANA_DIST_RANGE;
                     const x = cx + Math.cos(angle) * dist;
-                    const y = cy + Math.sin(angle) * dist - 20;
-                    createFloatingText(x, y, 'あ\u3099', '#e91e63', (1.1 + Math.random() * 0.9) + 'rem');
-                }, i * 55);
+                    const y = cy + Math.sin(angle) * dist - CONFIG.SCREAM_KANA_Y_OFFSET;
+                    createFloatingText(x, y, 'あ\u3099', '#e91e63', (CONFIG.SCREAM_KANA_MIN_SIZE_REM + Math.random() * CONFIG.SCREAM_KANA_SIZE_RANGE_REM) + 'rem');
+                }, i * CONFIG.SCREAM_KANA_STAGGER_MS);
             }
         }
 
+        /**
+         * 指定したおみやげのアイコンをもちすけの足元付近に生成し、じらし状態の初期化とドラッグ開始の登録を行う。
+         * @param {number} idx - おみやげ（都道府県）のインデックス
+         * @returns {void}
+         */
         export function placeFeedIconNearMochisuke(idx) {
             const stage = stages[idx];
             closeModal('omiyage-feed-confirm-modal');
@@ -975,7 +1259,7 @@ import {
             setTimeout(() => {
                 const mochiRect = mochiBtnElement.getBoundingClientRect();
                 const startX = mochiRect.left + mochiRect.width / 2;
-                const startY = mochiRect.bottom + 68; // もちすけの足元より、アイコン1個分ほど下
+                const startY = mochiRect.bottom + CONFIG.FEED_ICON_Y_OFFSET_PX; // もちすけの足元より、アイコン1個分ほど下
 
                 const icon = document.createElement('img');
                 icon.id = 'feed-placed-icon';
@@ -993,9 +1277,16 @@ import {
 
                 // このアイコン自体を長押し・ドラッグして、もちすけの上まで運んでもらう
                 icon.addEventListener('pointerdown', (e) => startFeedDrag(idx, icon, e));
-            }, 150); // 倉庫のモーダルが閉じるアニメーションと被らないよう少し待つ
+            }, CONFIG.FEED_ICON_PLACEMENT_DELAY_MS); // 倉庫のモーダルが閉じるアニメーションと被らないよう少し待つ
         }
 
+        /**
+         * おみやげアイコンのドラッグ操作を開始し、documentへ移動・終了イベントのリスナーを登録する。
+         * @param {number} idx - おみやげ（都道府県）のインデックス
+         * @param {HTMLElement} icon - ドラッグ対象のアイコン要素
+         * @param {PointerEvent} e - ドラッグ開始のポインタイベント
+         * @returns {void}
+         */
         export function startFeedDrag(idx, icon, e) {
             e.preventDefault();
             icon.classList.remove('feed-icon-drop-in');
@@ -1008,12 +1299,23 @@ import {
             document.addEventListener('pointercancel', onFeedDragEnd);
         }
 
+        /**
+         * ドラッグ中のポインタ位置に合わせて、置いたおみやげアイコンの座標を更新する。
+         * @param {PointerEvent} e - 移動中のポインタイベント
+         * @returns {void}
+         */
         export function onFeedDragMove(e) {
             if (!feedDragState) return;
             feedDragState.icon.style.left = e.clientX + 'px';
             feedDragState.icon.style.top = e.clientY + 'px';
         }
 
+        /**
+         * おみやげアイコンのドラッグ操作を終了し、もちすけの上に落とせていれば給餌を実行、
+         * そうでなければ足元へ戻すアニメーションを行う。
+         * @param {PointerEvent} e - ドラッグ終了のポインタイベント
+         * @returns {void}
+         */
         export function onFeedDragEnd(e) {
             if (!feedDragState) return;
             const { idx, icon } = feedDragState;
@@ -1034,15 +1336,20 @@ import {
                 const mochiRectNow = mochiBtnElement.getBoundingClientRect();
                 icon.style.transition = 'left 0.3s ease-out, top 0.3s ease-out, transform 0.3s';
                 icon.style.left = (mochiRectNow.left + mochiRectNow.width / 2) + 'px';
-                icon.style.top = (mochiRectNow.bottom + 68) + 'px';
+                icon.style.top = (mochiRectNow.bottom + CONFIG.FEED_ICON_Y_OFFSET_PX) + 'px';
                 icon.style.cursor = 'grab';
-                setTimeout(() => { icon.style.transition = 'none'; }, 320);
+                setTimeout(() => { icon.style.transition = 'none'; }, CONFIG.FEED_ICON_RETURN_ANIM_MS);
                 feedTeaseLevel++;
                 showFeedTeaseComment();
             }
         }
 
         export let feedBuffIndicatorTimer = null;
+        /**
+         * 給餌バフの残り時間インジケーターを表示し、一定間隔で残り秒数の表示を更新する。
+         * バフが切れたら自動的にインジケーターを非表示にする。
+         * @returns {void}
+         */
         export function startFeedBuffIndicator() {
             const el = document.getElementById('feed-buff-indicator');
             const timerEl = document.getElementById('feed-buff-timer');
@@ -1057,26 +1364,35 @@ import {
                 } else if (timerEl) {
                     timerEl.innerText = remaining;
                 }
-            }, 250);
+            }, CONFIG.FEED_BUFF_INDICATOR_INTERVAL_MS);
         }
 
+        /**
+         * 一定間隔でフィーバー(黄金もち)の抽選を行い、条件を満たせば黄金もちを出現させるループを開始する。
+         * @returns {void}
+         */
         export function startFeverSpawningLoop() {
-            setInterval(() => { if (!isTutorialActive && !isFever && !document.getElementById('fever-pop') && Math.random() < 0.08) spawnGoldMochi(); }, 25000);
+            setInterval(() => { if (!isTutorialActive && !isFever && !document.getElementById('fever-pop') && Math.random() < CONFIG.FEVER_SPAWN_CHANCE) spawnGoldMochi(); }, CONFIG.FEVER_SPAWN_CHECK_INTERVAL_MS);
         }
 
+        /**
+         * フィーバータイムを開始し、演出（画面シェイク・フラッシュ）を出したうえで、
+         * 1秒ごとに残り時間を減らして終了処理まで行うタイマーをセットする。
+         * @returns {void}
+         */
         export function triggerFeverTime() {
-            isFever = true; feverTimeLeft = 10;
+            isFever = true; feverTimeLeft = CONFIG.FEVER_DURATION_SEC;
             document.getElementById('mochi-balloon').classList.remove('balloon-show');
             document.getElementById('header-container').classList.add('fever-active');
             screenShake('big');
-            screenFlash('#ff3d81', 0.4);
+            screenFlash('#ff3d81', CONFIG.FEVER_FLASH_ALPHA);
             updateDisplay();
             if (feverInterval) clearInterval(feverInterval);
             feverInterval = setInterval(() => {
                 feverTimeLeft--;
                 if (feverTimeLeft <= 0) { clearInterval(feverInterval); isFever = false; document.getElementById('header-container').classList.remove('fever-active'); }
                 updateDisplay();
-            }, 1000);
+            }, CONFIG.FEVER_TICK_INTERVAL_MS);
         }
 
         export let hissatsuAutoChargeAccum = 0;
@@ -1108,7 +1424,7 @@ import {
                     hissatsuAutoChargeAccum -= wholeAmount;
                     const wasCharging = hs.currentCd > 0;
                     hs.currentCd = Math.max(0, hs.currentCd - wholeAmount);
-                    if (wasCharging && hs.currentCd <= 0) playAudioFile('audio/ready.mp3', 0.4);
+                    if (wasCharging && hs.currentCd <= 0) playAudioFile('audio/ready.mp3', CONFIG.READY_SFX_VOLUME);
                     updateSkillUI();
                 }
             }
@@ -1122,12 +1438,47 @@ import {
         // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
         // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
         // ===================================================================
+        /**
+         * 給餌バフが有効なタイムスタンプ(feedBuffActiveUntil)を書き換える。
+         * @param {number} v - バフが有効な期限のタイムスタンプ(ms)
+         * @returns {void}
+         */
         export function setFeedBuffActiveUntil(v) { feedBuffActiveUntil = v; }
+        /**
+         * 給餌の1日上限がリセットされた日付(feedLastResetDate)を書き換える。
+         * @param {string} v - リセット済みとして記録する日付文字列
+         * @returns {void}
+         */
         export function setFeedLastResetDate(v) { feedLastResetDate = v; }
+        /**
+         * その日すでに使った給餌回数(feedPlaysUsedToday)を書き換える。
+         * @param {number} v - 本日使用済みの給餌回数
+         * @returns {void}
+         */
         export function setFeedPlaysUsedToday(v) { feedPlaysUsedToday = v; }
+        /**
+         * 給餌のじらしレベル(feedTeaseLevel)を書き換える。
+         * @param {number} v - 新しいじらしレベル
+         * @returns {void}
+         */
         export function setFeedTeaseLevel(v) { feedTeaseLevel = v; }
+        /**
+         * ゲーム画面の矩形情報(gameScreenRect)を書き換える。
+         * @param {DOMRect|null} v - 新しい画面矩形
+         * @returns {void}
+         */
         export function setGameScreenRect(v) { gameScreenRect = v; }
+        /**
+         * 1000コンボ称号を初回お祝い済みかどうかのフラグ(hasComboTitle1000)を書き換える。
+         * @param {boolean} v - 初回お祝い済みかどうか
+         * @returns {void}
+         */
         export function setHasComboTitle1000(v) { hasComboTitle1000 = v; }
+        /**
+         * 直前にタップした時刻(lastTappedTime)を書き換える。
+         * @param {number} v - タップ時刻のタイムスタンプ(ms)
+         * @returns {void}
+         */
         export function setLastTappedTime(v) { lastTappedTime = v; }
 
 

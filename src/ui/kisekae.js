@@ -1,20 +1,57 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-09-001';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-09-001';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-09-001';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-09-001';
-        import { saveGame } from '../../state.js?v=2026-09-09-001';
-        import { closeModal, openModal } from './core.js?v=2026-09-09-001';
-        import { openTicketInventory } from './myroom.js?v=2026-09-09-001';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-09-001';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-09-002';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-09-002';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-09-002';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-09-002';
+        import { saveGame } from '../../state.js?v=2026-09-09-002';
+        import { closeModal, openModal } from './core.js?v=2026-09-09-002';
+        import { openTicketInventory } from './myroom.js?v=2026-09-09-002';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-09-002';
+
+        // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
+        const CONFIG = {
+            // ⏱️ 時間・持続時間（ミリ秒）
+            SPRAY_BUFF_DURATION_MS: 24 * 60 * 60 * 1000, // スプレー効果の持続時間（1日）
+            KISEKAE_ROOM_CLOSE_FADE_MS: 300, // 着せ替え部屋を閉じる際、フェード演出が終わるまでの待ち時間
+            KISEKAE_ROOM_FADE_CLEANUP_MS: 150, // フェード用の黒画面クラスを外すまでの追加の待ち時間
+            KISEKAE_FLYOFF_DURATION_MS: 950, // 帽子・顔パーツが吹っ飛んでいくアニメーションの時間
+            KISEKAE_FLYBACK_DURATION_MS: 750, // 帽子・顔パーツが戻ってくるアニメーションの時間
+            KISEKAE_ITEM_NAME_LABEL_DURATION_MS: 2200, // アイテム名ラベルの表示時間
+            KISEKAE_CONFIRM_BUTTON_RESET_MS: 1200, // 「決定しました」表示を元のラベルに戻すまでの時間
+            WING_FLAP_MIN_INTERVAL_MS: 20, // 羽ばたき間隔調整ツールの下限（速くしすぎ防止）
+
+            // 🎚️ 音量調整（羽ばたき音量ツール用）
+            WING_FLAP_VOLUME_MIN: 0, // 音量の下限
+            WING_FLAP_VOLUME_MAX: 1, // 音量の上限
+            WING_FLAP_VOLUME_ROUND_FACTOR: 10, // 音量を小数点1桁に丸めるための係数
+
+            // 🎩💨 叫んだ時に帽子・顔パーツが吹っ飛んでいく方向・角度（x/y:px, r:deg）
+            KISEKAE_FLYOFF_HAT: { x: -70, y: -160, r: -150 },
+            KISEKAE_FLYOFF_FACE: { x: 80, y: -130, r: 170 },
+
+            // 🧭 重なり順（z-index）
+            KISEKAE_ZINDEX_ROOM_HAT_FACE: 6, // 着せ替え部屋の帽子・顔パーツ（もちすけの手前に固定）
+            KISEKAE_ZINDEX_WING_DEFAULT: 1, // 通常表示時の翼
+            KISEKAE_ZINDEX_MAIN_HAT: 7, // タップ画面・マイルームの帽子（もちすけの手前に固定）
+            KISEKAE_ZINDEX_ADJUST_ACTIVE: 50, // 位置調整モード中、一時的に最前面へ上げる際の値
+
+            // 📐 その他の調整用しきい値
+            KISEKAE_MIN_RESIZE_PERCENT: 2, // ドラッグでリサイズする際の最小サイズ(%)
+            KISEKAE_TOP_RARITY_STAR: 4, // 最高レア度（星の数）。虹色グラデーション表示の判定に使う
+        };
 
         // ✨ スプレーを使う：1日だけ自動増加バフ＋見た目エフェクトが有効になる
+        /**
+         * 所持しているスプレーを1つ消費し、自動増加バフと見た目エフェクトを有効化する。
+         * @param {string} itemId - 使用するスプレーアイテムのID。
+         * @returns {void}
+         */
         export function useSpray(itemId) {
             if ((sprayInventory[itemId] || 0) <= 0) return;
             sprayInventory[itemId]--;
             setActiveSprayId(itemId);
-            setSprayBuffActiveUntil(Date.now() + 24 * 60 * 60 * 1000);
+            setSprayBuffActiveUntil(Date.now() + CONFIG.SPRAY_BUFF_DURATION_MS);
             saveGame(); updateDisplay(); updateSprayEffectDisplay();
             openTicketInventory(); // 一覧を開いている場合、表示を更新する
         }
@@ -23,23 +60,35 @@
         // ===================================================================
         // 👗 着せ替え部屋
         // ===================================================================
+        /**
+         * 着せ替え部屋を開き、確定済みの装備状態から試着用のプレビューを作って初期表示する。
+         * @returns {void}
+         */
         export function openKisekaeRoom() {
             openModal('kisekae-room-modal'); // タップ音のみでOK、フェード・移動音は不要
             setPreviewKisekae({ ...equippedKisekae }); // 確定済みの状態から、試着用のコピーを作る
             renderKisekaeMochisuke();
             openKisekaeCategory('clothes');
         }
+        /**
+         * 着せ替え部屋をフェードアウト演出とともに閉じる。
+         * @returns {void}
+         */
         export function closeKisekaeRoom() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 closeModal('kisekae-room-modal');
-                setTimeout(() => overlay.classList.remove('fade-black'), 150);
-            }, 300);
+                setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.KISEKAE_ROOM_FADE_CLEANUP_MS);
+            }, CONFIG.KISEKAE_ROOM_CLOSE_FADE_MS);
         }
 
         // 着せ替え部屋のもちすけと、通常のタップ画面のもちすけ、両方に今の装着状態を反映する
+        /**
+         * 着せ替え部屋のもちすけに、現在の試着中（プレビュー）状態を反映して表示を更新する。
+         * @returns {void}
+         */
         export function renderKisekaeMochisuke() {
             const roomClothes = document.getElementById('kisekae-mochisuke-clothes');
             const roomFullbody = document.getElementById('kisekae-mochisuke-fullbody');
@@ -72,7 +121,7 @@
                         roomImg.style.width = item.width + '%';
                         roomImg.style.height = item.height + '%';
                         roomImg.style.transform = `rotate(${item.rotation || 0}deg)`;
-                        roomImg.style.zIndex = '6'; // 帽子・顔パーツは、常にもちすけの手前
+                        roomImg.style.zIndex = CONFIG.KISEKAE_ZINDEX_ROOM_HAT_FACE; // 帽子・顔パーツは、常にもちすけの手前
                     } else {
                         roomImg.style.display = 'none';
                     }
@@ -91,22 +140,42 @@
         export let WING_FLAP_VOLUME = 0.1; // 羽ばたき音の音量（0〜1）。実機調整パネルから変更できる
         // 🚧 音量が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
         export const WING_VOLUME_TOOL_ENABLED = false;
+        /**
+         * 羽ばたき音量を増減し、表示・実際の音量へ反映する（実機調整ツール用）。
+         * @param {number} delta - 音量に加算する差分（例: +0.1 / -0.1）。
+         * @returns {void}
+         */
         export function adjustWingFlapVolume(delta) {
-            WING_FLAP_VOLUME = Math.max(0, Math.min(1, Math.round((WING_FLAP_VOLUME + delta) * 10) / 10));
+            WING_FLAP_VOLUME = Math.max(CONFIG.WING_FLAP_VOLUME_MIN, Math.min(CONFIG.WING_FLAP_VOLUME_MAX, Math.round((WING_FLAP_VOLUME + delta) * CONFIG.WING_FLAP_VOLUME_ROUND_FACTOR) / CONFIG.WING_FLAP_VOLUME_ROUND_FACTOR));
             document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
             playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 押した音量でその場で試し鳴らしする
         }
+        /**
+         * 現在の羽ばたき音量をテキストとしてクリップボードにコピーする（実機調整ツール用）。
+         * @returns {void}
+         */
         export function copyWingFlapVolume() {
             const text = `羽ばたき音量: ${WING_FLAP_VOLUME}`;
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
             alert(`コピーしました\n${text}`);
         }
         // タップ画面('main')・着せ替え部屋('room')・マイルーム('myroom')、それぞれの要素IDプレフィックスを解決する
+        /**
+         * 表示先（タップ画面/着せ替え部屋/マイルーム）に応じた、もちすけ要素IDのプレフィックスを返す。
+         * @param {string} target - 'room' | 'myroom' | その他（タップ画面扱い）。
+         * @returns {string} 対応する要素IDのプレフィックス文字列。
+         */
         export function kisekaeElPrefix(target) {
             if (target === 'room') return 'kisekae-mochisuke';
             if (target === 'myroom') return 'myroom-mochisuke';
             return 'mochisuke';
         }
+        /**
+         * 指定した画面の背中(翼)の表示・非表示と羽ばたきループの開始/停止を切り替える。
+         * @param {string} target - 対象画面（'room' | 'main' | 'myroom'）。
+         * @param {string|null} backId - 装備中の背中アイテムID。未装備なら null。
+         * @returns {void}
+         */
         export function updateKisekaeWingDisplay(target, backId) {
             const leftEl = document.getElementById(kisekaeElPrefix(target) + '-wing-left');
             const rightEl = document.getElementById(kisekaeElPrefix(target) + '-wing-right');
@@ -115,7 +184,7 @@
                 const item = KISEKAE_ITEMS.back.find(i => i.id === backId);
                 if (!item) { leftEl.style.display = 'none'; rightEl.style.display = 'none'; stopWingFlapLoop(target); return; }
                 leftEl.style.display = 'block'; rightEl.style.display = 'block';
-                leftEl.style.zIndex = '1'; rightEl.style.zIndex = '1'; // 調整モードで一時的に上げたz-indexを、通常表示時は必ず背面に戻す
+                leftEl.style.zIndex = CONFIG.KISEKAE_ZINDEX_WING_DEFAULT; rightEl.style.zIndex = CONFIG.KISEKAE_ZINDEX_WING_DEFAULT; // 調整モードで一時的に上げたz-indexを、通常表示時は必ず背面に戻す
                 leftEl.style.width = item.width + '%'; leftEl.style.height = item.height + '%';
                 rightEl.style.width = item.width + '%'; rightEl.style.height = item.height + '%';
                 startWingFlapLoop(target, item);
@@ -124,6 +193,14 @@
                 stopWingFlapLoop(target);
             }
         }
+        /**
+         * 左右の翼画像を、指定フレームの画像・位置に差し替える。
+         * @param {HTMLElement} leftEl - 左翼の img 要素。
+         * @param {HTMLElement} rightEl - 右翼の img 要素。
+         * @param {Object} item - 背中アイテムのデータ（フレーム画像・位置情報を含む）。
+         * @param {number} frameIdx - 表示するフレームの番号。
+         * @returns {void}
+         */
         export function applyWingFrame(leftEl, rightEl, item, frameIdx) {
             leftEl.src = item.leftFrames[frameIdx];
             rightEl.src = item.rightFrames[frameIdx];
@@ -132,12 +209,22 @@
             rightEl.style.top = rp.top + '%'; rightEl.style.left = rp.left + '%';
         }
         // 🐹 もちすけが実際に見えている画面（タップ画面 or 着せ替え部屋）かどうかを判定する
+        /**
+         * もちすけが実際に画面上で見えている状態（着せ替え部屋が開いている、または他のモーダルが開いていない）かを判定する。
+         * @returns {boolean} 見えていれば true。
+         */
         export function isMochisukeVisible() {
             const kisekaeModal = document.getElementById('kisekae-room-modal');
             const isKisekaeOpen = kisekaeModal && kisekaeModal.style.display === 'flex';
             const isAnyModalOpen = document.body.classList.contains('modal-open');
             return isKisekaeOpen || !isAnyModalOpen;
         }
+        /**
+         * 指定画面で背中(翼)の羽ばたきアニメーションループを開始する（既存ループがあれば先に停止）。
+         * @param {string} target - 対象画面（'room' | 'main' | 'myroom'）。
+         * @param {Object} item - 背中アイテムのデータ（フレーム画像・位置情報を含む）。
+         * @returns {void}
+         */
         export function startWingFlapLoop(target, item) {
             stopWingFlapLoop(target);
             wingFlapFrameIndex[target] = 0;
@@ -150,6 +237,11 @@
                 if (wingFlapFrameIndex[target] === 0 && isMochisukeVisible()) playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 1周ごとに、動きに合わせて羽ばたき音を鳴らす（見えている画面の時だけ）
             }, WING_FLAP_INTERVAL_MS);
         }
+        /**
+         * 指定画面の羽ばたきアニメーションループを停止する。
+         * @param {string} target - 対象画面（'room' | 'main' | 'myroom'）。
+         * @returns {void}
+         */
         export function stopWingFlapLoop(target) {
             if (wingFlapTimers[target]) clearInterval(wingFlapTimers[target]);
             wingFlapTimers[target] = null;
@@ -158,8 +250,12 @@
         // 🚧 通常のタップ画面にも反映する。服については、既存の「衣装（きせかえタブ）」システムと
         // 見た目の適用先が重なるため、しばらくは「後から呼ばれた方が勝つ」形で共存させている
         // 🎩💨 叫んだ勢いで、帽子・顔パーツが吹っ飛んでいく（服だけは1枚絵の都合で諦めて、初期衣装に戻る）
+        /**
+         * 叫んだ勢いで、帽子・顔パーツを画面外へ吹き飛ばすアニメーションを再生する。
+         * @returns {void}
+         */
         export function flyOffKisekaeOverlays() {
-            const dirs = { hat: { x: -70, y: -160, r: -150 }, face: { x: 80, y: -130, r: 170 } };
+            const dirs = { hat: CONFIG.KISEKAE_FLYOFF_HAT, face: CONFIG.KISEKAE_FLYOFF_FACE };
             ['hat', 'face'].forEach(cat => {
                 const el = document.getElementById(`mochisuke-kisekae-${cat}`);
                 if (!el || el.style.display === 'none') return;
@@ -167,12 +263,16 @@
                 el.animate([
                     { transform: el.style.transform || 'none', opacity: 1, offset: 0 },
                     { transform: `translate(${d.x}px, ${d.y}px) rotate(${d.r}deg)`, opacity: 0, offset: 1 },
-                ], { duration: 950, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)', fill: 'forwards' });
+                ], { duration: CONFIG.KISEKAE_FLYOFF_DURATION_MS, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)', fill: 'forwards' });
             });
         }
         // 通常に戻ったら、飛んでいった帽子・顔パーツを、ふわっと元の位置に着け直す
+        /**
+         * 吹き飛んでいた帽子・顔パーツを、装備中のアイテムの位置へふわっと着け直すアニメーションを再生する。
+         * @returns {void}
+         */
         export function flyBackKisekaeOverlays() {
-            const dirs = { hat: { x: -70, y: -160, r: -150 }, face: { x: 80, y: -130, r: 170 } };
+            const dirs = { hat: CONFIG.KISEKAE_FLYOFF_HAT, face: CONFIG.KISEKAE_FLYOFF_FACE };
             ['hat', 'face'].forEach(cat => {
                 const el = document.getElementById(`mochisuke-kisekae-${cat}`);
                 if (!el || el.style.display === 'none') return;
@@ -183,10 +283,14 @@
                 el.animate([
                     { transform: `translate(${d.x}px, ${d.y}px) rotate(${d.r}deg)`, opacity: 0, offset: 0 },
                     { transform: restTransform, opacity: 1, offset: 1 },
-                ], { duration: 750, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)', fill: 'forwards' });
+                ], { duration: CONFIG.KISEKAE_FLYBACK_DURATION_MS, easing: 'cubic-bezier(0.3, 1.4, 0.5, 1)', fill: 'forwards' });
             });
         }
 
+        /**
+         * 装備中の着せ替え（服・帽子・顔パーツ・背中・全身）を、タップ画面のもちすけに反映する。
+         * @returns {void}
+         */
         export function applyKisekaeToMainScreen() {
             const mainBtn = document.getElementById('mochisuke-btn');
             const mainFullbody = document.getElementById('mochisuke-fullbody');
@@ -229,7 +333,7 @@
                         mainImg.style.width = item.width + '%';
                         mainImg.style.height = item.height + '%';
                         mainImg.style.transform = `rotate(${item.rotation || 0}deg)`;
-                        if (cat === 'hat') mainImg.style.zIndex = '7'; // 帽子は、常にもちすけの手前
+                        if (cat === 'hat') mainImg.style.zIndex = CONFIG.KISEKAE_ZINDEX_MAIN_HAT; // 帽子は、常にもちすけの手前
                     } else {
                         mainImg.style.display = 'none';
                     }
@@ -238,6 +342,10 @@
             updateKisekaeWingDisplay('main', fullbodyId ? null : equippedKisekae.back);
         }
         // 🛋️ マイルームのもちすけにも、装備中の着せ替えを反映する
+        /**
+         * 装備中の着せ替え（服・帽子・顔パーツ・背中・全身）を、マイルームのもちすけに反映する。
+         * @returns {void}
+         */
         export function applyKisekaeToMyroom() {
             const breatheWrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (breatheWrap) breatheWrap.style.width = MYROOM_MOCHISUKE_SIZE.width + '%';
@@ -280,7 +388,7 @@
                         imgEl.style.width = item.width + '%';
                         imgEl.style.height = item.height + '%';
                         imgEl.style.transform = `rotate(${item.rotation || 0}deg)`;
-                        if (cat === 'hat') imgEl.style.zIndex = '7';
+                        if (cat === 'hat') imgEl.style.zIndex = CONFIG.KISEKAE_ZINDEX_MAIN_HAT;
                     } else {
                         imgEl.style.display = 'none';
                     }
@@ -291,8 +399,13 @@
 
         export let kisekaeCurrentCategory = 'clothes';
         // 🛠️ 開発者用：翼の羽ばたき速度を実機で調整する（位置調整パネルとは独立して、常に使える）
+        /**
+         * 羽ばたきアニメーションの間隔（速さ）を増減し、表示を更新して再スタートする（実機調整ツール用）。
+         * @param {number} delta - 間隔に加算する差分（ミリ秒）。
+         * @returns {void}
+         */
         export function adjustWingFlapSpeed(delta) {
-            WING_FLAP_INTERVAL_MS = Math.max(20, WING_FLAP_INTERVAL_MS + delta);
+            WING_FLAP_INTERVAL_MS = Math.max(CONFIG.WING_FLAP_MIN_INTERVAL_MS, WING_FLAP_INTERVAL_MS + delta);
             document.getElementById('wing-flap-speed-readout').textContent = WING_FLAP_INTERVAL_MS + 'ms';
             // 今表示中の翼があれば、新しい速度ですぐ再スタートして確認できるようにする
             const backId = previewKisekae.back;
@@ -301,12 +414,21 @@
                 if (item) startWingFlapLoop('room', item);
             }
         }
+        /**
+         * 現在の羽ばたき速度をテキストとしてクリップボードにコピーする（実機調整ツール用）。
+         * @returns {void}
+         */
         export function copyWingFlapSpeed() {
             const text = `羽ばたき速度: ${WING_FLAP_INTERVAL_MS}ms`;
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
             alert(`コピーしました\n${text}`);
         }
         // カテゴリを開いて、名前順・Zの字並びで左右にアイテムを並べる
+        /**
+         * 指定カテゴリの着せ替えアイテム一覧を開き、名前順で左右交互にアイテムセルを描画する。
+         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody'）。
+         * @returns {void}
+         */
         export function openKisekaeCategory(cat) {
             playAudioFile('audio/skill_tap.mp3');
             if (cat !== 'back') clearWingGhostFrames(); // 背中カテゴリから離れる時は、翼のゴースト表示を片付ける
@@ -339,7 +461,7 @@
                 const isOwned = owned.includes(item.id);
                 const isEquipped = previewKisekae[cat] === item.id;
                 cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
-                const starStyle = item.star === 4
+                const starStyle = item.star === CONFIG.KISEKAE_TOP_RARITY_STAR
                     ? 'background:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9d4edd); -webkit-background-clip:text; background-clip:text; color:transparent;'
                     : 'color:#ffb300;';
                 const starHtml = item.star ? `<div style="position:absolute; bottom:2px; left:0; right:0; text-align:center; font-size:0.62rem; letter-spacing:1px; text-shadow:0 1px 2px rgba(0,0,0,0.15); ${starStyle}">${'⭐'.repeat(item.star)}</div>` : '';
@@ -363,14 +485,25 @@
         }
 
         export let kisekaeNameLabelTimeout = null;
+        /**
+         * 選んだアイテムの名前を、一時的なラベルとして画面に表示する。
+         * @param {string} name - 表示するアイテム名（外した場合は「外す」）。
+         * @returns {void}
+         */
         export function showKisekaeItemNameLabel(name) {
             const label = document.getElementById('kisekae-item-name-label');
             if (!label) return;
             clearTimeout(kisekaeNameLabelTimeout);
             label.textContent = name;
             label.style.display = 'block';
-            kisekaeNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
+            kisekaeNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, CONFIG.KISEKAE_ITEM_NAME_LABEL_DURATION_MS);
         }
+        /**
+         * 指定カテゴリのアイテムを試着状態（プレビュー）に装着し、関連する自動解除ルールを適用して表示を更新する。
+         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody'）。
+         * @param {string|null} id - 装着するアイテムID。外す場合は null。
+         * @returns {void}
+         */
         export function equipKisekaeItem(cat, id) {
             if (cat === 'fullbody' && id) {
                 // 全身を装着すると、帽子・顔パーツ・背中（翼）は自動的に外れる（服は保持したまま、全身解除時に元へ戻る）
@@ -389,6 +522,10 @@
         }
 
         // 🎯「決定」ボタン：試着中の服装を、実際に確定して保存・タップ画面にも反映する
+        /**
+         * 試着中（プレビュー）の服装を装備状態として確定し、保存してタップ画面にも反映する。
+         * @returns {void}
+         */
         export function confirmKisekaeOutfit() {
             setEquippedKisekae({ ...previewKisekae });
             saveGame();
@@ -397,7 +534,7 @@
             if (btn) {
                 const original = btn.innerText;
                 btn.innerText = '✅ 決定しました！';
-                setTimeout(() => { btn.innerText = original; }, 1200);
+                setTimeout(() => { btn.innerText = original; }, CONFIG.KISEKAE_CONFIRM_BUTTON_RESET_MS);
             }
         }
 
@@ -405,6 +542,10 @@
         export let kisekaeAdjustMode = false;
         export let kisekaeAdjustDragState = null;
         // 選択中の対象を解決する：通常のhat/faceか、backカテゴリの左右どちらの翼か
+        /**
+         * 位置調整パネルで選択中の対象アイテム・表示要素を解決する（帽子/顔パーツ、または背中の左翼フレーム）。
+         * @returns {Object} { item, side, frameIdx, imgSrc, el } を含む解決結果オブジェクト。
+         */
         export function resolveKisekaeAdjustTarget() {
             const val = document.getElementById('kisekae-adjust-target').value;
             if (kisekaeCurrentCategory === 'back') {
@@ -425,6 +566,13 @@
             };
         }
         // 🔄 左翼の位置・大きさに合わせて、右翼を左右対称にミラーして自動追従させる
+        /**
+         * 左翼の位置・大きさをもとに、右翼を左右対称にミラーして表示・データへ反映する。
+         * @param {Object} resolved - resolveKisekaeAdjustTarget() の解決結果。
+         * @param {Object} posObj - 左翼の位置情報（top/left）。
+         * @param {Object} sizeObj - 左翼の大きさ情報（width/height）。
+         * @returns {void}
+         */
         export function syncMirroredRightWing(resolved, posObj, sizeObj) {
             if (kisekaeCurrentCategory !== 'back' || resolved.side !== 'left') return;
             const rightPos = resolved.item.rightFramePos[resolved.frameIdx];
@@ -435,10 +583,15 @@
             rightEl.style.display = 'block';
             rightEl.style.top = rightPos.top + '%'; rightEl.style.left = rightPos.left + '%';
             rightEl.style.width = sizeObj.width + '%'; rightEl.style.height = sizeObj.height + '%';
-            rightEl.style.zIndex = '50';
+            rightEl.style.zIndex = CONFIG.KISEKAE_ZINDEX_ADJUST_ACTIVE;
         }
         // 位置(top/left)の読み書き先と、大きさ(width/height)の読み書き先を返す。
         // backカテゴリだけ「位置はフレーム別・大きさは共通」なので、書き込み先オブジェクトが分かれる
+        /**
+         * 位置(top/left)と大きさ(width/height)の読み書き先オブジェクトを返す。
+         * @param {Object} resolved - resolveKisekaeAdjustTarget() の解決結果。
+         * @returns {Object} { posObj, sizeObj } 読み書き先のペア。
+         */
         export function getKisekaeAdjustRefs(resolved) {
             if (resolved.side) {
                 const posArr = resolved.item[resolved.side + 'FramePos'];
@@ -446,11 +599,20 @@
             }
             return { posObj: resolved.item, sizeObj: resolved.item };
         }
+        /**
+         * 現在選択中の調整対象の表示要素（img要素）を取得する。
+         * @returns {HTMLElement} 調整対象の img 要素。
+         */
         export function getKisekaeAdjustTargetEl() {
             return resolveKisekaeAdjustTarget().el;
         }
         // 🚧 座標が一通り確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
         export const KISEKAE_ADJUST_TOOL_ENABLED = false;
+        /**
+         * 位置調整パネルの内容（対象アイテムの選択肢・表示/非表示）をカテゴリに応じて描画する。
+         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody'）。
+         * @returns {void}
+         */
         export function renderKisekaeAdjustPanel(cat) {
             const panel = document.getElementById('kisekae-adjust-panel');
             if (!KISEKAE_ADJUST_TOOL_ENABLED) { panel.style.display = 'none'; return; }
@@ -477,6 +639,12 @@
             updateKisekaeAdjustReadout();
         }
         // 👻 翼調整中、今選んでいる1枚以外の7枚を半透明で表示し、全体の流れが見えるようにする
+        /**
+         * 選択中以外の翼フレームを、半透明のゴースト画像として一時的に重ねて表示する。
+         * @param {Object} item - 背中アイテムのデータ（フレーム画像・位置情報を含む）。
+         * @param {number} activeFrameIdx - 現在選択中（ゴースト表示から除外する）のフレーム番号。
+         * @returns {void}
+         */
         export function renderWingGhostFrames(item, activeFrameIdx) {
             clearWingGhostFrames();
             const stage = document.getElementById('kisekae-mochisuke-wrap');
@@ -492,9 +660,17 @@
                 });
             }
         }
+        /**
+         * 表示中の翼ゴーストフレーム画像を、すべてDOMから取り除く。
+         * @returns {void}
+         */
         export function clearWingGhostFrames() {
             document.querySelectorAll('.wing-ghost-frame').forEach(el => el.remove());
         }
+        /**
+         * 位置調整モードのオン/オフを切り替え、対象要素の枠線・ハンドル・ゴースト表示などを更新する。
+         * @returns {void}
+         */
         export function toggleKisekaeAdjustMode() {
             kisekaeAdjustMode = !kisekaeAdjustMode;
             const btn = document.getElementById('kisekae-adjust-toggle-btn');
@@ -512,7 +688,7 @@
                     syncMirroredRightWing(resolved, posObj, sizeObj);
                 }
                 target.style.outline = '2px dashed #e91e63';
-                target.style.zIndex = '50'; // 🐛修正：翼は普段もちすけより背面のため、調整モード中は一時的に最前面へ（操作できるように）
+                target.style.zIndex = CONFIG.KISEKAE_ZINDEX_ADJUST_ACTIVE; // 🐛修正：翼は普段もちすけより背面のため、調整モード中は一時的に最前面へ（操作できるように）
                 if (resolved.item && kisekaeCurrentCategory === 'back') renderWingGhostFrames(resolved.item, resolved.frameIdx);
                 btn.style.background = '#4caf50';
                 setupKisekaeAdjustDrag();
@@ -525,6 +701,10 @@
                 renderKisekaeMochisuke(); // 実際に装着中のものへ表示を戻す
             }
         }
+        /**
+         * 位置調整パネルの対象選択（プルダウン）が変わった際に、対象要素の表示・枠線・ハンドルを更新する。
+         * @returns {void}
+         */
         export function onKisekaeAdjustTargetChange() {
             ['hat', 'face', 'clothes', 'fullbody'].forEach(c => { const el = document.getElementById(`kisekae-mochisuke-${c}`); if (el) el.style.outline = ''; });
             document.getElementById('kisekae-mochisuke-wing-left').style.outline = '';
@@ -543,10 +723,14 @@
                 if (kisekaeCurrentCategory === 'back') renderWingGhostFrames(resolved.item, resolved.frameIdx);
             }
             target.style.outline = '2px dashed #e91e63';
-            target.style.zIndex = '50';
+            target.style.zIndex = CONFIG.KISEKAE_ZINDEX_ADJUST_ACTIVE;
             positionKisekaeHandles();
             updateKisekaeAdjustReadout();
         }
+        /**
+         * 位置調整モード用のリサイズハンドル（右・下・右下）を、対象要素の現在の見た目位置に合わせて配置する。
+         * @returns {void}
+         */
         export function positionKisekaeHandles() {
             if (!kisekaeAdjustMode) return;
             const stage = document.getElementById('kisekae-stage');
@@ -563,6 +747,10 @@
             hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
             hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
         }
+        /**
+         * 位置調整ステージ上のドラッグ操作（移動・リサイズ）のポインターイベントを、一度だけ設定する。
+         * @returns {void}
+         */
         export function setupKisekaeAdjustDrag() {
             const stage = document.getElementById('kisekae-stage');
             if (stage.dataset.dragSetup) return;
@@ -594,8 +782,8 @@
                     t.style.top = (parseFloat(t.style.top) + dyPct) + '%';
                     t.style.left = (parseFloat(t.style.left) + dxPct) + '%';
                 } else {
-                    if (mode === 'width' || mode === 'both') t.style.width = Math.max(2, parseFloat(t.style.width) + dxPct) + '%';
-                    if (mode === 'height' || mode === 'both') t.style.height = Math.max(2, parseFloat(t.style.height) + dyPct) + '%';
+                    if (mode === 'width' || mode === 'both') t.style.width = Math.max(CONFIG.KISEKAE_MIN_RESIZE_PERCENT, parseFloat(t.style.width) + dxPct) + '%';
+                    if (mode === 'height' || mode === 'both') t.style.height = Math.max(CONFIG.KISEKAE_MIN_RESIZE_PERCENT, parseFloat(t.style.height) + dyPct) + '%';
                 }
                 kisekaeAdjustDragState.startX = e.clientX; kisekaeAdjustDragState.startY = e.clientY;
                 // ドラッグした内容を、元データにもその場で反映しておく（アイテムを切り替えても・コピーしても消えないように）
@@ -621,6 +809,11 @@
             stage.addEventListener('pointercancel', () => { kisekaeAdjustDragState = null; });
         }
         // 🔄 顔パーツだけ、回転（傾き）も調整できる
+        /**
+         * 選択中の顔パーツの回転角度を増減し、表示に反映する（実機調整ツール用）。
+         * @param {number} delta - 角度に加算する差分（度）。
+         * @returns {void}
+         */
         export function adjustKisekaeFaceRotation(delta) {
             const val = document.getElementById('kisekae-adjust-target').value;
             const item = KISEKAE_ITEMS.face.find(i => i.id === val);
@@ -630,6 +823,10 @@
             target.style.transform = `rotate(${item.rotation}deg)`;
             updateKisekaeAdjustReadout();
         }
+        /**
+         * 現在の調整対象の位置・大きさ（・回転）を、読み取り用テキスト表示に反映する。
+         * @returns {void}
+         */
         export function updateKisekaeAdjustReadout() {
             const resolved = resolveKisekaeAdjustTarget();
             const target = resolved.el;
@@ -642,6 +839,10 @@
             }
             el.textContent = text;
         }
+        /**
+         * 位置調整済みの帽子・顔パーツ・背中(翼)の座標情報を、テキストにまとめてクリップボードにコピーする。
+         * @returns {void}
+         */
         export function copyAllKisekaeCoords() {
             const lines = [];
             ['hat', 'face'].forEach(cat => {

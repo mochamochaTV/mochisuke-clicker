@@ -1,22 +1,127 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-09-001';
+import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-09-002';
 import {
   IS_DEV_MODE, PRESENT_REWARD_DISTANCE_RATE, PRESENT_REWARD_MIN, PRESENT_REWARD_MPS_RATE,
   getAudioContext, loadAudioBuffer, pickRandom, playAudioFile, playAudioFilePitched, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnModalParticleBurst, vibrate
-} from './main.js?v=2026-09-09-001';
+} from './main.js?v=2026-09-09-002';
 import {
   currentStageIndex, gachaCoins, getMinigameDailyLimit, prestigeShopLv, setGachaCoins,
   trackMissionEvent
-} from './progress.js?v=2026-09-09-001';
-import { saveGame } from './state.js?v=2026-09-09-001';
-import { getMps } from './tap.js?v=2026-09-09-001';
+} from './progress.js?v=2026-09-09-002';
+import { saveGame } from './state.js?v=2026-09-09-002';
+import { getMps } from './tap.js?v=2026-09-09-002';
 import {
   closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-09-001';
+} from './ui.js?v=2026-09-09-002';
 
-        export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
+        // ===================================================================
+        // 🔧 CONFIG：このファイル内で使う「調整可能な」数値をまとめたもの。
+        // 既存のexportされた名前付き定数（SLOT_REPLAY_SYMBOL, QUIZ_REWARD_BY_CORRECTなど）は
+        // ここには含めず、そのまま個別のexportとして残している。
+        // ===================================================================
+        const CONFIG = {
+            // --- 全体共通 ---
+            MINIGAME_CENTER_FADE_OUT_MS: 300,        // ミニゲームセンター開閉時、画面が暗転してから中身を切り替えるまでの時間
+            MINIGAME_CENTER_FADE_IN_DELAY_MS: 150,   // 中身を切り替えた後、暗転を解除するまでの追加待ち時間
+            MINIGAME_COIN_GAIN_BASE: 5,              // ミニゲームコイン計算の基礎倍率（multiplier×これ）
+            MINIGAME_COIN_GAIN_MIN: 1,               // ミニゲームコインの最低獲得枚数
+            MINIGAME_REWARD_PER_PRESTIGE_LEVEL: 0.01, // 転生ショップ「ミニゲーム報酬」1レベルごとの倍率上昇分
+
+            // --- 🗾 ご当地クイズ ---
+            QUIZ_QUESTION_COUNT: 3,             // 1プレイあたりの出題数
+            QUIZ_MIN_STAGES_REQUIRED: 2,        // クイズに挑戦するために必要な訪問済み県の数
+            QUIZ_MAX_DISTRACTORS: 3,            // 正解以外の選択肢の最大数（合計最大4択）
+            QUIZ_NAME_TO_ITEM_PROBABILITY: 0.5, // 「県名→名産品」を問う問題になる確率
+            QUIZ_FEEDBACK_DELAY_MS: 750,        // 正誤フィードバックを見せてから次の問題/結果へ進むまでの間
+            QUIZ_CORRECT_VIBRATE_MS: 20,        // 正解時のバイブ時間
+            QUIZ_CORRECT_PARTICLE_COUNT: 6,     // 正解時に弾けるパーティクルの数
+            QUIZ_PERFECT_FLASH_OPACITY: 0.3,    // 全問正解時の画面フラッシュの強さ
+
+            // --- ⏱️ タップタイムアタック ---
+            TIME_ATTACK_TICK_MS: 1000,             // 残り時間を1減らす間隔
+            TIME_ATTACK_URGENT_SEC: 3,             // 残りこの秒数以下になったら「ラスト」演出にする閾値
+            TIME_ATTACK_URGENT_VIBRATE_MS: 15,     // ラスト数秒のカウントダウン時のバイブ時間
+            TIME_ATTACK_BAR_HIGH_PCT: 50,          // タイマーバーが緑色でいられる残り％の閾値
+            TIME_ATTACK_BAR_MID_PCT: 20,           // タイマーバーが黄色になる残り％の閾値（これ未満で赤）
+            TIME_ATTACK_TAP_SQUASH_MS: 170,        // タップボタンが潰れて戻るアニメーションの時間
+            TIME_ATTACK_TAP_PARTICLE_COUNT: 3,     // タップ毎に弾けるパーティクルの数
+            TIME_ATTACK_RIPPLE_DURATION_MS: 500,   // タップ時のリップル演出が消えるまでの時間
+            TIME_ATTACK_PITCH_MAX_BOOST: 0.6,      // タップ音のピッチが上がる上限（連打時）
+            TIME_ATTACK_PITCH_PER_TAP: 0.015,      // タップ1回ごとにピッチが上がる量
+            TIME_ATTACK_MILESTONE_TAPS: 20,        // 何タップごとに節目演出（バイブ＋フラッシュ）を出すか
+            TIME_ATTACK_MILESTONE_VIBRATE_MS: 20,  // 節目演出のバイブ時間
+            TIME_ATTACK_MILESTONE_FLASH_OPACITY: 0.12, // 節目演出の画面フラッシュの強さ
+            TIME_ATTACK_DEFAULT_MULT: 0.3,         // 該当する閾値が無かった場合のフォールバック倍率
+            TIME_ATTACK_BEST_FLASH_OPACITY: 0.35,  // 自己ベスト更新時の画面フラッシュの強さ
+
+            // --- 🃏 ご当地神経衰弱 ---
+            CONCENTRATION_PAIR_COUNT: 6,             // 使うペアの数（カード総数はこの2倍）
+            CONCENTRATION_MISMATCH_DELAY_MS: 800,    // 不一致だった時、シェイクを見せてから裏返すまでの時間
+            CONCENTRATION_FINISH_DELAY_MS: 500,      // 全ペア成立から結果画面へ進むまでの間
+            CONCENTRATION_CLEAR_FLASH_OPACITY: 0.25, // クリア時の画面フラッシュの強さ
+            CONCENTRATION_CLEAR_PARTICLE_COUNT: 14,  // クリア時に弾けるパーティクルの数
+            CONCENTRATION_DEFAULT_MULT: 0.3,         // 該当する閾値が無かった場合のフォールバック倍率
+
+            // --- 🍡 もちつきリズム ---
+            MOCHI_BAND_OPACITY: 0.35,           // 判定帯（トラック上の色付きゾーン）の透明度
+            MOCHI_MISS_COMMENT_CHANCE: 0.4,     // MISS時に、もちすけのコメントを出す確率
+            MOCHI_STREAK_DISPLAY_THRESHOLD: 3,  // 連続成功を「🔥N連続！」と表示し始める閾値
+            MOCHI_STREAK_MILESTONE: 5,          // 何連続ごとに、演出をもう一段派手にするか
+            MOCHI_FINISH_DELAY_MS: 400,         // 最終拍のタップから結果画面へ進むまでの間
+            MOCHI_PERFECT_VIBRATE_MS: 25,       // PERFECT判定時のバイブ時間
+            MOCHI_GREAT_VIBRATE_MS: 15,         // GREAT判定時のバイブ時間
+            MOCHI_PERFECT_FLASH_OPACITY: 0.28,  // PERFECT判定時の画面フラッシュの強さ
+
+            // --- 🎰 スロット ---
+            SLOT_STRIP_LANDING_MARGIN: 2,          // リールが止まる位置を、帯の最後から何周ぶん手前にするか
+            SLOT_LEVER_PULL_ANIM_MS: 550,          // レバーが倒れて戻るアニメーションの時間
+            SLOT_LEVER_TILT_DEGREES: 180,          // レバーを引いた時に倒れる角度
+            SLOT_REEL_SPIN_LOOP_MS: 550,           // リールが1周ぶん回転して見えるアニメーションの周期
+            SLOT_STOP_FLASH_MS: 300,               // 「止める」ボタンを押した瞬間のフラッシュ演出の時間
+            SLOT_REACH_CHECK_DELAY_MS: 250,        // 2列目が止まってから、リーチ判定を行うまでの間
+            SLOT_RESULT_EVALUATE_DELAY_MS: 300,    // 3列目が止まってから、最終判定を行うまでの間
+            SLOT_REPLAY_REACH_VALUE: 1,            // リーチ比較で、リプレイ絵柄に割り当てる仮の価値
+            SLOT_CUTIN_DURATION_MS: 900,           // カットイン演出の表示時間
+            SLOT_COIN_INSERT_ANIM_MS: 380,         // コイン投入アニメーションの時間
+            SLOT_COIN_INSERT_START_OFFSET_PCT: 15, // コイン投入アニメーションの、投入口からの開始位置オフセット(%)
+            SLOT_COIN_INSERT_LEVER_GLOW_DELAY_MS: 300, // コイン投入後、レバーを光らせて誘導するまでの間
+            SLOT_PAYOUT_COIN_STAGGER_MS: 45,       // 払い出しコインを1枚ずつ生成する間隔
+            SLOT_PAYOUT_COIN_FALL_DURATION_MS: 650,         // 払い出しコインが落ちきるまでの基本時間
+            SLOT_PAYOUT_COIN_FALL_DURATION_VARIANCE_MS: 200, // 払い出しコインの落下時間のランダムなばらつき幅
+            SLOT_PAYOUT_COIN_DX_RANGE: 40,         // 払い出しコインが左右に散らばる幅
+            SLOT_PAYOUT_COIN_ROTATION_RANGE: 540,  // 払い出しコインが回転する角度の幅
+            SLOT_PAYOUT_COIN_PITCH_JITTER: 0.1,    // 払い出しコインの効果音ピッチのランダムなばらつき幅
+            SLOT_PAYOUT_POPUP_ANIM_MS: 450,        // 獲得枚数ポップアップがバウンドするアニメーションの時間
+            SLOT_PAYOUT_EXTRA_COINS_PER_LINE: 3,   // 複数ライン同時成立時、1ライン増えるごとに追加する演出コイン枚数
+            SLOT_WIN_TIER_HIGH_PAYOUT: 60,         // 「7」クラス（最上位級）とみなす配当の閾値
+            SLOT_WIN_TIER_MID_PAYOUT: 25,          // 「トリプルBAR」クラスとみなす配当の閾値
+            SLOT_WIN_TIER_LOW_PAYOUT: 10,          // 「BAR」クラス（＝ビッグリーチ）とみなす配当の閾値
+            SLOT_PAYOUT_COIN_COUNT_TIER_HIGH: 18,  // 最上位級が揃った時に降らせるコイン枚数
+            SLOT_PAYOUT_COIN_COUNT_TIER_MID: 10,   // トリプルBARクラスが揃った時に降らせるコイン枚数
+            SLOT_PAYOUT_COIN_COUNT_TIER_LOW: 6,    // BARクラスが揃った時に降らせるコイン枚数
+            SLOT_PAYOUT_COIN_COUNT_TIER_MIN: 3,    // それ以外が揃った時に降らせるコイン枚数
+            SLOT_PAYOUT_PITCH_TIER_HIGH: 1.35,     // 最上位級のコイン音ピッチ
+            SLOT_PAYOUT_PITCH_TIER_MID: 1.2,       // トリプルBARクラスのコイン音ピッチ
+            SLOT_PAYOUT_PITCH_TIER_LOW: 1.1,       // BARクラスのコイン音ピッチ
+            SLOT_PAYOUT_PITCH_TIER_MIN: 1.0,       // それ以外のコイン音ピッチ
+            SLOT_WIN_FLASH_OPACITY_HIGH: 0.55,     // トリプルBAR以上が揃った時の画面フラッシュの強さ
+            SLOT_WIN_FLASH_OPACITY_NORMAL: 0.3,    // それ以外が揃った時の画面フラッシュの強さ
+            SLOT_JACKPOT_BONUS_GACHA_COINS: 30,    // マーモット的中時に、おまけで付与するガチャコインの枚数
+            SLOT_MARMOT_TEXT_STAGGER_BASE_MS: 300,   // マーモット演出、最初のテキストが浮き出るまでの時間
+            SLOT_MARMOT_TEXT_STAGGER_STEP_MS: 200,   // マーモット演出、テキストが1行ずつ浮き出る間隔
+            SLOT_MARMOT_OVERLAY_FADE_MS: 400,        // マーモット演出のオーバーレイを閉じるフェード時間
+            SLOT_REEL_STOP_VIBRATE_MS: 10,           // リールを1つ止めた瞬間のバイブ時間
+            SLOT_JACKPOT_FLASH_OPACITY: 0.75,        // マーモット（大当たり）確定時の画面フラッシュの強さ
+            SLOT_MARMOT_CELEBRATION_DELAY_MS: 500,   // 大当たり確定表示から、マーモット専用演出を始めるまでの間
+        };
+
+        /**
+         * 転生ショップの「ミニゲーム報酬」強化レベルから、ミニゲーム報酬に掛ける倍率を計算する。
+         * @returns {number} 報酬倍率（1.0が等倍）
+         */
+        export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * CONFIG.MINIGAME_REWARD_PER_PRESTIGE_LEVEL; }      // ミニゲーム報酬の倍率
 
         export const minigames = {
             quiz:          { id: "quiz",          name: "ご当地クイズ",         icon: "🗾", unlockStage: 0 },
@@ -57,14 +162,26 @@ import {
         // prefTaps[i]: その県に滞在中(selectedStageIndex===i)にタップした累計回数。
         // 過去に訪れた県に戻ってタップしても加算され続ける（進行用のcurrentStageProgressとは別管理）。
         export let isMinigameActive = false; // 立っている間はメインのタップ判定を無視する
+        /**
+         * 現在の県の距離と秒速タップ数(mps)から、ミニゲームの基礎報酬額を計算する。
+         * @returns {number} 基礎報酬額
+         */
         export function getMinigameBaseReward() {
             const currentStage = stages[currentStageIndex] || stages[0];
             return Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
         }
 
+        /**
+         * 解放済みのミニゲームのうち、まだ「新着」表示を見ていないものが1つでもあるかを判定する。
+         * @returns {boolean} 新着の未確認ミニゲームがあればtrue
+         */
         export function hasNewlyUnlockedMinigame() {
             return Object.values(minigames).some(g => currentStageIndex >= g.unlockStage && !minigameSeenUnlocked[g.id]);
         }
+        /**
+         * ローカル日付が前回リセット時と変わっていたら、本日プレイ回数を全て0にリセットして保存する。
+         * @returns {void}
+         */
         export function resetMinigameCountsIfNewDay() {
             const today = getLocalDateString(new Date());
             if (minigameLastResetDate !== today) {
@@ -74,6 +191,10 @@ import {
             }
         }
 
+        /**
+         * 画面を黒くフェードさせてからミニゲームセンターのモーダルを開き、タイル一覧を描画してBGMを切り替える。
+         * @returns {void}
+         */
         export function openMinigameCenter() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3'); // 県移動の時と同じ、移動音
@@ -85,10 +206,14 @@ import {
                 renderMinigameTiles();
                 openModal('minigame-center-modal');
                 playBgmLoop('audio/bgm/bgm_minigame.mp3'); // ゲームセンター専用BGMに切り替え
-                setTimeout(() => overlay.classList.remove('fade-black'), 150);
-            }, 300);
+                setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.MINIGAME_CENTER_FADE_IN_DELAY_MS);
+            }, CONFIG.MINIGAME_CENTER_FADE_OUT_MS);
         }
 
+        /**
+         * プレイ中ならタイル選択画面に戻すだけに留め、そうでなければモーダルを閉じて通常BGMに戻す。
+         * @returns {void}
+         */
         export function closeMinigameCenter() {
             if (isMinigameActive) {
                 endMinigameToTiles(); // プレイ中は、まず1つ前のミニゲーム選択画面に戻すだけ
@@ -102,11 +227,15 @@ import {
                 closeModal('minigame-center-modal');
                 playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
                 openMoveMenu();
-                setTimeout(() => overlay.classList.remove('fade-black'), 150);
-            }, 300);
+                setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.MINIGAME_CENTER_FADE_IN_DELAY_MS);
+            }, CONFIG.MINIGAME_CENTER_FADE_OUT_MS);
         }
 
         // タイムアタック/もちつきのタイマーやアニメーションを、離脱時に必ず止めるための後始末
+        /**
+         * タイムアタックのタイマー、もちつきのアニメーション、スロットの回転など、稼働中のタイマー/演出をまとめて停止する。
+         * @returns {void}
+         */
         export function cleanupActiveMinigameTimers() {
             if (typeof timeAttackState !== 'undefined' && timeAttackState && timeAttackState.timerId) {
                 clearInterval(timeAttackState.timerId); timeAttackState = null;
@@ -119,6 +248,10 @@ import {
             stopSlotSpinLoopSound();
         }
 
+        /**
+         * ARCADE_CABINET_PARTSの座標データをもとに各ミニゲーム筐体イラストを配置し、鍵/コイン数/残り回数のバッジを表示する。
+         * @returns {void}
+         */
         export function renderMinigameTiles() {
             const container = document.getElementById('minigame-tile-view');
             // 調整パネル・ハンドルは残しつつ、筐体イラストだけ作り直す（毎回呼ばれるため、既存の筐体要素は先に消す）
@@ -164,6 +297,11 @@ import {
             });
         }
 
+        /**
+         * 1日の残りプレイ回数を確認してから、指定idに応じて各ゲームのstart関数を呼び分け、プレイ画面に切り替える。
+         * @param {string} id - ミニゲームID（quiz/timeattack/concentration/mochitsuki/slot）
+         * @returns {void}
+         */
         export function startMinigame(id) {
             const g = minigames[id];
             if (!g.isCoinGame && (minigamePlaysUsedToday[id] || 0) >= getMinigameDailyLimit()) return;
@@ -180,6 +318,10 @@ import {
             else if (id === 'slot') startSlotGame(playView);
         }
 
+        /**
+         * 稼働中タイマーを後始末してからプレイ中フラグを下ろし、タイル選択画面に戻す。
+         * @returns {void}
+         */
         export function endMinigameToTiles() {
             cleanupActiveMinigameTimers();
             isMinigameActive = false;
@@ -189,6 +331,11 @@ import {
         }
         window.endMinigameToTiles = endMinigameToTiles; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * 指定ゲームの本日プレイ回数を1加算して保存する。
+         * @param {string} id - ミニゲームID
+         * @returns {void}
+         */
         export function consumeMinigamePlay(id) {
             minigamePlaysUsedToday[id] = (minigamePlaysUsedToday[id] || 0) + 1;
             saveGame();
@@ -196,10 +343,20 @@ import {
 
         // 🎮 ミニゲームコイン：もちとは別に、ミニゲーム専用の景品交換に使う予定の通貨（ガチャコインと同じく価値が目減りしない）
         export let minigameCoins = 0;
+        /**
+         * 出来栄えの倍率からミニゲームコインの獲得枚数を計算する。最低枚数は保証し、転生ショップの強化倍率も乗算する。
+         * @param {number} multiplier - 出来栄えの倍率
+         * @returns {number} 獲得するミニゲームコイン枚数
+         */
         export function getMinigameCoinGain(multiplier) {
-            return Math.max(1, Math.round(multiplier * 5 * getMinigameRewardMultiplier())); // 出来が良いほど多くもらえるが、最低1枚は必ずもらえる。転生ショップの「ミニゲーム報酬」強化もここに乗る
+            return Math.max(CONFIG.MINIGAME_COIN_GAIN_MIN, Math.round(multiplier * CONFIG.MINIGAME_COIN_GAIN_BASE * getMinigameRewardMultiplier())); // 出来が良いほど多くもらえるが、最低1枚は必ずもらえる。転生ショップの「ミニゲーム報酬」強化もここに乗る
         }
 
+        /**
+         * ミニゲームコインを加算し、関連するミッション進捗を記録して保存・画面更新を行う共通の報酬付与処理。
+         * @param {number} multiplier - 出来栄えの倍率
+         * @returns {Object} { coins: number } 付与したコイン枚数
+         */
         export function grantMinigameReward(multiplier) {
             const coinGain = getMinigameCoinGain(multiplier);
             minigameCoins += coinGain;
@@ -208,6 +365,13 @@ import {
             return { coins: coinGain };
         }
 
+        /**
+         * プレイ画面のDOMを結果表示用HTMLに差し替え、タイトル・詳細・獲得コイン数を表示する共通の結果画面。
+         * @param {string} title - 結果画面のタイトル
+         * @param {string} detail - 結果の詳細テキスト
+         * @param {Object} reward - grantMinigameReward()が返した報酬オブジェクト（coinsを持つ）
+         * @returns {void}
+         */
         export function showMinigameResult(title, detail, reward) {
             isMinigameActive = false; // 結果画面ではメイン画面のタップ判定を戻してもよい
             playAudioFile('audio/levelup.mp3');
@@ -227,8 +391,13 @@ import {
         // -------------------------------------------------------------
         export const QUIZ_REWARD_BY_CORRECT = { 3: 1.0, 2: 0.6, 1: 0.3, 0: 0.1 }; // 正解数ごとの倍率（調整用）
 
+        /**
+         * 訪問県が2県未満なら挑戦不可の案内を出し、そうでなければ3問ぶんのクイズを生成して最初の問題を表示する。
+         * @param {HTMLElement} container - クイズ画面を描画するコンテナ要素
+         * @returns {void}
+         */
         export function startQuizGame(container) {
-            if (currentStageIndex + 1 < 2) {
+            if (currentStageIndex + 1 < CONFIG.QUIZ_MIN_STAGES_REQUIRED) {
                 container.innerHTML = `<div style="text-align:center; padding:20px;">
                     <p style="margin-bottom:14px;">もう少し旅を進めてから挑戦してね！</p>
                     <button class="item-action-btn" onclick="endMinigameToTiles()">もどる</button>
@@ -236,23 +405,33 @@ import {
                 return;
             }
             const quizState = { qIndex: 0, correct: 0, questions: [] };
-            for (let i = 0; i < 3; i++) quizState.questions.push(generateQuizQuestion());
+            for (let i = 0; i < CONFIG.QUIZ_QUESTION_COUNT; i++) quizState.questions.push(generateQuizQuestion());
             window.__quizState = quizState;
             renderQuizQuestion(container, quizState);
         }
 
+        /**
+         * 解放済みの県からランダムに正解の県を選び、県名→名産品か名産品→県名かをランダムに決め、最大4択の選択肢を組み立てる。
+         * @returns {Object} { correctStage, isNameToItem, choices } 1問分のデータ
+         */
         export function generateQuizQuestion() {
             const pool = [];
             for (let i = 0; i <= currentStageIndex; i++) pool.push(stages[i]);
             const correctStage = pickRandom(pool);
-            const isNameToItem = Math.random() < 0.5; // true: 県名→名産品を当てる／false: 名産品→県名を当てる
+            const isNameToItem = Math.random() < CONFIG.QUIZ_NAME_TO_ITEM_PROBABILITY; // true: 県名→名産品を当てる／false: 名産品→県名を当てる
             const others = pool.filter(s => s !== correctStage).sort(() => Math.random() - 0.5);
-            const numDistractors = Math.min(3, others.length); // 解放済みが少ない時は、それ以下の択数にフォールバック
+            const numDistractors = Math.min(CONFIG.QUIZ_MAX_DISTRACTORS, others.length); // 解放済みが少ない時は、それ以下の択数にフォールバック
             let choices = [correctStage, ...others.slice(0, numDistractors)];
             choices = choices.sort(() => Math.random() - 0.5);
             return { correctStage, isNameToItem, choices };
         }
 
+        /**
+         * 現在の問題番号の問題文・選択肢ボタン(A〜D)・進捗ドットをHTMLとして描画する。
+         * @param {HTMLElement} container - 描画先のコンテナ要素
+         * @param {Object} quizState - startQuizGame()が作るクイズの状態オブジェクト
+         * @returns {void}
+         */
         export function renderQuizQuestion(container, quizState) {
             const q = quizState.questions[quizState.qIndex];
             const questionText = q.isNameToItem ? `${q.correctStage.name}の名産品は？` : `「${q.correctStage.item}」はどこの県の名産品？`;
@@ -286,6 +465,12 @@ import {
                 </div>`;
         }
 
+        /**
+         * 選んだ選択肢の正誤を判定して演出を出し、750ms後に次の問題または結果画面へ進める。
+         * @param {boolean} isCorrect - 選んだ選択肢が正解かどうか
+         * @param {number} choiceIdx - 選んだ選択肢のインデックス
+         * @returns {void}
+         */
         export function answerQuizQuestion(isCorrect, choiceIdx) {
             const quizState = window.__quizState;
             if (!quizState) return;
@@ -297,11 +482,11 @@ import {
             if (isCorrect) {
                 quizState.correct++;
                 playAudioFile('audio/critical.mp3');
-                vibrate(20);
+                vibrate(CONFIG.QUIZ_CORRECT_VIBRATE_MS);
                 if (btn) {
                     btn.classList.add('quiz-correct-glow');
                     const rect = btn.getBoundingClientRect();
-                    spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 6, '#4caf50');
+                    spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, CONFIG.QUIZ_CORRECT_PARTICLE_COUNT, '#4caf50');
                 }
             } else {
                 playAudioFile('audio/tap.mp3');
@@ -321,11 +506,11 @@ import {
                     consumeMinigamePlay('quiz');
                     const mult = QUIZ_REWARD_BY_CORRECT[quizState.correct] ?? 0;
                     const reward = grantMinigameReward(mult);
-                    if (quizState.correct === 3) screenFlash('#ffd700', 0.3);
-                    showMinigameResult(`🗾 ご当地クイズ結果`, `${quizState.correct} / 3問 正解！`, reward);
+                    if (quizState.correct === CONFIG.QUIZ_QUESTION_COUNT) screenFlash('#ffd700', CONFIG.QUIZ_PERFECT_FLASH_OPACITY);
+                    showMinigameResult(`🗾 ご当地クイズ結果`, `${quizState.correct} / ${CONFIG.QUIZ_QUESTION_COUNT}問 正解！`, reward);
                     window.__quizState = null;
                 }
-            }, 750); // フィードバックが見えるよう少し間を置いてから次の問題へ
+            }, CONFIG.QUIZ_FEEDBACK_DELAY_MS); // フィードバックが見えるよう少し間を置いてから次の問題へ
         }
         window.answerQuizQuestion = answerQuizQuestion; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
@@ -338,6 +523,11 @@ import {
         ];
         export let timeAttackState = null;
 
+        /**
+         * タイムアタックの説明とスタートボタンのみの導入画面を表示する。
+         * @param {HTMLElement} container - 描画先のコンテナ要素
+         * @returns {void}
+         */
         export function startTimeAttackGame(container) {
             container.innerHTML = `
                 <div style="min-height:100%; box-sizing:border-box; display:flex; flex-direction:column; justify-content:center; text-align:center; padding:14px; background:radial-gradient(circle at 50% 15%, #e3f6f3, #fbfffe); border-radius:20px;">
@@ -348,6 +538,10 @@ import {
                 </div>`;
         }
 
+        /**
+         * 実プレイ画面(タイマーバー・カウント・タップボタン)を構築し、1秒毎に残り時間を減らすタイマーを開始する。
+         * @returns {void}
+         */
         export function beginTimeAttack() {
             const container = document.getElementById('minigame-play-view');
             timeAttackState = { taps: 0, timeLeft: TIME_ATTACK_DURATION_SEC, timerId: null };
@@ -376,27 +570,32 @@ import {
                 const timerEl = document.getElementById('ta-timer');
                 if (timerEl) {
                     timerEl.innerText = timeAttackState.timeLeft + '秒';
-                    timerEl.classList.toggle('ta-timer-urgent', timeAttackState.timeLeft <= 3 && timeAttackState.timeLeft > 0);
+                    timerEl.classList.toggle('ta-timer-urgent', timeAttackState.timeLeft <= CONFIG.TIME_ATTACK_URGENT_SEC && timeAttackState.timeLeft > 0);
                 }
                 const barInner = document.getElementById('ta-timer-bar-inner');
                 if (barInner) {
                     const pct = Math.max(0, (timeAttackState.timeLeft / TIME_ATTACK_DURATION_SEC) * 100);
                     barInner.style.width = pct + '%';
-                    barInner.style.background = pct > 50 ? 'linear-gradient(90deg,#81c784,#4caf50)' : pct > 20 ? 'linear-gradient(90deg,#ffd54f,#ffc107)' : 'linear-gradient(90deg,#ef5350,#f44336)';
+                    barInner.style.background = pct > CONFIG.TIME_ATTACK_BAR_HIGH_PCT ? 'linear-gradient(90deg,#81c784,#4caf50)' : pct > CONFIG.TIME_ATTACK_BAR_MID_PCT ? 'linear-gradient(90deg,#ffd54f,#ffc107)' : 'linear-gradient(90deg,#ef5350,#f44336)';
                 }
-                if (timeAttackState.timeLeft > 0 && timeAttackState.timeLeft <= 3) {
+                if (timeAttackState.timeLeft > 0 && timeAttackState.timeLeft <= CONFIG.TIME_ATTACK_URGENT_SEC) {
                     playAudioFile('audio/skill_tap.mp3', 0.35); // ラスト3秒のカウントダウン合図に流用
-                    vibrate(15);
+                    vibrate(CONFIG.TIME_ATTACK_URGENT_VIBRATE_MS);
                 }
                 if (timeAttackState.timeLeft <= 0) {
                     clearInterval(timeAttackState.timerId);
                     btn.removeEventListener('pointerdown', onTimeAttackTap);
                     finishTimeAttack();
                 }
-            }, 1000);
+            }, CONFIG.TIME_ATTACK_TICK_MS);
         }
         window.beginTimeAttack = beginTimeAttack; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * タップボタンのpointerdownハンドラ。タップ数を加算し、潰れて戻るアニメーション・リップル・パーティクル・音程変化の演出を出す。
+         * @param {Event} e - pointerdownイベント
+         * @returns {void}
+         */
         export function onTimeAttackTap(e) {
             e.preventDefault();
             if (!timeAttackState) return;
@@ -415,34 +614,38 @@ import {
                     { transform: 'scale(0.8, 1.16)', filter: 'brightness(0.85)' },
                     { transform: 'scale(1.1, 0.9)', filter: 'brightness(1.1)', offset: 0.45 },
                     { transform: 'scale(1, 1)', filter: 'brightness(1)' }
-                ], { duration: 170, easing: 'ease-out' });
+                ], { duration: CONFIG.TIME_ATTACK_TAP_SQUASH_MS, easing: 'ease-out' });
                 const rect = btn.getBoundingClientRect();
-                spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, 3, '#26a69a');
+                spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, CONFIG.TIME_ATTACK_TAP_PARTICLE_COUNT, '#26a69a');
             }
             if (wrap) {
                 // ボタンから輪っかが広がって消えるリップル演出
                 const ripple = document.createElement('div');
                 ripple.className = 'ta-ripple';
                 wrap.appendChild(ripple);
-                setTimeout(() => ripple.remove(), 500);
+                setTimeout(() => ripple.remove(), CONFIG.TIME_ATTACK_RIPPLE_DURATION_MS);
             }
 
             // 叩けば叩くほど音がだんだん高くなっていく（連打の気持ちよさを強化）
-            const rate = 1 + Math.min(0.6, timeAttackState.taps * 0.015);
+            const rate = 1 + Math.min(CONFIG.TIME_ATTACK_PITCH_MAX_BOOST, timeAttackState.taps * CONFIG.TIME_ATTACK_PITCH_PER_TAP);
             playAudioFilePitched('audio/tap.mp3', 0.5, rate);
 
-            if (timeAttackState.taps % 20 === 0) { vibrate(20); screenFlash('#26a69a', 0.12); }
+            if (timeAttackState.taps % CONFIG.TIME_ATTACK_MILESTONE_TAPS === 0) { vibrate(CONFIG.TIME_ATTACK_MILESTONE_VIBRATE_MS); screenFlash('#26a69a', CONFIG.TIME_ATTACK_MILESTONE_FLASH_OPACITY); }
         }
 
+        /**
+         * タップ数をTIME_ATTACK_THRESHOLDSの閾値表で判定して報酬倍率を求め、報酬付与・自己ベスト更新・結果画面表示を行う。
+         * @returns {void}
+         */
         export function finishTimeAttack() {
             consumeMinigamePlay('timeattack');
             const taps = timeAttackState ? timeAttackState.taps : 0;
             timeAttackState = null;
             const found = TIME_ATTACK_THRESHOLDS.find(([min]) => taps >= min);
-            const mult = found ? found[1] : 0.3;
+            const mult = found ? found[1] : CONFIG.TIME_ATTACK_DEFAULT_MULT;
             const reward = grantMinigameReward(mult);
             const isNewBest = taps > (minigameBests.timeattack || 0);
-            if (isNewBest) { minigameBests.timeattack = taps; playAudioFile('audio/levelup.mp3'); saveGame(); screenFlash('#ffd700', 0.35); }
+            if (isNewBest) { minigameBests.timeattack = taps; playAudioFile('audio/levelup.mp3'); saveGame(); screenFlash('#ffd700', CONFIG.TIME_ATTACK_BEST_FLASH_OPACITY); }
             showMinigameResult(`⏱️ タイムアタック結果`, `${taps}回タップ！${isNewBest ? '🎉自己ベスト更新！' : `（自己ベスト: ${minigameBests.timeattack}回）`}`, reward);
         }
 
@@ -454,10 +657,15 @@ import {
         ];
         export let concentrationState = null;
 
+        /**
+         * 名産品イラストを持つ解放済み県から6件をランダムに選んで12枚のカード(ペア×2)を作りシャッフルする。
+         * @param {HTMLElement} container - 描画先のコンテナ要素
+         * @returns {void}
+         */
         export function startConcentrationGame(container) {
             const candidates = [];
             for (let i = 0; i <= currentStageIndex; i++) { if (stages[i].itemImg) candidates.push(stages[i]); }
-            if (candidates.length < 6) {
+            if (candidates.length < CONFIG.CONCENTRATION_PAIR_COUNT) {
                 container.innerHTML = `<div style="text-align:center; padding:20px;">
                     <div style="font-weight:bold; margin-bottom:10px;">🃏 ご当地神経衰弱</div>
                     <p style="font-size:0.85rem; color:#999; margin-bottom:14px;">イラスト準備中です（もう少しお待ちください）</p>
@@ -465,7 +673,7 @@ import {
                 </div>`;
                 return;
             }
-            const chosen = candidates.sort(() => Math.random() - 0.5).slice(0, 6);
+            const chosen = candidates.sort(() => Math.random() - 0.5).slice(0, CONFIG.CONCENTRATION_PAIR_COUNT);
             let cards = [];
             chosen.forEach((stage, idx) => {
                 cards.push({ pairId: idx, stage, matched: false });
@@ -477,6 +685,10 @@ import {
         }
 
         // カードのDOMを最初の1回だけ組み立てる（毎回作り直すとCSSのtransitionが再生されないため）
+        /**
+         * 神経衰弱のカードDOMを最初の1回だけ丸ごと組み立てる。
+         * @returns {void}
+         */
         export function buildConcentrationBoard() {
             const container = document.getElementById('minigame-play-view');
             const st = concentrationState;
@@ -501,6 +713,11 @@ import {
         }
 
         // 個別カードの見た目だけを更新する（既存のDOM要素のクラスを切り替えるだけなので、3D回転アニメーションが正しく再生される）
+        /**
+         * 指定インデックスのカードのDOM要素に対し、表向き/裏向き・一致済みのCSSクラスだけを切り替える。
+         * @param {number} i - カードのインデックス
+         * @returns {void}
+         */
         export function updateConcentrationCardVisual(i) {
             const st = concentrationState;
             const inner = document.getElementById(`concent-inner-${i}`);
@@ -510,6 +727,11 @@ import {
             inner.classList.toggle('matched', st.cards[i].matched);
         }
 
+        /**
+         * カードをめくる処理本体。2枚目がめくられた時点で一致判定を行い、一致すれば揃え、不一致ならロックして裏返す。
+         * @param {number} i - めくるカードのインデックス
+         * @returns {void}
+         */
         export function flipConcentrationCard(i) {
             const st = concentrationState;
             if (!st || st.locked) return;
@@ -531,7 +753,7 @@ import {
                     updateConcentrationCardVisual(a);
                     updateConcentrationCardVisual(b);
                     st.flippedIndices = [];
-                    if (st.matchedPairs === 6) setTimeout(() => finishConcentration(), 500);
+                    if (st.matchedPairs === CONFIG.CONCENTRATION_PAIR_COUNT) setTimeout(() => finishConcentration(), CONFIG.CONCENTRATION_FINISH_DELAY_MS);
                 } else {
                     st.locked = true;
                     // 不一致の合図に、2枚を軽くシェイクさせる
@@ -546,27 +768,31 @@ import {
                         concentrationState.locked = false;
                         updateConcentrationCardVisual(oldA);
                         updateConcentrationCardVisual(oldB);
-                    }, 800);
+                    }, CONFIG.CONCENTRATION_MISMATCH_DELAY_MS);
                 }
             }
         }
         window.flipConcentrationCard = flipConcentrationCard; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * 手数をCONCENTRATION_THRESHOLDSの閾値表で判定して報酬倍率を求め、報酬付与・自己ベスト更新・結果画面表示を行う。
+         * @returns {void}
+         */
         export function finishConcentration() {
             consumeMinigamePlay('concentration');
             const moves = concentrationState.moves;
             const found = CONCENTRATION_THRESHOLDS.find(([max]) => moves <= max);
-            const mult = found ? found[1] : 0.3;
+            const mult = found ? found[1] : CONFIG.CONCENTRATION_DEFAULT_MULT;
             const reward = grantMinigameReward(mult);
             const isNewBest = minigameBests.concentration == null || moves < minigameBests.concentration;
             if (isNewBest) { minigameBests.concentration = moves; playAudioFile('audio/levelup.mp3'); saveGame(); }
             concentrationState = null;
-            screenFlash('#4caf50', 0.25);
+            screenFlash('#4caf50', CONFIG.CONCENTRATION_CLEAR_FLASH_OPACITY);
             vibrate([20, 30, 20, 30, 40]);
             const playView = document.getElementById('minigame-play-view');
             if (playView) {
                 const rect = playView.getBoundingClientRect();
-                spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 3, 14, '#ffd700');
+                spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 3, CONFIG.CONCENTRATION_CLEAR_PARTICLE_COUNT, '#ffd700');
             }
             showMinigameResult(`🃏 神経衰弱結果`, `${moves}回でクリア！${isNewBest ? '🎉自己ベスト更新！' : `（自己ベスト: ${minigameBests.concentration}回）`}`, reward);
         }
@@ -591,22 +817,37 @@ import {
         export let mochitsukiState = null;
 
         // MOCHITSUKI_RANKSから帯を自動生成するので、判定ロジックと見た目のズレ（対称性の崩れ）が原理的に起きない
+        /**
+         * MOCHITSUKI_RANKSの各ランクのrange値から、判定帯（トラック上の色付きゾーン）のHTMLを自動生成する。
+         * @returns {string} 判定帯のHTML文字列
+         */
         export function buildMochitsukiBandsHtml() {
             const finite = MOCHITSUKI_RANKS.filter(r => isFinite(r.range)).slice().sort((a, b) => b.range - a.range);
             return finite.map(r => {
                 const width = r.range * 2;
                 const left = 50 - r.range;
-                const rgba = hexToRgba(r.color, 0.35);
+                const rgba = hexToRgba(r.color, CONFIG.MOCHI_BAND_OPACITY);
                 return `<div style="position:absolute; left:${left}%; width:${width}%; height:100%; background:${rgba};"></div>`;
             }).join('');
         }
 
+        /**
+         * "#rrggbb"形式の16進カラーコードをrgba()文字列に変換する汎用ユーティリティ。
+         * @param {string} hex - "#rrggbb"形式の16進カラーコード
+         * @param {number} alpha - 透明度(0〜1)
+         * @returns {string} rgba(...)形式の文字列
+         */
         export function hexToRgba(hex, alpha) {
             const h = hex.replace('#', '');
             const r = parseInt(h.substring(0, 2), 16), g = parseInt(h.substring(2, 4), 16), b = parseInt(h.substring(4, 6), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
 
+        /**
+         * もちつきリズムの状態を初期化し、判定帯・インジケーター・タップボタンを含む画面を構築してアニメーションループを開始する。
+         * @param {HTMLElement} container - 描画先のコンテナ要素
+         * @returns {void}
+         */
         export function startMochitsukiGame(container) {
             mochitsukiState = { beat: 0, counts: {}, startTime: null, animId: null, periodMs: MOCHITSUKI_INITIAL_PERIOD_MS, streak: 0, bestStreak: 0 };
             MOCHITSUKI_RANKS.forEach(r => mochitsukiState.counts[r.name] = 0);
@@ -631,11 +872,21 @@ import {
             animateMochitsukiIndicator();
         }
 
+        /**
+         * 経過時間と半周期(periodMs)から、三角波の要領でインジケーターの水平位置(0〜100%、50%が中央)を計算する純粋関数。
+         * @param {number} elapsedMs - 経過時間(ms)
+         * @param {number} periodMs - 半周期(ms)
+         * @returns {number} インジケーターの水平位置(0〜100)
+         */
         export function getMochitsukiIndicatorPercent(elapsedMs, periodMs) {
             const t = elapsedMs % (periodMs * 2);
             return t < periodMs ? (t / periodMs) * 100 : 100 - ((t - periodMs) / periodMs) * 100;
         }
 
+        /**
+         * requestAnimationFrameで自分自身を繰り返し呼び出しながら、インジケーターのDOM位置をフレーム毎に更新し続ける。
+         * @returns {void}
+         */
         export function animateMochitsukiIndicator() {
             if (!mochitsukiState) return;
             const el = document.getElementById('mochi-indicator');
@@ -649,6 +900,11 @@ import {
             mochitsukiState.animId = requestAnimationFrame(animateMochitsukiIndicator);
         }
 
+        /**
+         * タップ時点のインジケーター位置から誤差を求めてランク判定し、演出を出しつつ次のタップに向けて速度を上げる。
+         * @param {Event} e - pointerdownイベント
+         * @returns {void}
+         */
         export function onMochitsukiTap(e) {
             e.preventDefault();
             if (!mochitsukiState) return;
@@ -672,27 +928,27 @@ import {
                 // ミス：連続記録をリセットし、トラックが軽くよろける演出＋もちすけの反応
                 mochitsukiState.streak = 0;
                 if (track) { track.classList.remove('mochi-track-miss'); void track.offsetWidth; track.classList.add('mochi-track-miss'); }
-                if (Math.random() < 0.4) showMochiComment(pickRandom(["あちゃー！", "むむっ、ズレたで！", "おっと〜！"]));
+                if (Math.random() < CONFIG.MOCHI_MISS_COMMENT_CHANCE) showMochiComment(pickRandom(["あちゃー！", "むむっ、ズレたで！", "おっと〜！"]));
             } else {
                 mochitsukiState.streak++;
                 mochitsukiState.bestStreak = Math.max(mochitsukiState.bestStreak, mochitsukiState.streak);
                 if (rank.name === 'PERFECT') {
-                    playAudioFile('audio/critical.mp3'); vibrate(25);
-                    screenFlash('#ffd700', 0.28);
+                    playAudioFile('audio/critical.mp3'); vibrate(CONFIG.MOCHI_PERFECT_VIBRATE_MS);
+                    screenFlash('#ffd700', CONFIG.MOCHI_PERFECT_FLASH_OPACITY);
                     if (track) { track.classList.remove('mochi-track-glow'); void track.offsetWidth; track.classList.add('mochi-track-glow'); }
                 } else if (rank.name === 'GREAT') {
-                    playAudioFile('audio/critical.mp3', 0.4); vibrate(15);
+                    playAudioFile('audio/critical.mp3', 0.4); vibrate(CONFIG.MOCHI_GREAT_VIBRATE_MS);
                 } else {
                     playAudioFile('audio/tap.mp3');
                 }
                 // 3連続以上決まったら節目としてもう一段派手にする
-                if (mochitsukiState.streak > 0 && mochitsukiState.streak % 5 === 0) {
+                if (mochitsukiState.streak > 0 && mochitsukiState.streak % CONFIG.MOCHI_STREAK_MILESTONE === 0) {
                     screenShake('small'); vibrate([20, 30, 20]);
                 }
             }
 
             const streakEl = document.getElementById('mochi-streak-text');
-            if (streakEl) streakEl.innerText = mochitsukiState.streak >= 3 ? `🔥 ${mochitsukiState.streak}連続！` : '';
+            if (streakEl) streakEl.innerText = mochitsukiState.streak >= CONFIG.MOCHI_STREAK_DISPLAY_THRESHOLD ? `🔥 ${mochitsukiState.streak}連続！` : '';
 
             // 判定ランクに応じて、バーがあった位置からパーティクルが複数個弾ける
             // （#particle-canvasはモーダルの下に隠れて見えなくなるため、モーダル内で完結する専用の演出を使う）
@@ -720,13 +976,17 @@ import {
             if (mochitsukiState.beat >= MOCHITSUKI_BEATS) {
                 cancelAnimationFrame(mochitsukiState.animId);
                 document.getElementById('mochi-tap-btn').removeEventListener('pointerdown', onMochitsukiTap);
-                setTimeout(() => finishMochitsuki(), 400);
+                setTimeout(() => finishMochitsuki(), CONFIG.MOCHI_FINISH_DELAY_MS);
             } else {
                 const beatEl = document.getElementById('mochi-beat-count');
                 if (beatEl) beatEl.innerText = `${mochitsukiState.beat + 1} / ${MOCHITSUKI_BEATS}拍`;
             }
         }
 
+        /**
+         * 各ランクの出現回数×重みの合計を拍数で割った加重平均から報酬倍率を計算し、報酬付与と結果画面表示を行う。
+         * @returns {void}
+         */
         export function finishMochitsuki() {
             consumeMinigamePlay('mochitsuki');
             const st = mochitsukiState;
@@ -734,7 +994,7 @@ import {
             const mult = Math.min(MOCHITSUKI_REWARD_CAP, weightedSum / MOCHITSUKI_BEATS);
             mochitsukiState = null;
             const reward = grantMinigameReward(mult);
-            const summary = MOCHITSUKI_RANKS.map(r => `${r.name}:${st.counts[r.name]}`).join(' ') + (st.bestStreak >= 3 ? ` ／ 最大${st.bestStreak}連続！` : '');
+            const summary = MOCHITSUKI_RANKS.map(r => `${r.name}:${st.counts[r.name]}`).join(' ') + (st.bestStreak >= CONFIG.MOCHI_STREAK_DISPLAY_THRESHOLD ? ` ／ 最大${st.bestStreak}連続！` : '');
             showMinigameResult(`🍡 もちつきリズム結果`, summary, reward);
         }
 
@@ -748,6 +1008,10 @@ import {
         export let slotSpinLoopSource = null;   // 回転中ループ音の再生ノード（stopで確実に止められるよう保持）
 
         // 🔊 リールが回っている間、ループするSE。BGMとは別のチャンネルで鳴らすので、BGMを止めずに重ねられる
+        /**
+         * リール回転中に鳴らし続けるループ効果音を、Web Audio APIのBufferSourceで独自に再生する。
+         * @returns {void}
+         */
         export function playSlotSpinLoopSound() {
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
@@ -763,6 +1027,10 @@ import {
                 slotSpinLoopSource = source;
             });
         }
+        /**
+         * 再生中のスロット回転ループ音があれば停止する。
+         * @returns {void}
+         */
         export function stopSlotSpinLoopSound() {
             if (slotSpinLoopSource) { try { slotSpinLoopSource.stop(); } catch (e) {} slotSpinLoopSource = null; }
         }
@@ -789,6 +1057,11 @@ import {
         export let slotAdjustMode = false;
         export let slotAdjustDragState = null;
         // 調整中だけ、普段は透明・非表示のパーツ（コイン投入口・払出口・投入コイン）を見える状態にする
+        /**
+         * 開発者用の位置調整モード中だけ、普段は非表示のコイン投入イラストや、コイン投入口・払出口の枠線を可視化する。
+         * @param {boolean} show - 可視化するかどうか
+         * @returns {void}
+         */
         export function setSlotPartAdjustVisibility(show) {
             const coinInsertImg = document.getElementById('slot-coin-insert-img');
             if (coinInsertImg) {
@@ -804,6 +1077,11 @@ import {
         }
         // 選ばれたパーツを一時的に最前面に出し、他のパーツと重なっていてもドラッグで確実につかめるようにする。
         // 普段はpointer-events:noneのパーツ（レバー取り付け部品・投入コインなど）も、調整中だけ掴めるようにする
+        /**
+         * 位置調整対象に選ばれたパーツだけを最前面(z-index)に出し、普段pointer-events:noneのパーツも掴めるようにする。
+         * @param {string} targetId - 最前面に出す対象パーツのDOM要素ID
+         * @returns {void}
+         */
         export function bringSlotTargetToFront(targetId) {
             SLOT_ADJUSTABLE_PARTS.forEach(p => {
                 const el = document.getElementById(p.id);
@@ -822,6 +1100,10 @@ import {
             });
         }
         // ハンドル（縁・角の丸）と回転軸マーカーを、今選ばれているパーツの実際の位置に合わせて配置し直す
+        /**
+         * 選択中パーツの実際の描画位置に合わせて、リサイズ用ハンドルと回転軸マーカーを再配置する。
+         * @returns {void}
+         */
         export function positionSlotHandles() {
             if (!slotAdjustMode) return;
             const stage = document.getElementById('slot-machine-stage');
@@ -859,6 +1141,10 @@ import {
                 pivotMarker.style.display = 'none';
             }
         }
+        /**
+         * 開発者用パーツ位置調整モードのON/OFFを切り替え、枠線・ハンドル・ドラッグ設定などを一括で有効化/無効化する。
+         * @returns {void}
+         */
         export function toggleSlotAdjustMode() {
             slotAdjustMode = !slotAdjustMode;
             const btn = document.getElementById('slot-adjust-toggle-btn');
@@ -890,6 +1176,10 @@ import {
         }
         window.toggleSlotAdjustMode = toggleSlotAdjustMode; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         // 対象を切り替えた時、前の対象の枠線を消して、新しい対象にだけ付け直す
+        /**
+         * 調整対象パーツを切り替えるプルダウンのonchangeハンドラ。枠線・最前面化・ハンドル再配置を新対象に適用する。
+         * @returns {void}
+         */
         export function onSlotAdjustTargetChange() {
             SLOT_ADJUSTABLE_PARTS.forEach(p => {
                 const el = document.getElementById(p.id);
@@ -905,6 +1195,10 @@ import {
             updateSlotAdjustReadout();
         }
         window.onSlotAdjustTargetChange = onSlotAdjustTargetChange; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
+        /**
+         * スロット筐体ステージにpointerイベントを一度だけ登録し、選択中パーツの移動・リサイズ・回転軸移動をドラッグで行えるようにする。
+         * @returns {void}
+         */
         export function setupSlotAdjustDrag() {
             const stage = document.getElementById('slot-machine-stage');
             if (stage.dataset.dragSetup) return;
@@ -968,6 +1262,11 @@ import {
             stage.addEventListener('pointerup', () => { slotAdjustDragState = null; });
             stage.addEventListener('pointercancel', () => { slotAdjustDragState = null; });
         }
+        /**
+         * レバーの初期角度(dataset.rotation)をdelta分だけ増減させ、見た目の回転にも反映する。
+         * @param {number} delta - 角度の増減量(度)
+         * @returns {void}
+         */
         export function adjustSlotLeverRotation(delta) {
             const lever = document.getElementById('slot-lever');
             const cur = parseFloat(lever.dataset.rotation || '0');
@@ -979,6 +1278,11 @@ import {
         window.adjustSlotLeverRotation = adjustSlotLeverRotation; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
         // 高さを、そのパーツの実際の描画結果(getBoundingClientRect)から%で計算する。
         // style.heightが「auto」のままの場合でも、必ず具体的な数値を返す
+        /**
+         * 対象パーツの実際の描画結果からステージ全体に対する高さ%を計算する。非表示中はstyle.heightの生値を返す。
+         * @param {HTMLElement} el - 対象パーツのDOM要素
+         * @returns {string} 高さの%文字列（またはstyle.heightの生値）
+         */
         export function getSlotPartHeightPct(el) {
             const stage = document.getElementById('slot-machine-stage');
             const stageRect = stage.getBoundingClientRect();
@@ -989,6 +1293,10 @@ import {
             }
             return (elRect.height / stageRect.height * 100).toFixed(4) + '%';
         }
+        /**
+         * 選択中パーツの現在のtop/left/width/height（回転パーツならtransform-originと初期角度も）をテキスト表示する。
+         * @returns {void}
+         */
         export function updateSlotAdjustReadout() {
             const partId = document.getElementById('slot-adjust-target').value;
             const part = SLOT_ADJUSTABLE_PARTS.find(p => p.id === partId);
@@ -1000,6 +1308,10 @@ import {
             el.textContent = text;
         }
         // 全パーツぶんの座標を、名前つきでまとめてテキスト化する
+        /**
+         * SLOT_ADJUSTABLE_PARTS全パーツぶんの座標情報をラベル付きでテキスト化し、テキストエリアとクリップボードに出力する。
+         * @returns {void}
+         */
         export function copyAllSlotCoords() {
             const lines = SLOT_ADJUSTABLE_PARTS.map(p => {
                 const el = document.getElementById(p.id);
@@ -1019,6 +1331,10 @@ import {
         }
         window.copyAllSlotCoords = copyAllSlotCoords; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * 遊び方・配当表・記録を表示するヘルプオーバーレイの表示/非表示を切り替える。開く時に最新の記録を再描画する。
+         * @returns {void}
+         */
         export function toggleSlotHelpOverlay() {
             const overlay = document.getElementById('slot-help-overlay');
             if (!overlay) return;
@@ -1037,6 +1353,10 @@ import {
         window.toggleSlotHelpOverlay = toggleSlotHelpOverlay; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // 残りプレイ回数に応じて、次に光らせるべきパーツを決める（残っていればレバー、無くなっていればコイン投入口）
+        /**
+         * 残りプレイ回数があればレバーを、無ければコイン投入口を光らせて、次の操作をプレイヤーに視覚的に誘導する。
+         * @returns {void}
+         */
         export function inviteNextSlotStep() {
             if (slotPlaysRemaining > 0) {
                 document.getElementById('slot-lever').classList.add('slot-invite-glow');
@@ -1044,10 +1364,18 @@ import {
                 document.getElementById('slot-coin-slot-in').classList.add('slot-invite-glow-ring');
             }
         }
+        /**
+         * 「あとN回引けます」の表示を、slotPlaysRemainingの現在値で更新する。
+         * @returns {void}
+         */
         export function updateSlotPlaysRemainingDisplay() {
             const el = document.getElementById('slot-plays-remaining');
             if (el) el.innerText = slotPlaysRemaining > 0 ? `（あと${slotPlaysRemaining}回引けます）` : '';
         }
+        /**
+         * 特化ゾーンの残り回数表示テキストと、各リール窓のハイライト演出クラスの付け外しを行う。
+         * @returns {void}
+         */
         export function updateSlotBonusZoneDisplay() {
             const el = document.getElementById('slot-bonus-zone-text');
             const active = slotBonusZoneSpinsLeft > 0;
@@ -1057,11 +1385,19 @@ import {
                 if (win) win.classList.toggle('slot-bonus-zone-active', active);
             });
         }
+        /**
+         * 「前回のマーモットからN回転」の表示を、slotPullsSinceJackpotの現在値で更新する。
+         * @returns {void}
+         */
         export function updateSlotPullsSinceJackpotDisplay() {
             const el = document.getElementById('slot-pulls-since-jackpot');
             if (el) el.innerText = `前回のマーモットから ${slotPullsSinceJackpot}回転`;
         }
 
+        /**
+         * 重み(weight)付き抽選で1つの絵柄を選ぶ。特化ゾーン中はSLOT_BONUS_ZONE_SYMBOLS、通常時はSLOT_ALL_SYMBOLSから抽選する。
+         * @returns {Object} 抽選された絵柄オブジェクト
+         */
         export function pickWeightedSlotSymbol() {
             const pool = slotBonusZoneSpinsLeft > 0 ? SLOT_BONUS_ZONE_SYMBOLS : SLOT_ALL_SYMBOLS;
             const total = pool.reduce((s, sym) => s + sym.weight, 0);
@@ -1073,6 +1409,10 @@ import {
             return pool[0];
         }
 
+        /**
+         * 全絵柄(SLOT_ALL_SYMBOLS)をSLOT_STRIP_REPEATS回繰り返して連結した、1本のリール帯のHTMLを組み立てる。
+         * @returns {string} リール帯のHTML文字列
+         */
         export function buildSlotReelStripHtml() {
             let html = '';
             for (let rep = 0; rep < SLOT_STRIP_REPEATS; rep++) {
@@ -1099,6 +1439,11 @@ import {
             { id: 'slot-coin-slot-out', label: 'コイン払い出し口', isBox: true },
         ];
 
+        /**
+         * スロット機の画面全体（リール窓・レバー・止めるボタン・コイン投入口/払出口・ヘルプ・記録表示・調整パネル）を構築する。
+         * @param {HTMLElement} container - 描画先のコンテナ要素
+         * @returns {void}
+         */
         export function startSlotGame(container) {
             slotIsSpinning = false; slotStoppedCount = 0; slotNextSpinFree = false; // slotPlaysRemainingは、離脱しても引き継がれるようリセットしない
             container.style.background = 'transparent'; // 機体イラストの後ろに白い箱が見えないよう、この画面だけ背景を消す
@@ -1208,6 +1553,10 @@ import {
         }
 
         // 🪙 コインを投入口にポトッと落とす演出。位置は#slot-coin-slot-inの座標を実測して使う
+        /**
+         * コイン投入口の実測位置を基準に、コインが落ちて消えていくアニメーションを再生する。
+         * @returns {void}
+         */
         export function playSlotCoinInsertAnim() {
             const stage = document.getElementById('slot-machine-stage');
             const slotIn = document.getElementById('slot-coin-slot-in');
@@ -1219,7 +1568,7 @@ import {
             const targetLeftPct = ((slotRect.left - stageRect.left) / stageRect.width) * 100;
 
             coinImg.style.display = 'block';
-            coinImg.style.top = (targetTopPct - 15) + '%';
+            coinImg.style.top = (targetTopPct - CONFIG.SLOT_COIN_INSERT_START_OFFSET_PCT) + '%';
             coinImg.style.left = targetLeftPct + '%';
             coinImg.style.opacity = '1';
             coinImg.getAnimations().forEach(a => a.cancel());
@@ -1229,12 +1578,16 @@ import {
                     { transform: 'translateY(28px) rotate(180deg)', opacity: 1, offset: 0.85 },
                     { transform: 'translateY(32px) rotate(200deg)', opacity: 0 },
                 ],
-                { duration: 380, easing: 'ease-in', fill: 'forwards' }
+                { duration: CONFIG.SLOT_COIN_INSERT_ANIM_MS, easing: 'ease-in', fill: 'forwards' }
             );
             playAudioFile('audio/slot/coin_insert.mp3');
         }
 
         // 🪙① コインをタップして投入する（1枚=1プレイぶん）。投入し終わったら、次はレバーが光って誘導する
+        /**
+         * コインを1枚消費してプレイ可能回数を増やし、コインが足りなければ不足数を案内する。投入後、レバーを光らせて誘導する。
+         * @returns {void}
+         */
         export function insertSlotCoin() {
             if (slotIsSpinning) return;
             const coinSlot = document.getElementById('slot-coin-slot-in');
@@ -1252,10 +1605,14 @@ import {
             playSlotCoinInsertAnim();
             setTimeout(() => {
                 document.getElementById('slot-lever').classList.add('slot-invite-glow'); // 次はレバーの番、という合図
-            }, 300);
+            }, CONFIG.SLOT_COIN_INSERT_LEVER_GLOW_DELAY_MS);
         }
         window.insertSlotCoin = insertSlotCoin; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * レバーを引く処理本体。3リールぶんの結果を先に内部で決定し、レバー・各リールのアニメーションと効果音を開始する。
+         * @returns {void}
+         */
         export function pullSlotLever() {
             if (slotIsSpinning) return;
             const lever = document.getElementById('slot-lever');
@@ -1314,6 +1671,11 @@ import {
         }
         window.pullSlotLever = pullSlotLever; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * 指定したリールを止める。すでに1〜2列止まっている状況に応じて、リーチ判定・最終判定を予約する。
+         * @param {number} reelIndex - 止めるリールの番号（0〜2）
+         * @returns {void}
+         */
         export function stopSlotReel(reelIndex) {
             const btn = document.getElementById(`slot-stop-btn-${reelIndex}`);
             if (!btn || btn.dataset.stoppable !== '1') return; // 回っていない・すでに止めた列は無視
@@ -1322,7 +1684,7 @@ import {
             // 押した瞬間、光がパッと弾けるような一瞬のフラッシュ演出
             btn.animate(
                 [{ filter: 'brightness(1)' }, { filter: 'brightness(2.2) drop-shadow(0 0 14px #fff176)' }, { filter: 'brightness(1)' }],
-                { duration: 300, easing: 'ease-out' }
+                { duration: CONFIG.SLOT_STOP_FLASH_MS, easing: 'ease-out' }
             );
 
             const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
@@ -1338,7 +1700,7 @@ import {
 
             // 真ん中の絵柄が窓のちょうど中央（縦3コマの2段目）に来るよう、その1つ前の絵柄を窓の一番上に合わせる。
             // 帯の後ろの方（最後から2周目）に着地させることで、長く回った末に止まったように見せつつ、帯の端が見えないようにする
-            const landingRep = SLOT_STRIP_REPEATS - 2;
+            const landingRep = SLOT_STRIP_REPEATS - CONFIG.SLOT_STRIP_LANDING_MARGIN;
             const topSymbolIndex = (symbolIndex - 1 + n) % n;
             const targetRow = landingRep * n + topSymbolIndex;
             const targetY = -(targetRow * SLOT_SYMBOL_HEIGHT);
@@ -1348,20 +1710,24 @@ import {
             strip.style.transform = `translateY(${targetY}px)`;
 
             playAudioFile('audio/tap.mp3');
-            vibrate([10]);
+            vibrate([CONFIG.SLOT_REEL_STOP_VIBRATE_MS]);
 
             slotStoppedReels.push(reelIndex);
             slotStoppedCount++;
             if (slotStoppedCount === 2) {
-                setTimeout(checkSlotReach, 250); // 着地演出が落ち着いてから判定する
+                setTimeout(checkSlotReach, CONFIG.SLOT_REACH_CHECK_DELAY_MS); // 着地演出が落ち着いてから判定する
             } else if (slotStoppedCount >= 3) {
                 stopSlotSpinLoopSound();
-                setTimeout(evaluateSlotResult, 300);
+                setTimeout(evaluateSlotResult, CONFIG.SLOT_RESULT_EVALUATE_DELAY_MS);
             }
         }
         window.stopSlotReel = stopSlotReel; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
         // 🎰 リーチ判定：2つ止まった時点で、5ラインのどこかで2つとも同じ絵柄が揃っていれば「リーチ」
+        /**
+         * 2つのリールが止まった時点で、5ラインのいずれかで絵柄が2つ揃っているか（リーチか）を判定する。
+         * @returns {void}
+         */
         export function checkSlotReach() {
             if (slotStoppedReels.length !== 2) return;
             const cols = {};
@@ -1378,14 +1744,20 @@ import {
             if (matchingLines.length === 0) return;
 
             const bestReach = matchingLines.reduce((best, m) => {
-                const val = m.symbol.id === 'replay' ? 1 : m.symbol.payout;
-                const bestVal = best.symbol.id === 'replay' ? 1 : best.symbol.payout;
+                const val = m.symbol.id === 'replay' ? CONFIG.SLOT_REPLAY_REACH_VALUE : m.symbol.payout;
+                const bestVal = best.symbol.id === 'replay' ? CONFIG.SLOT_REPLAY_REACH_VALUE : best.symbol.payout;
                 return val > bestVal ? m : best;
             }, matchingLines[0]);
             triggerSlotReachEffect(bestReach.symbol, matchingLines);
         }
 
         // 🎰 リーチ演出：効果音・絵柄の強調・大きな当たりの時だけカットイン
+        /**
+         * リーチ演出（効果音・絵柄の強調表示）を行い、高価値な絵柄のリーチの時はカットインも表示する。
+         * @param {object} symbol - リーチしている絵柄（SLOT_SYMBOLS等の要素）
+         * @param {Array<object>} matchingLines - 一致しているライン情報の配列（{lineIdx, symbol}）
+         * @returns {void}
+         */
         export function triggerSlotReachEffect(symbol, matchingLines) {
             playAudioFile('audio/slot/reach.mp3');
             vibrate([20, 30, 20]);
@@ -1404,11 +1776,15 @@ import {
             });
 
             // BAR以上の高価値な絵柄が2つ揃っている時だけ、カットインで盛り上げる
-            const isBigReach = symbol.id === 'replay' ? false : symbol.payout >= 10;
+            const isBigReach = symbol.id === 'replay' ? false : symbol.payout >= CONFIG.SLOT_WIN_TIER_LOW_PAYOUT;
             if (isBigReach) showSlotCutin();
         }
 
         // 🎬 カットイン：もちすけの驚き顔が、横から勢いよく滑り込んでくる演出
+        /**
+         * もちすけの驚き顔が横から滑り込んでくるカットイン演出を表示し、一定時間後に消す。
+         * @returns {void}
+         */
         export function showSlotCutin() {
             const stage = document.getElementById('slot-machine-stage');
             if (!stage) return;
@@ -1417,10 +1793,16 @@ import {
             cutin.style.cssText = 'position:absolute; top:30%; left:50%; width:70%; transform:translate(-50%,-50%); z-index:500; pointer-events:none; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5)); animation: slotCutinSlide 900ms ease-in-out;';
             stage.appendChild(cutin);
             playAudioFile('audio/gacha/crank.mp3');
-            setTimeout(() => cutin.remove(), 900);
+            setTimeout(() => cutin.remove(), CONFIG.SLOT_CUTIN_DURATION_MS);
         }
 
         // 🪙 払い出し口から、コインが実際に出てくる演出。countが多いほど「あふれ出す」感じになる
+        /**
+         * 払い出し口からコインが飛び出す演出を、count枚ぶん時間差で生成する。
+         * @param {number} count - 生成するコインの枚数
+         * @param {number} [pitchRate=1] - コイン効果音のピッチ倍率
+         * @returns {void}
+         */
         export function spawnSlotPayoutCoins(count, pitchRate = 1) {
             const stage = document.getElementById('slot-machine-stage');
             const slotOut = document.getElementById('slot-coin-slot-out');
@@ -1438,23 +1820,28 @@ import {
                     const startLeft = baseLeftPct + Math.random() * slotWidthPct;
                     coin.style.cssText = `position:absolute; top:${baseTopPct}%; left:${startLeft}%; width:9%; z-index:20; pointer-events:none;`;
                     stage.appendChild(coin);
-                    const dx = (Math.random() - 0.5) * 40; // 左右にランダムに散らばりながら落ちる
-                    const rot = (Math.random() - 0.5) * 540;
+                    const dx = (Math.random() - 0.5) * CONFIG.SLOT_PAYOUT_COIN_DX_RANGE; // 左右にランダムに散らばりながら落ちる
+                    const rot = (Math.random() - 0.5) * CONFIG.SLOT_PAYOUT_COIN_ROTATION_RANGE;
                     coin.animate(
                         [
                             { transform: 'translate(0, 0) rotate(0deg)', opacity: 1, offset: 0 },
                             { transform: `translate(${dx * 0.5}px, -18px) rotate(${rot * 0.3}deg)`, opacity: 1, offset: 0.3 },
                             { transform: `translate(${dx}px, 46px) rotate(${rot}deg)`, opacity: 0, offset: 1 },
                         ],
-                        { duration: 650 + Math.random() * 200, easing: 'ease-in' }
+                        { duration: CONFIG.SLOT_PAYOUT_COIN_FALL_DURATION_MS + Math.random() * CONFIG.SLOT_PAYOUT_COIN_FALL_DURATION_VARIANCE_MS, easing: 'ease-in' }
                     ).finished.then(() => coin.remove());
                     // 当たりが大きいほど、ピッチを少し上げて景気良く聞こえるようにする
-                    playAudioFilePitched('audio/tap.mp3', 0.6, pitchRate + (Math.random() - 0.5) * 0.1);
-                }, i * 45);
+                    playAudioFilePitched('audio/tap.mp3', 0.6, pitchRate + (Math.random() - 0.5) * CONFIG.SLOT_PAYOUT_COIN_PITCH_JITTER);
+                }, i * CONFIG.SLOT_PAYOUT_COIN_STAGGER_MS);
             }
         }
 
         // 真ん中の絵柄から、帯の並び順にもとづいて上・下の絵柄を求める（実際に窓に見えている3段ぶん）
+        /**
+         * 真ん中の絵柄から、帯の並び順にもとづいて上・下段の絵柄を求める（窓に見えている縦3段ぶん）。
+         * @param {object} centerSymbol - 中段（真ん中）の絵柄（SLOT_ALL_SYMBOLS等の要素）
+         * @returns {Array<object>} [上段, 中段, 下段] の絵柄配列
+         */
         export function getSlotReelColumn(centerSymbol) {
             const n = SLOT_ALL_SYMBOLS.length;
             const idx = SLOT_ALL_SYMBOLS.findIndex(s => s.id === centerSymbol.id);
@@ -1462,6 +1849,11 @@ import {
         }
 
         // 揃ったラインの、実際に画面に見えている絵柄の要素を光らせる（rowOffsets=[各リールの段:0上/1中/2下]）
+        /**
+         * 揃ったラインについて、実際に画面に見えている絵柄の要素を光らせる。
+         * @param {Array<number>} rowOffsets - 各リールの段（0=上/1=中/2=下）を並べた配列
+         * @returns {void}
+         */
         export function highlightSlotWinLine(rowOffsets) {
             rowOffsets.forEach((rowOffset, reelIndex) => {
                 const strip = document.getElementById(`slot-reel-strip-${reelIndex}`);
@@ -1472,6 +1864,10 @@ import {
             });
         }
         // 次にコインを投入する時（新しい回）に、前回光っていた絵柄をすべて消しておく
+        /**
+         * 前回光らせた「揃った絵柄」の強調表示（slot-win-pulse）をすべて解除する。
+         * @returns {void}
+         */
         export function clearSlotWinPulse() {
             document.querySelectorAll('.slot-win-pulse').forEach(el => el.classList.remove('slot-win-pulse'));
         }
@@ -1484,6 +1880,10 @@ import {
             [2, 1, 0], // 斜め ↗
         ];
 
+        /**
+         * 3列すべて止まった後の最終判定を行う。当選ラインの集計・コイン払い出し・演出（カットイン/フラッシュ/マーモット演出）を行う。
+         * @returns {void}
+         */
         export function evaluateSlotResult() {
             slotIsSpinning = false;
             const resultText = document.getElementById('slot-result-text');
@@ -1541,14 +1941,14 @@ import {
             const lineWord = payoutLines.length > 1 ? `${payoutLines.length}ライン` : '';
 
             // 出てくるコインの枚数・音の高さは、一番高い当たりの価値に応じて段階的に増やす（7・マーモットはあふれ出す量に）
-            const coinCount = bestSymbol.payout >= 60 ? 18 : bestSymbol.payout >= 25 ? 10 : bestSymbol.payout >= 10 ? 6 : 3;
-            const coinPitch = bestSymbol.payout >= 60 ? 1.35 : bestSymbol.payout >= 25 ? 1.2 : bestSymbol.payout >= 10 ? 1.1 : 1.0;
-            spawnSlotPayoutCoins(coinCount + (payoutLines.length - 1) * 3, coinPitch); // 複数ライン揃った時は、その分コインも増える
+            const coinCount = bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_HIGH_PAYOUT ? CONFIG.SLOT_PAYOUT_COIN_COUNT_TIER_HIGH : bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_MID_PAYOUT ? CONFIG.SLOT_PAYOUT_COIN_COUNT_TIER_MID : bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_LOW_PAYOUT ? CONFIG.SLOT_PAYOUT_COIN_COUNT_TIER_LOW : CONFIG.SLOT_PAYOUT_COIN_COUNT_TIER_MIN;
+            const coinPitch = bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_HIGH_PAYOUT ? CONFIG.SLOT_PAYOUT_PITCH_TIER_HIGH : bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_MID_PAYOUT ? CONFIG.SLOT_PAYOUT_PITCH_TIER_MID : bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_LOW_PAYOUT ? CONFIG.SLOT_PAYOUT_PITCH_TIER_LOW : CONFIG.SLOT_PAYOUT_PITCH_TIER_MIN;
+            spawnSlotPayoutCoins(coinCount + (payoutLines.length - 1) * CONFIG.SLOT_PAYOUT_EXTRA_COINS_PER_LINE, coinPitch); // 複数ライン揃った時は、その分コインも増える
             inviteNextSlotStep(); // 残りプレイがあればレバー、無ければコイン投入口を光らせる
 
             if (bestSymbol.isJackpot) {
                 // 🐹 マーモット：最上位の大当たり演出。コインだけでは物足りないので、ガチャコインも一緒に付与する
-                const bonusGachaCoins = 30;
+                const bonusGachaCoins = CONFIG.SLOT_JACKPOT_BONUS_GACHA_COINS;
                 setGachaCoins(gachaCoins + (bonusGachaCoins));
                 slotJackpotCount++;
                 trackMissionEvent('jackpotsThisWeek', 1);
@@ -1559,19 +1959,26 @@ import {
                 saveGame();
                 resultText.innerHTML = `<span style="font-size:1.3rem;">🎉✨ ${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 大当たり！！ ✨🎉</span><br>マーモット揃い！${lineWord} +${totalPayout}枚！！<br>🎰 ガチャコイン+${bonusGachaCoins}枚もおまけ！`;
                 playAudioFile('audio/mochisuke/japan_clear.mp3');
-                screenFlash('#ff6ec7', 0.75);
+                screenFlash('#ff6ec7', CONFIG.SLOT_JACKPOT_FLASH_OPACITY);
                 vibrate([40, 50, 40, 50, 40, 50, 80]);
-                setTimeout(() => showSlotMarmotCelebration(totalPayout, bonusGachaCoins), 500);
+                setTimeout(() => showSlotMarmotCelebration(totalPayout, bonusGachaCoins), CONFIG.SLOT_MARMOT_CELEBRATION_DELAY_MS);
             } else {
                 resultText.innerText = `${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 揃った！${lineWord} +${totalPayout}枚！`;
-                playAudioFile(bestSymbol.payout >= 60 ? 'audio/slot/win_seven.mp3' : bestSymbol.payout >= 10 ? 'audio/slot/win_bar.mp3' : 'audio/slot/win_small.mp3');
-                screenFlash('#ffd700', bestSymbol.payout >= 25 ? 0.55 : 0.3);
-                vibrate(bestSymbol.payout >= 25 ? [30, 40, 30, 40, 50] : [20, 30, 20]);
+                playAudioFile(bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_HIGH_PAYOUT ? 'audio/slot/win_seven.mp3' : bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_LOW_PAYOUT ? 'audio/slot/win_bar.mp3' : 'audio/slot/win_small.mp3');
+                screenFlash('#ffd700', bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_MID_PAYOUT ? CONFIG.SLOT_WIN_FLASH_OPACITY_HIGH : CONFIG.SLOT_WIN_FLASH_OPACITY_NORMAL);
+                vibrate(bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_MID_PAYOUT ? [30, 40, 30, 40, 50] : [20, 30, 20]);
             }
         }
 
 
         // 🐹 マーモット揃いの、専用の豪華演出（画面暗転→大きなマーモット→もちすけの専用セリフ）
+        /**
+         * マーモット（大当たり）専用の演出オーバーレイを表示する。画面暗転→マーモット拡大→テキスト表示の順に見せ、
+         * クリックで閉じると特化ゾーンへの突入処理を行う。
+         * @param {number} payout - 今回の払い出し枚数
+         * @param {number} bonusGachaCoins - おまけで付与するガチャコインの枚数
+         * @returns {void}
+         */
         export function showSlotMarmotCelebration(payout, bonusGachaCoins) {
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:background 0.4s;';
@@ -1586,12 +1993,12 @@ import {
             requestAnimationFrame(() => {
                 overlay.style.background = 'rgba(20,10,20,0.88)';
                 overlay.querySelector('img').style.width = '55%';
-                overlay.querySelectorAll('p').forEach((p, i) => setTimeout(() => p.style.opacity = '1', 300 + i * 200));
+                overlay.querySelectorAll('p').forEach((p, i) => setTimeout(() => p.style.opacity = '1', CONFIG.SLOT_MARMOT_TEXT_STAGGER_BASE_MS + i * CONFIG.SLOT_MARMOT_TEXT_STAGGER_STEP_MS));
             });
             overlay.addEventListener('click', () => {
                 overlay.style.background = 'rgba(0,0,0,0)';
                 overlay.querySelectorAll('*').forEach(el => el.style.opacity = '0');
-                setTimeout(() => overlay.remove(), 400);
+                setTimeout(() => overlay.remove(), CONFIG.SLOT_MARMOT_OVERLAY_FADE_MS);
                 slotBonusZoneSpinsLeft = SLOT_BONUS_ZONE_SPINS;
                 saveGame();
                 updateSlotBonusZoneDisplay();
@@ -1606,17 +2013,77 @@ import {
         // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
         // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
         // ===================================================================
+        /**
+         * ミニゲームの自己ベスト記録を書き換える（他ファイルからのsetter）。
+         * @param {object} v - 新しい自己ベスト記録（{timeattack, concentration}）
+         * @returns {void}
+         */
         export function setMinigameBests(v) { minigameBests = v; }
+        /**
+         * ミニゲームコインの所持数を書き換える（他ファイルからのsetter）。
+         * @param {number} v - 新しいミニゲームコインの枚数
+         * @returns {void}
+         */
         export function setMinigameCoins(v) { minigameCoins = v; }
+        /**
+         * ミニゲームの「1日の回数制限」を最後にリセットした日付を書き換える（他ファイルからのsetter）。
+         * @param {string|null} v - 新しい最終リセット日（YYYY-MM-DD形式の文字列など）
+         * @returns {void}
+         */
         export function setMinigameLastResetDate(v) { minigameLastResetDate = v; }
+        /**
+         * 各ミニゲームの、今日すでに使ったプレイ回数を書き換える（他ファイルからのsetter）。
+         * @param {object} v - ミニゲームIDごとの本日消化回数
+         * @returns {void}
+         */
         export function setMinigamePlaysUsedToday(v) { minigamePlaysUsedToday = v; }
+        /**
+         * 各ミニゲームの「新規解放」ハイライトを見たかどうかのフラグを書き換える（他ファイルからのsetter）。
+         * @param {object} v - ミニゲームIDごとの既読フラグ
+         * @returns {void}
+         */
         export function setMinigameSeenUnlocked(v) { minigameSeenUnlocked = v; }
+        /**
+         * スロットの特化ゾーン残り回数を書き換える（他ファイルからのsetter）。
+         * @param {number} v - 新しい特化ゾーン残り回数
+         * @returns {void}
+         */
         export function setSlotBonusZoneSpinsLeft(v) { slotBonusZoneSpinsLeft = v; }
+        /**
+         * スロットのマーモット的中回数を書き換える（他ファイルからのsetter）。
+         * @param {number} v - 新しいマーモット的中回数
+         * @returns {void}
+         */
         export function setSlotJackpotCount(v) { slotJackpotCount = v; }
+        /**
+         * マーモットが出るまでの回転数の最長記録を書き換える（他ファイルからのsetter）。
+         * @param {number|null} v - 新しい最長記録（未達成ならnull）
+         * @returns {void}
+         */
         export function setSlotLongestJackpotPulls(v) { slotLongestJackpotPulls = v; }
+        /**
+         * スロットの残りプレイ可能回数を書き換える（他ファイルからのsetter）。
+         * @param {number} v - 新しい残りプレイ回数
+         * @returns {void}
+         */
         export function setSlotPlaysRemaining(v) { slotPlaysRemaining = v; }
+        /**
+         * 前回マーモットが出てからの回転数を書き換える（他ファイルからのsetter）。
+         * @param {number} v - 新しい経過回転数
+         * @returns {void}
+         */
         export function setSlotPullsSinceJackpot(v) { slotPullsSinceJackpot = v; }
+        /**
+         * マーモットが出るまでの回転数の最短記録を書き換える（他ファイルからのsetter）。
+         * @param {number|null} v - 新しい最短記録（未達成ならnull）
+         * @returns {void}
+         */
         export function setSlotShortestJackpotPulls(v) { slotShortestJackpotPulls = v; }
+        /**
+         * スロットの総回転数（全期間の累計プル回数）を書き換える（他ファイルからのsetter）。
+         * @param {number} v - 新しい総回転数
+         * @returns {void}
+         */
         export function setSlotTotalPulls(v) { slotTotalPulls = v; }
 
 

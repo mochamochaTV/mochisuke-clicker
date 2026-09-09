@@ -1,17 +1,72 @@
         // ui.js を機能ごとに分割したファイルの1つ（自分のマイルーム（家具配置・部屋の編集・スロット切り替え））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { MYROOM_CATEGORY_LABELS, MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS, MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, stages } from '../../data.js?v=2026-09-09-001';
-        import { IS_DEV_MODE, playAudioFile, playBgmLoop } from '../../main.js?v=2026-09-09-001';
-        import { currentMyroomSlotIndex, equippedMyroom, myroomSlots, ownedMyroomItems, setCurrentMyroomSlotIndex, setEquippedMyroom } from '../../progress.js?v=2026-09-09-001';
-        import { activeSprayId, purchasedItems, sprayBuffActiveUntil, sprayInventory, ticketInventory } from '../../shop.js?v=2026-09-09-001';
-        import { saveGame } from '../../state.js?v=2026-09-09-001';
-        import { closeModal, openModal } from './core.js?v=2026-09-09-001';
-        import { closeMyroomActionMenu, moveMenuGoTo, openMoveMenu, renderWarehouseItems, setMyroomMouthHidden } from './social.js?v=2026-09-09-001';
-        import { applyKisekaeToMyroom, stopWingFlapLoop } from './kisekae.js?v=2026-09-09-001';
+        import { MYROOM_CATEGORY_LABELS, MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS, MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, stages } from '../../data.js?v=2026-09-09-002';
+        import { IS_DEV_MODE, playAudioFile, playBgmLoop } from '../../main.js?v=2026-09-09-002';
+        import { currentMyroomSlotIndex, equippedMyroom, myroomSlots, ownedMyroomItems, setCurrentMyroomSlotIndex, setEquippedMyroom } from '../../progress.js?v=2026-09-09-002';
+        import { activeSprayId, purchasedItems, sprayBuffActiveUntil, sprayInventory, ticketInventory } from '../../shop.js?v=2026-09-09-002';
+        import { saveGame } from '../../state.js?v=2026-09-09-002';
+        import { closeModal, openModal } from './core.js?v=2026-09-09-002';
+        import { closeMyroomActionMenu, moveMenuGoTo, openMoveMenu, renderWarehouseItems, setMyroomMouthHidden } from './social.js?v=2026-09-09-002';
+        import { applyKisekaeToMyroom, stopWingFlapLoop } from './kisekae.js?v=2026-09-09-002';
+
+        // 🔧 このファイル内のロジックで使う「調整可能な」数値をまとめる（data.jsの配置テーブル等はそちらに残す）
+        const CONFIG = {
+            // 🖐️ 大きさ調整パネルのドラッグ可動範囲
+            SIZE_PANEL_DRAG_EDGE_MARGIN_PX: 40, // パネルがステージ端からはみ出さないようにする余白(px)
+
+            // 🚶 もちすけのランダム徘徊
+            MOCHISUKE_WALK_PAUSE_MIN_MS: 3000, // 次の歩行までの最短待機時間
+            MOCHISUKE_WALK_PAUSE_RANDOM_RANGE_MS: 4000, // 待機時間に加算するランダム幅
+            MOCHISUKE_WALK_LEFT_MIN_PCT: 12, // 歩き回る横位置の最小%（端に寄りすぎない）
+            MOCHISUKE_WALK_LEFT_RANGE_PCT: 76, // 歩き回る横位置のランダム幅%
+            MOCHISUKE_WALK_BOTTOM_MIN_PCT: 1, // 歩き回る縦位置(床からの高さ)の最小%
+            MOCHISUKE_WALK_BOTTOM_RANGE_PCT: 8, // 歩き回る縦位置のランダム幅%
+            MOCHISUKE_WALK_MIN_DURATION_SEC: 0.5, // 近距離でも不自然に速くならないための最短移動時間(秒)
+            MOCHISUKE_WALK_SOUND_VOLUME: 0.12, // 歩行音の音量
+
+            // 👆 もちすけタップ演出
+            MOCHISUKE_TAP_ANIM_DURATION_MS: 220, // タップ時の縮小→復帰アニメーションの長さ
+
+            // 🚪 マイルームを閉じる時のフェード演出
+            CLOSE_MYROOM_FADE_DELAY_MS: 300, // フェードアウトしてからモーダルを閉じるまでの待機時間
+            CLOSE_MYROOM_OVERLAY_CLEAR_DELAY_MS: 150, // モーダルを閉じた後、フェード用オーバーレイを消すまでの待機時間
+
+            // 🛋️ 家具の操作ボタン（反転・削除・前面へ・背面へ）の配置オフセット
+            FLIP_BTN_LEFT_MAX_PCT: 94, // 反転ボタンの左端位置の上限%
+            DEL_BTN_TOP_OFFSET_PCT: 3, // 削除ボタンを家具の左上から上にずらす量%
+            DEL_BTN_LEFT_OFFSET_PCT: 2, // 削除ボタンを家具の左上から左にずらす量%
+            LAYER_BTN_HEIGHT_OFFSET_PCT: 12, // 前面/背面ボタンの上位置を家具下端から少し上げる量%
+            LAYER_BTN_LEFT_MAX_PCT: 90, // 前面/背面ボタンの左端位置の上限%
+
+            // 📍 家具の配置・ドラッグ可動範囲
+            FLOOR_OVERLAP_EPSILON_PCT: 0.1, // 床置き家具が必ずわずかに床へ重なるようにする微小量%
+            FURNITURE_DRAG_VERTICAL_OVERFLOW_RATIO: 0.1, // 床置き家具が上にはみ出せる割合（高さに対する比率）
+            FURNITURE_DRAG_HORIZONTAL_OVERFLOW_RATIO: 0.15, // 床置き家具が左右にはみ出せる割合（幅に対する比率）
+            FURNITURE_DRAG_VISIBLE_RATIO: 0.85, // 床置き家具が画面内に最低限残っていなければならない割合
+
+            // 🏷️ アイテム名ラベルの表示時間
+            ITEM_NAME_LABEL_DURATION_MS: 2200,
+
+            // 🛠️ 開発者用サイズ調整ツール
+            SIZE_ADJUST_MIN_PCT: 2, // 家具・もちすけの幅/高さがこれ未満に縮まないようにする下限%
+
+            // 🔀 部屋切り替え
+            MYROOM_SLOT_COUNT: 3, // 持てる部屋の最大数
+
+            // ✅ 「決定」ボタンの一時メッセージ表示時間
+            CONFIRM_BTN_MESSAGE_DURATION_MS: 1200,
+
+            // 🎫 時間換算
+            MS_PER_HOUR: 3600000, // スプレー効果の残り時間を「時間」表示に変換する際に使う
+        };
 
         // ===================================================================
         // 🛋️ マイルーム
         // ===================================================================
+        /**
+         * マイルームへの入口。フェード演出付きの共通遷移関数にopenMyRoomを渡して開く。
+         * @returns {void}
+         */
         export function openMyRoomEntry() {
             moveMenuGoTo(openMyRoom);
         }
@@ -19,6 +74,10 @@
         // 🎨 もようがえモード：通常時はUIを消してすっきり見せ、ボタンを押した時だけ編集UIを出す
         export let myroomIsEditMode = false;
         // 🖐️ 大きさ調整パネル自体を、ドラッグで自由に動かせるようにする（「もようがえ」ボタン等と重ならないように避難できる）
+        /**
+         * 開発者用の大きさ調整パネルを、ハンドルのドラッグでステージ内の任意位置へ移動できるようにする。
+         * @returns {void}
+         */
         export function setupMyroomSizePanelDrag() {
             const handle = document.getElementById('myroom-size-adjust-drag-handle');
             const panel = document.getElementById('myroom-size-adjust-panel');
@@ -38,8 +97,8 @@
                 const stageRect = stage.getBoundingClientRect();
                 let newTop = dragState.startTop + (e.clientY - dragState.startY) - stageRect.top;
                 let newLeft = dragState.startLeft + (e.clientX - dragState.startX) - stageRect.left;
-                newTop = Math.max(0, Math.min(stageRect.height - 40, newTop));
-                newLeft = Math.max(0, Math.min(stageRect.width - 40, newLeft));
+                newTop = Math.max(0, Math.min(stageRect.height - CONFIG.SIZE_PANEL_DRAG_EDGE_MARGIN_PX, newTop));
+                newLeft = Math.max(0, Math.min(stageRect.width - CONFIG.SIZE_PANEL_DRAG_EDGE_MARGIN_PX, newLeft));
                 panel.style.top = newTop + 'px';
                 panel.style.left = newLeft + 'px';
                 panel.style.right = 'auto';
@@ -48,6 +107,10 @@
             handle.addEventListener('pointerup', endDrag);
             handle.addEventListener('pointercancel', endDrag);
         }
+        /**
+         * 「もようがえ」モードのON/OFFを切り替える。編集UI・アイテム一覧・部屋切替パネルの表示制御と再描画をまとめて行う。
+         * @returns {void}
+         */
         export function toggleMyroomEditMode() {
             myroomIsEditMode = !myroomIsEditMode;
             selectedMyroomInstance = null;
@@ -68,34 +131,50 @@
         }
         // 🚶 マイルームでは、もちすけがランダムに歩き回る・立ち止まるを繰り返す
         export let myroomWalkTimer = null;
+        /**
+         * もちすけのランダム徘徊タイマーを開始する。既存タイマーを止めてから次の歩行をスケジュールする。
+         * @returns {void}
+         */
         export function startMyroomMochisukeWalk() {
             stopMyroomMochisukeWalk();
             scheduleNextMyroomWalk();
         }
+        /**
+         * もちすけの徘徊タイマーを停止し、myroomWalkTimerをクリアする。
+         * @returns {void}
+         */
         export function stopMyroomMochisukeWalk() {
             clearTimeout(myroomWalkTimer);
             myroomWalkTimer = null;
         }
         export const MYROOM_WALK_SPEED_PCT_PER_SEC = 22; // もちすけの歩く速さ（%/秒、一定）
+        /**
+         * ランダムな待機時間の後に次の歩行(walkMyroomMochisukeToRandomSpot)を実行するタイマーをセットする。
+         * @returns {void}
+         */
         export function scheduleNextMyroomWalk() {
-            const pauseDuration = 3000 + Math.random() * 4000; // 3〜7秒くらい、その場に立ち止まる（前より少し頻度を減らした）
+            const pauseDuration = CONFIG.MOCHISUKE_WALK_PAUSE_MIN_MS + Math.random() * CONFIG.MOCHISUKE_WALK_PAUSE_RANDOM_RANGE_MS; // 3〜7秒くらい、その場に立ち止まる（前より少し頻度を減らした）
             myroomWalkTimer = setTimeout(walkMyroomMochisukeToRandomSpot, pauseDuration);
         }
+        /**
+         * もちすけをランダムな座標へ、距離に応じた一定速度で移動させる。歩行音・歩行アニメーション・口パーツの開閉制御・次のスケジューリングまでを行う。
+         * @returns {void}
+         */
         export function walkMyroomMochisukeToRandomSpot() {
             const wrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (!wrap) return;
             const currentLeft = parseFloat(wrap.style.left) || 50;
-            const newLeftPct = 12 + Math.random() * 76; // 端に寄りすぎないよう12〜88%の範囲で歩く
-            const newBottomPct = 1 + Math.random() * 8; // 床の中で少し前後にも動く
+            const newLeftPct = CONFIG.MOCHISUKE_WALK_LEFT_MIN_PCT + Math.random() * CONFIG.MOCHISUKE_WALK_LEFT_RANGE_PCT; // 端に寄りすぎないよう12〜88%の範囲で歩く
+            const newBottomPct = CONFIG.MOCHISUKE_WALK_BOTTOM_MIN_PCT + Math.random() * CONFIG.MOCHISUKE_WALK_BOTTOM_RANGE_PCT; // 床の中で少し前後にも動く
             // 🐛修正：距離に関わらず速度が一定になるよう、移動時間を距離から逆算する（前は時間固定で、距離次第で速さがバラついていた）
             const distance = Math.abs(newLeftPct - currentLeft);
-            const moveDuration = Math.max(0.5, distance / MYROOM_WALK_SPEED_PCT_PER_SEC).toFixed(2);
+            const moveDuration = Math.max(CONFIG.MOCHISUKE_WALK_MIN_DURATION_SEC, distance / MYROOM_WALK_SPEED_PCT_PER_SEC).toFixed(2);
             wrap.style.transition = `left ${moveDuration}s linear, bottom ${moveDuration}s linear`;
             wrap.style.left = newLeftPct + '%';
             wrap.style.bottom = newBottomPct + '%';
             const inner = document.getElementById('myroom-mochisuke-inner');
             if (inner) inner.classList.add('myroom-walking'); // 🚶 スーッと滑るのではなく、とことこ歩いて見えるようにする（内側要素だけをアニメーションさせ、外側の中央寄せtransformとぶつからないようにする）
-            playAudioFile('audio/move_small.mp3', 0.12);
+            playAudioFile('audio/move_small.mp3', CONFIG.MOCHISUKE_WALK_SOUND_VOLUME);
             setMyroomMouthHidden('myroom-mochisuke', 'walk', true); // 👄 歩いている間は口を開ける（叫び中なら叫び終わるまでは戻さない。全身衣装中は触らない）
             setTimeout(() => {
                 if (inner) inner.classList.remove('myroom-walking');
@@ -104,6 +183,10 @@
             scheduleNextMyroomWalk();
         }
         // 👆 マイルームでは、もちは出ないが、もちすけをタップすると反応してくれる
+        /**
+         * マイルームでもちすけをタップした際の反応（タップ音＋縮小→復帰のスケールアニメーション）を行う。もようがえモード中は何もしない。
+         * @returns {void}
+         */
         export function onMyroomMochisukeTap() {
             if (myroomIsEditMode) return; // もようがえモード中は、ドラッグ操作を優先する
             const inner = document.getElementById('myroom-mochisuke-inner');
@@ -111,10 +194,14 @@
             playAudioFile('audio/tap.mp3');
             inner.animate(
                 [{ transform: 'scale(1)' }, { transform: 'scale(0.88)' }, { transform: 'scale(1)' }],
-                { duration: 220, easing: 'ease-out' }
+                { duration: CONFIG.MOCHISUKE_TAP_ANIM_DURATION_MS, easing: 'ease-out' }
             );
         }
         // 🐛修正：PWA環境ではonclick属性が不安定になることがあるため、pointerupで明示的に判定する
+        /**
+         * もちすけ要素にpointerupイベントリスナーを一度だけ登録し、タップ時にonMyroomMochisukeTap()を呼ぶようにする。
+         * @returns {void}
+         */
         export function setupMyroomMochisukeTapHandler() {
             const wrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (!wrap || wrap.dataset.tapSetup) return;
@@ -124,6 +211,10 @@
                 onMyroomMochisukeTap();
             });
         }
+        /**
+         * マイルーム画面を開くメイン処理。状態初期化、previewMyroomへのディープコピー、レイアウト描画、モーダル表示、BGM再生、もちすけの徘徊・タップハンドラの起動、開発者用サイズ調整パネルの初期化までを行う。
+         * @returns {void}
+         */
         export function openMyRoom() {
             myroomIsEditMode = false;
             selectedMyroomInstance = null;
@@ -152,6 +243,10 @@
                 setupMyroomSizePanelDrag();
             }
         }
+        /**
+         * マイルームを閉じる処理。フェードアウト演出後にモーダルを閉じ、羽ばたきループ・もちすけ徘徊を停止し、通常BGMに戻し、移動メニューを再度開く。
+         * @returns {void}
+         */
         export function closeMyRoom() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
@@ -162,10 +257,14 @@
                 stopMyroomMochisukeWalk();
                 playBgmLoop('audio/bgm/bgm.mp3');
                 openMoveMenu();
-                setTimeout(() => overlay.classList.remove('fade-black'), 150);
-            }, 300);
+                setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.CLOSE_MYROOM_OVERLAY_CLEAR_DELAY_MS);
+            }, CONFIG.CLOSE_MYROOM_FADE_DELAY_MS);
         }
         export let selectedMyroomInstance = null; // 今タップして選択中の家具 { cat, idx } または null
+        /**
+         * previewMyroomの状態に基づき、壁紙・床・配置済み家具をDOMへ再描画する。もようがえモード中で選択中の家具には、反転・削除・前面へ・背面への操作ボタンを動的生成する。
+         * @returns {void}
+         */
         export function renderMyroomLayout() {
             const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === previewMyroom.wallpaper) || MYROOM_ITEMS.wallpaper[0];
             const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === previewMyroom.flooring) || MYROOM_ITEMS.flooring[0];
@@ -195,26 +294,26 @@
                     if (item.flippable) {
                         const flipBtn = document.createElement('button');
                         flipBtn.textContent = '🔄';
-                        flipBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top)}%; left:${Math.min(94, inst.left + item.width)}%; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.75rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                        flipBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top)}%; left:${Math.min(CONFIG.FLIP_BTN_LEFT_MAX_PCT, inst.left + item.width)}%; width:24px; height:24px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.75rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
                         flipBtn.onclick = (e) => { e.stopPropagation(); toggleMyroomInstanceFlip(cat, idx); };
                         layer.appendChild(flipBtn);
                     }
                     const delBtn = document.createElement('button');
                     delBtn.textContent = '✕';
-                    delBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top - 3)}%; left:${Math.max(0, inst.left - 2)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(244,67,54,0.9); color:#fff; font-size:0.7rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                    delBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top - CONFIG.DEL_BTN_TOP_OFFSET_PCT)}%; left:${Math.max(0, inst.left - CONFIG.DEL_BTN_LEFT_OFFSET_PCT)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(244,67,54,0.9); color:#fff; font-size:0.7rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
                     delBtn.onclick = (e) => { e.stopPropagation(); removeMyroomInstance(cat, idx); };
                     layer.appendChild(delBtn);
 
                     const frontBtn = document.createElement('button');
                     frontBtn.textContent = '⬆️';
-                    frontBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top + item.height - 12)}%; left:${Math.min(90, inst.left + item.width)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.65rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                    frontBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top + item.height - CONFIG.LAYER_BTN_HEIGHT_OFFSET_PCT)}%; left:${Math.min(CONFIG.LAYER_BTN_LEFT_MAX_PCT, inst.left + item.width)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.65rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
                     frontBtn.title = '前面へ';
                     frontBtn.onclick = (e) => { e.stopPropagation(); moveMyroomInstanceLayer(cat, idx, 1); };
                     layer.appendChild(frontBtn);
 
                     const backBtn = document.createElement('button');
                     backBtn.textContent = '⬇️';
-                    backBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top + item.height)}%; left:${Math.min(90, inst.left + item.width)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.65rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
+                    backBtn.style.cssText = `position:absolute; top:${Math.max(0, inst.top + item.height)}%; left:${Math.min(CONFIG.LAYER_BTN_LEFT_MAX_PCT, inst.left + item.width)}%; width:22px; height:22px; border-radius:50%; border:none; background:rgba(255,255,255,0.92); font-size:0.65rem; z-index:100; box-shadow:0 2px 4px rgba(0,0,0,0.25); cursor:pointer;`;
                     backBtn.title = '背面へ';
                     backBtn.onclick = (e) => { e.stopPropagation(); moveMyroomInstanceLayer(cat, idx, -1); };
                     layer.appendChild(backBtn);
@@ -223,12 +322,25 @@
             setupMyroomFurnitureDrag();
         }
         // ⬆️⬇️ 家具の重なり順（前面・背面）を調整する
+        /**
+         * 指定した家具インスタンスのzIndexをdelta分増減させ、重なり順（前面/背面）を変更してから再描画する。
+         * @param {string} cat - 家具のカテゴリ名
+         * @param {number} idx - previewMyroom[cat]内のインデックス
+         * @param {number} delta - zIndexの増減量
+         * @returns {void}
+         */
         export function moveMyroomInstanceLayer(cat, idx, delta) {
             const inst = previewMyroom[cat][idx];
             inst.zIndex = (inst.zIndex || 10) + delta;
             renderMyroomLayout();
         }
         // 🆕 家具を配置に追加する（上限あり）
+        /**
+         * 指定カテゴリに家具を1つ新規配置する。上限・所持数チェックの上、初期位置を計算して追加し、再描画・一覧クローズ・アイテム名ラベル表示まで行う。
+         * @param {string} cat - 家具のカテゴリ名
+         * @param {string} itemId - 配置するアイテムのID
+         * @returns {void}
+         */
         export function addMyroomInstance(cat, itemId) {
             if (!previewMyroom[cat]) previewMyroom[cat] = [];
             if (previewMyroom[cat].length >= MYROOM_FURNITURE_LIMIT_PER_CATEGORY) {
@@ -251,7 +363,7 @@
                 top = 50 - item.height / 2;
                 left = 50 - item.width / 2;
                 if (top + item.height <= MYROOM_WALL_ZONE_BOTTOM) {
-                    top = MYROOM_WALL_ZONE_BOTTOM - item.height + 0.1; // 床置き家具は、少しでも床に重なるよう強制する
+                    top = MYROOM_WALL_ZONE_BOTTOM - item.height + CONFIG.FLOOR_OVERLAP_EPSILON_PCT; // 床置き家具は、少しでも床に重なるよう強制する
                 }
             }
             previewMyroom[cat].push({ itemId, top, left, flip: false });
@@ -261,19 +373,35 @@
             clearTimeout(myroomNameLabelTimeout);
             label.textContent = `${item.name}を置いたよ`;
             label.style.display = 'block';
-            myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
+            myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, CONFIG.ITEM_NAME_LABEL_DURATION_MS);
         }
+        /**
+         * 指定インデックスの家具インスタンスを配置配列から削除し、選択状態をリセットして再描画する。一覧が開いていれば配置数表示も更新する。
+         * @param {string} cat - 家具のカテゴリ名
+         * @param {number} idx - previewMyroom[cat]内のインデックス
+         * @returns {void}
+         */
         export function removeMyroomInstance(cat, idx) {
             previewMyroom[cat].splice(idx, 1);
             selectedMyroomInstance = null; // インデックスがずれるため、選択状態はリセットする
             renderMyroomLayout();
             if (myroomCurrentCategory === cat) openMyroomCategory(cat);
         }
+        /**
+         * 指定家具インスタンスの左右反転フラグを反転させ、再描画する。
+         * @param {string} cat - 家具のカテゴリ名
+         * @param {number} idx - previewMyroom[cat]内のインデックス
+         * @returns {void}
+         */
         export function toggleMyroomInstanceFlip(cat, idx) {
             previewMyroom[cat][idx].flip = !previewMyroom[cat][idx].flip;
             renderMyroomLayout();
         }
         // 📍 配置済みの家具を、プレイヤーが直接ドラッグで動かせるようにする（恒久機能）
+        /**
+         * 配置済み家具をポインタドラッグで移動できるようにする恒久機能。もようがえモード中のみ動作し、壁掛けは壁ゾーン内、床置き家具は床にわずかに重なる範囲内に位置を制限する。
+         * @returns {void}
+         */
         export function setupMyroomFurnitureDrag() {
             const stage = document.getElementById('myroom-stage');
             if (stage.dataset.furnitureDragSetup) return;
@@ -322,10 +450,10 @@
                     // 床置きの家具なので、少しでも床(壁紙と床の境界より下)に重なっている必要がある
                     // 🐛修正：はみ出し量が大きすぎると、画面端に近づいた時にスマホのOSジェスチャー(戻る操作等)に
                     // 割り込まれてドラッグが強制中断され、身動きが取れなくなるバグがあったため、はみ出し量を小さくした
-                    newTop = Math.max(-height * 0.1, Math.min(100 - height * 0.85, newTop));
-                    newLeft = Math.max(-width * 0.15, Math.min(100 - width * 0.85, newLeft));
+                    newTop = Math.max(-height * CONFIG.FURNITURE_DRAG_VERTICAL_OVERFLOW_RATIO, Math.min(100 - height * CONFIG.FURNITURE_DRAG_VISIBLE_RATIO, newTop));
+                    newLeft = Math.max(-width * CONFIG.FURNITURE_DRAG_HORIZONTAL_OVERFLOW_RATIO, Math.min(100 - width * CONFIG.FURNITURE_DRAG_VISIBLE_RATIO, newLeft));
                     if (newTop + height <= MYROOM_WALL_ZONE_BOTTOM) {
-                        newTop = MYROOM_WALL_ZONE_BOTTOM - height + 0.1; // ほんの少しだけ床に触れる位置まで押し下げる
+                        newTop = MYROOM_WALL_ZONE_BOTTOM - height + CONFIG.FLOOR_OVERLAP_EPSILON_PCT; // ほんの少しだけ床に触れる位置まで押し下げる
                     }
                 }
                 el.style.top = newTop + '%';
@@ -349,6 +477,10 @@
         export let myroomSizeAdjustMode = false;
         export let myroomSizeAdjustDragState = null;
         // アイテムごとに調整できるよう、ドロップダウンの選択肢を動的に生成する
+        /**
+         * 開発者用サイズ調整ツールのドロップダウンに、もちすけ本体および全カテゴリ・全アイテムの選択肢を動的生成する。
+         * @returns {void}
+         */
         export function renderMyroomSizeAdjustOptions() {
             const select = document.getElementById('myroom-size-adjust-target');
             let html = `<optgroup label="もちすけ本体"><option value="mochisuke__mochisuke">もちすけの大きさ</option></optgroup>`;
@@ -362,17 +494,29 @@
             });
             select.innerHTML = html;
         }
+        /**
+         * サイズ調整ドロップダウンで現在選択中のカテゴリとアイテムオブジェクトを取得する（もちすけの場合はMYROOM_MOCHISUKE_SIZE）。
+         * @returns {{cat: string, item: Object|null}} 選択中のカテゴリ名とアイテムオブジェクト
+         */
         export function getMyroomSizeAdjustSelection() {
             const val = document.getElementById('myroom-size-adjust-target').value;
             const [cat, itemId] = val.split('__');
             if (cat === 'mochisuke') return { cat: 'mochisuke', item: MYROOM_MOCHISUKE_SIZE };
             return { cat, item: MYROOM_ITEMS[cat] ? MYROOM_ITEMS[cat].find(i => i.id === itemId) : null };
         }
+        /**
+         * 現在選択中の調整対象（もちすけ本体、またはプレビュー用家具画像）に対応するDOM要素を返す。
+         * @returns {HTMLElement} 調整対象のDOM要素
+         */
         export function getMyroomSizeAdjustTargetEl() {
             const { cat } = getMyroomSizeAdjustSelection();
             if (cat === 'mochisuke') return document.getElementById('myroom-mochisuke-breathe-wrap');
             return document.getElementById('myroom-size-preview-img');
         }
+        /**
+         * 開発者用の大きさ調整モードON/OFFを切り替える。ONならターゲットに点線アウトラインとリサイズハンドルを表示し、OFFなら消す。
+         * @returns {void}
+         */
         export function toggleMyroomSizeAdjustMode() {
             myroomSizeAdjustMode = !myroomSizeAdjustMode;
             const btn = document.getElementById('myroom-size-adjust-toggle-btn');
@@ -388,6 +532,10 @@
                 btn.style.background = '#e91e63';
             }
         }
+        /**
+         * サイズ調整対象のドロップダウンが変更された際に、既存アウトラインをクリアし、選択されたアイテムをプレビュー表示し、調整モード中ならハンドル位置・数値表示も更新する。
+         * @returns {void}
+         */
         export function onMyroomSizeAdjustTargetChange() {
             document.querySelectorAll('.myroom-slot-img').forEach(el => el.style.outline = '');
             const mochisukeEl = document.getElementById('myroom-mochisuke-breathe-wrap');
@@ -413,6 +561,10 @@
             positionMyroomSizeHandles();
             updateMyroomSizeReadout();
         }
+        /**
+         * 現在の調整対象の実際の表示矩形から、右・下・右下の3つのリサイズハンドルの位置(%)を計算してDOMに反映する。
+         * @returns {void}
+         */
         export function positionMyroomSizeHandles() {
             if (!myroomSizeAdjustMode) return;
             const stage = document.getElementById('myroom-stage');
@@ -429,6 +581,10 @@
             hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
             hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
         }
+        /**
+         * 3つのリサイズハンドルのドラッグ操作を設定し、幅のみ・高さのみ・幅高さ同時のいずれかのモードでターゲット要素とMYROOM_ITEMS内の元データのwidth/heightを直接書き換える。
+         * @returns {void}
+         */
         export function setupMyroomSizeAdjustDrag() {
             const stage = document.getElementById('myroom-stage');
             if (stage.dataset.sizeDragSetup) return;
@@ -458,12 +614,12 @@
                 if (cat === 'mochisuke') {
                     // もちすけはwidthのみ調整（heightは画像の縦横比で自動決定される）
                     if (mode === 'width' || mode === 'both') {
-                        target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
+                        target.style.width = Math.max(CONFIG.SIZE_ADJUST_MIN_PCT, parseFloat(target.style.width) + dxPct) + '%';
                         item.width = parseFloat(target.style.width);
                     }
                 } else {
-                    if (mode === 'width' || mode === 'both') target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
-                    if (mode === 'height' || mode === 'both') target.style.height = Math.max(2, parseFloat(target.style.height) + dyPct) + '%';
+                    if (mode === 'width' || mode === 'both') target.style.width = Math.max(CONFIG.SIZE_ADJUST_MIN_PCT, parseFloat(target.style.width) + dxPct) + '%';
+                    if (mode === 'height' || mode === 'both') target.style.height = Math.max(CONFIG.SIZE_ADJUST_MIN_PCT, parseFloat(target.style.height) + dyPct) + '%';
                     item.width = parseFloat(target.style.width);
                     item.height = parseFloat(target.style.height);
                 }
@@ -474,12 +630,20 @@
             stage.addEventListener('pointerup', () => { myroomSizeAdjustDragState = null; });
             stage.addEventListener('pointercancel', () => { myroomSizeAdjustDragState = null; });
         }
+        /**
+         * 現在選択中アイテムのwidth（もちすけの場合はwidthのみ）/heightの数値をテキスト表示欄に反映する。
+         * @returns {void}
+         */
         export function updateMyroomSizeReadout() {
             const { cat, item } = getMyroomSizeAdjustSelection();
             const el = document.getElementById('myroom-size-adjust-readout');
             if (!item || !el) return;
             el.textContent = (cat === 'mochisuke') ? `width:${item.width}%;` : `width:${item.width}%; height:${item.height}%;`;
         }
+        /**
+         * もちすけおよび全家具アイテムの現在のwidth/height情報をテキスト化し、テキストエリアに表示・選択状態にし、可能ならクリップボードにもコピーする。
+         * @returns {void}
+         */
         export function copyMyroomSizeCoords() {
             const lines = [`もちすけ本体: width:${MYROOM_MOCHISUKE_SIZE.width}%;`];
             ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
@@ -497,6 +661,10 @@
         export const MYROOM_CATEGORY_ORDER = ['wallpaper', 'flooring', 'wall_deco', 'big_furniture', 'table', 'small_deco'];
         export let myroomCurrentCategory = 'wallpaper';
         export let myroomItemListVisible = false; // アイテム一覧が今表示されているか
+        /**
+         * アイテム一覧（左右パネル）と配置数ラベルを非表示にし、表示フラグを下ろす。
+         * @returns {void}
+         */
         export function closeMyroomItemList() {
             myroomItemListVisible = false;
             document.getElementById('myroom-item-list-left').style.display = 'none';
@@ -504,6 +672,11 @@
             const countLabel = document.getElementById('myroom-placed-count-label');
             if (countLabel) countLabel.style.display = 'none';
         }
+        /**
+         * 指定カテゴリのアイテム一覧を開閉・描画する。既に同カテゴリが開いていればトグルで閉じ、そうでなければ所持アイテムを50音順に並べ、左右パネルにセルを生成し、カテゴリボタンのハイライトも更新する。
+         * @param {string} cat - 表示するカテゴリ名
+         * @returns {void}
+         */
         export function openMyroomCategory(cat) {
             playAudioFile('audio/skill_tap.mp3');
             // 同じカテゴリボタンをもう一度押したら、トグルで一覧を閉じる
@@ -576,6 +749,12 @@
             });
         }
         export let myroomNameLabelTimeout = null;
+        /**
+         * 壁紙・床など単一装着系カテゴリのアイテムを装着（またはid=nullで解除）し、再描画・一覧の再表示・アイテム名ラベル表示を行う。
+         * @param {string} cat - 対象カテゴリ名
+         * @param {string|null} id - 装着するアイテムのID（nullで解除）
+         * @returns {void}
+         */
         export function equipMyroomItem(cat, id) {
             previewMyroom[cat] = id;
             renderMyroomLayout();
@@ -585,27 +764,49 @@
             clearTimeout(myroomNameLabelTimeout);
             label.textContent = item ? item.name : '外す';
             label.style.display = 'block';
-            myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, 2200);
+            myroomNameLabelTimeout = setTimeout(() => { label.style.display = 'none'; }, CONFIG.ITEM_NAME_LABEL_DURATION_MS);
         }
         // 🔀 最大3部屋まで持てる。切り替えパネル
         export let myroomSwitcherPreviewIndex = 0; // パネル内で＜＞で選んでいる番号（まだ確定していない）
+        /**
+         * 部屋切り替えパネルを開く。プレビュー中インデックスを現在の部屋に合わせ、表示を更新してオーバーレイを表示する。
+         * @returns {void}
+         */
         export function openMyroomSwitcher() {
             myroomSwitcherPreviewIndex = currentMyroomSlotIndex;
             updateMyroomSwitcherView();
             document.getElementById('myroom-switcher-overlay').style.display = 'flex';
         }
+        /**
+         * 部屋切り替えパネルのオーバーレイを非表示にする。
+         * @returns {void}
+         */
         export function closeMyroomSwitcher() {
             document.getElementById('myroom-switcher-overlay').style.display = 'none';
         }
+        /**
+         * 部屋切り替えパネル内で、＜＞ボタンによりプレビュー対象のスロット番号を3部屋の範囲でループ切り替えし、表示を更新する（まだ確定はしない）。
+         * @param {number} delta - スロット番号の増減量（-1または1）
+         * @returns {void}
+         */
         export function switchMyroomSlotPreview(delta) {
-            myroomSwitcherPreviewIndex = (myroomSwitcherPreviewIndex + delta + 3) % 3;
+            myroomSwitcherPreviewIndex = (myroomSwitcherPreviewIndex + delta + CONFIG.MYROOM_SLOT_COUNT) % CONFIG.MYROOM_SLOT_COUNT;
             updateMyroomSwitcherView();
         }
+        /**
+         * 部屋切り替えパネルのラベル文言（部屋番号・現在の部屋かどうか）とサムネイルプレビューを更新する。
+         * @returns {void}
+         */
         export function updateMyroomSwitcherView() {
             const isCurrent = myroomSwitcherPreviewIndex === currentMyroomSlotIndex;
             document.getElementById('myroom-switcher-label').textContent = `部屋${myroomSwitcherPreviewIndex + 1}${isCurrent ? '（今の部屋）' : ''}`;
             renderMyroomSwitcherThumbnail(myroomSwitcherPreviewIndex);
         }
+        /**
+         * 指定スロット番号の部屋のサムネイル（壁紙・床・配置家具）をHTML文字列で組み立てて表示する。現在編集中のスロットなら保存前のpreviewMyroomを、それ以外は保存済みのmyroomSlotsを参照する。
+         * @param {number} slotIndex - 表示するスロット番号
+         * @returns {void}
+         */
         export function renderMyroomSwitcherThumbnail(slotIndex) {
             const thumb = document.getElementById('myroom-switcher-thumbnail');
             // 今編集中の部屋を見ている場合は、保存前の最新状態(previewMyroom)を反映する
@@ -627,6 +828,10 @@
             });
             thumb.innerHTML = html;
         }
+        /**
+         * 部屋切り替えを実行する。編集中の部屋を現在のスロットに保存してから、選択したスロットへ切り替え、未作成ならデフォルト状態で新規作成し、previewMyroomとequippedMyroomを更新、保存してパネルを閉じる。
+         * @returns {void}
+         */
         export function confirmMyroomSlotSwitch() {
             if (myroomSwitcherPreviewIndex === currentMyroomSlotIndex) { closeMyroomSwitcher(); return; }
             // 今編集中の部屋を、抜ける前にスロットへ保存しておく
@@ -646,15 +851,23 @@
             saveGame();
             closeMyroomSwitcher();
         }
+        /**
+         * 現在編集中のプレビュー内容を正式にequippedMyroomとして確定・保存し、決定ボタンの文言を一時的に「決定しました！」に変えてから元に戻す。
+         * @returns {void}
+         */
         export function confirmMyroomLayout() {
             setEquippedMyroom(JSON.parse(JSON.stringify(previewMyroom))); // 配列(家具配置)も含めて完全に独立させる
             saveGame();
             const btn = document.getElementById('myroom-confirm-btn');
             const original = btn.innerText;
             btn.innerText = '✅ 決定しました！';
-            setTimeout(() => { btn.innerText = original; }, 1200);
+            setTimeout(() => { btn.innerText = original; }, CONFIG.CONFIRM_BTN_MESSAGE_DURATION_MS);
         }
         // 🌐 「決定」とは別に、実際にランキング・フレンドから見られるようにするには「公開する」を押す必要がある
+        /**
+         * 確認ダイアログの後、現在の部屋をequippedMyroomとして確定保存し、window.submitMyroomDataが存在すればそれを呼び出して外部へ公開する。
+         * @returns {void}
+         */
         export function onPublishMyroomTap() {
             if (!confirm('この部屋を公開しますか？\nランキング・フレンドから見られるようになります。')) return;
             setEquippedMyroom(JSON.parse(JSON.stringify(previewMyroom))); // 公開時点の内容を、決定扱いにもしておく
@@ -665,6 +878,10 @@
             }
         }
 
+        /**
+         * 倉庫（おみやげコレクション）画面を開く。購入済みステージ数のバッジを更新し、倉庫アイテム一覧を描画し、モーダル表示と専用BGM再生を行う。
+         * @returns {void}
+         */
         export function openWarehouse() {
             let boughtCount = 0;
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
@@ -676,6 +893,10 @@
         }
 
         // 🎫 ガチャで手に入れたチケットの一覧。個数を確認しながら、好きなタイミングで使える
+        /**
+         * 所持チケット・スプレー類の一覧画面を開く。各アイテムの所持数・使用ボタンを生成し、スプレーは効果時間中かどうかで表示を切り替える。
+         * @returns {void}
+         */
         export function openTicketInventory() {
             const list = document.getElementById('ticket-inventory-list');
             list.innerHTML = '';
@@ -694,7 +915,7 @@
                 row.className = "list-item";
                 let btnHtml;
                 if (isActive) {
-                    const hoursLeft = Math.ceil((sprayBuffActiveUntil - Date.now()) / 3600000);
+                    const hoursLeft = Math.ceil((sprayBuffActiveUntil - Date.now()) / CONFIG.MS_PER_HOUR);
                     btnHtml = `<button class="item-action-btn" disabled style="background:#bbb; color:#fff;">効果中(残り${hoursLeft}h)</button>`;
                 } else {
                     btnHtml = `<button class="item-action-btn btn-shop" ${count > 0 ? '' : 'disabled'} onclick="useSpray('${item.id}')" style="background:#e91e63; color:white;">使う</button>`;

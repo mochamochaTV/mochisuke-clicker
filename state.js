@@ -1,6 +1,6 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-09-001';
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-09-002';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -9,7 +9,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-09-001';
+} from './minigames.js?v=2026-09-09-002';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -22,28 +22,47 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-09-001';
+} from './progress.js?v=2026-09-09-002';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-09-001';
+} from './shop.js?v=2026-09-09-002';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-09-001';
+} from './tap.js?v=2026-09-09-002';
 import {
   hasSeenTutorial, lastGiftSentDateStr, seenButtonHints, setHasSeenTutorial,
   setLastGiftSentDateStr, setSeenButtonHints
-} from './ui.js?v=2026-09-09-001';
+} from './ui.js?v=2026-09-09-002';
 
+        // 🔧 このファイル内で使うチューニング用の数値をまとめたもの（挙動は変えず、名前を付けただけ）
+        const CONFIG = {
+            PLAYER_NAME_MAX_LENGTH: 20,           // プレイヤー名として受け付ける最大文字数
+            PLAYER_NAME_RANDOM_SUFFIX_MAX: 10000, // 初期プレイヤー名の末尾に付けるランダム数字の範囲
+            SAVE_GUARD_MIN_SCORE_FOR_PROGRESS: 100,   // セーブ安全装置：直前のscoreがこれを超えていたら「進行あり」と判定
+            SAVE_GUARD_MIN_TAPS_FOR_PROGRESS: 20,     // セーブ安全装置：直前のtotalTapsCountがこれを超えていたら「進行あり」と判定
+            PREFECTURE_COUNT: 47,                  // 都道府県の数（県別タップ数配列の初期サイズ）
+            CLOUD_RESTORE_POLL_INTERVAL_MS: 500,   // クラウド復元チェックのポーリング間隔（ミリ秒）
+            CLOUD_RESTORE_MAX_POLL_ATTEMPTS: 20,   // クラウド復元チェックを諦めるまでの最大ポーリング回数（約10秒分）
+        };
+
+        /**
+         * ゲームを保存し、ランキング機能が利用可能ならスコアを送信した上で、セーブ完了のアラートを表示する。
+         * @returns {void}
+         */
         export function menuSaveGame() {
             saveGame();
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             alert("💾 セーブしました！");
         }
 
+        /**
+         * ゲームを保存した後、アプリを完全終了できないブラウザ環境の代替として「お別れ画面」を表示し、ウィンドウを閉じようと試みる。
+         * @returns {void}
+         */
         export function menuSaveAndQuit() {
             saveGame();
             // 【重要】ブラウザ/PWAの仕様上、Webページ側から「アプリを完全に終了させる」ことはできません
@@ -58,6 +77,10 @@ import {
         }
 
         // 🔄 セーブデータの書き出し/読み込み（別URL・別インスタンス間でもデータを確実に移せる）
+        /**
+         * ゲームを保存し、セーブデータをBase64文字列に変換してテキストエリアに表示、クリップボードへのコピーを試みる。
+         * @returns {void}
+         */
         export function exportSaveData() {
             saveGame();
             const raw = localStorage.getItem('mochisuke_save_data');
@@ -69,6 +92,10 @@ import {
             catch (e) { alert('下のテキストを手動でコピーしてください'); }
         }
 
+        /**
+         * 貼り付けられたセーブデータ文字列（Base64または生JSON）を検証し、確認を得た上でlocalStorageへ上書き保存してページを再読み込みする。
+         * @returns {void}
+         */
         export function importSaveData() {
             const text = document.getElementById('save-import-text').value.trim();
             if (!text) { alert('貼り付け欄が空です'); return; }
@@ -97,6 +124,10 @@ import {
             location.reload();
         }
 
+        /**
+         * クラウド上の最終バックアップ日時を取得し、画面上のステータス表示要素にその内容を反映する。
+         * @returns {Promise<void>}
+         */
         export async function refreshCloudBackupStatus() {
             const el = document.getElementById('cloud-backup-status');
             if (!el) return;
@@ -111,6 +142,10 @@ import {
         }
 
         // ☁️ 今この瞬間の状態を、自分の意思で確実にクラウドへ残す（自動バックアップの安全装置を無視してでも上書きする）
+        /**
+         * ローカルのセーブ内容を最新化した上で、安全装置を無視して強制的にクラウドへ上書き保存する。
+         * @returns {Promise<void>}
+         */
         export async function manualCloudBackup() {
             if (!window.backupSaveData) { alert('クラウド機能の準備ができていません。少し待ってからもう一度試してください'); return; }
             saveGame(); // 念のため、まずローカルの保存内容を最新にしておく
@@ -127,6 +162,10 @@ import {
             }
         }
 
+        /**
+         * クラウド上のバックアップデータを取得・検証し、確認を得た上でlocalStorageへ上書きしてページを再読み込みする。
+         * @returns {Promise<void>}
+         */
         export async function restoreFromCloud() {
             if (!window.restoreSaveData) { alert('クラウド機能の準備ができていません。少し待ってからもう一度試してください'); return; }
             const backup = await window.restoreSaveData();
@@ -148,15 +187,24 @@ import {
         }
 
         // 明らかにスパム/おかしな名前を弾く簡易チェック（記号だけ・同じ文字の連続など）
+        /**
+         * プレイヤー名の文字列を検証し、記号だけの名前や同じ文字の連続などの不正な名前を弾く。
+         * @param {string} rawName - 検証対象の名前文字列
+         * @returns {Object} 検証結果（{ok:true, name} または {ok:false, reason}）
+         */
         export function sanitizePlayerName(rawName) {
             let n = String(rawName || '').trim();
             if (!n) return { ok: false, reason: '名前を入力してください' };
-            n = n.slice(0, 20);
+            n = n.slice(0, CONFIG.PLAYER_NAME_MAX_LENGTH);
             if (/^(.)\1{2,}$/u.test(n)) return { ok: false, reason: '同じ文字の連続は使えません' };
             if (!/[^\s!-\/:-@\[-`{-~]/u.test(n)) return { ok: false, reason: '記号だけの名前は使えません' };
             return { ok: true, name: n };
         }
 
+        /**
+         * 入力欄のプレイヤー名を検証して保存し、ランキングへの送信とアラート表示を行う。
+         * @returns {void}
+         */
         export function savePlayerName() {
             const input = document.getElementById('player-name-input');
             const result = sanitizePlayerName(input.value);
@@ -174,8 +222,12 @@ import {
         export const OFFLINE_EARNINGS_CAP_HOURS_BASE = 4; // オフライン収益として計算する時間の上限（これ以上離れていても4時間分だけ）
         export const OFFLINE_EARNINGS_MIN_SECONDS = 90; // これより短い離席では出さない（毎回のリロードで鬱陶しくならないように）
 
-        export let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * 10000));
+        export let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * CONFIG.PLAYER_NAME_RANDOM_SUFFIX_MAX));
 
+        /**
+         * ゲームの全状態を1つのオブジェクトにまとめ、不自然なデータ消失を検知する安全装置チェックを経てlocalStorageに保存する。
+         * @returns {void}
+         */
         export function saveGame() {
             lastActiveTimestamp = Date.now();
             const state = {
@@ -219,7 +271,7 @@ import {
                 const prevRaw = localStorage.getItem('mochisuke_save_data');
                 if (prevRaw) {
                     const prev = JSON.parse(prevRaw);
-                    const prevHadProgress = (prev.score > 100) || (prev.totalTapsCount > 20) || (prev.gachaCoins > 0) || (prev.minigameCoins > 0);
+                    const prevHadProgress = (prev.score > CONFIG.SAVE_GUARD_MIN_SCORE_FOR_PROGRESS) || (prev.totalTapsCount > CONFIG.SAVE_GUARD_MIN_TAPS_FOR_PROGRESS) || (prev.gachaCoins > 0) || (prev.minigameCoins > 0);
                     const nowLooksWiped = state.score === 0 && state.totalTapsCount === 0 && state.gachaCoins === 0 && state.minigameCoins === 0;
                     const prestigeWentBackwards = typeof prev.prestigeCount === 'number' && state.prestigeCount < prev.prestigeCount; // 転生回数が減ることは絶対に無い
                     if ((prevHadProgress && nowLooksWiped) || prestigeWentBackwards) {
@@ -234,6 +286,10 @@ import {
         }
 
         export let hadLocalSaveOnLoad = false;
+        /**
+         * localStorageからセーブデータを読み込み、各種グローバル変数へ復元する。旧セーブ形式からの自動修復もここで行う。
+         * @returns {void}
+         */
         export function loadGame() {
             const data = localStorage.getItem('mochisuke_save_data');
             hadLocalSaveOnLoad = !!data;
@@ -285,7 +341,7 @@ import {
                         });
                     }
                     setMinigameBests(state.minigameBests ?? { timeattack: 0, concentration: null });
-                    setPrefTaps(state.prefTaps ?? new Array(47).fill(0));
+                    setPrefTaps(state.prefTaps ?? new Array(CONFIG.PREFECTURE_COUNT).fill(0));
                     lastActiveTimestamp = state.lastActiveTimestamp ?? null;
                     setPrestigeCount(state.prestigeCount ?? 0);
                     setPrestigeScoreHistory(state.prestigeScoreHistory ?? []);
@@ -349,6 +405,10 @@ import {
 
         // 🛟 ローカルにセーブが全く無い状態で起動した時、クラウドにバックアップが残っていないか自動でチェックする
         // （「データが消えたことに気づかないまま最初からプレイしてしまう」事故を防ぐための保険）
+        /**
+         * ローカルにセーブが無い状態で起動した際、クラウド上に復元可能なバックアップがあるかポーリングで確認し、あれば復元を促す。
+         * @returns {void}
+         */
         export function checkForCloudRestoreOnLoad() {
             if (hadLocalSaveOnLoad) return;
             let attempts = 0;
@@ -369,10 +429,10 @@ import {
                             location.reload();
                         }
                     } catch (e) { /* 壊れたバックアップは無視 */ }
-                } else if (attempts > 20) { // 約10秒待っても繋がらなければ諦める（オフライン等）
+                } else if (attempts > CONFIG.CLOUD_RESTORE_MAX_POLL_ATTEMPTS) { // 約10秒待っても繋がらなければ諦める（オフライン等）
                     clearInterval(poll);
                 }
-            }, 500);
+            }, CONFIG.CLOUD_RESTORE_POLL_INTERVAL_MS);
         }
 
         // 🎁 オフライン収益：離れている間の自動増加(mps)ぶんを、もちの数だけ増やす（進行度には一切影響させない）
@@ -384,8 +444,23 @@ import {
         // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
         // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
         // ===================================================================
+        /**
+         * playerName変数を書き換えるsetter（importした束縛には直接代入できないための橋渡し）。
+         * @param {string} v - 設定するプレイヤー名
+         * @returns {void}
+         */
         export function setPlayerName(v) { playerName = v; }
+        /**
+         * score変数を書き換えるsetter（importした束縛には直接代入できないための橋渡し）。
+         * @param {number} v - 設定するスコア値
+         * @returns {void}
+         */
         export function setScore(v) { score = v; }
+        /**
+         * totalTapsCount変数を書き換えるsetter（importした束縛には直接代入できないための橋渡し）。
+         * @param {number} v - 設定する累計タップ数
+         * @returns {void}
+         */
         export function setTotalTapsCount(v) { totalTapsCount = v; }
 
 

@@ -1,10 +1,17 @@
         // ui.js を機能ごとに分割したファイルの1つ（マイルーム1対1ライブチャット（招待/参加・メッセージ送受信・年齢ゲート））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-09-001';
-        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-09-001';
-        import { closeModal, openModal } from './core.js?v=2026-09-09-001';
-        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-09-001';
+        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-09-002';
+        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-09-002';
+        import { closeModal, openModal } from './core.js?v=2026-09-09-002';
+        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-09-002';
 
+        // 🔧 このファイル内で使う調整可能な数値をまとめたもの（値は変更せず、既存のリテラルを名前付きに置き換えただけ）
+        const CONFIG = {
+            CHAT_ELIGIBLE_AGE_THRESHOLD: 13,   // この年齢以上なら自由入力チャットが利用可能
+            ROOM_HEARTBEAT_INTERVAL_MS: 15000, // 部屋セッションの生存確認ハートビートを送る間隔
+            CHAT_INPUT_FOCUS_DELAY_MS: 50,     // 入力バーを開いた直後、入力欄にフォーカスするまでの遅延
+            BIRTHDATE_YEAR_RANGE_BACK: 100,    // 生年月日プルダウンで「今年」から何年前まで選べるようにするか
+        };
 
         // ===================================================================
         // 💬🏠 マイルーム 1対1ライブチャット
@@ -12,19 +19,49 @@
         // 相手の入退室・チャットメッセージをリアルタイムに反映する。
         // ===================================================================
         export let activeChatRoomId = null;      // 今参加している部屋セッションのID（未参加ならnull）
+        /**
+         * activeChatRoomId（今参加している部屋セッションのID）を更新する。
+         * @param {string|null} v - 新しい部屋セッションID（未参加ならnull）
+         * @returns {void}
+         */
         export function setActiveChatRoomId(v) { activeChatRoomId = v; }
         export let activeChatOtherUid = null;    // 一緒にいる相手のuid
+        /**
+         * activeChatOtherUid（一緒にいる相手のuid）を更新する。
+         * @param {string|null} v - 新しい相手のuid
+         * @returns {void}
+         */
         export function setActiveChatOtherUid(v) { activeChatOtherUid = v; }
         export let activeChatIsHost = false;     // 自分が部屋の主(ホスト)かどうか
+        /**
+         * activeChatIsHost（自分が部屋の主かどうか）を更新する。
+         * @param {boolean} v - ホストならtrue、ゲストならfalse
+         * @returns {void}
+         */
         export function setActiveChatIsHost(v) { activeChatIsHost = v; }
         export let myAvatarPrefix = null;        // 自分の見た目が表示されているDOM要素のprefix（ホストなら主役枠、ゲストなら訪問者枠）
+        /**
+         * myAvatarPrefix（自分の見た目が表示されているDOM要素のprefix）を更新する。
+         * @param {string|null} v - 新しいDOM要素のprefix
+         * @returns {void}
+         */
         export function setMyAvatarPrefix(v) { myAvatarPrefix = v; }
         export let otherAvatarPrefix = null;     // 相手の見た目が表示されているDOM要素のprefix
+        /**
+         * otherAvatarPrefix（相手の見た目が表示されているDOM要素のprefix）を更新する。
+         * @param {string|null} v - 新しいDOM要素のprefix
+         * @returns {void}
+         */
         export function setOtherAvatarPrefix(v) { otherAvatarPrefix = v; }
         export let unsubRoomSession = null;      // セッション監視の解除関数
         export let unsubRoomMessages = null;     // チャット監視の解除関数
         export let roomHeartbeatTimer = null;
         export let lastChatSendAt = 0;
+        /**
+         * lastChatSendAt（前回チャットを送信した時刻）を更新する。
+         * @param {number} v - 新しい送信時刻（Date.now()のミリ秒値）
+         * @returns {void}
+         */
         export function setLastChatSendAt(v) { lastChatSendAt = v; }
         export let lastRenderedChatMsgId = null;
         export let chatMessageHistory = [];      // 履歴モーダル表示用に、今回のセッションの全メッセージを保持
@@ -38,11 +75,23 @@
         // 🚫 簡易NGワードフィルタ（完全ではないが、うっかり系の暴言・個人情報っぽいワードを軽く抑止する）
         // 必要に応じてここに単語を追加してください。完璧な検閲ではなく、あくまで抑止目的です。
         export const CHAT_NG_WORDS = ['死ね', 'ころす', '殺す', 'きえろ', '消えろ'];
+        /**
+         * 指定したテキストにNGワードが含まれているかを判定する。
+         * @param {string} text - 判定対象のテキスト
+         * @returns {boolean} NGワードが1つでも含まれていればtrue
+         */
         export function containsNgWord(text) {
             return CHAT_NG_WORDS.some(w => text.includes(w));
         }
 
         // 🎂 チャット年齢ゲート：招待する/されるとき、まだ回答していなければ生年月日を聞く（初回のみ）
+        /**
+         * 生年月日から現在の満年齢を計算する。
+         * @param {number} y - 生年（西暦）
+         * @param {number} m - 生月（1〜12）
+         * @param {number} d - 生日（1〜31）
+         * @returns {number} 現在の満年齢
+         */
         export function calcAgeFromBirthdate(y, m, d) {
             const today = new Date();
             let age = today.getFullYear() - y;
@@ -51,11 +100,15 @@
             return age;
         }
         export let birthdateGateResolver = null;
+        /**
+         * 生年月日ゲートのモーダルにある年・月・日のプルダウンに選択肢を作る（初回のみ実行される）。
+         * @returns {void}
+         */
         export function populateBirthdateGateSelects() {
             const yearSel = document.getElementById('birthdate-gate-year');
             if (!yearSel || yearSel.options.length > 0) return; // 初回だけ作る
             const nowY = new Date().getFullYear();
-            for (let y = nowY; y >= nowY - 100; y--) {
+            for (let y = nowY; y >= nowY - CONFIG.BIRTHDATE_YEAR_RANGE_BACK; y--) {
                 const opt = document.createElement('option'); opt.value = y; opt.textContent = y + '年'; yearSel.appendChild(opt);
             }
             const monthSel = document.getElementById('birthdate-gate-month');
@@ -63,6 +116,10 @@
             const daySel = document.getElementById('birthdate-gate-day');
             for (let d = 1; d <= 31; d++) { const opt = document.createElement('option'); opt.value = d; opt.textContent = d + '日'; daySel.appendChild(opt); }
         }
+        /**
+         * 生年月日ゲートのモーダルを開き、ユーザーが確定するまで待つ。
+         * @returns {Promise<boolean>} 13歳以上と判定されればtrueで解決するPromise
+         */
         export function openBirthdateGateModal() {
             return new Promise((resolve) => {
                 birthdateGateResolver = resolve;
@@ -70,12 +127,17 @@
                 openModal('birthdate-gate-modal');
             });
         }
+        /**
+         * 生年月日ゲートモーダルの「確定」操作を処理する。入力値から年齢を計算し、
+         * チャット利用資格を保存してモーダルを閉じ、待機中のPromiseを解決する。
+         * @returns {Promise<void>}
+         */
         export async function onConfirmBirthdateGate() {
             const y = parseInt(document.getElementById('birthdate-gate-year').value, 10);
             const m = parseInt(document.getElementById('birthdate-gate-month').value, 10);
             const d = parseInt(document.getElementById('birthdate-gate-day').value, 10);
             if (!y || !m || !d) { alert('生年月日を選んでください'); return; }
-            const eligible = calcAgeFromBirthdate(y, m, d) >= 13;
+            const eligible = calcAgeFromBirthdate(y, m, d) >= CONFIG.CHAT_ELIGIBLE_AGE_THRESHOLD;
             if (window.setMyChatEligibility) await window.setMyChatEligibility(eligible);
             closeModal('birthdate-gate-modal');
             const resolver = birthdateGateResolver;
@@ -84,6 +146,10 @@
             if (resolver) resolver(eligible);
         }
         // 既に回答済みならすぐ戻り、未回答ならモーダルで聞いてから戻る（何度招待しても2回目以降は聞かない）
+        /**
+         * チャット利用資格（年齢確認）が未回答なら、生年月日ゲートモーダルで確認する。
+         * @returns {Promise<void>}
+         */
         export async function ensureChatEligibilityAnswered() {
             if (!window.getMyChatEligibility || !window.isRankingReady || !window.isRankingReady()) return;
             const known = await window.getMyChatEligibility();
@@ -91,6 +157,12 @@
         }
 
         // 🕐 招待を送った側(ホスト)：ゲストを待つ部屋を開く
+        /**
+         * ホストとして部屋セッションを開始し、ゲストを待つ画面を表示する。
+         * @param {string} guestUid - 招待するゲストのuid
+         * @param {string} guestName - 招待するゲストの表示名
+         * @returns {Promise<void>}
+         */
         export async function openHostWaitingRoom(guestUid, guestName) {
             if (!window.startRoomHostSession) { alert('通信環境を確認して、もう一度試してください'); return; }
             const roomId = await window.startRoomHostSession(guestUid);
@@ -120,6 +192,12 @@
         }
 
         // 🚪 招待された側(ゲスト)：実際に部屋に入って、ホストと一緒に過ごす
+        /**
+         * ゲストとしてホストの部屋セッションに参加し、一緒に過ごす画面を表示する。
+         * @param {string} hostUid - 参加先ホストのuid
+         * @param {string} hostNameFallback - ホスト名が取得できなかった場合に使う表示名
+         * @returns {Promise<void>}
+         */
         export async function joinFriendRoomAndChat(hostUid, hostNameFallback) {
             if (!window.fetchMyroomData || !window.joinRoomHostSession) return;
             const data = await window.fetchMyroomData(hostUid);
@@ -164,6 +242,12 @@
         export let lastRawChatMessages = []; // messagesサブコレクションの生データ（session開始時刻が後から判明した時の再フィルタ用）
 
         // 👀 セッション監視（相手の到着・退出を検知）＋チャット監視＋生存確認を、まとめて開始する
+        /**
+         * 部屋セッションの監視、チャットメッセージの監視、生存確認ハートビートをまとめて開始する。
+         * @param {string} roomId - 監視対象の部屋セッションID
+         * @param {string} otherName - 相手の表示名
+         * @returns {void}
+         */
         export function startRoomSessionWatch(roomId, otherName) {
             stopRoomSessionWatch();
             // 🐛修正：本当のsessionStartedAtがFirestoreから届くまでの一瞬、フィルタが0のままだと
@@ -206,9 +290,13 @@
             unsubRoomMessages = window.listenRoomChatMessages(roomId, renderChatMessages);
             roomHeartbeatTimer = setInterval(() => {
                 if (activeChatRoomId) window.sendRoomSessionHeartbeat(activeChatRoomId, activeChatIsHost);
-            }, 15000);
+            }, CONFIG.ROOM_HEARTBEAT_INTERVAL_MS);
         }
 
+        /**
+         * セッション監視・チャット監視・ハートビートをすべて停止し、関連する状態をリセットする。
+         * @returns {void}
+         */
         export function stopRoomSessionWatch() {
             if (unsubRoomSession) { unsubRoomSession(); unsubRoomSession = null; }
             if (unsubRoomMessages) { unsubRoomMessages(); unsubRoomMessages = null; }
@@ -224,6 +312,11 @@
         }
 
         // 🎉 ホスト側：待っていたゲストが実際に部屋に来た瞬間の演出
+        /**
+         * ホスト側で、待っていたゲストが部屋に到着した瞬間の演出（表示切替・効果音・見た目反映）を行う。
+         * @param {string} guestName - 到着したゲストの表示名
+         * @returns {Promise<void>}
+         */
         export async function onGuestArrived(guestName) {
             const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
             myselfWrap.dataset.shown = '1';
@@ -241,6 +334,11 @@
         }
 
         // 🚪🔴 相手が退出した／セッションが切れた時
+        /**
+         * 相手が退出した、またはセッションが切れたときの後処理を行う（状態リセット・監視停止・通知）。
+         * @param {string} otherName - 退出した相手の表示名
+         * @returns {void}
+         */
         export function handleRoomSessionEnded(otherName) {
             if (!activeChatRoomId) return; // 既に自分から退室済み
             setActiveChatRoomId(null); setActiveChatOtherUid(null); setActiveChatIsHost(false);
@@ -253,6 +351,11 @@
         }
 
         // 💬📜 チャット用フローティングボタン（メッセージ・履歴）の表示切替。開くたびに入力バーは閉じた状態から始める
+        /**
+         * チャット用フローティングボタン（メッセージ・履歴）の表示・非表示を切り替える。
+         * @param {boolean} visible - チャット機能を表示するかどうか
+         * @returns {void}
+         */
         export function setChatUiVisible(visible) {
             const toggleBtn = document.getElementById('visit-chat-toggle-btn');
             const historyBtn = document.getElementById('visit-chat-history-btn');
@@ -268,12 +371,21 @@
         }
 
         // 🏠 自分の部屋をホスト中は、他人の部屋にしか意味のないボタン（いいね・スタンプ行）を隠す
+        /**
+         * 自分の部屋をホスト中かどうかに応じて、他人の部屋でしか意味のないボタン（スタンプ行）の表示を切り替える。
+         * @param {boolean} isHosting - 自分が部屋をホスト中ならtrue
+         * @returns {void}
+         */
         export function setVisitActionButtonsForHosting(isHosting) {
             const stampRow = document.getElementById('visit-stamp-buttons-row');
             if (stampRow) stampRow.style.display = isHosting ? 'none' : 'flex';
         }
 
         // 💬 入力バーの開閉（💬ボタンを押した時）。開く時は入力欄にフォーカスしてキーボードを呼び出す
+        /**
+         * チャット入力バーの表示を開閉する。開く時は入力欄にフォーカスしてキーボードを呼び出す。
+         * @returns {void}
+         */
         export function toggleChatInputBar() {
             const bar = document.getElementById('visit-chat-input-bar');
             if (!bar) return;
@@ -283,11 +395,17 @@
                 setTimeout(() => {
                     const input = document.getElementById('visit-chat-input');
                     if (input) input.focus();
-                }, 50);
+                }, CONFIG.CHAT_INPUT_FOCUS_DELAY_MS);
             }
         }
 
         // 💭 指定したアバターの頭上に、セリフとしてメッセージを表示する
+        /**
+         * 指定したアバターの頭上に、セリフ吹き出しとしてメッセージを一定時間表示する。
+         * @param {string} prefix - 対象アバターのDOM要素prefix
+         * @param {string} text - 吹き出しに表示するテキスト
+         * @returns {void}
+         */
         export function showChatBubble(prefix, text) {
             const bubble = document.getElementById(prefix + '-chat-bubble');
             if (!bubble) return;
@@ -296,6 +414,11 @@
             bubble.classList.add('chat-bubble-show');
             bubble._hideTimer = setTimeout(() => bubble.classList.remove('chat-bubble-show'), CHAT_BUBBLE_DURATION_MS);
         }
+        /**
+         * 指定したアバターのセリフ吹き出しを非表示にする。
+         * @param {string} prefix - 対象アバターのDOM要素prefix
+         * @returns {void}
+         */
         export function hideChatBubble(prefix) {
             const bubble = document.getElementById(prefix + '-chat-bubble');
             if (!bubble) return;
@@ -305,6 +428,12 @@
 
         // 👂 新着メッセージが来るたびに呼ばれる：最新の1件をセリフ吹き出しで表示し、履歴も更新する
         // （activeChatSessionStartedAt以降だけに絞る理由は、その変数の宣言部を参照）
+        /**
+         * 受信したメッセージ一覧を今回のセッション開始時刻以降に絞り込み、最新の1件をセリフ吹き出しで表示し、
+         * 履歴も更新する。
+         * @param {Array} rawMsgs - messagesサブコレクションから届いた生のメッセージ配列
+         * @returns {void}
+         */
         export function renderChatMessages(rawMsgs) {
             if (!activeChatRoomId) return;
             lastRawChatMessages = rawMsgs;
@@ -323,6 +452,10 @@
         }
 
         // 📜 履歴モーダルの中身を「プレイヤー名：内容」の形式で描画する
+        /**
+         * チャット履歴モーダルの中身を「プレイヤー名：内容」の形式で描画する。
+         * @returns {void}
+         */
         export function renderChatHistoryModalContent() {
             const el = document.getElementById('visit-chat-history-list');
             if (!el) return;
@@ -335,11 +468,19 @@
             ).join('');
             el.scrollTop = el.scrollHeight;
         }
+        /**
+         * チャット履歴モーダルの中身を描画してから、モーダルを開く。
+         * @returns {void}
+         */
         export function openChatHistoryModal() {
             renderChatHistoryModalContent();
             openModal('visit-chat-history-modal');
         }
 
+        /**
+         * 入力欄の自由入力メッセージを検証（連投防止・NGワード・文字数）した上で送信する。
+         * @returns {Promise<void>}
+         */
         export async function sendFreeChatMessage() {
             if (!activeChatRoomId) return;
             const input = document.getElementById('visit-chat-input');
@@ -363,6 +504,10 @@
         }
 
         // ⌨️ Enterキーで送信できるようにする（起動時に1回だけ登録）
+        /**
+         * チャット入力欄でEnterキーを押した時にメッセージを送信できるようにイベントを登録する（起動時に1回だけ実行）。
+         * @returns {void}
+         */
         export function setupChatInputEnterKey() {
             const input = document.getElementById('visit-chat-input');
             if (!input) return;

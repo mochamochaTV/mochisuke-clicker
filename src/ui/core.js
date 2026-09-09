@@ -1,14 +1,48 @@
         // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-09-001';
-        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-09-001';
-        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-09-001';
-        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-09-001';
-        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-09-001';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-09-001';
-        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-09-001';
+        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-09-002';
+        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-09-002';
+        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-09-002';
+        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-09-002';
+        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-09-002';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-09-002';
+        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-09-002';
 
+        // 🔧 このファイル内でロジックに使う「調整可能な」数値をまとめたもの（CSS文字列内の値や、配列添字などの構造的な数値は対象外）
+        const CONFIG = {
+            // 音量設定関連
+            DEFAULT_BGM_VOLUME_PCT: 30, // BGM音量のデフォルト値（%）
+            DEFAULT_SFX_VOLUME_PCT: 100, // 効果音音量のデフォルト値（%）
 
+            // PWA / Service Worker関連
+            SW_UPDATE_CHECK_INTERVAL_MS: 5 * 60 * 1000, // Service Workerの更新チェック間隔（開いたままの人のためのフォローアップ）
+
+            // もちすけのセリフ・口パーツ関連
+            BALLOON_AUTO_HIDE_MS: 4000, // セリフ吹き出しが自動で消えるまでの時間
+            ROBO_MOUTH_FRAME_INTERVAL_MS: 60, // ロボもちすけの口アニメ、1コマあたりの再生間隔
+
+            // 4隅ボタン調整関連
+            CORNER_BTN_MIN_SIZE_PX: 20, // 4隅ボタンの最小サイズ
+
+            // 口パーツ位置調整関連
+            MOUTH_DEFAULT_WIDTH_PCT: 18, // 口パーツ幅のデフォルト値（%）
+            MOUTH_MIN_WIDTH_PCT: 3, // 口パーツ幅の最小値（%）
+
+            // もちすけ本体サイズ調整関連
+            MOCHISUKE_DEFAULT_WIDTH_PX: 170, // もちすけ本体幅のデフォルト値
+            MOCHISUKE_DEFAULT_MAX_HEIGHT_PX: 206, // もちすけ本体の最大高さのデフォルト値
+            MOCHISUKE_MIN_SIZE_PX: 60, // もちすけ本体サイズの最小値
+
+            // おしごとミッション画面の画面切り替え演出
+            OSHIGOTO_FADE_OUT_MS: 300, // 画面を暗転させるまでの時間
+            OSHIGOTO_FADE_IN_DELAY_MS: 150, // 暗転を解除するまでの遅延
+        };
+
+        /**
+         * BGM音量スライダーの変更を反映する。
+         * @param {number} val - スライダーの値（0〜100のパーセント）
+         * @returns {void}
+         */
         export function onBgmVolumeChange(val) {
             setBgmVolumeMult(val / 100);
             document.getElementById('bgm-vol-label').innerText = val + '%';
@@ -16,19 +50,32 @@
             applyBgmVolume();
         }
 
+        /**
+         * 効果音音量スライダーの変更を反映する。
+         * @param {number} val - スライダーの値（0〜100のパーセント）
+         * @returns {void}
+         */
         export function onSfxVolumeChange(val) {
             setSfxVolumeMult(val / 100);
             document.getElementById('sfx-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_sfx_volume', sfxVolumeMult);
         }
 
+        /**
+         * BGM・効果音の音量設定を初期値にリセットする。
+         * @returns {void}
+         */
         export function resetVolumeSettings() {
-            onBgmVolumeChange(30);
-            onSfxVolumeChange(100);
-            document.getElementById('bgm-vol-slider').value = 30;
-            document.getElementById('sfx-vol-slider').value = 100;
+            onBgmVolumeChange(CONFIG.DEFAULT_BGM_VOLUME_PCT);
+            onSfxVolumeChange(CONFIG.DEFAULT_SFX_VOLUME_PCT);
+            document.getElementById('bgm-vol-slider').value = CONFIG.DEFAULT_BGM_VOLUME_PCT;
+            document.getElementById('sfx-vol-slider').value = CONFIG.DEFAULT_SFX_VOLUME_PCT;
         }
 
+        /**
+         * 音量スライダーとプレイヤー名入力欄に、保存済みの値を反映して初期化する。
+         * @returns {void}
+         */
         export function initVolumeSliders() {
             const bgmSlider = document.getElementById('bgm-vol-slider');
             const sfxSlider = document.getElementById('sfx-vol-slider');
@@ -39,6 +86,10 @@
         }
 
         export let uiDeclutterState = 0;
+        /**
+         * UI表示の簡素化モードを順番に切り替える（通常→モード1→モード2→モード3→通常…）。
+         * @returns {void}
+         */
         export function toggleUiDeclutter() {
             uiDeclutterState = (uiDeclutterState + 1) % 4;
             document.body.classList.remove('ui-mode-1', 'ui-mode-2', 'ui-mode-3');
@@ -57,7 +108,7 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then((reg) => {
                     reg.update().catch(() => {});
-                    setInterval(() => reg.update().catch(() => {}), 5 * 60 * 1000); // 開いたままの人のためのフォローアップ
+                    setInterval(() => reg.update().catch(() => {}), CONFIG.SW_UPDATE_CHECK_INTERVAL_MS); // 開いたままの人のためのフォローアップ
                 }).catch(() => {});
 
                 let hasReloadedForUpdate = false;
@@ -75,6 +126,11 @@
 
         // 🍴 もちすけにお土産をあげる機能（回数制限なし）
         export let balloonAutoHideTimer = null;
+        /**
+         * もちすけのセリフ吹き出しを表示する。
+         * @param {string} text - 表示するセリフのテキスト
+         * @returns {void}
+         */
         export function showMochiComment(text) {
             const balloon = document.getElementById('mochi-balloon');
             if (!balloon) return;
@@ -83,11 +139,15 @@
             setLastTappedTime(Date.now()); // 表示直後にすぐ別のセリフへ切り替わらないようにリセット
             clearTimeout(balloonAutoHideTimer);
             if (!isTutorialActive) {
-                balloonAutoHideTimer = setTimeout(() => { balloon.classList.remove('balloon-show'); }, 4000);
+                balloonAutoHideTimer = setTimeout(() => { balloon.classList.remove('balloon-show'); }, CONFIG.BALLOON_AUTO_HIDE_MS);
             }
         }
 
         // プレゼントや黄金もちが消えた時など、表示中のセリフを引っ込めるためのヘルパー
+        /**
+         * 表示中のもちすけのセリフ吹き出しを非表示にする。
+         * @returns {void}
+         */
         export function hideMochiComment() {
             const balloon = document.getElementById('mochi-balloon');
             if (balloon) balloon.classList.remove('balloon-show');
@@ -97,6 +157,10 @@
         // （showMochiComment/updateCheerBalloon/チュートリアルなど、色々な場所からセリフが更新されても、ここ1箇所で拾える）
         // 👄 口パーツは「通常の姿・話していない・叫んでいない・必殺技で巨大化していない」時だけ表示する。
         // 叫び顔・必殺技巨大化は、それぞれ専用のイラスト/拡大を使うため、口パーツを重ねると浮いて見えてしまう。
+        /**
+         * セリフ表示・叫び・必殺技・伸縮アニメーションの状態に応じて、口パーツの表示/非表示を切り替える。
+         * @returns {void}
+         */
         export function updateMouthPatchVisibility() {
             const mouthPatchEl = document.getElementById('mochisuke-mouth-patch');
             if (!mouthPatchEl) return;
@@ -109,6 +173,10 @@
             mouthPatchEl.style.display = shouldHide ? 'none' : 'block';
         }
 
+        /**
+         * セリフ吹き出しの表示/非表示の変化をMutationObserverで監視し、口パーツ表示の更新や開閉音の再生を行う。
+         * @returns {void}
+         */
         (function setupBalloonObserver() {
             const balloonEl = document.getElementById('mochi-balloon');
             if (!balloonEl) return;
@@ -130,6 +198,11 @@
 
         // 🤖 ロボもちすけの口（窓）アニメーション。open=trueで開くコマ送り、falseで閉じるコマ送り（開く時の逆再生）
         export let roboMouthAnimTimer = null;
+        /**
+         * ロボもちすけの口（窓）のコマ送りアニメーションを再生する。
+         * @param {boolean} open - trueで開くコマ送り、falseで閉じるコマ送り
+         * @returns {void}
+         */
         export function playRoboMouthAnimation(open) {
             const item = KISEKAE_ITEMS.fullbody.find(i => i.id === 'fullbody_robo');
             const mainImg = document.getElementById('mochisuke-fullbody');
@@ -146,7 +219,7 @@
                     clearInterval(roboMouthAnimTimer);
                     mainImg.src = open ? frames[frames.length - 1] : item.img; // 開き切ったら最終フレーム維持、閉じ切ったら口閉じ画像に戻る
                 }
-            }, 60); // 5コマを300msで再生
+            }, CONFIG.ROBO_MOUTH_FRAME_INTERVAL_MS); // 5コマを300msで再生
         }
 
         // 🫁 口パーツの呼吸は、もちすけ画像と共通の親要素(#mochisuke-breathe-wrap)にアニメーションをかけることで、
@@ -155,11 +228,20 @@
 
         // 時間帯の並び順（インデックスは他の場所でも共通して使う）
         export const TIME_BUCKETS = ['morning', 'noon', 'evening', 'lateNight'];
+        /**
+         * 現在時刻の時間帯に応じた、もちすけの挨拶セリフをランダムに1つ取得する。
+         * @returns {string} 挨拶セリフ
+         */
         export function getTimeGreeting() {
             const bucket = TIME_BUCKETS[getTimeBucketIndex(new Date().getHours())];
             return pickRandom(dialogueData.timeGreetings[bucket]);
         }
 
+        /**
+         * 日付をYYYY-M-D形式（月日は2桁ゼロ埋め）の文字列に変換する。
+         * @param {Date} d - 変換対象の日付
+         * @returns {string} ローカル日付文字列
+         */
         export function getLocalDateString(d) {
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
         }
@@ -171,6 +253,10 @@
         export let tutorialTimer = null;
         export let isTutorialActive = false;
 
+        /**
+         * まだチュートリアルを見ていない、かつプレイ履歴もない場合にチュートリアルを開始する。
+         * @returns {void}
+         */
         export function checkShowTutorial() {
             if (hasSeenTutorial) return;
             // 何かしら既にプレイした形跡があれば、初見扱いにしない
@@ -178,6 +264,10 @@
             openTutorial();
         }
 
+        /**
+         * チュートリアルを最初のステップから開始する。
+         * @returns {void}
+         */
         export function openTutorial() {
             tutorialStepIndex = 0;
             isTutorialActive = true;
@@ -186,6 +276,10 @@
             runTutorialStep();
         }
 
+        /**
+         * チュートリアルの現在のステップを表示し、指定時間後に次のステップへ進める。全ステップ終了時はチュートリアルを終了する。
+         * @returns {void}
+         */
         export function runTutorialStep() {
             document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
 
@@ -212,6 +306,10 @@
             }, step.duration);
         }
 
+        /**
+         * チュートリアルを終了状態にし、進捗を保存してプレイヤー名の入力を促す。
+         * @returns {void}
+         */
         export function endTutorial() {
             isTutorialActive = false;
             document.body.classList.remove('tutorial-active');
@@ -221,9 +319,17 @@
             promptPlayerNameIfNeeded();
         }
 
+        /**
+         * チュートリアルをスキップするかどうかの確認ダイアログを表示する。
+         * @returns {void}
+         */
         export function confirmSkipTutorial() {
             document.getElementById('tutorial-skip-confirm').style.display = 'flex';
         }
+        /**
+         * チュートリアルのスキップを確定し、確認ダイアログを閉じてチュートリアルを終了する。
+         * @returns {void}
+         */
         export function doSkipTutorial() {
             document.getElementById('tutorial-skip-confirm').style.display = 'none';
             clearTimeout(tutorialTimer);
@@ -232,12 +338,20 @@
         }
 
         // 🍴 チュートリアルの最後に、まだ名前を決めていなければ聞いておく
+        /**
+         * プレイヤー名が未設定であれば、チュートリアル用の名前入力モーダルを開く。
+         * @returns {void}
+         */
         export function promptPlayerNameIfNeeded() {
             if (localStorage.getItem('punicker_player_name')) return;
             const input = document.getElementById('tutorial-name-input');
             if (input) input.value = playerName;
             openModal('tutorial-name-modal');
         }
+        /**
+         * チュートリアルの名前入力欄の内容を検証し、プレイヤー名として保存する。
+         * @returns {void}
+         */
         export function saveTutorialPlayerName() {
             const input = document.getElementById('tutorial-name-input');
             const result = sanitizePlayerName(input.value);
@@ -250,11 +364,19 @@
 
         // 💬 4つの丸ボタン、初めて押した時だけ軽くヒントを出す（チュートリアル終了後の、2周目以降のフォロー用）
         export let seenButtonHints = { map: false, menu: false, ui: false, feed: false };
+        /**
+         * 地図ボタンのタップを処理する。初回のみヒントを表示してから地図画面を開く。
+         * @returns {void}
+         */
         export function onMapButtonTap() {
             if (!seenButtonHints.map) { seenButtonHints.map = true; saveGame(); showMochiComment('地図で好きな県に飛べるで！'); }
             openMap();
         }
         // 🗺️⚙️🖼️🍴 4隅ボタンの位置・大きさを反映する
+        /**
+         * 4隅ボタン（地図・設定・背景・お土産）の大きさと位置を、設定値に基づいてDOMに反映する。
+         * @returns {void}
+         */
         export function applyCornerBtnPositions() {
             document.documentElement.style.setProperty('--corner-btn-size', CORNER_BTN_SIZE + 'px');
             const isPwa = isRunningStandalone();
@@ -275,11 +397,20 @@
         // 🛠️ 開発者用：4隅ボタンの調整ツール（大きさは共通、位置は個別にドラッグ調整）
         export let cornerBtnAdjustMode = false;
         export let cornerBtnDragState = null;
+        /**
+         * 4隅ボタンの共通サイズを増減させる（開発者用調整ツール）。
+         * @param {number} delta - サイズの変化量（px）
+         * @returns {void}
+         */
         export function adjustCornerBtnSize(delta) {
-            setCORNER_BTN_SIZE(Math.max(20, CORNER_BTN_SIZE + delta));
+            setCORNER_BTN_SIZE(Math.max(CONFIG.CORNER_BTN_MIN_SIZE_PX, CORNER_BTN_SIZE + delta));
             document.getElementById('corner-btn-size-readout').textContent = CORNER_BTN_SIZE + 'px';
             applyCornerBtnPositions();
         }
+        /**
+         * 4隅ボタンの位置調整モードのON/OFFを切り替える（開発者用調整ツール）。
+         * @returns {void}
+         */
         export function toggleCornerBtnAdjustMode() {
             cornerBtnAdjustMode = !cornerBtnAdjustMode;
             const btn = document.getElementById('corner-btn-adjust-toggle-btn');
@@ -287,13 +418,26 @@
             if (cornerBtnAdjustMode) setupCornerBtnDrag();
             updateCornerBtnReadout();
         }
+        /**
+         * 4隅ボタン調整対象のセレクトボックスが変更された際に、readout表示を更新する。
+         * @returns {void}
+         */
         export function onCornerBtnAdjustTargetChange() {
             updateCornerBtnReadout();
         }
         // PWA(ホーム画面)かどうかで、参照・更新すべきオフセットのデータを切り替える
+        /**
+         * 実行環境（PWA/通常URL）に応じた、指定ボタンのオフセットデータへの参照を取得する。
+         * @param {string} id - ボタンのDOM要素ID
+         * @returns {Object} オフセットデータ（vert/horizプロパティを持つオブジェクト）
+         */
         export function getCornerBtnOffsetsRef(id) {
             return (isRunningStandalone() && CORNER_BTN_OFFSETS_PWA_OVERRIDE[id]) ? CORNER_BTN_OFFSETS_PWA_OVERRIDE[id] : CORNER_BTN_OFFSETS[id];
         }
+        /**
+         * 4隅ボタンのドラッグによる位置調整を、各ボタンに対して一度だけセットアップする（開発者用調整ツール）。
+         * @returns {void}
+         */
         export function setupCornerBtnDrag() {
             if (document.body.dataset.cornerDragSetup) return;
             document.body.dataset.cornerDragSetup = '1';
@@ -324,12 +468,20 @@
             document.body.addEventListener('pointerup', () => { cornerBtnDragState = null; });
             document.body.addEventListener('pointercancel', () => { cornerBtnDragState = null; });
         }
+        /**
+         * 現在の調整対象ボタンのオフセット値を、readout表示欄に反映する。
+         * @returns {void}
+         */
         export function updateCornerBtnReadout() {
             const id = document.getElementById('corner-btn-adjust-target').value;
             const offsets = getCornerBtnOffsetsRef(id);
             const envLabel = isRunningStandalone() ? '（PWA）' : '（通常URL）';
             document.getElementById('corner-btn-adjust-readout').textContent = `${envLabel} vert:${offsets.vert}px; horiz:${offsets.horiz}px;`;
         }
+        /**
+         * 4隅ボタン全ての現在の座標情報をテキストにまとめ、クリップボードにコピーする（開発者用調整ツール）。
+         * @returns {void}
+         */
         export function copyCornerBtnCoords() {
             const labels = { 'map-toggle-btn': '地図', 'menu-toggle-btn': '設定', 'ui-toggle-btn': '背景', 'feed-toggle-btn': 'お土産一覧' };
             const envLabel = isRunningStandalone() ? '【PWA(ホーム画面)】' : '【通常URL】';
@@ -345,19 +497,35 @@
             textarea.select();
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
+        /**
+         * 設定（メニュー）ボタンのタップを処理する。初回のみヒントを表示してからメニューモーダルを開く。
+         * @returns {void}
+         */
         export function onMenuButtonTap() {
             if (!seenButtonHints.menu) { seenButtonHints.menu = true; saveGame(); showMochiComment('設定はここから触れるで！'); }
             openModal('menu-modal'); refreshCloudBackupStatus();
         }
+        /**
+         * 背景（UI簡素化）ボタンのタップを処理する。初回のみヒントを表示してからUI表示を切り替える。
+         * @returns {void}
+         */
         export function onUiButtonTap() {
             if (!seenButtonHints.ui) { seenButtonHints.ui = true; saveGame(); showMochiComment('写真撮る時とかに使こてな！'); }
             toggleUiDeclutter();
         }
+        /**
+         * お土産ボタンのタップを処理する。初回のみヒントを表示してからお土産コレクション画面を開く。
+         * @returns {void}
+         */
         export function onFeedButtonTap() {
             if (!seenButtonHints.feed) { seenButtonHints.feed = true; saveGame(); showMochiComment('ここからお土産あげられるんやで！'); }
             openOmiyageCollection();
         }
 
+        /**
+         * 画面を開いた直後の挨拶を表示する。その日その時間帯にまだ挨拶していなければ挨拶を、既に挨拶済みならおかえりのセリフを出す。
+         * @returns {void}
+         */
         export function showOpeningGreeting() {
             const now = new Date();
             const bucketIdx = getTimeBucketIndex(now.getHours());
@@ -376,6 +544,10 @@
         }
 
         export let mouthDragState = null;
+        /**
+         * 口パーツの位置調整モードのON/OFFを切り替える（開発者用調整ツール）。
+         * @returns {void}
+         */
         export function toggleMouthAdjustMode() {
             mouthAdjustMode = !mouthAdjustMode;
             const anchor = document.getElementById('mochisuke-mouth-anchor');
@@ -401,6 +573,11 @@
                 if (btn) btn.style.background = '#e91e63';
             }
         }
+        /**
+         * 口パーツのドラッグによる位置調整を、指定のアンカー要素に対して一度だけセットアップする（開発者用調整ツール）。
+         * @param {HTMLElement} anchor - ドラッグ対象となる口パーツのアンカー要素
+         * @returns {void}
+         */
         export function setupMouthDrag(anchor) {
             if (anchor.dataset.dragSetup) return; // 二重登録防止
             anchor.dataset.dragSetup = '1';
@@ -428,19 +605,32 @@
             anchor.addEventListener('pointerup', () => { mouthDragState = null; });
             anchor.addEventListener('pointercancel', () => { mouthDragState = null; });
         }
+        /**
+         * 口パーツの幅を増減させる（開発者用調整ツール）。
+         * @param {number} delta - 幅の変化量（%）
+         * @returns {void}
+         */
         export function adjustMouthSize(delta) {
             const anchor = document.getElementById('mochisuke-mouth-anchor');
             if (!anchor) return;
-            const cur = parseFloat(anchor.style.width) || 18;
-            anchor.style.width = Math.max(3, cur + delta) + '%';
+            const cur = parseFloat(anchor.style.width) || CONFIG.MOUTH_DEFAULT_WIDTH_PCT;
+            anchor.style.width = Math.max(CONFIG.MOUTH_MIN_WIDTH_PCT, cur + delta) + '%';
             updateMouthReadout();
         }
+        /**
+         * 口パーツの現在位置・幅の座標情報を、readout表示欄に反映する。
+         * @returns {void}
+         */
         export function updateMouthReadout() {
             const anchor = document.getElementById('mochisuke-mouth-anchor');
             const el = document.getElementById('mouth-adjust-readout');
             if (!anchor || !el) return;
             el.textContent = `top:${anchor.style.top}; left:${anchor.style.left}; width:${anchor.style.width};`;
         }
+        /**
+         * 口パーツの現在の座標情報をテキストにまとめ、クリップボードにコピーする（開発者用調整ツール）。
+         * @returns {void}
+         */
         export function copyMouthCoords() {
             const anchor = document.getElementById('mochisuke-mouth-anchor');
             const text = `口パーツ: top:${anchor.style.top}; left:${anchor.style.left}; width:${anchor.style.width};`;
@@ -451,24 +641,38 @@
 
         // 🛠️ もちすけ本体の大きさ調整。着せ替え部屋も全く同じ大きさに揃える約束なので、
         // ここで変えた値は、着せ替え部屋のもちすけ本体にもその場で同期する
+        /**
+         * もちすけ本体の大きさを増減させ、着せ替え部屋のもちすけ本体にも同じ大きさを同期する（開発者用調整ツール）。
+         * @param {number} deltaWidth - 幅の変化量（px）
+         * @param {number} deltaMaxHeight - 最大高さの変化量（px）
+         * @returns {void}
+         */
         export function adjustMochisukeBodySize(deltaWidth, deltaMaxHeight) {
             const btn = document.getElementById('mochisuke-btn');
-            const curWidth = parseFloat(btn.style.width) || 170;
-            const curMaxH = parseFloat(btn.style.maxHeight) || 206;
-            const newWidth = Math.max(60, curWidth + deltaWidth);
-            const newMaxH = Math.max(60, curMaxH + deltaMaxHeight);
+            const curWidth = parseFloat(btn.style.width) || CONFIG.MOCHISUKE_DEFAULT_WIDTH_PX;
+            const curMaxH = parseFloat(btn.style.maxHeight) || CONFIG.MOCHISUKE_DEFAULT_MAX_HEIGHT_PX;
+            const newWidth = Math.max(CONFIG.MOCHISUKE_MIN_SIZE_PX, curWidth + deltaWidth);
+            const newMaxH = Math.max(CONFIG.MOCHISUKE_MIN_SIZE_PX, curMaxH + deltaMaxHeight);
             btn.style.width = newWidth + 'px';
             btn.style.maxHeight = newMaxH + 'px';
             const roomWrap = document.getElementById('kisekae-mochisuke-wrap');
             if (roomWrap) { roomWrap.style.width = newWidth + 'px'; roomWrap.style.maxHeight = newMaxH + 'px'; }
             updateMochisukeBodyReadout();
         }
+        /**
+         * もちすけ本体の現在の大きさ情報を、readout表示欄に反映する。
+         * @returns {void}
+         */
         export function updateMochisukeBodyReadout() {
             const btn = document.getElementById('mochisuke-btn');
             const el = document.getElementById('mochisuke-body-readout');
             if (!btn || !el) return;
             el.textContent = `width:${btn.style.width || '170px'}; max-height:${btn.style.maxHeight || '206px'};（着せ替え部屋にも自動で同期済み）`;
         }
+        /**
+         * もちすけ本体の現在の大きさ情報をテキストにまとめ、クリップボードにコピーする（開発者用調整ツール）。
+         * @returns {void}
+         */
         export function copyMochisukeBodyCoords() {
             const btn = document.getElementById('mochisuke-btn');
             const text = `もちすけ本体: width:${btn.style.width || '170px'}; max-height:${btn.style.maxHeight || '206px'};`;
@@ -477,12 +681,23 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
 
+        /**
+         * 指定IDのモーダルを開く。給餌中であれば片付け、効果音を鳴らす（skipSound指定時は無音）。
+         * @param {string} id - 開くモーダルのDOM要素ID
+         * @param {boolean} [skipSound] - trueの場合、開く効果音を鳴らさない
+         * @returns {void}
+         */
         export function openModal(id, skipSound) {
             cancelFeedDragIfActive(); // 給餌中に他画面へ移動したら、置きっぱなしのおみやげを片付ける
             if (!skipSound) playAudioFile('audio/skill_tap.mp3');
             document.body.classList.add('modal-open');
             document.getElementById(id).style.display = "flex";
         }
+        /**
+         * 指定IDのモーダルを閉じる。絵日記モーダルをスタンプ未押下で閉じた場合は、スタンプボタンを再表示する。
+         * @param {string} id - 閉じるモーダルのDOM要素ID
+         * @returns {void}
+         */
         export function closeModal(id) {
             document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none";
             // 🔴 スタンプを押さずに絵日記を閉じた場合、進捗エリアのボタンを再表示して操作不能にならないようにする
@@ -492,6 +707,10 @@
             }
         }
 
+        /**
+         * トロフィールームを開き、各都道府県のトロフィー獲得状況をグリッド表示する。
+         * @returns {void}
+         */
         export function openTrophyRoom() {
             const grid = document.getElementById('trophy-grid');
             grid.innerHTML = "";
@@ -513,21 +732,34 @@
         }
 
         // 💼 おしごとミッション
+        /**
+         * 画面を暗転させてから、おしごとミッションモーダルを閉じる。
+         * @returns {void}
+         */
         export function closeOshigoto() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 closeModal('mission-modal');
-                setTimeout(() => overlay.classList.remove('fade-black'), 150);
-            }, 300);
+                setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.OSHIGOTO_FADE_IN_DELAY_MS);
+            }, CONFIG.OSHIGOTO_FADE_OUT_MS);
         }
+        /**
+         * ミッションの日付/週またぎを最新化してから、おしごとミッションモーダルを開き、現在のタブを表示する。
+         * @returns {void}
+         */
         export function openOshigotoPlaceholder() {
             checkAndRotateMissions(); // 開くたびに、日付/週またぎを最新化する
             openModal('mission-modal');
             switchMissionTab(currentMissionTab);
         }
         export let currentMissionTab = 'tutorial';
+        /**
+         * ミッションタブ（チュートリアル/デイリー/ウィークリー）を切り替え、ミッション一覧を再描画する。
+         * @param {string} tab - 切り替え先のタブ名（'tutorial' | 'daily' | 'weekly'）
+         * @returns {void}
+         */
         export function switchMissionTab(tab) {
             currentMissionTab = tab;
             ['tutorial', 'daily', 'weekly'].forEach(t => {
@@ -535,6 +767,11 @@
             });
             renderMissionList();
         }
+        /**
+         * 1件分のミッションカードのHTML文字列を生成する（進捗バー・受取ボタンの状態を含む）。
+         * @param {Object} mission - ミッション定義（id/text/target/rewardなどを持つオブジェクト）
+         * @returns {string} ミッションカードのHTML文字列
+         */
         export function renderMissionRow(mission) {
             const progress = getMissionProgress(mission);
             const complete = isMissionComplete(mission);
@@ -569,6 +806,10 @@
                 </div>
             `;
         }
+        /**
+         * 現在選択中のミッションタブの内容に応じて、ミッション一覧を描画する。
+         * @returns {void}
+         */
         export function renderMissionList() {
             const container = document.getElementById('mission-list-container');
             let html = '';
@@ -593,6 +834,11 @@
 
             container.innerHTML = html;
         }
+        /**
+         * ミッションの報酬受け取りボタンのタップを処理する。受け取り成功時は効果音を鳴らし表示を更新する。
+         * @param {string} id - 受け取り対象のミッションID
+         * @returns {void}
+         */
         export function onClaimMissionTap(id) {
             const success = claimMission(id);
             if (success) {
@@ -610,8 +856,23 @@
         // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
         // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
         // ===================================================================
+        /**
+         * balloonAutoHideTimerを書き換える（他ファイルからのsetter）。
+         * @param {*} v - セリフ吹き出し自動非表示用のタイマーID
+         * @returns {void}
+         */
         export function setBalloonAutoHideTimer(v) { balloonAutoHideTimer = v; }
+        /**
+         * hasSeenTutorialを書き換える（他ファイルからのsetter）。
+         * @param {boolean} v - チュートリアルを見たかどうか
+         * @returns {void}
+         */
         export function setHasSeenTutorial(v) { hasSeenTutorial = v; }
+        /**
+         * seenButtonHintsを書き換える（他ファイルからのsetter）。
+         * @param {Object} v - 4隅ボタンごとのヒント表示済みフラグ
+         * @returns {void}
+         */
         export function setSeenButtonHints(v) { seenButtonHints = v; }
         window.onBgmVolumeChange = onBgmVolumeChange;
         window.onSfxVolumeChange = onSfxVolumeChange;

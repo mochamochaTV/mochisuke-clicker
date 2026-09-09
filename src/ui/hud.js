@@ -1,17 +1,34 @@
         // ui.js を機能ごとに分割したファイルの1つ（常時表示UI（マップ・スコア表示・おすすめアクション・おみやげ・スプレー演出・updateDisplay））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { SPRAY_ITEMS, dialogueData, stages } from '../../data.js?v=2026-09-09-001';
-        import { createFloatingText, createParticle, formatMochi, lazyLoadImage, pickRandom, playAudioFile, screenFlash, screenShake, vibrate } from '../../main.js?v=2026-09-09-001';
-        import { hasNewlyUnlockedMinigame } from '../../minigames.js?v=2026-09-09-001';
-        import { canPrestige, collectedStamps, currentStageIndex, currentStageProgress, isPendingStampMoment, selectedStageIndex, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent, triggerAreaTransition } from '../../progress.js?v=2026-09-09-001';
-        import { activeSprayId, getOmiyagePrice, purchasedItems, sprayBuffActiveUntil } from '../../shop.js?v=2026-09-09-001';
-        import { saveGame, score } from '../../state.js?v=2026-09-09-001';
-        import { FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, feedPlaysUsedToday, feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isFever, isScreamActive, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel, skills, startFeedBuffIndicator } from '../../tap.js?v=2026-09-09-001';
-        import { closeModal, isTutorialActive, openModal, showMochiComment } from './core.js?v=2026-09-09-001';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-09-001';
-        import { diaryPageIndex } from './ranking.js?v=2026-09-09-001';
+        import { SPRAY_ITEMS, dialogueData, stages } from '../../data.js?v=2026-09-09-002';
+        import { createFloatingText, createParticle, formatMochi, lazyLoadImage, pickRandom, playAudioFile, screenFlash, screenShake, vibrate } from '../../main.js?v=2026-09-09-002';
+        import { hasNewlyUnlockedMinigame } from '../../minigames.js?v=2026-09-09-002';
+        import { canPrestige, collectedStamps, currentStageIndex, currentStageProgress, isPendingStampMoment, selectedStageIndex, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent, triggerAreaTransition } from '../../progress.js?v=2026-09-09-002';
+        import { activeSprayId, getOmiyagePrice, purchasedItems, sprayBuffActiveUntil } from '../../shop.js?v=2026-09-09-002';
+        import { saveGame, score } from '../../state.js?v=2026-09-09-002';
+        import { FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, feedPlaysUsedToday, feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isFever, isScreamActive, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel, skills, startFeedBuffIndicator } from '../../tap.js?v=2026-09-09-002';
+        import { closeModal, isTutorialActive, openModal, showMochiComment } from './core.js?v=2026-09-09-002';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-09-002';
+        import { diaryPageIndex } from './ranking.js?v=2026-09-09-002';
 
+        // チューニング用の数値をまとめた設定オブジェクト（演出の強さやタイミングを調整する時はここを触る）
+        const CONFIG = {
+            FEED_VIBRATE_PATTERN_MS: [20, 40, 20], // もちすけに給餌した時の振動パターン
+            FEED_SCREEN_FLASH_INTENSITY: 0.3, // 給餌時の画面フラッシュの強さ
+            MOCHI_EAT_ANIM_DURATION_MS: 500, // もちすけが食べる動作アニメーションの長さ
+            FEED_BUFF_TEXT_DELAY_MS: 300, // 「タップ力2倍！」の追加テキストを出すまでの遅延
+            FEED_PARTICLE_COUNT: 16, // 給餌時に散らすパーティクルの数
+            FEED_PARTICLE_SPREAD_PX: 90, // 給餌パーティクルの散らばる範囲
+            STAMP_DEBUG_INTERVAL_MS: 300, // スタンプデバッグ表示の更新間隔
+            RECOMMEND_CHECK_THROTTLE_MS: 1000, // おすすめアクション判定の再計算間隔（連打対策）
+            SPARKLE_PARTICLE_INTERVAL_MS: 700, // スプレーのキラキラ演出の生成間隔
+            SPARKLE_PARTICLE_REMOVE_DELAY_MS: 1300, // キラキラパーティクルを消すまでの時間
+        };
 
+        /**
+         * おみやげコレクション画面のグリッドを構築して表示する。
+         * @returns {void}
+         */
         export function openOmiyageCollection() {
             const grid = document.getElementById('omiyage-collection-grid');
             grid.innerHTML = '';
@@ -32,6 +49,11 @@
             openModal('omiyage-collection-modal');
         }
 
+        /**
+         * おみやげを選んで給餌するかどうかの確認モーダルを表示する。
+         * @param {number} idx - stages配列内のステージ（県）インデックス
+         * @returns {void}
+         */
         export function showOmiyageFeedConfirm(idx) {
             resetFeedCountIfNewDay();
             const stage = stages[idx];
@@ -56,6 +78,11 @@
         }
 
         // 🍴 もちすけにあげる：おみやげを自由にドラッグして、もちすけの上で離すと食べてくれる
+        /**
+         * おみやげをもちすけに食べさせ、給餌演出・バフ付与・進行状況の記録を行う。
+         * @param {number} idx - stages配列内のステージ（県）インデックス
+         * @returns {void}
+         */
         export function feedMochisuke(idx) {
             const stage = stages[idx];
             if (!stage) return;
@@ -72,8 +99,8 @@
 
             const mochiRect = mochiBtnElement.getBoundingClientRect();
             playAudioFile('audio/mochisuke/mochi_eat.mp3');
-            vibrate([20, 40, 20]);
-            screenFlash('#ff9800', 0.3);
+            vibrate(CONFIG.FEED_VIBRATE_PATTERN_MS);
+            screenFlash('#ff9800', CONFIG.FEED_SCREEN_FLASH_INTENSITY);
             screenShake('small');
             mochiBtnElement.animate([
                 { transform: 'scale(1, 1) rotate(0deg)' },
@@ -81,14 +108,14 @@
                 { transform: 'scale(0.85, 1.2) rotate(4deg)', offset: 0.5 },
                 { transform: 'scale(1.1, 0.92) rotate(-2deg)', offset: 0.75 },
                 { transform: 'scale(1, 1) rotate(0deg)' }
-            ], { duration: 500, easing: 'ease-in-out' });
+            ], { duration: CONFIG.MOCHI_EAT_ANIM_DURATION_MS, easing: 'ease-in-out' });
             createFloatingText(mochiRect.left + mochiRect.width / 2, mochiRect.top + mochiRect.height / 3, `${stage.item}おいしい〜！`, "#ff9800", "1.1rem");
             setTimeout(() => {
                 createFloatingText(mochiRect.left + mochiRect.width / 2, mochiRect.top + mochiRect.height / 2.2, `⚡タップ力2倍！`, "#e91e63", "1.3rem");
-            }, 300);
+            }, CONFIG.FEED_BUFF_TEXT_DELAY_MS);
             showMochiComment(pickRandom(dialogueData.feedComments).replace('○○', stage.item));
-            for (let i = 0; i < 16; i++) {
-                createParticle(mochiRect.left + mochiRect.width / 2 + (Math.random() - 0.5) * 90, mochiRect.top + mochiRect.height / 2 + (Math.random() - 0.5) * 90, true);
+            for (let i = 0; i < CONFIG.FEED_PARTICLE_COUNT; i++) {
+                createParticle(mochiRect.left + mochiRect.width / 2 + (Math.random() - 0.5) * CONFIG.FEED_PARTICLE_SPREAD_PX, mochiRect.top + mochiRect.height / 2 + (Math.random() - 0.5) * CONFIG.FEED_PARTICLE_SPREAD_PX, true);
             }
         }
 
@@ -99,6 +126,10 @@
         export let mapPinchStartDist = 0, mapPinchStartZoom = 1;
         export const MAP_ZOOM_MIN = 1, MAP_ZOOM_MAX = 4;
 
+        /**
+         * マップモーダルを開き、各県のピンを配置して表示状態を初期化する。
+         * @returns {void}
+         */
         export function openMap() {
             lazyLoadImage('map-illustration-img');
             const pinsLayer = document.getElementById('map-pins-layer');
@@ -124,10 +155,19 @@
             openModal('map-modal', true);
         }
 
+        /**
+         * マップモーダルを閉じる。
+         * @returns {void}
+         */
         export function closeMapModal() {
             closeModal('map-modal');
         }
 
+        /**
+         * マップ上のピンがタップされた時に、そのステージへ移動するかどうかの確認オーバーレイを出す。
+         * @param {number} idx - stages配列内のステージ（県）インデックス
+         * @returns {void}
+         */
         export function onMapPinTap(idx) {
             const stage = stages[idx];
             if (selectedStageIndex === idx) return; // すでに滞在中
@@ -144,6 +184,11 @@
             noBtn.onclick = () => { cleanup(); };
         }
 
+        /**
+         * 指定したステージへエリア移動を実行し、演出・状態更新・セリフ表示を行う。
+         * @param {number} idx - stages配列内のステージ（県）インデックス
+         * @returns {void}
+         */
         export function mapMoveTo(idx) {
             closeModal('map-modal');
             triggerAreaTransition(stages[idx].bg, () => {
@@ -155,11 +200,19 @@
         }
 
         // --- 拡大縮小・ドラッグ操作 ---
+        /**
+         * 現在のズーム倍率・パン位置をmap-canvas要素のCSS transformに反映する。
+         * @returns {void}
+         */
         export function applyMapTransform() {
             const canvas = document.getElementById('map-canvas');
             if (canvas) canvas.style.transform = `translate(${mapPanX}px, ${mapPanY}px) scale(${mapZoom})`;
         }
 
+        /**
+         * マップのパン位置が表示領域からはみ出さないように補正する。
+         * @returns {void}
+         */
         export function clampMapPan() {
             const viewport = document.getElementById('map-viewport');
             const img = document.getElementById('map-illustration-img');
@@ -172,6 +225,12 @@
         }
 
         // viewport要素基準のローカル座標（クライアント座標→viewport左上を原点とした座標）に変換
+        /**
+         * クライアント座標をmap-viewport要素基準のローカル座標に変換する。
+         * @param {number} clientX - クライアントX座標
+         * @param {number} clientY - クライアントY座標
+         * @returns {Object} viewport左上を原点とした{x, y}座標
+         */
         export function getMapFocalPoint(clientX, clientY) {
             const viewport = document.getElementById('map-viewport');
             const rect = viewport.getBoundingClientRect();
@@ -179,6 +238,13 @@
         }
 
         // (fx, fy)＝viewport基準の座標を中心に拡大縮小する（その地点の絵柄が画面上で動かないようにpanを調整）
+        /**
+         * 指定した座標を中心にマップを拡大縮小し、パン位置を調整して反映する。
+         * @param {number} newZoomRaw - 適用したいズーム倍率（範囲外はクランプされる）
+         * @param {number} fx - ズームの中心とするviewport基準のX座標
+         * @param {number} fy - ズームの中心とするviewport基準のY座標
+         * @returns {void}
+         */
         export function zoomMapToward(newZoomRaw, fx, fy) {
             const newZoom = Math.max(MAP_ZOOM_MIN, Math.min(MAP_ZOOM_MAX, newZoomRaw));
             const localX = (fx - mapPanX) / mapZoom;
@@ -191,16 +257,29 @@
         }
 
         // ＋／－ボタンは画面中央を基準に拡大縮小する
+        /**
+         * 画面中央を基準に、現在のズーム倍率をfactor倍にする。
+         * @param {number} factor - 現在のズームに掛け合わせる倍率
+         * @returns {void}
+         */
         export function mapZoomBy(factor) {
             const viewport = document.getElementById('map-viewport');
             zoomMapToward(mapZoom * factor, viewport.clientWidth / 2, viewport.clientHeight / 2);
         }
 
+        /**
+         * マップのズーム倍率とパン位置を初期状態にリセットする。
+         * @returns {void}
+         */
         export function mapZoomReset() {
             mapZoom = 1; mapPanX = 0; mapPanY = 0;
             applyMapTransform();
         }
 
+        /**
+         * マップviewportにドラッグ・ピンチズーム操作のイベントリスナーを登録する（初回のみ）。
+         * @returns {void}
+         */
         export function initMapInteractions() {
             const viewport = document.getElementById('map-viewport');
             if (!viewport || viewport.dataset.bound) return;
@@ -249,16 +328,24 @@
             }, { passive: false });
         }
 
+        /**
+         * スタンプデバッグ表示のON/OFFを切り替え、ONの場合は定期更新タイマーを開始する。
+         * @returns {void}
+         */
         export function toggleStampDebug() {
             setStampDebugMode(!stampDebugMode);
             if (stampDebugMode) {
-                setStampDebugInterval(setInterval(updateStampDebugReadout, 300));
+                setStampDebugInterval(setInterval(updateStampDebugReadout, CONFIG.STAMP_DEBUG_INTERVAL_MS));
                 updateStampDebugReadout();
             } else {
                 clearInterval(stampDebugInterval);
                 document.getElementById('stamp-debug-readout').textContent = '';
             }
         }
+        /**
+         * スタンプ判定に関する内部状態をデバッグ用テキストとして画面に出力する。
+         * @returns {void}
+         */
         export function updateStampDebugReadout() {
             const el = document.getElementById('stamp-debug-readout');
             if (!el) return;
@@ -280,6 +367,13 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         export let lastScoreFormatted = '';
         // もちの数表示を1文字ずつ<span>に分けて描画し、前回と値が違う文字だけポンっと弾ませる
         // （右詰めで比較するので、桁が増えて全体がズレても「実際に変わった桁」だけを正しく判定できる）
+        /**
+         * もちの数を1文字ずつspanに分けて描画し、前回と値が異なる桁だけにポップアニメーション用クラスを付ける。
+         * @param {HTMLElement} container - 描画先の要素
+         * @param {string} newText - 今回表示する文字列
+         * @param {string} oldText - 前回表示していた文字列
+         * @returns {void}
+         */
         export function renderScoreDigits(container, newText, oldText) {
             // Array.from()でUnicodeのコードポイント単位に分割する。
             // 単純な文字列インデックス(newText[j])だと絵文字(🔥など)がサロゲートペアで
@@ -301,6 +395,10 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
 
         // 💡「次のおすすめアクション」判定：初心者が迷わないよう、状況に応じて1箇所だけハイライトする
         export let lastRecommendCheckTime = 0;
+        /**
+         * 状況に応じて、次に押すべきUI要素のIDを1つだけ判定する（おみやげ購入・スキル購入・スキル使用・ミニゲームの優先順）。
+         * @returns {string|null} ハイライト対象要素のID。ハイライト不要な場合はnull
+         */
         export function getRecommendedActionTargetId() {
             // ① 今いる県のおみやげをまだ買っていない、かつ購入できる資金がある → ショップへ
             const stage = stages[selectedStageIndex];
@@ -324,10 +422,14 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             // 特に無ければハイライトしない
             return null;
         }
+        /**
+         * おすすめアクションの判定結果に応じて、対象UI要素に光る演出クラスを付け替える（1秒に1回まで再計算）。
+         * @returns {void}
+         */
         export function updateRecommendedActionHighlight() {
             if (isTutorialActive) return; // チュートリアル中は、こちらの自動ハイライトは出さない（チュートリアル自身のハイライトとぶつかるため）
             const now = Date.now();
-            if (now - lastRecommendCheckTime < 1000) return; // 連打のたびに毎回判定しなくていいよう、1秒に1回だけ再計算
+            if (now - lastRecommendCheckTime < CONFIG.RECOMMEND_CHECK_THROTTLE_MS) return; // 連打のたびに毎回判定しなくていいよう、1秒に1回だけ再計算
             lastRecommendCheckTime = now;
             document.querySelectorAll('.recommended-glow').forEach(el => el.classList.remove('recommended-glow'));
             const targetId = getRecommendedActionTargetId();
@@ -338,10 +440,18 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         }
 
         // 未獲得(lv===0)で、解放済み(ステージ条件クリア)かつ購入できるスキルがあるか判定（レベルアップは対象外）
+        /**
+         * 未獲得かつ解放済みで、購入可能な資金があるスキルが存在するか判定する。
+         * @returns {boolean} 新規購入可能なスキルがあればtrue
+         */
         export function hasNewlyPurchasableSkill() {
             return Object.values(skills).some(s => s.lv === 0 && currentStageIndex >= s.unlockStage && score >= s.unlockPrice);
         }
         // 未購入(lv===0)で、解放済み(訪問済み)かつ購入できるおみやげがあるか判定（レベルアップは対象外）
+        /**
+         * 未購入かつ訪問済みで、購入可能な資金があるおみやげが存在するか判定する。
+         * @returns {boolean} 新規購入可能なおみやげがあればtrue
+         */
         export function hasNewlyPurchasableOmiyage() {
             for (let i = 0; i <= currentStageIndex; i++) {
                 const lv = purchasedItems[i] || 0;
@@ -351,6 +461,10 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         }
         // ✨ スプレーの見た目エフェクト（キラキラ・オーラ）を、バフの有無に応じて切り替える
         export let sprayParticleTimer = null;
+        /**
+         * スプレーバフの有無・種類に応じて、オーラ表示やキラキラパーティクル生成タイマーを切り替える。
+         * @returns {void}
+         */
         export function updateSprayEffectDisplay() {
             const isActive = Date.now() < sprayBuffActiveUntil && activeSprayId;
             const auraEl = document.getElementById('spray-aura-effect');
@@ -364,12 +478,16 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             if (!item) return;
             if (auraEl) auraEl.style.display = (item.effectId === 'aura') ? 'block' : 'none';
             if (item.effectId === 'sparkle' && !sprayParticleTimer) {
-                sprayParticleTimer = setInterval(spawnSparkleParticle, 700);
+                sprayParticleTimer = setInterval(spawnSparkleParticle, CONFIG.SPARKLE_PARTICLE_INTERVAL_MS);
             } else if (item.effectId !== 'sparkle' && sprayParticleTimer) {
                 clearInterval(sprayParticleTimer);
                 sprayParticleTimer = null;
             }
         }
+        /**
+         * もちすけの周りにキラキラパーティクルを1つ生成し、一定時間後に消す。
+         * @returns {void}
+         */
         export function spawnSparkleParticle() {
             if (Date.now() >= sprayBuffActiveUntil) { updateSprayEffectDisplay(); return; }
             if (!isMochisukeVisible()) return; // 見えている画面の時だけ生成する
@@ -380,8 +498,12 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             particle.textContent = '✨';
             particle.style.cssText = `position:fixed; left:${rect.left + rect.width * Math.random()}px; top:${rect.top + rect.height * Math.random()}px; font-size:1.3rem; pointer-events:none; z-index:9999; animation: sprayParticleFloat 1.2s ease-out forwards;`;
             document.body.appendChild(particle);
-            setTimeout(() => particle.remove(), 1300);
+            setTimeout(() => particle.remove(), CONFIG.SPARKLE_PARTICLE_REMOVE_DELAY_MS);
         }
+        /**
+         * スコア・現在地・進行度・おすすめハイライトなど、HUD全体の表示を最新の状態に更新する。
+         * @returns {void}
+         */
         export function updateDisplay() {
             updateRecommendedActionHighlight();
             const prestigeBtn = document.getElementById('main-prestige-btn');

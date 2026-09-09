@@ -4,33 +4,118 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-09-001';
+} from './data.js?v=2026-09-09-002';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-09-001';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-09-001';
+} from './main.js?v=2026-09-09-002';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-09-002';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-09-001';
-import { saveGame, score, setScore } from './state.js?v=2026-09-09-001';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-09-001';
+} from './progress.js?v=2026-09-09-002';
+import { saveGame, score, setScore } from './state.js?v=2026-09-09-002';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-09-002';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-09-001';
+} from './ui.js?v=2026-09-09-002';
 
-        export function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * 0.02; } // 価格そのものを割引
-        export function getOmiyagePriceCurveBase() { return 1.5 - prestigeShopLv.omiyagePriceCurve * 0.01; }   // レベルごとの値上がり倍率
+        // ===================================================================
+        // 調整用の数値をまとめた設定オブジェクト。既に名前付きでexportされている
+        // レート表（GACHA_RATE_TAB_LABELS等）やGACHA_COST_SINGLE等はそのまま。
+        // ===================================================================
+        const CONFIG = {
+            // --- おみやげ価格計算 ---
+            OMIYAGE_PRICE_DISCOUNT_PER_LEVEL: 0.02, // 転生ショップの割引レベル1につき何%割引くか
+            OMIYAGE_PRICE_CURVE_BASE: 1.5,          // 値上がりカーブの基準倍率（べき乗の底の初期値）
+            OMIYAGE_PRICE_CURVE_REDUCTION_PER_LEVEL: 0.01, // 転生ショップの値上がり緩和レベル1につき底をどれだけ下げるか
+
+            // --- おみやげ棚UI ---
+            OMIYAGE_SHELF_MAX_SAFE_CROP_RATIO: 0.16, // 横長画面で看板部分を安全に切り詰めてよい上限比率
+            OMIYAGE_SHELF_SHAKE_STAGGER_S: 0.03,     // 棚切り替え時、スロットごとの揺れ開始をずらす間隔（秒）
+            OMIYAGE_MONEY_FLASH_DURATION_MS: 1600,   // 「-〇〇もち」演出の表示時間
+            OMIYAGE_MONEY_FLASH_OFFSET_X_PX: 4,      // 演出テキストの所持金表示からの横方向オフセット
+            OMIYAGE_MONEY_FLASH_OFFSET_Y_PX: -14,    // 演出テキストの所持金表示からの縦方向オフセット
+            GOLD_TROPHY_BONUS_MULT: 1.1,             // 金トロフィー獲得済み県のおみやげ効果倍率
+            CONTRIBUTION_MIN_DISPLAY_PERCENT: 0.1,   // 全体貢献度がこの値未満なら「<0.1%」表示にする閾値
+
+            // --- ショップ画面の暗転演出 ---
+            SHOP_TRANSITION_MS: 300, // 開閉時、暗転してから中身を切り替えるまでの待ち時間
+            SHOP_FADE_CLEAR_MS: 150, // 暗転を解除するまでの待ち時間
+
+            // --- アイテムサムネイル ---
+            ITEM_THUMB_DEFAULT_SIZE_PX: 48, // sizeが指定されない場合のデフォルトサイズ
+            ITEM_THUMB_EMOJI_RATIO: 0.5,    // フォールバック絵文字のフォントサイズをサムネイルサイズの何倍にするか
+
+            // --- ガチャ演出タイミング ---
+            GACHA_CRANK_SPIN1_MS: 700,  // クランク演出①：ゆっくり1回転
+            GACHA_CRANK_SPIN2_MS: 500,  // クランク演出②：やや速く2回転
+            GACHA_CRANK_SPIN3_MS: 450,  // クランク演出③：最速3回転
+            GACHA_CRANK_SHAKE_MS: 200,  // 演出②③で本体・レバーを揺らす1周期の長さ
+            GACHA_CRANK_SHAKE_ITERATIONS: 3, // 揺れの繰り返し回数
+            GACHA_VIBRATE_STAGE2: [15, 15, 15],       // クランク演出②の振動パターン
+            GACHA_VIBRATE_STAGE3: [20, 20, 20, 20, 40], // クランク演出③の振動パターン
+            GACHA_DROP_VIBRATE: [15, 30, 60],   // カプセル落下時の振動パターン
+            GACHA_DROP_DURATION_MS: 500,        // カプセル落下アニメーションの長さ
+            GACHA_PULSE_DURATION_MS: 800,       // タップ待ちカプセルの脈動アニメーション1周期
+            GACHA_OPEN_VIBRATE: [10, 20, 10],   // カプセルが開く瞬間の振動パターン
+            GACHA_OPEN_SPLIT_DURATION_MS: 500,  // カプセル上下パーツが飛び散るアニメーションの長さ
+            GACHA_FLASH_ALPHA_STANDARD: 0.25,   // カプセル開封・10連終了時の画面フラッシュの濃さ
+            GACHA_REVEAL_DELAY_MS: 320,         // カプセルが開いてから景品を表示するまでの間
+            GACHA_PRIZE_NAME_BASE_REM: 1.15,    // 景品名テキストの基準フォントサイズ（rem）
+            GACHA_PRIZE_REVEAL_DURATION_MS: 420, // 景品がせり出してくるアニメーションの長さ
+            GACHA_PRIZE_TAP_GUARD_MS: 400,      // 誤タップで即閉じないよう、閉じる判定を有効にするまでの待ち時間
+            GACHA_TEN_PULL_COUNT: 10,           // 10連ガチャの抽選回数
+            GACHA_MULTI_DROP_VIBRATE: [12],     // 10連：カプセルを1個ずつ出す際の振動パターン
+            GACHA_MULTI_DROP_DURATION_MS: 420,  // 10連：カプセルが1個落下するアニメーションの長さ
+            GACHA_MULTI_FADE_DELAY_MS: 220,     // 10連：着地後、フェードアウトを始めるまでの待ち時間
+            GACHA_MULTI_FADE_DURATION_MS: 260,  // 10連：カプセルがフェードアウトするアニメーションの長さ
+            GACHA_SUMMARY_CAPSULE_PX: 130,      // 10連：一覧グリッドに並べるカプセル1個分のサイズ
+            GACHA_MULTI_FLASH_SCALE: 0.6,       // 10連：1個ずつ開封時の画面フラッシュを1連より抑える倍率
+            GACHA_MULTI_OPEN_DURATION_MS: 400,  // 10連：カプセルが開く演出の長さ
+            GACHA_MULTI_OPEN_ICON_DELAY_MS: 120, // 10連：中身アイコンが出てくるまでの遅延
+            GACHA_MULTI_OPEN_NEXT_DELAY_MS: 180, // 10連：次のカプセルの開封に進むまでの間
+            GACHA_SPRAY_SPLIT_RATE: 0.5,        // ノーマルレア・レアで、衣装とスプレーを分ける割合
+            GACHA_CRANK_MIN_WIDTH_PCT: 2,       // 開発用クランク位置調整ツールで許容する最小幅（%）
+
+            // --- チケット効果 ---
+            MOCHI_30MIN_TICKET_SECONDS: 1800, // 「30分ぶんもちチケット」が即座に付与する秒数
+
+            // --- 家具プレビュー ---
+            FURNITURE_PREVIEW_CENTER_PCT: 50,       // プレビュー時、画面中央とみなす基準位置（%）
+            FURNITURE_PREVIEW_SNAP_EPSILON_PCT: 0.1 // 壁ゾーン下端にぴったり合わせる際の微調整量（%）
+        };
+
+        /**
+         * 転生ショップの「おみやげ価格割引」レベルに応じた価格倍率（1未満）を計算する。
+         * @returns {number} 価格にかける割引倍率
+         */
+        export function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * CONFIG.OMIYAGE_PRICE_DISCOUNT_PER_LEVEL; } // 価格そのものを割引
+        /**
+         * 転生ショップの「おみやげ値上がり緩和」レベルに応じた、レベルごとの価格上昇倍率（べき乗の底）を計算する。
+         * @returns {number} べき乗計算に使う底の値
+         */
+        export function getOmiyagePriceCurveBase() { return CONFIG.OMIYAGE_PRICE_CURVE_BASE - prestigeShopLv.omiyagePriceCurve * CONFIG.OMIYAGE_PRICE_CURVE_REDUCTION_PER_LEVEL; }   // レベルごとの値上がり倍率
+        /**
+         * あるステージのおみやげについて、現在のレベルから次のレベルへ上げるのに必要な価格を計算する。
+         * @param {Object} stage - 価格の基準となるステージデータ（price等を持つ）
+         * @param {number} currentLv - 現在の購入レベル
+         * @returns {number} 次のレベルに上げるのに必要な価格
+         */
         export function getOmiyagePrice(stage, currentLv) {
             return Math.floor(stage.price * Math.pow(getOmiyagePriceCurveBase(), currentLv) * getOmiyagePriceMultiplier());
         }
-        export let purchasedItems = {};      
+        export let purchasedItems = {};
         export let purchasedClothes = { normal: true };
         export let equippedClotheId = "normal";
-        export let currentShopTab = "omiyage"; 
+        export let currentShopTab = "omiyage";
 
+        /**
+         * 指定した衣装IDを現在の装備として反映し、見た目のフィルターをリセットして保存・画面更新する。
+         * @param {string} id - 装備する衣装のID
+         * @returns {void}
+         */
         export function equipClothe(id) {
             equippedClotheId = id;
             resetMochiFilter();
@@ -38,6 +123,10 @@ import {
         }
 
         // 起動時に読み込まなくていい大きな画像（マップ・おみやげ屋の背景）は、実際に開いた時だけ読み込む
+        /**
+         * ショップモーダルを開く。画面を暗転させ、おみやげ屋背景の遅延読み込みと直前のタブ復元、ショップBGMへの切り替えを行う。
+         * @returns {void}
+         */
         export function openShop() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3'); // 県移動の時と同じ、移動音
@@ -48,9 +137,13 @@ import {
                 switchShopTab(currentShopTab);
                 updateShopTabHighlight();
                 playBgmLoop('audio/bgm/bgm_shop.mp3'); // ショップ専用BGMに切り替え
-                setTimeout(() => overlay.classList.remove('fade-black'), 150);
-            }, 300);
+                setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.SHOP_FADE_CLEAR_MS);
+            }, CONFIG.SHOP_TRANSITION_MS);
         }
+        /**
+         * ショップモーダルを閉じる。画面を暗転させ、通常BGMに戻して移動メニューを開き直す。
+         * @returns {void}
+         */
         export function closeShop() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
@@ -59,8 +152,8 @@ import {
                 closeModal('shop-modal');
                 playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
                 openMoveMenu();
-                setTimeout(() => overlay.classList.remove('fade-black'), 150);
-            }, 300);
+                setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.SHOP_FADE_CLEAR_MS);
+            }, CONFIG.SHOP_TRANSITION_MS);
         }
 
         // ✖ボタンを廃止した代わりに、棚の背景(商品以外の場所)をタップすると詳細パネルを閉じるようにする
@@ -69,14 +162,25 @@ import {
             if (shelfImg) shelfImg.addEventListener('click', () => { if (omiyageSelectedIdx != null) closeOmiyageDetail(); });
         });
         // お土産イラスト（stage.itemImg）表示用ヘルパー。未整備の県は🎁の絵文字にフォールバックする
+        /**
+         * ステージのお土産イラストがあればimgタグ、無ければ🎁絵文字のプレースホルダーHTMLを生成する。
+         * @param {Object} stage - お土産情報を持つステージデータ
+         * @param {number} [size] - サムネイルのサイズ（px）。省略時はデフォルトサイズを使う
+         * @returns {string} 生成したHTML文字列
+         */
         export function getItemThumbHtml(stage, size) {
-            size = size || 48;
+            size = size || CONFIG.ITEM_THUMB_DEFAULT_SIZE_PX;
             if (stage.itemImg) {
                 return `<img class="item-thumb" src="${stage.itemImg}" style="width:${size}px; height:${size}px;" alt="${stage.item}">`;
             }
-            return `<div class="item-thumb" style="width:${size}px; height:${size}px; display:flex; align-items:center; justify-content:center; font-size:${Math.floor(size * 0.5)}px; background:#fff8ec;">🎁</div>`;
+            return `<div class="item-thumb" style="width:${size}px; height:${size}px; display:flex; align-items:center; justify-content:center; font-size:${Math.floor(size * CONFIG.ITEM_THUMB_EMOJI_RATIO)}px; background:#fff8ec;">🎁</div>`;
         }
 
+        /**
+         * ショップの表示タブを切り替え、各タブのハイライトやおみやげ専用UIの表示状態を更新してリストを再描画する。
+         * @param {string} tab - 切り替え先のタブ名（'omiyage'|'furniture'|'skills'|'gacha'）
+         * @returns {void}
+         */
         export function switchShopTab(tab) {
             currentShopTab = tab;
             updateShopTabHighlight();
@@ -97,6 +201,10 @@ import {
         // 🎰 ガチャの演出本体：①3段階の回転（だんだん速く・揺れも強く）→②カプセル排出→③パカッと開いて中身が出る
         // 🎨 レア度ごとのカプセルの色（実際のイラストが無くても、同じ画像に色フィルターをかけて表現する）
         export let currentGachaRarity = null; // この回のレア度（色分けに使う）
+        /**
+         * GACHA_RARITIESの重み付きで1つのレア度オブジェクトを抽選して返す。
+         * @returns {Object} 抽選されたレア度オブジェクト
+         */
         export function pickGachaRarity() {
             const total = GACHA_RARITIES.reduce((s, r) => s + r.weight, 0);
             let roll = Math.random() * total;
@@ -108,6 +216,10 @@ import {
         }
 
         // 🎰 3段階の回転演出（1連・10連で共通）：Promiseを返し、終わったら呼び出し側が次の処理に進める
+        /**
+         * ガチャクランクの3段階回転アニメーション（1連・10連で共通）を順番に再生する。
+         * @returns {Promise<void>} 全段階のアニメーションが終わったら解決するPromise
+         */
         export function playGachaCrankSequence() {
             const crank = document.getElementById('gacha-crank');
             playAudioFile('audio/gacha/crank.mp3');
@@ -115,20 +227,20 @@ import {
             // ステージ①：ゆっくり1回転
             return crank.animate(
                 [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }],
-                { duration: 700, easing: 'ease-in' }
+                { duration: CONFIG.GACHA_CRANK_SPIN1_MS, easing: 'ease-in' }
             ).finished.then(() => {
                 // ステージ②：少し速く2回転、軽い振動
                 screenShake('small');
-                vibrate([15, 15, 15]);
+                vibrate(CONFIG.GACHA_VIBRATE_STAGE2);
                 return crank.animate(
                     [{ transform: 'rotate(0deg)' }, { transform: 'rotate(720deg)' }],
-                    { duration: 500, easing: 'linear' }
+                    { duration: CONFIG.GACHA_CRANK_SPIN2_MS, easing: 'linear' }
                 ).finished;
             }).then(() => {
                 // ステージ③：一番速く3回転、本体ごと揺れる
                 playAudioFile('audio/gacha/crank.mp3');
                 screenShake('big');
-                vibrate([20, 20, 20, 20, 40]);
+                vibrate(CONFIG.GACHA_VIBRATE_STAGE3);
                 // 本体・レバー・カプセルをまとめている枠ごと揺らす（枠自体はtop/leftで位置決めしているため、
                 // transformで揺らしても中央寄せなどとぶつからず安全）
                 document.getElementById('gacha-illustration-wrap').animate(
@@ -137,7 +249,7 @@ import {
                         { transform: 'translateX(4px)' }, { transform: 'translateX(-3px)' },
                         { transform: 'translateX(3px)' }, { transform: 'translateX(0)' },
                     ],
-                    { duration: 200, iterations: 3 }
+                    { duration: CONFIG.GACHA_CRANK_SHAKE_MS, iterations: CONFIG.GACHA_CRANK_SHAKE_ITERATIONS }
                 );
                 // レバーも本体と一緒に揺れる（回転アニメーションとぶつからないよう、加算合成で重ねる）
                 crank.animate(
@@ -146,15 +258,20 @@ import {
                         { transform: 'translateX(4px)' }, { transform: 'translateX(-3px)' },
                         { transform: 'translateX(3px)' }, { transform: 'translateX(0)' },
                     ],
-                    { duration: 200, iterations: 3, composite: 'add' }
+                    { duration: CONFIG.GACHA_CRANK_SHAKE_MS, iterations: CONFIG.GACHA_CRANK_SHAKE_ITERATIONS, composite: 'add' }
                 );
                 return crank.animate(
                     [{ transform: 'rotate(0deg)' }, { transform: 'rotate(1080deg)' }],
-                    { duration: 450, easing: 'linear' }
+                    { duration: CONFIG.GACHA_CRANK_SPIN3_MS, easing: 'linear' }
                 ).finished;
             });
         }
 
+        /**
+         * ガチャの「1回まわす」「10連まとめて」ボタンの有効/無効と見た目の透明度を一括で切り替える。
+         * @param {boolean} disabled - trueならボタンを無効化する
+         * @returns {void}
+         */
         export function setGachaButtonsDisabled(disabled) {
             ['gacha-spin-btn', 'gacha-spin10-btn'].forEach(id => {
                 const btn = document.getElementById(id);
@@ -172,6 +289,10 @@ import {
         export let favoriteFriendIds = []; // ⭐ お気に入りに登録したフレンドのuid一覧
         export let blockedUserIds = []; // 🚫 ブロックしたユーザーのuid一覧（この人からの招待・スタンプは今後無視する）
 
+        /**
+         * NORMAL_CONSUMABLE_ITEMSからランダムに1つ選び、所持数を1増やして保存・画面更新する。
+         * @returns {Object} 選ばれた消耗品アイテムのデータ
+         */
         export function grantRandomNormalConsumable() {
             const item = pickRandom(NORMAL_CONSUMABLE_ITEMS);
             ticketInventory[item.id] = (ticketInventory[item.id] || 0) + 1;
@@ -180,6 +301,11 @@ import {
         }
 
         // 🎫 倉庫にためたチケットを、好きなタイミングで実際に使う
+        /**
+         * 所持しているチケットを1個消費し、対応する効果を即座に発動してから在庫を減らす。
+         * @param {string} itemId - 使用するチケットのID（'minigameTicket'|'cooldownTicket'|'mochi30minTicket'）
+         * @returns {void}
+         */
         export function useTicket(itemId) {
             if ((ticketInventory[itemId] || 0) <= 0) return;
             if (itemId === 'minigameTicket') {
@@ -189,7 +315,7 @@ import {
             } else if (itemId === 'cooldownTicket') {
                 Object.keys(skills).forEach(k => { skills[k].currentCd = 0; });
             } else if (itemId === 'mochi30minTicket') {
-                setScore(score + (getMps() * 1800)); // 30分ぶんの自動増加を即座に付与
+                setScore(score + (getMps() * CONFIG.MOCHI_30MIN_TICKET_SECONDS)); // 30分ぶんの自動増加を即座に付与
             }
             ticketInventory[itemId]--;
             saveGame(); updateDisplay();
@@ -197,11 +323,19 @@ import {
         }
         window.useTicket = useTicket; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * ガチャ画面上部のコイン枚数表示を更新する（開発モードなら∞表示）。
+         * @returns {void}
+         */
         export function updateGachaCoinDisplay() {
             const el = document.getElementById('gacha-coin-value');
             if (el) el.innerText = IS_DEV_MODE ? '∞' : formatMochi(gachaCoins);
         }
 
+        /**
+         * 排出率一覧オーバーレイの表示/非表示を切り替え、表示時はレア度一覧とアイテム別排出率タブを描画する。
+         * @returns {void}
+         */
         export function toggleGachaRatesOverlay() {
             const overlay = document.getElementById('gacha-rates-overlay');
             if (!overlay) return;
@@ -225,6 +359,10 @@ import {
         // 🎁 レア度ごとに、実際に排出されるアイテムと確率を一覧表示する
         export const GACHA_RATE_TAB_LABELS = { normal: 'ノーマル', normalRare: 'ノーマルレア', rare: 'レア', sr: 'スーパーレア', ur: 'ウルトラレア' };
         export let currentGachaRateTab = 'normal';
+        /**
+         * レア度カテゴリごとのタブボタンをGACHA_RATE_TAB_LABELSから生成し、現在選択中タブの内容を描画する。
+         * @returns {void}
+         */
         export function renderGachaRateTabs() {
             const tabsEl = document.getElementById('gacha-rate-tabs');
             tabsEl.innerHTML = Object.keys(GACHA_RATE_TAB_LABELS).map(id => {
@@ -234,6 +372,11 @@ import {
             }).join('');
             switchGachaRateTab(currentGachaRateTab);
         }
+        /**
+         * 指定したレア度タブに切り替え、そのレア度で実際に出るアイテムと排出率を計算して一覧表示する。
+         * @param {string} tabId - 切り替え先のレア度タブID
+         * @returns {void}
+         */
         export function switchGachaRateTab(tabId) {
             currentGachaRateTab = tabId;
             const tabsEl = document.getElementById('gacha-rate-tabs');
@@ -261,11 +404,11 @@ import {
                 const star = { normalRare: 1, rare: 2 }[tabId];
                 const pool = getKisekaeItemsByStar(star);
                 const sprayItem = SPRAY_ITEMS.find(i => i.star === star);
-                const costumeRate = (rarity.weight * 0.5 / pool.length).toFixed(2);
+                const costumeRate = (rarity.weight * CONFIG.GACHA_SPRAY_SPLIT_RATE / pool.length).toFixed(2);
                 rows = pool.map(item => ({ img: item.img || (item.leftFrames ? item.leftFrames[0] : ''), name: item.name, rate: costumeRate }));
                 if (sprayItem) {
                     const emoji = sprayItem.effectId === 'sparkle' ? '✨' : '🌟';
-                    rows.push({ emoji, name: sprayItem.name, rate: (rarity.weight * 0.5).toFixed(2) });
+                    rows.push({ emoji, name: sprayItem.name, rate: (rarity.weight * CONFIG.GACHA_SPRAY_SPLIT_RATE).toFixed(2) });
                 }
             }
             listEl.innerHTML = rows.map(row => `
@@ -285,6 +428,10 @@ import {
         export const GACHA_COST_TEN = 90; // 1回x10より少しお得な価格設定
 
         export let pendingGachaResult = null; // 🐛修正：コイン消費と同時に確定させ、演出中に中断されてもコインだけ失うことが無いようにする
+        /**
+         * ガチャ1回分の開始処理。コイン残高チェックと消費、レア度抽選、景品の確定・付与、保存を行い、演出を開始する。
+         * @returns {void}
+         */
         export function startGachaSpin() {
             const spinBtn = document.getElementById('gacha-spin-btn');
             if (spinBtn.disabled) return;
@@ -330,6 +477,10 @@ import {
         }
         window.startGachaSpin = startGachaSpin; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * 確定済みレア度の色フィルターをカプセルに適用し、跳ねながら落下するアニメーションを再生してタップ待ちにする。
+         * @returns {void}
+         */
         export function dropGachaCapsule() {
             const capsuleWrap = document.getElementById('gacha-capsule-wrap');
             const capsuleWhole = document.getElementById('gacha-capsule-whole');
@@ -340,7 +491,7 @@ import {
             capsuleBottom.style.filter = currentGachaRarity.filter;
 
             playAudioFile('audio/gacha/drop.mp3');
-            vibrate([15, 30, 60]);
+            vibrate(CONFIG.GACHA_DROP_VIBRATE);
             capsuleWrap.animate(
                 [
                     { transform: 'translate(-50%, calc(-50% - 60px)) scale(0)', offset: 0 },
@@ -348,7 +499,7 @@ import {
                     { transform: 'translate(-50%, calc(-50% - 8px)) scale(0.95)', offset: 0.82 },
                     { transform: 'translate(-50%, -50%) scale(1)', offset: 1 },
                 ],
-                { duration: 500, easing: 'ease-out', fill: 'forwards' }
+                { duration: CONFIG.GACHA_DROP_DURATION_MS, easing: 'ease-out', fill: 'forwards' }
             ).finished.then(() => {
                 capsuleWrap.style.transform = 'translate(-50%, -50%) scale(1)';
                 enableGachaCapsuleTapToOpen();
@@ -356,13 +507,17 @@ import {
         }
 
         // 🫳 落ちたカプセルは自動で開かず、プレイヤーがタップした時に開く
+        /**
+         * 落下し終えたカプセルにパルスアニメーションを付けてタップ可能にし、タップされたらopenGachaCapsule()を呼ぶ。
+         * @returns {void}
+         */
         export function enableGachaCapsuleTapToOpen() {
             const capsuleWhole = document.getElementById('gacha-capsule-whole');
             capsuleWhole.style.pointerEvents = 'auto';
             capsuleWhole.style.cursor = 'pointer';
             const pulse = capsuleWhole.animate(
                 [{ transform: 'scale(1)' }, { transform: 'scale(1.08)' }, { transform: 'scale(1)' }],
-                { duration: 800, iterations: Infinity }
+                { duration: CONFIG.GACHA_PULSE_DURATION_MS, iterations: Infinity }
             );
             capsuleWhole.onclick = () => {
                 capsuleWhole.onclick = null;
@@ -372,13 +527,17 @@ import {
             };
         }
 
+        /**
+         * カプセルが上下にパカッと割れて開く演出（効果音・振動・画面フラッシュ・飛散アニメーション）を再生し、景品表示を予約する。
+         * @returns {void}
+         */
         export function openGachaCapsule() {
             const capsuleWhole = document.getElementById('gacha-capsule-whole');
             const capsuleTop = document.getElementById('gacha-capsule-top');
             const capsuleBottom = document.getElementById('gacha-capsule-bottom');
             playAudioFile('audio/gacha/open.mp3');
-            vibrate([10, 20, 10]);
-            screenFlash('#ffffff', 0.25);
+            vibrate(CONFIG.GACHA_OPEN_VIBRATE);
+            screenFlash('#ffffff', CONFIG.GACHA_FLASH_ALPHA_STANDARD);
 
             capsuleWhole.style.display = 'none';
             capsuleTop.style.display = 'block';
@@ -386,17 +545,22 @@ import {
 
             capsuleTop.animate(
                 [{ transform: 'translateY(-10px) rotate(0deg)', opacity: 1 }, { transform: 'translateY(-140px) rotate(-35deg)', opacity: 0 }],
-                { duration: 500, easing: 'ease-out', fill: 'forwards' }
+                { duration: CONFIG.GACHA_OPEN_SPLIT_DURATION_MS, easing: 'ease-out', fill: 'forwards' }
             );
             capsuleBottom.animate(
                 [{ transform: 'translateY(10px) rotate(0deg)', opacity: 1 }, { transform: 'translateY(110px) rotate(28deg)', opacity: 0 }],
-                { duration: 500, easing: 'ease-out', fill: 'forwards' }
+                { duration: CONFIG.GACHA_OPEN_SPLIT_DURATION_MS, easing: 'ease-out', fill: 'forwards' }
             );
 
-            setTimeout(revealGachaPrize, 320);
+            setTimeout(revealGachaPrize, CONFIG.GACHA_REVEAL_DELAY_MS);
         }
 
         // 🎰 ガチャ：星ランク別のアイテムプールを取得し、1つ抽選して付与する
+        /**
+         * 帽子・顔・服・背中・フルボディの各カテゴリから、指定★ランクに一致するアイテムのプールを集めて返す。
+         * @param {number} star - 対象の星ランク
+         * @returns {Array<Object>} 条件に一致するアイテムの配列
+         */
         export function getKisekaeItemsByStar(star) {
             const pool = [];
             ['hat', 'face', 'clothes', 'back', 'fullbody'].forEach(cat => {
@@ -408,14 +572,24 @@ import {
         }
         export const DUPLICATE_REFUND_BY_STAR = { 1: 3, 2: 8, 3: 20, 4: 50 }; // 重複時は、レア度に応じてガチャコインを還元する
         // ✨ ノーマルレア・レアだけ、衣装かスプレーかを半々で抽選する（スーパーレア・ウルトラレアは衣装のみ）
+        /**
+         * ノーマルレア・レア排出時、該当★のスプレーがあれば一定確率でスプレーを付与し、それ以外は衣装抽選に回す。
+         * @param {number} star - 対象の星ランク
+         * @returns {Object} 付与結果（item, isSpray, isDuplicate, refundCoinsを含む）
+         */
         export function grantGachaNormalRareOrRareReward(star) {
             const sprayItem = SPRAY_ITEMS.find(i => i.star === star);
-            if (sprayItem && Math.random() < 0.5) {
+            if (sprayItem && Math.random() < CONFIG.GACHA_SPRAY_SPLIT_RATE) {
                 sprayInventory[sprayItem.id] = (sprayInventory[sprayItem.id] || 0) + 1;
                 return { item: sprayItem, isSpray: true, isDuplicate: false, refundCoins: 0 };
             }
             return grantGachaKisekaeItem(star);
         }
+        /**
+         * 指定★の衣装プールから未所持優先で1つ抽選して付与し、重複時は星ランクに応じたコインを還元する。
+         * @param {number} star - 対象の星ランク
+         * @returns {Object} 付与結果（item, isDuplicate, refundCoinsを含む）
+         */
         export function grantGachaKisekaeItem(star) {
             const pool = getKisekaeItemsByStar(star);
             const notOwned = pool.filter(item => !(ownedKisekaeItems[item.category] || []).includes(item.id));
@@ -433,6 +607,11 @@ import {
             return { item: picked, isDuplicate, refundCoins };
         }
         // 🎰 レア度から、実際の景品を確定・付与する（コイン消費と同時に呼ぶ）
+        /**
+         * 抽選で決まったレア度オブジェクトから、実際の景品（消耗品または衣装/スプレー）を確定・付与する。
+         * @param {Object} rarity - 抽選されたレア度オブジェクト
+         * @returns {Object|null} 付与結果をkind付きでまとめたオブジェクト（該当なしならnull）
+         */
         export function grantGachaPrizeForRarity(rarity) {
             if (rarity.id === 'normal') {
                 return { kind: 'normal', item: grantRandomNormalConsumable() };
@@ -444,6 +623,10 @@ import {
             }
             return null;
         }
+        /**
+         * 確定済みのpendingGachaResultを読み出して景品名・画像・レア度演出（グロー・後光・フラッシュ・振動）を表示する。
+         * @returns {void}
+         */
         export function revealGachaPrize() {
             const prizeReveal = document.getElementById('gacha-prize-reveal');
             const prizeImg = document.getElementById('gacha-prize-img');
@@ -477,7 +660,7 @@ import {
 
             // 🌟 レア度が高いほど、グロー・フラッシュ・振動・文字の大きさが豪華になる
             prizeImg.style.filter = `drop-shadow(0 4px 10px rgba(0,0,0,0.4)) drop-shadow(0 0 ${flair.glow}px ${currentGachaRarity.color})`;
-            prizeName.style.fontSize = `${(1.15 * flair.nameScale).toFixed(2)}rem`;
+            prizeName.style.fontSize = `${(CONFIG.GACHA_PRIZE_NAME_BASE_REM * flair.nameScale).toFixed(2)}rem`;
             let raysHtml = '';
             if (flair.rays) {
                 raysHtml = `<div id="gacha-prize-rays" style="position:absolute; top:50%; left:50%; width:340px; height:340px; transform:translate(-50%,-50%);
@@ -498,7 +681,7 @@ import {
                     { transform: 'translate(-50%,-50%) scale(1.25)', opacity: 1, offset: 0.7 },
                     { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
                 ],
-                { duration: 420, easing: 'ease-out', fill: 'forwards' }
+                { duration: CONFIG.GACHA_PRIZE_REVEAL_DURATION_MS, easing: 'ease-out', fill: 'forwards' }
             );
 
             setGachaButtonsDisabled(false);
@@ -510,11 +693,15 @@ import {
                 fullscreen.style.display = 'none';
                 document.getElementById('gacha-reveal-single').style.display = 'none';
             };
-            setTimeout(() => fullscreen.addEventListener('click', closeOnTap), 400); // 出た瞬間の誤タップで即閉じないよう少し待つ
+            setTimeout(() => fullscreen.addEventListener('click', closeOnTap), CONFIG.GACHA_PRIZE_TAP_GUARD_MS); // 出た瞬間の誤タップで即閉じないよう少し待つ
         }
 
         // ===== 10連：レバーは1回、カプセル10個が続けて出て、全部落ちてから順番にパカパカ開いていく =====
         export let pendingGachaResults10 = null; // 🐛修正：10連分も、コイン消費と同時に確定させる
+        /**
+         * ガチャ10連の開始処理。コイン残高チェックと消費、10回分のレア度抽選・景品確定・保存を行い、演出を開始する。
+         * @returns {void}
+         */
         export function startGachaSpin10() {
             const spin10Btn = document.getElementById('gacha-spin10-btn');
             if (spin10Btn.disabled) return;
@@ -525,7 +712,7 @@ import {
             if (!IS_DEV_MODE) setGachaCoins(gachaCoins - (GACHA_COST_TEN));
             trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
             const rarities10 = [];
-            for (let i = 0; i < 10; i++) rarities10.push(pickGachaRarity());
+            for (let i = 0; i < CONFIG.GACHA_TEN_PULL_COUNT; i++) rarities10.push(pickGachaRarity());
             pendingGachaResults10 = rarities10.map(r => grantGachaPrizeForRarity(r)); // 🐛修正：この時点で10個分すべて確定・付与する
             saveGame(); // コイン消費と10個分の景品、全部同時に保存する
             updateGachaCoinDisplay();
@@ -552,6 +739,12 @@ import {
         // 🔴 10連のカプセルは、まず機体の小さな絵の上（1連と同じ場所）に1個ずつ出す。前のカプセルが残っていると
         // 次と重なって邪魔になるため、バウンドして着地した後、少し間を置いてフェードアウトしてから次に道を譲る。
         // 全部出し終わってから、初めて全画面の演出に切り替える。
+        /**
+         * 10連分のカプセルを機体上の同じ場所に1個ずつ順番に落として見せ、全部出し終えたら一覧グリッド表示へ切り替える。
+         * @param {Array<Object>} rarities - 10連分のレア度オブジェクト配列
+         * @param {number} index - 現在処理中のカプセルのインデックス
+         * @returns {void}
+         */
         export function dropGachaCapsuleOneByOne(rarities, index) {
             if (index >= rarities.length) {
                 document.getElementById('gacha-reveal-fullscreen').style.display = 'flex';
@@ -565,7 +758,7 @@ import {
             capsuleWrap.style.display = 'block';
 
             playAudioFile('audio/gacha/drop.mp3');
-            vibrate([12]);
+            vibrate(CONFIG.GACHA_MULTI_DROP_VIBRATE);
             capsuleWrap.animate(
                 [
                     { transform: 'translate(-50%, -40px) scale(0)', opacity: 1, offset: 0 },
@@ -573,7 +766,7 @@ import {
                     { transform: 'translate(-50%, -6px) scale(0.95)', opacity: 1, offset: 0.82 },
                     { transform: 'translate(-50%, 0px) scale(1)', opacity: 1, offset: 1 },
                 ],
-                { duration: 420, easing: 'ease-out', fill: 'forwards' }
+                { duration: CONFIG.GACHA_MULTI_DROP_DURATION_MS, easing: 'ease-out', fill: 'forwards' }
             ).finished.then(() => {
                 // 少し見せてから、次のカプセルに道を譲るためフェードアウト
                 setTimeout(() => {
@@ -582,15 +775,20 @@ import {
                             { transform: 'translate(-50%, 0px) scale(1)', opacity: 1 },
                             { transform: 'translate(-50%, -14px) scale(0.7)', opacity: 0 },
                         ],
-                        { duration: 260, easing: 'ease-in', fill: 'forwards' }
+                        { duration: CONFIG.GACHA_MULTI_FADE_DURATION_MS, easing: 'ease-in', fill: 'forwards' }
                     ).finished.then(() => {
                         dropGachaCapsuleOneByOne(rarities, index + 1);
                     });
-                }, 220);
+                }, CONFIG.GACHA_MULTI_FADE_DELAY_MS);
             });
         }
 
         // 🔴 10個出し終わったら、まとめて表示。画面をタップすると、1個ずつ自動で開いていく
+        /**
+         * 10個のカプセル（未開封状態）をグリッドで並べて表示し、タップされたら1個ずつ順番に開封する処理を仕込む。
+         * @param {Array<Object>} rarities - 10連分のレア度オブジェクト配列
+         * @returns {void}
+         */
         export function showGacha10SummaryGrid(rarities) {
             document.getElementById('gacha-capsule-wrap-mini').getAnimations().forEach(a => a.cancel());
             document.getElementById('gacha-capsule-wrap-mini').style.display = 'none';
@@ -600,7 +798,7 @@ import {
             grid.innerHTML = '';
             panel.style.display = 'block';
 
-            const CAPSULE_PX = 130;
+            const CAPSULE_PX = CONFIG.GACHA_SUMMARY_CAPSULE_PX;
             const capsuleSets = [], iconEls = [];
             rarities.forEach((r) => {
                 const cell = document.createElement('div');
@@ -649,6 +847,14 @@ import {
             document.getElementById('gacha-stage').addEventListener('click', openHandler); // 保険として、ステージ全体でも拾う
         }
 
+        /**
+         * グリッド内のカプセルを1個ずつ、確定済みの景品を表示しながら開封演出し、自分自身を再帰呼び出しして次へ進める。
+         * @param {Array<Object>} capsuleSets - 各カプセルのDOM要素セット（whole/top/bottom/cell）の配列
+         * @param {Array<HTMLElement>} iconEls - 各カプセルの中身アイコン表示用要素の配列
+         * @param {Array<Object>} rarities - 10連分のレア度オブジェクト配列
+         * @param {number} index - 現在開封中のカプセルのインデックス
+         * @returns {void}
+         */
         export function openGacha10CapsulesSequentially(capsuleSets, iconEls, rarities, index) {
             if (index >= capsuleSets.length) {
                 finishGachaSpin10();
@@ -660,7 +866,7 @@ import {
             cell.scrollIntoView({ behavior: 'smooth', block: 'center' }); // 入りきらない分は、開く場所に合わせて自動でスクロール
             playAudioFile('audio/gacha/open.mp3');
             vibrate(flair.vibrate);
-            if (flair.glow > 0) screenFlash(rarities[index].color, flair.flash * 0.6); // 10連は連続で光ると煩わしいので、1連より控えめに
+            if (flair.glow > 0) screenFlash(rarities[index].color, flair.flash * CONFIG.GACHA_MULTI_FLASH_SCALE); // 10連は連続で光ると煩わしいので、1連より控えめに
 
             // 🐛修正：景品は既にstartGachaSpin10の時点で確定・保存済み。ここでは表示するだけ（再抽選しない）
             const pending = pendingGachaResults10[index];
@@ -687,25 +893,29 @@ import {
             bottom.style.display = 'block';
             top.animate(
                 [{ transform: 'translateY(-6px) rotate(0deg)', opacity: 1 }, { transform: 'translateY(-75px) rotate(-32deg)', opacity: 0 }],
-                { duration: 400, easing: 'ease-out', fill: 'forwards' }
+                { duration: CONFIG.GACHA_MULTI_OPEN_DURATION_MS, easing: 'ease-out', fill: 'forwards' }
             );
             bottom.animate(
                 [{ transform: 'translateY(6px) rotate(0deg)', opacity: 1 }, { transform: 'translateY(58px) rotate(25deg)', opacity: 0 }],
-                { duration: 400, easing: 'ease-out', fill: 'forwards' }
+                { duration: CONFIG.GACHA_MULTI_OPEN_DURATION_MS, easing: 'ease-out', fill: 'forwards' }
             );
             icon.animate(
                 [{ transform: 'scale(0.5)', opacity: 0 }, { transform: 'scale(1.15)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1 }],
-                { duration: 400, easing: 'ease-out', fill: 'forwards', delay: 120 }
+                { duration: CONFIG.GACHA_MULTI_OPEN_DURATION_MS, easing: 'ease-out', fill: 'forwards', delay: CONFIG.GACHA_MULTI_OPEN_ICON_DELAY_MS }
             ).finished.then(() => {
-                setTimeout(() => openGacha10CapsulesSequentially(capsuleSets, iconEls, rarities, index + 1), 180);
+                setTimeout(() => openGacha10CapsulesSequentially(capsuleSets, iconEls, rarities, index + 1), CONFIG.GACHA_MULTI_OPEN_NEXT_DELAY_MS);
             });
         }
 
         // 🔴 全部開き終わったら、結果のUIをそのまま残さず、「もう10連／やめる」の選択だけ出す
+        /**
+         * 10連の全開封が終わったタイミングで保存・演出を行い、「もう10連／やめる」の選択プロンプトを表示する。
+         * @returns {void}
+         */
         export function finishGachaSpin10() {
             saveGame();
             playAudioFile('audio/levelup.mp3');
-            screenFlash('#ffd700', 0.25);
+            screenFlash('#ffd700', CONFIG.GACHA_FLASH_ALPHA_STANDARD);
 
             const panel = document.getElementById('gacha-multi-panel');
             const promptDiv = document.createElement('div');
@@ -720,6 +930,11 @@ import {
         }
 
         // 🔴 「もう10連」「やめる」どちらを押しても、結果表示はいったんすべて消してから次に進む
+        /**
+         * 10連結果表示のパネル・グリッド・プロンプトを片付けてボタンを再有効化し、spinAgainがtrueなら再度10連を回す。
+         * @param {boolean} spinAgain - trueなら続けて10連ガチャを開始する
+         * @returns {void}
+         */
         export function closeGacha10ResultsAnd(spinAgain) {
             const panel = document.getElementById('gacha-multi-panel');
             panel.style.display = 'none';
@@ -737,6 +952,10 @@ import {
         export const GACHA_CRANK_POS_PWA = { top: 63.284389, left: 40.200326, width: 19.031814 };
         // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
         export const GACHA_CRANK_ADJUST_TOOL_ENABLED = false;
+        /**
+         * 実行環境（PWA/通常ブラウザ）に応じた座標定数を使って、ガチャクランク画像の位置・幅を設定する。
+         * @returns {void}
+         */
         export function applyGachaCrankPosition() {
             const crank = document.getElementById('gacha-crank');
             if (!crank) return;
@@ -745,10 +964,20 @@ import {
             crank.style.left = pos.left + '%';
             crank.style.width = pos.width + '%';
         }
+        /**
+         * ガチャタブへの切り替えのみを行う薄いラッパー関数。
+         * @returns {void}
+         */
         export function onGachaTabTap() {
             switchShopTab('gacha');
         }
         // 🛋️ 家具の購入・プレビュー
+        /**
+         * 指定カテゴリ・IDの家具アイテムをもちで購入し、所持リストに追加してから保存・再描画する。
+         * @param {string} cat - 家具のカテゴリ
+         * @param {string} itemId - 購入する家具アイテムのID
+         * @returns {void}
+         */
         export function buyFurnitureItem(cat, itemId) {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             if (!item) return;
@@ -762,6 +991,12 @@ import {
             renderShopList();
         }
         window.buyFurnitureItem = buyFurnitureItem; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
+        /**
+         * 選択した家具アイテムを、現在の壁紙・床の上に実際の配置ルールに沿って重ねて表示するプレビューモーダルを開く。
+         * @param {string} cat - 家具のカテゴリ
+         * @param {string} itemId - プレビューする家具アイテムのID
+         * @returns {void}
+         */
         export function previewShopFurniture(cat, itemId) {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             if (!item) return;
@@ -776,9 +1011,9 @@ import {
                 top = (MYROOM_WALL_ZONE_BOTTOM - item.height) / 2;
                 left = (100 - item.width) / 2;
             } else {
-                top = 50 - item.height / 2;
-                left = 50 - item.width / 2;
-                if (top + item.height <= MYROOM_WALL_ZONE_BOTTOM) top = MYROOM_WALL_ZONE_BOTTOM - item.height + 0.1;
+                top = CONFIG.FURNITURE_PREVIEW_CENTER_PCT - item.height / 2;
+                left = CONFIG.FURNITURE_PREVIEW_CENTER_PCT - item.width / 2;
+                if (top + item.height <= MYROOM_WALL_ZONE_BOTTOM) top = MYROOM_WALL_ZONE_BOTTOM - item.height + CONFIG.FURNITURE_PREVIEW_SNAP_EPSILON_PCT;
             }
             itemEl.src = item.img;
             itemEl.style.top = top + '%';
@@ -791,6 +1026,10 @@ import {
             openModal('furniture-preview-modal');
         }
         window.previewShopFurniture = previewShopFurniture; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
+        /**
+         * 家具プレビューモーダルを閉じ、ショップモーダルが開いたままならbodyのmodal-openクラスを付け直す。
+         * @returns {void}
+         */
         export function closeFurniturePreview() {
             closeModal('furniture-preview-modal');
             // 🐛修正：closeModalがbodyのmodal-openクラスを消してしまうため、ショップがまだ開いたままなら付け直す
@@ -803,6 +1042,10 @@ import {
         // 🛠️ 開発者用：ガチャのクランク（回す部分）の位置調整ツール
         export let gachaCrankAdjustMode = false;
         export let gachaCrankAdjustDragState = null;
+        /**
+         * 開発者用のクランク位置調整モードのオン/オフを切り替え、オンならドラッグ設定とハンドル配置を初期化する。
+         * @returns {void}
+         */
         export function toggleGachaCrankAdjustMode() {
             gachaCrankAdjustMode = !gachaCrankAdjustMode;
             const btn = document.getElementById('gacha-adjust-toggle-btn');
@@ -822,6 +1065,10 @@ import {
             }
         }
         window.toggleGachaCrankAdjustMode = toggleGachaCrankAdjustMode; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
+        /**
+         * 調整モード中、クランク要素の右端・下端・右下角に対応するリサイズハンドルの位置をDOM座標から%に変換して配置し直す。
+         * @returns {void}
+         */
         export function positionGachaCrankHandles() {
             if (!gachaCrankAdjustMode) return;
             const stage = document.getElementById('gacha-illustration-wrap');
@@ -838,6 +1085,10 @@ import {
             hB.style.left = midXPct + '%'; hB.style.top = bottomPct + '%';
             hBr.style.left = rightPct + '%'; hBr.style.top = bottomPct + '%';
         }
+        /**
+         * クランク調整モード用のポインタードラッグ操作（移動・幅リサイズ）のイベントリスナーを一度だけ設定する。
+         * @returns {void}
+         */
         export function setupGachaCrankAdjustDrag() {
             const stage = document.getElementById('gacha-illustration-wrap');
             if (stage.dataset.dragSetup) return;
@@ -868,7 +1119,7 @@ import {
                     target.style.top = (parseFloat(target.style.top) + dyPct) + '%';
                     target.style.left = (parseFloat(target.style.left) + dxPct) + '%';
                 } else {
-                    if (mode === 'width' || mode === 'both') target.style.width = Math.max(2, parseFloat(target.style.width) + dxPct) + '%';
+                    if (mode === 'width' || mode === 'both') target.style.width = Math.max(CONFIG.GACHA_CRANK_MIN_WIDTH_PCT, parseFloat(target.style.width) + dxPct) + '%';
                 }
                 gachaCrankAdjustDragState.startX = e.clientX; gachaCrankAdjustDragState.startY = e.clientY;
                 positionGachaCrankHandles();
@@ -877,12 +1128,20 @@ import {
             stage.addEventListener('pointerup', () => { gachaCrankAdjustDragState = null; });
             stage.addEventListener('pointercancel', () => { gachaCrankAdjustDragState = null; });
         }
+        /**
+         * 現在のクランクのtop/left/width（%指定文字列）を、調整パネルの座標読み取り表示欄に反映する。
+         * @returns {void}
+         */
         export function updateGachaCrankReadout() {
             const target = document.getElementById('gacha-crank');
             const el = document.getElementById('gacha-adjust-readout');
             if (!target || !el) return;
             el.textContent = `top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
         }
+        /**
+         * 現在のクランク座標をテキストにまとめてテキストエリアに表示・選択状態にし、可能ならクリップボードにコピーする。
+         * @returns {void}
+         */
         export function copyGachaCrankCoords() {
             const target = document.getElementById('gacha-crank');
             const text = `クランク: top:${target.style.top}; left:${target.style.left}; width:${target.style.width};`;
@@ -894,6 +1153,10 @@ import {
         }
         window.copyGachaCrankCoords = copyGachaCrankCoords; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
 
+        /**
+         * 現在選択中のショップタブ（おみやげ／ガチャ／家具／スキル）に応じて、それぞれ専用のDOM構築処理を呼び分ける。
+         * @returns {void}
+         */
         export function renderShopList() {
             if (currentShopTab === 'omiyage') {
                 renderOmiyageShelf();
@@ -1022,6 +1285,10 @@ import {
 
         // #omiyage-image-frameを、コンテナ内で棚イラストが実際に表示される範囲(レターボックス考慮済み)に
         // ピッタリ合わせる。これにより、中の%指定（スロット位置・名札・詳細パネルなど）が常に画像基準で正確になる。
+        /**
+         * #omiyage-image-frameを、コンテナ内で棚イラストが実際に表示される範囲（レターボックス考慮済み）に合わせる。
+         * @returns {void}
+         */
         export function syncOmiyageImageFrame() {
             const container = document.getElementById('omiyage-shelf-container');
             const frame = document.getElementById('omiyage-image-frame');
@@ -1034,7 +1301,7 @@ import {
                 // 横長すぎるコンテナ：本来は左右がレターボックスされるが、メイン画面の背景と同じ考え方で、
                 // 下部のショップタブ・棚を絶対に隠さない範囲でだけ、看板寄りの上部を安全に切り詰めて幅優先にする
                 w = cw; h = cw / OMIYAGE_IMG_NATURAL_RATIO;
-                const MAX_SAFE_CROP_RATIO = 0.16; // 看板部分など、削っても実害が無い上部の目安（下のタブ等には絶対届かせない）
+                const MAX_SAFE_CROP_RATIO = CONFIG.OMIYAGE_SHELF_MAX_SAFE_CROP_RATIO; // 看板部分など、削っても実害が無い上部の目安（下のタブ等には絶対届かせない）
                 const overflowH = h - ch;
                 const cropTop = Math.max(0, Math.min(overflowH, h * MAX_SAFE_CROP_RATIO));
                 top = -cropTop;
@@ -1056,6 +1323,11 @@ import {
             frame.style.top = top + 'px';
         }
 
+        /**
+         * おみやげタブの棚表示を担当。現在ページ分のスロットを生成し、ロック状態や新規購入可能演出、詳細パネルを反映する。
+         * @param {boolean} [shake] - trueなら棚切り替え時の揺れ演出を出す
+         * @returns {void}
+         */
         export function renderOmiyageShelf(shake) {
             syncOmiyageImageFrame();
             const maxPage = Math.ceil(stages.length / OMIYAGE_PAGE_SIZE) - 1;
@@ -1087,7 +1359,7 @@ import {
                     : (stage.itemImg ? `<img class="omiyage-slot-img" src="${stage.itemImg}" alt="${stage.item}">` : `<div class="omiyage-slot-emoji">🎁</div>`);
                 if (shake) {
                     // 棚を切り替えた時だけ、左上から順に少しずつ揺れるようにする（一斉に同時ではなく、波が伝わる感じにする）
-                    itemDiv.style.animation = `omiyageShelfShake 0.4s ease-in-out ${slot * 0.03}s`;
+                    itemDiv.style.animation = `omiyageShelfShake 0.4s ease-in-out ${slot * CONFIG.OMIYAGE_SHELF_SHAKE_STAGGER_S}s`;
                 }
                 if (!isLocked) itemDiv.addEventListener('click', () => onOmiyageSlotTap(i, itemDiv));
                 slotsLayer.appendChild(itemDiv);
@@ -1112,6 +1384,11 @@ import {
             document.getElementById('omiyage-page-indicator').innerText = `${omiyagePage + 1} / ${maxPage + 1} ページ`;
         }
 
+        /**
+         * おみやげ棚のページを前後（dir=±1）に切り替え、切り替え効果音を鳴らして棚を再描画する。
+         * @param {number} dir - ページ移動方向（+1で次、-1で前）
+         * @returns {void}
+         */
         export function omiyagePageBy(dir) {
             const maxPage = Math.ceil(stages.length / OMIYAGE_PAGE_SIZE) - 1;
             omiyagePage = (omiyagePage + dir + maxPage + 1) % (maxPage + 1); // 最初で←→最後、最後で→→最初
@@ -1120,6 +1397,12 @@ import {
             renderOmiyageShelf(true); // trueで、切り替え時の揺れ演出を出す
         }
 
+        /**
+         * 棚のスロットがタップされた時、効果音とゆれ演出を出してからそのスロットを選択状態にして詳細パネルを表示する。
+         * @param {number} idx - タップされたステージのインデックス
+         * @param {HTMLElement} el - タップされたスロットのDOM要素
+         * @returns {void}
+         */
         export function onOmiyageSlotTap(idx, el) {
             playAudioFile('audio/tap.mp3');
             el.classList.remove('mochitto'); void el.offsetWidth; el.classList.add('mochitto'); // もちっと演出
@@ -1127,6 +1410,11 @@ import {
             showOmiyageDetail(idx);
         }
 
+        /**
+         * 指定したおみやげの詳細パネルに、画像・名前・現在の効果量・全体貢献度・次のレベルの価格と購入ボタンを表示する。
+         * @param {number} idx - 表示するステージのインデックス
+         * @returns {void}
+         */
         export function showOmiyageDetail(idx) {
             const stage = stages[idx];
             const currentLv = purchasedItems[idx] || 0;
@@ -1144,10 +1432,10 @@ import {
             let contributionText = '';
             if (currentLv > 0) {
                 const isGoldTrophyHere = getPrefTrophy(idx) === 'gold';
-                const myValue = currentLv * (stage.tapBonus || stage.mpsBonus) * (isGoldTrophyHere ? 1.1 : 1);
+                const myValue = currentLv * (stage.tapBonus || stage.mpsBonus) * (isGoldTrophyHere ? CONFIG.GOLD_TROPHY_BONUS_MULT : 1);
                 const totalValue = stage.tapBonus ? getTapPower() : getMps();
                 const percent = totalValue > 0 ? (myValue / totalValue * 100) : 0;
-                contributionText = ` ／ 全体の${percent < 0.1 ? '<0.1' : percent.toFixed(1)}%`;
+                contributionText = ` ／ 全体の${percent < CONFIG.CONTRIBUTION_MIN_DISPLAY_PERCENT ? '<0.1' : percent.toFixed(1)}%`;
             }
             document.getElementById('omiyage-detail-effect').innerText = `${baseEffectText}（現在+${formatMochi(currentLv * (stage.tapBonus || stage.mpsBonus))}${contributionText}）`;
 
@@ -1160,22 +1448,41 @@ import {
         }
 
         // 見た目だけ隠す（選択状態は保持しない呼び出し元でクリアする）
+        /**
+         * 詳細パネルの見た目（showクラス）だけを外して非表示にする。選択状態自体はクリアしない。
+         * @returns {void}
+         */
         export function closeOmiyageDetailUI() {
             document.getElementById('omiyage-detail-panel').classList.remove('show');
         }
 
         // 🍡 お土産一覧（倉庫）：持っているおみやげを並べて、タップで「もちすけにあげる」を選べる
+        /**
+         * 選択中のおみやげIDをクリアした上で、詳細パネルを非表示にする。
+         * @returns {void}
+         */
         export function closeOmiyageDetail() {
             omiyageSelectedIdx = null;
             closeOmiyageDetailUI();
         }
 
+        /**
+         * 所持金が足りているか確認した上でbuyOmiyage()を呼んで購入処理を実行し、消費額の演出テキストを表示する。
+         * @param {number} idx - 購入するステージのインデックス
+         * @param {number} price - 表示・チェック用の購入価格
+         * @returns {void}
+         */
         export function buyOmiyageFromShelf(idx, price) {
             if (score < price) return;
             buyOmiyage(idx); // 既存の購入ロジックを流用（効果音・セリフ・セーブ・再描画まで全部やってくれる）
             flashOmiyageMoneySpent(price);
         }
 
+        /**
+         * 所持金表示の右上あたりに「-〇〇もち」の消費額テキストを配置し、一定時間だけフェード表示する。
+         * @param {number} price - 表示する消費額
+         * @returns {void}
+         */
         export function flashOmiyageMoneySpent(price) {
             const el = document.getElementById('omiyage-money-flash');
             const valueEl = document.getElementById('omiyage-money-value');
@@ -1185,13 +1492,18 @@ import {
             // 所持もち数の桁数によって表示幅が変わるため、その時点での右上位置を実測して合わせる
             const valueRect = valueEl.getBoundingClientRect();
             const containerRect = container.getBoundingClientRect();
-            el.style.left = (valueRect.right - containerRect.left + 4) + 'px';
-            el.style.top = (valueRect.top - containerRect.top - 14) + 'px';
+            el.style.left = (valueRect.right - containerRect.left + CONFIG.OMIYAGE_MONEY_FLASH_OFFSET_X_PX) + 'px';
+            el.style.top = (valueRect.top - containerRect.top + CONFIG.OMIYAGE_MONEY_FLASH_OFFSET_Y_PX) + 'px';
 
             el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 1600);
+            setTimeout(() => el.classList.remove('show'), CONFIG.OMIYAGE_MONEY_FLASH_DURATION_MS);
         }
 
+        /**
+         * 指定インデックスのおみやげについて、価格分のもちを消費してレベルを1上げ、進捗記録・演出・保存・再描画を行う。
+         * @param {number} idx - 購入するステージのインデックス
+         * @returns {void}
+         */
         export function buyOmiyage(idx) {
             const stage = stages[idx]; const currentLv = purchasedItems[idx] || 0;
             const nextPrice = getOmiyagePrice(stage, currentLv);
@@ -1204,6 +1516,11 @@ import {
             }
         }
 
+        /**
+         * 指定IDの衣装をclothesDataから探し、未購入かつ所持金が足りていれば購入・もち消費・自動装備を行う。
+         * @param {string} id - 購入する衣装のID
+         * @returns {void}
+         */
         export function buyKisekae(id) {
             const target = clothesData.find(c => c.id === id);
             if (score >= target.price && !purchasedClothes[id]) {
@@ -1214,6 +1531,10 @@ import {
         }
 
         // 🗺️ 地図の拡大縮小・ドラッグ操作の状態
+        /**
+         * スキルタブ・おみやげタブに、新しく購入可能なものがあることを示す光る演出クラスを付け外しする。
+         * @returns {void}
+         */
         export function updateShopTabHighlight() {
             const skillTab = document.getElementById('shop-tab-skills');
             if (skillTab) skillTab.classList.toggle('shop-recommend-glow', hasNewlyPurchasableSkill());
@@ -1229,14 +1550,59 @@ import {
         // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
         // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
         // ===================================================================
+        /**
+         * activeSprayId（装備中のスプレーID）を書き換える。importした束縛に直接代入できないための橋渡し。
+         * @param {*} v - 新しい値
+         * @returns {void}
+         */
         export function setActiveSprayId(v) { activeSprayId = v; }
+        /**
+         * blockedUserIds（ブロックしたユーザーID一覧）を書き換える。
+         * @param {Array} v - 新しい値
+         * @returns {void}
+         */
         export function setBlockedUserIds(v) { blockedUserIds = v; }
+        /**
+         * equippedClotheId（現在装備中の衣装ID）を書き換える。
+         * @param {string} v - 新しい値
+         * @returns {void}
+         */
         export function setEquippedClotheId(v) { equippedClotheId = v; }
+        /**
+         * favoriteFriendIds（お気に入り登録したフレンドのuid一覧）を書き換える。
+         * @param {Array} v - 新しい値
+         * @returns {void}
+         */
         export function setFavoriteFriendIds(v) { favoriteFriendIds = v; }
+        /**
+         * purchasedClothes（購入済み衣装の一覧）を書き換える。
+         * @param {Object} v - 新しい値
+         * @returns {void}
+         */
         export function setPurchasedClothes(v) { purchasedClothes = v; }
+        /**
+         * purchasedItems（各ステージのおみやげ購入レベル一覧）を書き換える。
+         * @param {Object} v - 新しい値
+         * @returns {void}
+         */
         export function setPurchasedItems(v) { purchasedItems = v; }
+        /**
+         * sprayBuffActiveUntil（スプレーの自動増加バフが有効な期限タイムスタンプ）を書き換える。
+         * @param {number} v - 新しい値
+         * @returns {void}
+         */
         export function setSprayBuffActiveUntil(v) { sprayBuffActiveUntil = v; }
+        /**
+         * sprayInventory（所持スプレー数）を書き換える。
+         * @param {Object} v - 新しい値
+         * @returns {void}
+         */
         export function setSprayInventory(v) { sprayInventory = v; }
+        /**
+         * ticketInventory（所持チケット数）を書き換える。
+         * @param {Object} v - 新しい値
+         * @returns {void}
+         */
         export function setTicketInventory(v) { ticketInventory = v; }
 
 

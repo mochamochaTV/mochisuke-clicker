@@ -1,30 +1,49 @@
         // ui.js を機能ごとに分割したファイルの1つ（ランキング・日記帳）。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-09-001';
-        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-09-001';
-        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-09-001';
-        import { purchasedItems } from '../../shop.js?v=2026-09-09-001';
-        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-09-001';
-        import { closeModal, openModal } from './core.js?v=2026-09-09-001';
-        import { setupChatInputEnterKey } from './chat.js?v=2026-09-09-001';
+        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-09-002';
+        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-09-002';
+        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-09-002';
+        import { purchasedItems } from '../../shop.js?v=2026-09-09-002';
+        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-09-002';
+        import { closeModal, openModal } from './core.js?v=2026-09-09-002';
+        import { setupChatInputEnterKey } from './chat.js?v=2026-09-09-002';
 
+
+        const CONFIG = {
+            FADE_OUT_DURATION_MS: 300, // ランキング画面を閉じる際の黒フェードの時間
+            FADE_CLEANUP_DELAY_MS: 150, // モーダルを閉じた後、黒フェードを解除するまでの遅延
+            PAGE_TURN_VOLUME: 1.0, // 絵日記のページをめくる音の音量
+        };
 
         export let currentRankingTab = 'score';
 
+        /**
+         * 移動音を鳴らしながら画面を黒フェードで覆い、ランキングモーダルを閉じる。
+         * @returns {void}
+         */
         export function closeRanking() {
             const overlay = document.getElementById('fade-overlay');
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 closeModal('ranking-modal');
-                setTimeout(() => overlay.classList.remove('fade-black'), 150);
-            }, 300);
+                setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.FADE_CLEANUP_DELAY_MS);
+            }, CONFIG.FADE_OUT_DURATION_MS);
         }
+        /**
+         * ランキング画面のヘルプオーバーレイの表示・非表示をトグルする。
+         * @returns {void}
+         */
         export function toggleRankingHelpOverlay() {
             const overlay = document.getElementById('ranking-help-overlay');
             if (overlay) overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
         }
 
+        /**
+         * 現在のランキングタブを切り替え、タブボタンの見た目を更新してランキング一覧を再描画する。
+         * @param {string} tab - 切り替え先のタブ名（'score' | 'taps' | 'prestige' | 'room'）
+         * @returns {void}
+         */
         export function switchRankingTab(tab) {
             currentRankingTab = tab;
             document.getElementById('rank-tab-score').classList.toggle('active', tab === 'score');
@@ -34,12 +53,21 @@
             renderRankingList();
         }
 
+        /**
+         * ランキングモーダルを開き、ランキング一覧の描画完了を待つ。
+         * @returns {Promise<void>}
+         */
         export async function openRanking() {
             openModal('ranking-modal');
             await renderRankingList();
         }
 
         // 順位の見た目（1〜3位は特別扱い）
+        /**
+         * 順位に応じた背景グラデーションと文字色のスタイル情報を返す。
+         * @param {number} rank - 順位（1始まり）
+         * @returns {Object} 背景(bg)と文字色(color)を持つスタイルオブジェクト
+         */
         export function rankNumberStyle(rank) {
             if (rank === 1) return { bg: 'linear-gradient(135deg,#ffd700,#ffb300)', color: '#5d4037' };
             if (rank === 2) return { bg: 'linear-gradient(135deg,#e0e0e0,#b0bec5)', color: '#5d4037' };
@@ -47,6 +75,11 @@
             return { bg: '#fff', color: '#8d6e63' };
         }
         // そのプレイヤーの装着中の服・帽子・顔パーツを、小さいもちすけとして重ねて表示するHTMLを作る
+        /**
+         * 装備情報から、フルボディ装備または服・翼・帽子・顔パーツを重ねたミニプレビュー画像のHTMLを生成する。
+         * @param {Object} outfit - プレイヤーの装備情報（fullbody/clothes/back/hat/faceなどのID）
+         * @returns {string} プレビュー用のHTML文字列
+         */
         export function renderRankOutfitPreviewHtml(outfit) {
             const fullbodyId = outfit && outfit.fullbody;
             if (fullbodyId) {
@@ -74,6 +107,11 @@
             });
             return html;
         }
+        /**
+         * 現在のタブに応じてランキングデータを取得し、取得できればソートして各プレイヤーの行を、
+         * 取得できなければオフライン表示をDOMに描画する。
+         * @returns {Promise<void>}
+         */
         export async function renderRankingList() {
             const listContainer = document.getElementById('ranking-list');
             listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
@@ -156,6 +194,10 @@
         }
 
         export let diaryPageIndex = 0;
+        /**
+         * 絵日記のページインデックスを現在選択中のステージに合わせ、表面表示にリセットしてモーダルを開く。
+         * @returns {void}
+         */
         export function openDiary() {
             diaryPageIndex = selectedStageIndex;
             diaryShowingBack = false;
@@ -165,6 +207,10 @@
             openModal('diary-modal');
         }
         export let diaryShowingBack = false;
+        /**
+         * 現在の絵日記ページに対応するステージ情報から、表面・裏面の内容とフッターのページ数表示を更新する。
+         * @returns {void}
+         */
         export function renderDiaryPage() {
             const stage = stages[diaryPageIndex]; const paper = document.getElementById('diary-paper-element');
             paper.classList.remove('page-animate'); void paper.offsetWidth; paper.classList.add('page-animate');
@@ -197,17 +243,35 @@
             document.getElementById('prev-page-btn').disabled = (diaryPageIndex === 0);
             document.getElementById('next-page-btn').disabled = (diaryPageIndex === currentStageIndex || diaryPageIndex === stages.length - 1);
         }
+        /**
+         * 絵日記の表面/裏面の表示を切り替え、ページをめくる音を再生する。
+         * @param {boolean} showBack - trueで裏面を表示、falseで表面を表示
+         * @returns {void}
+         */
         export function flipDiaryPage(showBack) {
             diaryShowingBack = showBack;
             document.getElementById('diary-front-content').style.display = showBack ? 'none' : 'block';
             document.getElementById('diary-back-content').style.display = showBack ? 'block' : 'none';
-            playAudioFile('audio/page_turn.mp3', 1.0);
+            playAudioFile('audio/page_turn.mp3', CONFIG.PAGE_TURN_VOLUME);
         }
+        /**
+         * 到達済み最終ステージ・全ステージ末尾より手前であれば、絵日記のページを1つ進めて再描画する。
+         * @returns {void}
+         */
         export function nextPage() { if (diaryPageIndex < currentStageIndex && diaryPageIndex < stages.length - 1) { diaryPageIndex++; flipDiaryPage(false); renderDiaryPage(); } }
+        /**
+         * 現在ページが先頭より後ろであれば、絵日記のページを1つ戻して再描画する。
+         * @returns {void}
+         */
         export function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; flipDiaryPage(false); renderDiaryPage(); } }
 
         // 💬 マイルームのライブチャット：入力欄でEnterキーを押した時に送信できるようにする
         setupChatInputEnterKey();
+        /**
+         * diaryPageIndexを指定した値に設定する。
+         * @param {number} v - 設定するページインデックス
+         * @returns {void}
+         */
         export function setDiaryPageIndex(v) { diaryPageIndex = v; }
         window.closeRanking = closeRanking;
         window.toggleRankingHelpOverlay = toggleRankingHelpOverlay;
