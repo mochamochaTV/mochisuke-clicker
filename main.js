@@ -2,28 +2,28 @@
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
 import {
   CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-09-002';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-09-002';
+} from './data.js?v=2026-09-09-003';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-09-003';
 import {
   checkAndRotateMissions, checkOfflineEarnings, checkStageProgress, currentStageIndex,
   currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems, prestigeCount,
   selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-09-002';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-09-002';
+} from './progress.js?v=2026-09-09-003';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-09-003';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-09-002';
+} from './state.js?v=2026-09-09-003';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-09-002';
+} from './tap.js?v=2026-09-09-003';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-09-002';
+} from './ui.js?v=2026-09-09-003';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -759,24 +759,27 @@ import {
             e.preventDefault();
         });
 
-        window.onload = function() {
-            if (MAINTENANCE_MODE) {
-                document.body.innerHTML = `
-                    <div style="position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
-                                background:#fcf8f2; text-align:center; padding:24px; box-sizing:border-box; font-family:sans-serif;">
-                        <div style="font-size:3rem; margin-bottom:12px;">🔧</div>
-                        <h2 style="color:#5d4037; margin:0 0 10px;">ただいまメンテナンス中です</h2>
-                        <p style="color:#8d6e63; font-size:0.9rem; margin:0;">アップデート作業を行っています。<br>もうしばらくしてから、もう一度開いてみてください。</p>
-                    </div>
-                `;
-                return; // これ以降の初期化（セーブ・ロード・クラウド送信を含む）は一切実行しない
-            }
-            initDevMode();
-            if (isRunningStandalone()) document.body.classList.add('is-standalone'); // ホーム画面追加版だけの見た目調整に使う
-            // Safariのタブでそのまま開かれている場合（ホーム画面追加のスタンドアロンではない場合）は、
-            // 上下のブラウザUI(URLバー・共有ボタン等)ぶん表示領域が狭くなるので、レイアウトの余白を少し詰める
-            if (!isRunningStandalone()) document.body.classList.add('browser-tab-mode');
+        /**
+         * メンテナンスモード中に表示する専用画面をbodyへ差し込む。
+         * @returns {void}
+         */
+        function showMaintenanceScreen() {
+            document.body.innerHTML = `
+                <div style="position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+                            background:#fcf8f2; text-align:center; padding:24px; box-sizing:border-box; font-family:sans-serif;">
+                    <div style="font-size:3rem; margin-bottom:12px;">🔧</div>
+                    <h2 style="color:#5d4037; margin:0 0 10px;">ただいまメンテナンス中です</h2>
+                    <p style="color:#8d6e63; font-size:0.9rem; margin:0;">アップデート作業を行っています。<br>もうしばらくしてから、もう一度開いてみてください。</p>
+                </div>
+            `;
+        }
 
+        /**
+         * パーティクル/餅の雨エフェクト用の2つのcanvasを取得してサイズを合わせ、
+         * 画面回転・リサイズ時に追従させるリスナーを登録する。
+         * @returns {void}
+         */
+        function initParticleCanvases() {
             canvas = document.getElementById('particle-canvas');
             ctx = canvas.getContext('2d');
             rainCanvas = document.getElementById('mochi-rain-canvas');
@@ -785,6 +788,72 @@ import {
             window.addEventListener('resize', resizeParticleCanvas);
             window.addEventListener('orientationchange', resizeParticleCanvas);
             if (window.visualViewport) window.visualViewport.addEventListener('resize', resizeParticleCanvas);
+        }
+
+        /**
+         * 開発者モードかつ4隅ボタン調整ツールが有効な場合にだけ、調整パネルを表示する。
+         * 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時はCORNER_BTN_ADJUST_TOOL_ENABLEDをtrueに戻すだけでOK
+         * @returns {void}
+         */
+        function showCornerBtnAdjustPanelIfEnabled() {
+            if (IS_DEV_MODE && CORNER_BTN_ADJUST_TOOL_ENABLED) {
+                const panel = document.getElementById('corner-btn-adjust-panel');
+                if (panel) { panel.style.display = 'block'; updateCornerBtnReadout(); }
+            }
+        }
+
+        /**
+         * ギフト・部屋招待・訪問スタンプの監視開始と、オンライン状態のハートビート送信を、
+         * Firebase接続が整うのを少し待ってから順にスケジュールする。
+         * @returns {void}
+         */
+        function scheduleBackgroundWatchers() {
+            setTimeout(checkIncomingGiftsOnLaunch, CONFIG.GIFT_CHECK_DELAY_MS); // Firebase接続が整うのを少し待ってから確認する
+            // 🐛修正：招待・スタンプの検知は、以前は45秒/20秒おきのポーリングだったため届くまで
+            // 数十秒の時間差があった。onSnapshotによるリアルタイム監視に変更（起動時に1回だけ開始すればよい）
+            setTimeout(startIncomingRoomInviteWatch, CONFIG.ROOM_INVITE_WATCH_DELAY_MS); // ギフト通知と重ならないよう、少し後にずらす
+            setTimeout(startIncomingVisitStampWatch, CONFIG.VISIT_STAMP_WATCH_DELAY_MS);
+            if (window.sendHeartbeat) { window.sendHeartbeat(); setInterval(window.sendHeartbeat, CONFIG.HEARTBEAT_INTERVAL_MS); } // 🟢 60秒おきに、自分がオンラインであることを知らせる
+        }
+
+        /**
+         * 開発者モード時のみ、まだガチャ実装前のきせかえ・マイルーム家具アイテムを全部所持済みの状態にする。
+         * 🎫 着せ替えアイテムは、まだガチャ実装前なので、開発者URLの人だけ全部持っている状態にする
+         * 🐛修正：loadGame()より前にやると、セーブデータの読み込みで上書きされて消えてしまっていた
+         * @returns {void}
+         */
+        function grantDevModeItemsIfNeeded() {
+            if (!IS_DEV_MODE) return;
+            Object.keys(KISEKAE_ITEMS).forEach(cat => {
+                KISEKAE_ITEMS[cat].forEach(item => {
+                    if (!ownedKisekaeItems[cat].includes(item.id)) ownedKisekaeItems[cat].push(item.id);
+                });
+            });
+            // 🛋️ マイルームの家具も、管理者URLの人だけ全部持っている状態にする
+            Object.keys(MYROOM_ITEMS).forEach(cat => {
+                MYROOM_ITEMS[cat].forEach(item => {
+                    if (!ownedMyroomItems[cat].includes(item.id)) ownedMyroomItems[cat].push(item.id);
+                });
+            });
+        }
+
+        /**
+         * ゲーム起動時のエントリーポイント。画面の初期化、セーブデータ読み込み、
+         * 各種バックグラウンドループ・監視の開始までを、決められた順序で行う。
+         * @returns {void}
+         */
+        window.onload = function() {
+            if (MAINTENANCE_MODE) {
+                showMaintenanceScreen();
+                return; // これ以降の初期化（セーブ・ロード・クラウド送信を含む）は一切実行しない
+            }
+            initDevMode();
+            if (isRunningStandalone()) document.body.classList.add('is-standalone'); // ホーム画面追加版だけの見た目調整に使う
+            // Safariのタブでそのまま開かれている場合（ホーム画面追加のスタンドアロンではない場合）は、
+            // 上下のブラウザUI(URLバー・共有ボタン等)ぶん表示領域が狭くなるので、レイアウトの余白を少し詰める
+            if (!isRunningStandalone()) document.body.classList.add('browser-tab-mode');
+
+            initParticleCanvases();
 
             preloadAllSfx(); // 会心・黄金など出現頻度の低い効果音も先に読み込んでおき、初回再生の遅延を防ぐ
 
@@ -792,32 +861,9 @@ import {
             applyKisekaeToMainScreen(); // 🐛修正：確定済みの服装が、ページを開き直すと反映されないままだった
             checkAndRotateMissions(); // 日付・週が変わっていたら、デイリー/ウィークリーミッションを選び直す
             applyCornerBtnPositions();
-            // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時はCORNER_BTN_ADJUST_TOOL_ENABLEDをtrueに戻すだけでOK
-            if (IS_DEV_MODE && CORNER_BTN_ADJUST_TOOL_ENABLED) {
-                const panel = document.getElementById('corner-btn-adjust-panel');
-                if (panel) { panel.style.display = 'block'; updateCornerBtnReadout(); }
-            }
-            setTimeout(checkIncomingGiftsOnLaunch, CONFIG.GIFT_CHECK_DELAY_MS); // Firebase接続が整うのを少し待ってから確認する
-            // 🐛修正：招待・スタンプの検知は、以前は45秒/20秒おきのポーリングだったため届くまで
-            // 数十秒の時間差があった。onSnapshotによるリアルタイム監視に変更（起動時に1回だけ開始すればよい）
-            setTimeout(startIncomingRoomInviteWatch, CONFIG.ROOM_INVITE_WATCH_DELAY_MS); // ギフト通知と重ならないよう、少し後にずらす
-            setTimeout(startIncomingVisitStampWatch, CONFIG.VISIT_STAMP_WATCH_DELAY_MS);
-            if (window.sendHeartbeat) { window.sendHeartbeat(); setInterval(window.sendHeartbeat, CONFIG.HEARTBEAT_INTERVAL_MS); } // 🟢 60秒おきに、自分がオンラインであることを知らせる
-            // 🎫 着せ替えアイテムは、まだガチャ実装前なので、開発者URLの人だけ全部持っている状態にする
-            // 🐛修正：loadGame()より前にやると、セーブデータの読み込みで上書きされて消えてしまっていた
-            if (IS_DEV_MODE) {
-                Object.keys(KISEKAE_ITEMS).forEach(cat => {
-                    KISEKAE_ITEMS[cat].forEach(item => {
-                        if (!ownedKisekaeItems[cat].includes(item.id)) ownedKisekaeItems[cat].push(item.id);
-                    });
-                });
-                // 🛋️ マイルームの家具も、管理者URLの人だけ全部持っている状態にする
-                Object.keys(MYROOM_ITEMS).forEach(cat => {
-                    MYROOM_ITEMS[cat].forEach(item => {
-                        if (!ownedMyroomItems[cat].includes(item.id)) ownedMyroomItems[cat].push(item.id);
-                    });
-                });
-            }
+            showCornerBtnAdjustPanelIfEnabled();
+            scheduleBackgroundWatchers();
+            grantDevModeItemsIfNeeded();
             checkForCloudRestoreOnLoad();
             checkOfflineEarnings();
             setTimeout(checkShowTutorial, CONFIG.TUTORIAL_CHECK_DELAY_MS);
@@ -835,7 +881,7 @@ import {
             resetMinigameCountsIfNewDay();
             initVolumeSliders();
             initMapInteractions();
-            
+
             requestAnimationFrame(updateAndRenderParticles);
         };
 

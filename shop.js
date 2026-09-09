@@ -4,22 +4,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-09-002';
+} from './data.js?v=2026-09-09-003';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-09-002';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-09-002';
+} from './main.js?v=2026-09-09-003';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-09-003';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-09-002';
-import { saveGame, score, setScore } from './state.js?v=2026-09-09-002';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-09-002';
+} from './progress.js?v=2026-09-09-003';
+import { saveGame, score, setScore } from './state.js?v=2026-09-09-003';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-09-003';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-09-002';
+} from './ui.js?v=2026-09-09-003';
 
         // ===================================================================
         // 調整用の数値をまとめた設定オブジェクト。既に名前付きでexportされている
@@ -1166,116 +1166,134 @@ import {
             const listContainer = document.getElementById('shop-overlay-list');
             listContainer.innerHTML = "";
 
-            if (currentShopTab === 'gacha') {
-                listContainer.innerHTML = `
-                    <div id="gacha-stage" style="position:relative; width:100%; height:360px;">
-                        <div id="gacha-illustration-wrap" style="position:absolute; top:24px; left:0; width:100%; height:340px;">
-                            ${IS_DEV_MODE ? `
-                            <div id="gacha-adjust-panel" style="display:none; position:absolute; top:4px; left:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:150px; font-size:0.6rem;">
-                                <div style="font-size:0.6rem; font-weight:900; margin-bottom:4px;">クランクの位置調整</div>
-                                <button onclick="toggleGachaCrankAdjustMode()" id="gacha-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; width:100%;">位置調整ON/OFF</button>
-                                <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
-                                <div id="gacha-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
-                                <button onclick="copyGachaCrankCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
-                                <textarea id="gacha-adjust-copy-textarea" readonly style="display:none; width:100%; height:60px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
-                            </div>
-                            <div id="gacha-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
-                            <div id="gacha-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
-                            <div id="gacha-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
-                            ` : ''}
-                            <img id="gacha-machine-body" src="ui_images/gacha/machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
-                            <img id="gacha-crank" src="ui_images/gacha/crank.webp" alt="" style="position:absolute; width:19.031814%; top:62.402035%; left:40.200326%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
+            if (currentShopTab === 'gacha') { renderGachaTab(listContainer); return; }
+            if (currentShopTab === 'furniture') { renderFurnitureTab(listContainer); return; }
+            if (currentShopTab === 'skills') { renderSkillsTab(listContainer); return; }
+        }
 
-                            <div id="gacha-capsule-wrap-mini" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
-                                <img src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
-                            </div>
+        /**
+         * ガチャタブのDOM（本体イラスト・排出率オーバーレイ・演出用の各要素）を組み立てて表示する。
+         * @param {HTMLElement} listContainer - ショップ一覧のコンテナ要素（#shop-overlay-list）
+         * @returns {void}
+         */
+        function renderGachaTab(listContainer) {
+            listContainer.innerHTML = `
+                <div id="gacha-stage" style="position:relative; width:100%; height:360px;">
+                    <div id="gacha-illustration-wrap" style="position:absolute; top:24px; left:0; width:100%; height:340px;">
+                        ${IS_DEV_MODE ? `
+                        <div id="gacha-adjust-panel" style="display:none; position:absolute; top:4px; left:4px; z-index:50; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:150px; font-size:0.6rem;">
+                            <div style="font-size:0.6rem; font-weight:900; margin-bottom:4px;">クランクの位置調整</div>
+                            <button onclick="toggleGachaCrankAdjustMode()" id="gacha-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; width:100%;">位置調整ON/OFF</button>
+                            <p style="font-size:0.52rem; color:#999; margin:4px 0;">緑（縁・角）をドラッグで大きさ調整</p>
+                            <div id="gacha-adjust-readout" style="font-size:0.52rem; color:#555; white-space:pre-wrap;"></div>
+                            <button onclick="copyGachaCrankCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
+                            <textarea id="gacha-adjust-copy-textarea" readonly style="display:none; width:100%; height:60px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
                         </div>
+                        <div id="gacha-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
+                        <div id="gacha-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
+                        <div id="gacha-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
+                        ` : ''}
+                        <img id="gacha-machine-body" src="ui_images/gacha/machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
+                        <img id="gacha-crank" src="ui_images/gacha/crank.webp" alt="" style="position:absolute; width:19.031814%; top:62.402035%; left:40.200326%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
 
-                        <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:4px; right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
-
-                        <div id="gacha-rates-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:calc(20px + env(safe-area-inset-top, 0px)) 20px 20px; overflow-y:auto; box-sizing:border-box;">
-                            <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:calc(8px + env(safe-area-inset-top, 0px)); right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
-                            <h3 style="margin:0 0 10px; color:#5d4037;">🎰 排出率</h3>
-                            <div id="gacha-rates-list"></div>
-                            <h3 style="margin:16px 0 8px; color:#5d4037;">🎁 各アイテムの排出率</h3>
-                            <div id="gacha-rate-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
-                            <div id="gacha-item-rate-list"></div>
+                        <div id="gacha-capsule-wrap-mini" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
+                            <img src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
                         </div>
                     </div>
-                    <div id="gacha-coin-display" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#fff8ec,#ffe9c2); border:2px solid #e8c88a; border-radius:20px; padding:6px 16px; font-weight:900; color:#8d6e63; margin-bottom:10px; box-shadow:0 2px 4px rgba(0,0,0,0.08);">🪙 <span id="gacha-coin-value">0</span> コイン</div>
-                    <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#ff6fa5,#e91e63); color:#fff; border-radius:24px; box-shadow:0 3px 0 #b0184a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin()">🎰 1回まわす（${GACHA_COST_SINGLE}枚）</button>
-                    <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#c162e8,#9c27b0); color:#fff; margin-top:10px; border-radius:24px; box-shadow:0 3px 0 #6a1b7a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin10()">🎰 10連まとめて（${GACHA_COST_TEN}枚）</button>
 
-                    <div id="gacha-reveal-fullscreen" style="display:none; position:fixed; inset:0; max-width:480px; margin:0 auto; z-index:1500; background:radial-gradient(ellipse at center, #5a4330 0%, #1a0f08 100%); align-items:center; justify-content:center;">
-                        <div id="gacha-reveal-single" style="display:none; position:relative; width:100%; height:100%; align-items:center; justify-content:center;">
-                            <div id="gacha-capsule-wrap" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); width:45%; max-width:220px; z-index:4;">
-                                <img id="gacha-capsule-whole" src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
-                                <img id="gacha-capsule-top" src="ui_images/gacha/capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
-                                <img id="gacha-capsule-bottom" src="ui_images/gacha/capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
-                            </div>
+                    <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:4px; right:4px; z-index:9; width:26px; height:26px; border-radius:50%; border:none; background:rgba(93,64,55,0.75); color:#fff; font-weight:900; font-size:0.8rem;">？</button>
 
-                            <div id="gacha-prize-reveal" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); text-align:center; z-index:5; opacity:0;">
-                                <img id="gacha-prize-img" src="" alt="" style="width:170px; height:170px; object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4));">
-                                <p id="gacha-prize-name" style="font-size:1.15rem; font-weight:bold; color:#fff; margin:8px 0 0; text-shadow:0 2px 6px rgba(0,0,0,0.6);"></p>
-                            </div>
+                    <div id="gacha-rates-overlay" style="display:none; position:fixed; inset:0; z-index:2000; background:rgba(255,248,236,0.98); padding:calc(20px + env(safe-area-inset-top, 0px)) 20px 20px; overflow-y:auto; box-sizing:border-box;">
+                        <button onclick="toggleGachaRatesOverlay()" style="position:absolute; top:calc(8px + env(safe-area-inset-top, 0px)); right:8px; width:26px; height:26px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900;">×</button>
+                        <h3 style="margin:0 0 10px; color:#5d4037;">🎰 排出率</h3>
+                        <div id="gacha-rates-list"></div>
+                        <h3 style="margin:16px 0 8px; color:#5d4037;">🎁 各アイテムの排出率</h3>
+                        <div id="gacha-rate-tabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;"></div>
+                        <div id="gacha-item-rate-list"></div>
+                    </div>
+                </div>
+                <div id="gacha-coin-display" style="display:inline-flex; align-items:center; gap:6px; background:linear-gradient(135deg,#fff8ec,#ffe9c2); border:2px solid #e8c88a; border-radius:20px; padding:6px 16px; font-weight:900; color:#8d6e63; margin-bottom:10px; box-shadow:0 2px 4px rgba(0,0,0,0.08);">🪙 <span id="gacha-coin-value">0</span> コイン</div>
+                <button id="gacha-spin-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#ff6fa5,#e91e63); color:#fff; border-radius:24px; box-shadow:0 3px 0 #b0184a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin()">🎰 1回まわす（${GACHA_COST_SINGLE}枚）</button>
+                <button id="gacha-spin10-btn" class="item-action-btn btn-shop" style="width:80%; background:linear-gradient(135deg,#c162e8,#9c27b0); color:#fff; margin-top:10px; border-radius:24px; box-shadow:0 3px 0 #6a1b7a, 0 4px 8px rgba(0,0,0,0.15); font-weight:900; letter-spacing:0.5px;" onclick="startGachaSpin10()">🎰 10連まとめて（${GACHA_COST_TEN}枚）</button>
+
+                <div id="gacha-reveal-fullscreen" style="display:none; position:fixed; inset:0; max-width:480px; margin:0 auto; z-index:1500; background:radial-gradient(ellipse at center, #5a4330 0%, #1a0f08 100%); align-items:center; justify-content:center;">
+                    <div id="gacha-reveal-single" style="display:none; position:relative; width:100%; height:100%; align-items:center; justify-content:center;">
+                        <div id="gacha-capsule-wrap" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); width:45%; max-width:220px; z-index:4;">
+                            <img id="gacha-capsule-whole" src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
+                            <img id="gacha-capsule-top" src="ui_images/gacha/capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                            <img id="gacha-capsule-bottom" src="ui_images/gacha/capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
                         </div>
 
-                        <div id="gacha-multi-panel" style="display:none; position:absolute; inset:6% 4%; overflow-y:auto;">
-                            <div id="gacha-multi-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:16px 14px; padding:10px; justify-items:center;"></div>
+                        <div id="gacha-prize-reveal" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); text-align:center; z-index:5; opacity:0;">
+                            <img id="gacha-prize-img" src="" alt="" style="width:170px; height:170px; object-fit:contain; filter:drop-shadow(0 4px 10px rgba(0,0,0,0.4));">
+                            <p id="gacha-prize-name" style="font-size:1.15rem; font-weight:bold; color:#fff; margin:8px 0 0; text-shadow:0 2px 6px rgba(0,0,0,0.6);"></p>
                         </div>
                     </div>
-                `;
-                updateGachaCoinDisplay();
-                applyGachaCrankPosition();
-                if (IS_DEV_MODE && GACHA_CRANK_ADJUST_TOOL_ENABLED) { const p = document.getElementById('gacha-adjust-panel'); if (p) p.style.display = 'block'; }
-                return;
-            }
 
-            if (currentShopTab === 'furniture') {
-                ['wall_deco', 'big_furniture', 'table'].forEach(cat => {
-                    const heading = document.createElement('div');
-                    heading.style.cssText = 'font-size:0.75rem; font-weight:900; color:#8d6e63; margin:10px 0 4px;';
-                    heading.textContent = `${MYROOM_CATEGORY_LABELS[cat]}`;
-                    listContainer.appendChild(heading);
-                    MYROOM_ITEMS[cat].forEach(item => {
-                        const ownedCount = (ownedMyroomItems[cat] || []).filter(id => id === item.id).length;
-                        const row = document.createElement('div');
-                        row.className = 'list-item';
-                        const canBuy = score >= item.price;
-                        const countBadge = ownedCount > 0 ? `<span style="color:#4caf50; font-weight:900; font-size:0.68rem;">所持:${ownedCount}個</span>` : '';
-                        const btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyFurnitureItem('${cat}','${item.id}')" style="background:#ff9800; color:white;">${formatMochi(item.price)}もち</button>`;
-                        row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🛋️ ${item.name}</span><span class="item-desc">${countBadge}</span></div></div><div style="display:flex; flex-direction:column; gap:4px;"><button onclick="previewShopFurniture('${cat}','${item.id}')" style="background:#8d6e63; color:#fff; border:none; border-radius:8px; padding:4px 8px; font-size:0.65rem; font-weight:900;">👁️ プレビュー</button>${btnHtml}</div>`;
-                        listContainer.appendChild(row);
-                    });
-                });
-                return;
-            }
-            if (currentShopTab === 'skills') {
-                // ✨ スキルタブ：ステージ進行に応じて段階的に解放される
-                Object.keys(skills).forEach(key => {
-                    const s = skills[key];
+                    <div id="gacha-multi-panel" style="display:none; position:absolute; inset:6% 4%; overflow-y:auto;">
+                        <div id="gacha-multi-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:16px 14px; padding:10px; justify-items:center;"></div>
+                    </div>
+                </div>
+            `;
+            updateGachaCoinDisplay();
+            applyGachaCrankPosition();
+            if (IS_DEV_MODE && GACHA_CRANK_ADJUST_TOOL_ENABLED) { const p = document.getElementById('gacha-adjust-panel'); if (p) p.style.display = 'block'; }
+        }
+
+        /**
+         * 家具タブの一覧（壁掛け／大型家具／テーブル）を、カテゴリ見出し付きで描画する。
+         * @param {HTMLElement} listContainer - ショップ一覧のコンテナ要素（#shop-overlay-list）
+         * @returns {void}
+         */
+        function renderFurnitureTab(listContainer) {
+            ['wall_deco', 'big_furniture', 'table'].forEach(cat => {
+                const heading = document.createElement('div');
+                heading.style.cssText = 'font-size:0.75rem; font-weight:900; color:#8d6e63; margin:10px 0 4px;';
+                heading.textContent = `${MYROOM_CATEGORY_LABELS[cat]}`;
+                listContainer.appendChild(heading);
+                MYROOM_ITEMS[cat].forEach(item => {
+                    const ownedCount = (ownedMyroomItems[cat] || []).filter(id => id === item.id).length;
                     const row = document.createElement('div');
-                    row.className = "list-item";
-
-                    if (currentStageIndex < s.unlockStage) {
-                        // まだ解放条件を満たしていない
-                        const reqStageName = stages[s.unlockStage] ? stages[s.unlockStage].name : "???";
-                        row.style.opacity = "0.55";
-                        row.innerHTML = `<div class="item-info"><span class="item-title">🔒 ${s.name}</span><span class="item-desc">「${reqStageName}」到達で解放</span></div><button class="item-action-btn" disabled>ロック中</button>`;
-                    } else if (s.lv === 0) {
-                        // 未獲得：獲得ボタン（初回購入できる状態なら、行ごと光らせる。レベルアップはここに来ないので対象外）
-                        const canBuy = score >= s.unlockPrice;
-                        if (canBuy) row.classList.add('shop-recommend-glow');
-                        row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name}</span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${formatMochi(s.unlockPrice)}もちで獲得</button>`;
-                    } else {
-                        // 獲得済み：レベルアップボタン
-                        const nextPrice = Math.floor(s.unlockPrice * Math.pow(s.lvPriceMult, s.lv));
-                        const canBuy = score >= nextPrice;
-                        row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name} <span style="color:#ff9800; font-weight:900;">Lv.${s.lv}</span></span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${formatMochi(nextPrice)}もちでLvUP</button>`;
-                    }
+                    row.className = 'list-item';
+                    const canBuy = score >= item.price;
+                    const countBadge = ownedCount > 0 ? `<span style="color:#4caf50; font-weight:900; font-size:0.68rem;">所持:${ownedCount}個</span>` : '';
+                    const btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyFurnitureItem('${cat}','${item.id}')" style="background:#ff9800; color:white;">${formatMochi(item.price)}もち</button>`;
+                    row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🛋️ ${item.name}</span><span class="item-desc">${countBadge}</span></div></div><div style="display:flex; flex-direction:column; gap:4px;"><button onclick="previewShopFurniture('${cat}','${item.id}')" style="background:#8d6e63; color:#fff; border:none; border-radius:8px; padding:4px 8px; font-size:0.65rem; font-weight:900;">👁️ プレビュー</button>${btnHtml}</div>`;
                     listContainer.appendChild(row);
                 });
-            }
+            });
+        }
+
+        /**
+         * スキルタブの一覧を、未解放／未獲得／獲得済み(レベルアップ可)の状態別に描画する。
+         * ✨ ステージ進行に応じて段階的に解放される
+         * @param {HTMLElement} listContainer - ショップ一覧のコンテナ要素（#shop-overlay-list）
+         * @returns {void}
+         */
+        function renderSkillsTab(listContainer) {
+            Object.keys(skills).forEach(key => {
+                const s = skills[key];
+                const row = document.createElement('div');
+                row.className = "list-item";
+
+                if (currentStageIndex < s.unlockStage) {
+                    // まだ解放条件を満たしていない
+                    const reqStageName = stages[s.unlockStage] ? stages[s.unlockStage].name : "???";
+                    row.style.opacity = "0.55";
+                    row.innerHTML = `<div class="item-info"><span class="item-title">🔒 ${s.name}</span><span class="item-desc">「${reqStageName}」到達で解放</span></div><button class="item-action-btn" disabled>ロック中</button>`;
+                } else if (s.lv === 0) {
+                    // 未獲得：獲得ボタン（初回購入できる状態なら、行ごと光らせる。レベルアップはここに来ないので対象外）
+                    const canBuy = score >= s.unlockPrice;
+                    if (canBuy) row.classList.add('shop-recommend-glow');
+                    row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name}</span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${formatMochi(s.unlockPrice)}もちで獲得</button>`;
+                } else {
+                    // 獲得済み：レベルアップボタン
+                    const nextPrice = Math.floor(s.unlockPrice * Math.pow(s.lvPriceMult, s.lv));
+                    const canBuy = score >= nextPrice;
+                    row.innerHTML = `<div class="item-info"><span class="item-title">✨ ${s.name} <span style="color:#ff9800; font-weight:900;">Lv.${s.lv}</span></span><span class="item-desc">${s.desc}</span></div><button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buySkillLevel('${key}')" style="background:#ff9800; color:white;">${formatMochi(nextPrice)}もちでLvUP</button>`;
+                }
+                listContainer.appendChild(row);
+            });
         }
 
         export const OMIYAGE_PAGE_SIZE = 9;
