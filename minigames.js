@@ -1,20 +1,20 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-08-006';
+import { ARCADE_CABINET_PARTS, stages } from './data.js?v=2026-09-09-001';
 import {
   IS_DEV_MODE, PRESENT_REWARD_DISTANCE_RATE, PRESENT_REWARD_MIN, PRESENT_REWARD_MPS_RATE,
   getAudioContext, loadAudioBuffer, pickRandom, playAudioFile, playAudioFilePitched, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnModalParticleBurst, vibrate
-} from './main.js?v=2026-09-08-006';
+} from './main.js?v=2026-09-09-001';
 import {
   currentStageIndex, gachaCoins, getMinigameDailyLimit, prestigeShopLv, setGachaCoins,
   trackMissionEvent
-} from './progress.js?v=2026-09-08-006';
-import { saveGame } from './state.js?v=2026-09-08-006';
-import { getMps } from './tap.js?v=2026-09-08-006';
+} from './progress.js?v=2026-09-09-001';
+import { saveGame } from './state.js?v=2026-09-09-001';
+import { getMps } from './tap.js?v=2026-09-09-001';
 import {
   closeModal, getLocalDateString, openModal, openMoveMenu, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-006';
+} from './ui.js?v=2026-09-09-001';
 
         export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * 0.01; }      // ミニゲーム報酬の倍率
 
@@ -289,7 +289,7 @@ import {
         export function answerQuizQuestion(isCorrect, choiceIdx) {
             const quizState = window.__quizState;
             if (!quizState) return;
-            document.querySelectorAll('.quiz-choice-btn').forEach(b => b.onclick = null); // 連打防止
+            document.querySelectorAll('.quiz-choice-btn-grid').forEach(b => b.onclick = null); // 連打防止（実際に生成されるボタンのクラス名に合わせて修正）
             if (!quizState.history) quizState.history = [];
             quizState.history[quizState.qIndex] = isCorrect;
 

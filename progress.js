@@ -3,21 +3,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-08-006';
+} from './data.js?v=2026-09-09-001';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-08-006';
-import { setPurchasedItems } from './shop.js?v=2026-09-08-006';
+} from './main.js?v=2026-09-09-001';
+import { setPurchasedItems } from './shop.js?v=2026-09-09-001';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-08-006';
-import { getMps, skills } from './tap.js?v=2026-09-08-006';
+} from './state.js?v=2026-09-09-001';
+import { getMps, skills } from './tap.js?v=2026-09-09-001';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-08-006';
+} from './ui.js?v=2026-09-09-001';
 
         export let prestigeCount = 0;      // 転生した回数
 
