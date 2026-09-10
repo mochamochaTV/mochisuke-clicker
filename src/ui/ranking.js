@@ -1,12 +1,12 @@
         // ui.js を機能ごとに分割したファイルの1つ（ランキング・日記帳）。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-10-001';
-        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-10-001';
-        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-10-001';
-        import { purchasedItems } from '../../shop.js?v=2026-09-10-001';
-        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-10-001';
-        import { closeModal, openModal } from './core.js?v=2026-09-10-001';
-        import { setupChatInputEnterKey } from './chat.js?v=2026-09-10-001';
+        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-10-003';
+        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-10-003';
+        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-10-003';
+        import { purchasedItems } from '../../shop.js?v=2026-09-10-003';
+        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-10-003';
+        import { closeModal, openModal } from './core.js?v=2026-09-10-003';
+        import { setupChatInputEnterKey } from './chat.js?v=2026-09-10-003';
 
 
         const CONFIG = {

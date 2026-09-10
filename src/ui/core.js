@@ -1,12 +1,12 @@
         // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-10-001';
-        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-10-001';
-        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-10-001';
-        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-10-001';
-        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-10-001';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-10-001';
-        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-10-001';
+        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-10-003';
+        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-10-003';
+        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-10-003';
+        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-10-003';
+        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-10-003';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-10-003';
+        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-10-003';
 
         // 🔧 このファイル内でロジックに使う「調整可能な」数値をまとめたもの（CSS文字列内の値や、配列添字などの構造的な数値は対象外）
         const CONFIG = {
@@ -16,6 +16,7 @@
 
             // PWA / Service Worker関連
             SW_UPDATE_CHECK_INTERVAL_MS: 5 * 60 * 1000, // Service Workerの更新チェック間隔（開いたままの人のためのフォローアップ）
+            SW_RELOAD_COOLDOWN_MS: 60 * 1000, // controllerchangeによる自動リロードのクールダウン（連続リロード事故の防止）
 
             // もちすけのセリフ・口パーツ関連
             BALLOON_AUTO_HIDE_MS: 4000, // セリフ吹き出しが自動で消えるまでの時間
@@ -103,7 +104,7 @@
         // 🐛修正：GitHub Pagesは自分でHTTPヘッダーを設定できないため、ブラウザがsw.js自体を
         // 予想より長くキャッシュしてしまい、通常モードだと更新が反映されないことがあった。
         // register()直後にupdate()を明示的に呼んで、sw.js自体の再チェックを強制する。
-        // さらに、新しいSWが実際に有効になった瞬間を検知して、1回だけ自動でページを再読み込みする。
+        // さらに、新しいSWが実際に有効になった瞬間を検知して、自動でページを再読み込みする。
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').then((reg) => {
@@ -111,10 +112,18 @@
                     setInterval(() => reg.update().catch(() => {}), CONFIG.SW_UPDATE_CHECK_INTERVAL_MS); // 開いたままの人のためのフォローアップ
                 }).catch(() => {});
 
-                let hasReloadedForUpdate = false;
+                // 🐛修正：以前はこのページ内だけのただの変数(let hasReloadedForUpdate)でリロード済みを
+                // 管理していたが、この変数自体がlocation.reload()のたびに消えてしまうため、何らかの理由で
+                // controllerchangeが立て続けに発生すると（GitHub Pagesのキャッシュの揺れでSWの更新判定が
+                // 安定しない場合など）「リロード→また即controllerchange→またリロード」の無限ループになり、
+                // タップしても数値が反映される前にリロードされて進んでいないように見えたり、リロードのたびに
+                // BGMの初期化処理が重なって二重に鳴って聞こえたりする恐れがあった。
+                // sessionStorageに直近リロード時刻を記録することで、リロードをまたいでクールダウンを効かせる。
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (hasReloadedForUpdate) return; // 無限リロードを避ける
-                    hasReloadedForUpdate = true;
+                    let lastReload = 0;
+                    try { lastReload = Number(sessionStorage.getItem('punicker_sw_last_reload') || 0); } catch (e) {}
+                    if (Date.now() - lastReload < CONFIG.SW_RELOAD_COOLDOWN_MS) return; // クールダウン中は再リロードしない
+                    try { sessionStorage.setItem('punicker_sw_last_reload', String(Date.now())); } catch (e) {}
                     location.reload();
                 });
             });

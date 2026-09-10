@@ -15,20 +15,20 @@
 
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { ARCADE_CABINET_PARTS, stages } from '../../data.js?v=2026-09-10-001';
+import { ARCADE_CABINET_PARTS, stages } from '../../data.js?v=2026-09-10-003';
 import {
   IS_DEV_MODE, PRESENT_REWARD_DISTANCE_RATE, PRESENT_REWARD_MIN, PRESENT_REWARD_MPS_RATE,
   playAudioFile, playBgmLoop
-} from '../../main.js?v=2026-09-10-001';
-import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from '../../progress.js?v=2026-09-10-001';
-import { saveGame } from '../../state.js?v=2026-09-10-001';
-import { getMps } from '../../tap.js?v=2026-09-10-001';
-import { closeModal, getLocalDateString, openModal, openMoveMenu, updateDisplay } from '../../ui.js?v=2026-09-10-001';
-import { startQuizGame } from './quiz.js?v=2026-09-10-001';
-import { startTimeAttackGame, cleanupTimeAttackTimer } from './timeAttack.js?v=2026-09-10-001';
-import { startConcentrationGame } from './concentration.js?v=2026-09-10-001';
-import { startMochitsukiGame, cleanupMochitsukiTimer } from './mochitsuki.js?v=2026-09-10-001';
-import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-10-001';
+} from '../../main.js?v=2026-09-10-003';
+import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from '../../progress.js?v=2026-09-10-003';
+import { saveGame } from '../../state.js?v=2026-09-10-003';
+import { getMps } from '../../tap.js?v=2026-09-10-003';
+import { closeModal, getLocalDateString, openModal, openMoveMenu, updateDisplay } from '../../ui.js?v=2026-09-10-003';
+import { startQuizGame } from './quiz.js?v=2026-09-10-003';
+import { startTimeAttackGame, cleanupTimeAttackTimer } from './timeAttack.js?v=2026-09-10-003';
+import { startConcentrationGame } from './concentration.js?v=2026-09-10-003';
+import { startMochitsukiGame, cleanupMochitsukiTimer } from './mochitsuki.js?v=2026-09-10-003';
+import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-10-003';
 
         const CONFIG = {
             MINIGAME_CENTER_FADE_OUT_MS: 300,        // ミニゲームセンター開閉時、画面が暗転してから中身を切り替えるまでの時間
