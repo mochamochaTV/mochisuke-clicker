@@ -1,29 +1,30 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
 import {
-  CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-10-001';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-10-001';
+  BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData,
+  stages
+} from './data.js?v=2026-09-10-002';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-10-002';
 import {
-  checkAndRotateMissions, checkOfflineEarnings, checkStageProgress, currentStageIndex,
-  currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems, prestigeCount,
-  selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-10-001';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-10-001';
+  adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
+  currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
+  prestigeCount, selectedStageIndex, setCurrentStageProgress
+} from './progress.js?v=2026-09-10-002';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-10-002';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-10-001';
+} from './state.js?v=2026-09-10-002';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-10-001';
+} from './tap.js?v=2026-09-10-002';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-10-001';
+} from './ui.js?v=2026-09-10-002';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -451,6 +452,16 @@ import {
             SFX_FILES.forEach(loadAudioBuffer);
         }
 
+        /**
+         * data.jsのBGM_FILES一覧をすべてloadAudioBufferへ渡し、事前にロード（フェッチ＋デコード）しておく。
+         * これが無いと、初めてその場所のBGMを鳴らす瞬間にfetch/decodeが走り、移動演出が終わっても
+         * BGMの再生開始が少し遅れて聞こえてしまう（デコード自体はユーザー操作なしでも実行できる）。
+         * @returns {void}
+         */
+        export function preloadAllBgm() {
+            BGM_FILES.forEach(loadAudioBuffer);
+        }
+
         // 🔊 音量設定（BGM/効果音を別々に調整できる。0〜1の倍率としてlocalStorageに保存）
         export let bgmVolumeMult = parseFloat(localStorage.getItem('punicker_bgm_volume') ?? String(CONFIG.DEFAULT_BGM_VOLUME_STORED));
         export let sfxVolumeMult = parseFloat(localStorage.getItem('punicker_sfx_volume') ?? String(CONFIG.DEFAULT_SFX_VOLUME_STORED));
@@ -864,6 +875,7 @@ import {
             initParticleCanvases();
 
             preloadAllSfx(); // 会心・黄金など出現頻度の低い効果音も先に読み込んでおき、初回再生の遅延を防ぐ
+            preloadAllBgm(); // ショップ・ゲーセン等のBGMも同様に先読みし、初回入場時の再生遅れを防ぐ
 
             loadGame();
             applyKisekaeToMainScreen(); // 🐛修正：確定済みの服装が、ページを開き直すと反映されないままだった
@@ -1456,4 +1468,5 @@ import {
         window.debugLevelUpSkill = debugLevelUpSkill;
         window.debugLevelUpAllSkills = debugLevelUpAllSkills;
         window.debugResetCooldowns = debugResetCooldowns;
+        window.adminJumpToFinalStage = adminJumpToFinalStage;
         window.startGameFromOpScreen = startGameFromOpScreen;

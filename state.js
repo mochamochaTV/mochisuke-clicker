@@ -1,6 +1,6 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-10-001';
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-10-002';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -9,7 +9,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-10-001';
+} from './minigames.js?v=2026-09-10-002';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -22,21 +22,21 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-10-001';
+} from './progress.js?v=2026-09-10-002';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-10-001';
+} from './shop.js?v=2026-09-10-002';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-10-001';
+} from './tap.js?v=2026-09-10-002';
 import {
-  hasSeenTutorial, lastGiftSentDateStr, seenButtonHints, setHasSeenTutorial,
-  setLastGiftSentDateStr, setSeenButtonHints
-} from './ui.js?v=2026-09-10-001';
+  hasSeenTutorial, lastGiftSentDates, seenButtonHints, setHasSeenTutorial,
+  setLastGiftSentDates, setSeenButtonHints
+} from './ui.js?v=2026-09-10-002';
 
         // 🔧 このファイル内で使うチューニング用の数値をまとめたもの（挙動は変えず、名前を付けただけ）
         const CONFIG = {
@@ -248,7 +248,7 @@ import {
                 sprayInventory: sprayInventory, activeSprayId: activeSprayId, sprayBuffActiveUntil: sprayBuffActiveUntil,
                 favoriteFriendIds: favoriteFriendIds,
                 blockedUserIds: blockedUserIds,
-                lastGiftSentDateStr: lastGiftSentDateStr,
+                lastGiftSentDates: lastGiftSentDates,
                 slotTotalPulls: slotTotalPulls, slotPullsSinceJackpot: slotPullsSinceJackpot, slotJackpotCount: slotJackpotCount,
                 slotShortestJackpotPulls: slotShortestJackpotPulls, slotLongestJackpotPulls: slotLongestJackpotPulls,
                 ownedKisekaeItems: ownedKisekaeItems, equippedKisekae: equippedKisekae,
@@ -354,7 +354,9 @@ import {
                     setSprayBuffActiveUntil(state.sprayBuffActiveUntil ?? 0);
                     setFavoriteFriendIds(state.favoriteFriendIds ?? []);
                     setBlockedUserIds(state.blockedUserIds ?? []);
-                    setLastGiftSentDateStr(state.lastGiftSentDateStr ?? null);
+                    // 🐛修正：以前は日付の文字列1つだけを保存していた（フレンドごとの管理ではなかった）。
+                    // 古いセーブデータにその形の値が残っていても引き継がず、素直に空オブジェクトから始める
+                    setLastGiftSentDates((state.lastGiftSentDates && typeof state.lastGiftSentDates === 'object') ? state.lastGiftSentDates : {});
                     setSlotPlaysRemaining(state.slotPlaysRemaining ?? 0);
                     setSlotBonusZoneSpinsLeft(state.slotBonusZoneSpinsLeft ?? 0);
                     setSlotTotalPulls(state.slotTotalPulls ?? 0);

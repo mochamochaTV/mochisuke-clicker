@@ -3,21 +3,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-10-001';
+} from './data.js?v=2026-09-10-002';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-10-001';
-import { setPurchasedItems } from './shop.js?v=2026-09-10-001';
+} from './main.js?v=2026-09-10-002';
+import { setPurchasedItems } from './shop.js?v=2026-09-10-002';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-10-001';
-import { getMps, skills } from './tap.js?v=2026-09-10-001';
+} from './state.js?v=2026-09-10-002';
+import { getMps, skills } from './tap.js?v=2026-09-10-002';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-10-001';
+} from './ui.js?v=2026-09-10-002';
 
         // 🔧 CONFIG：ロジック中のマジックナンバーを調整しやすいようにまとめたもの
         const CONFIG = {
@@ -71,10 +71,18 @@ import {
         export let equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null };
 
         // 💼 おしごとミッション：進捗カウンター・選ばれているミッション・受け取り済みの管理
+        // 🔴 ここに無いキーはtrackMissionEvent()が黙って無視する（安全装置）ため、ミッション定義(data.js)で
+        // 使っているtrackKeyは、日/週で自動リセットされないものも含めて必ずここに書いておくこと
         export let missionCounters = {
-            totalTaps: 0, omiyageBoughtTotal: 0, minigamesPlayedTotal: 0,
-            tapsToday: 0, minigamesToday: 0, omiyageBoughtToday: 0, gachaSpinsToday: 0,
-            tapsThisWeek: 0, stampsThisWeek: 0, jackpotsThisWeek: 0, loginDaysThisWeek: 0,
+            // 🔰 チュートリアル用：一度きりの累計カウンター（日/週で リセットしない）
+            totalTaps: 0, omiyageBoughtTotal: 0, minigamesPlayedTotal: 0, gachaSpinsTotal: 0,
+            skillUsedTotal: 0, stampsTotal: 0,
+            // 📅 デイリー用：checkAndRotateMissions()内で日が変わるたびに0へリセットされる
+            loginToday: 0, tapsToday: 0, minigamesToday: 0, omiyageBoughtToday: 0,
+            skillUsedToday: 0, feedToday: 0,
+            // 🗓️ ウィークリー用：checkAndRotateMissions()内で週が変わるたびに0へリセットされる
+            tapsThisWeek: 0, stampsThisWeek: 0, jackpotsThisWeek: 0, minigamesThisWeek: 0,
+            skillUsedThisWeek: 0, loginDaysThisWeek: 0,
         };
         export let missionDailyDate = '';       // 最後にデイリーをリセットした日付(YYYY-MM-DD)
         export let missionWeeklyWeekKey = '';   // 最後にウィークリーをリセットした週(YYYY-Www)
@@ -569,7 +577,7 @@ import {
             collectedStamps[idx] = true;
             isPendingStampMoment = false;
             gachaCoins += GACHA_COIN_PER_STAMP;
-            trackMissionEvent('stampsThisWeek', 1);
+            trackMissionEvent('stampsThisWeek', 1); trackMissionEvent('stampsTotal', 1);
             saveGame();
 
             playAudioFile('audio/stamp.mp3'); // 専用のスタンプ音（無ければ用意してください。それまでは無音）
@@ -614,6 +622,42 @@ import {
                     showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
                 });
             }, 900);
+        }
+
+        // ===================================================================
+        // 🛠️ 管理者専用：沖縄（最終ステージ）まで一気に進める
+        // ?dev=1 の開発者メニュー（initDevMode参照）からのみ呼び出される。通常プレイヤーの導線には出てこない
+        // ===================================================================
+        /**
+         * 開発者用。現在地から沖縄（最終ステージ）まで、間の都道府県をスタンプ済み扱いにして一気に進める。
+         * スタンプ報酬（ガチャコイン）も通常と同じ計算式で加算し、状態に矛盾が出ないようにする。
+         * @returns {void}
+         */
+        export function adminJumpToFinalStage() {
+            const finalIdx = stages.length - 1;
+            if (currentStageIndex >= finalIdx) {
+                alert('すでに最終ステージ（沖縄）にいます。');
+                return;
+            }
+            clearTimeout(stampGuardRecheckTimer);
+            isPendingStampMoment = false;
+            let newlyStampedCount = 0;
+            for (let i = currentStageIndex; i < finalIdx; i++) {
+                if (!collectedStamps[i]) { collectedStamps[i] = true; newlyStampedCount++; }
+            }
+            gachaCoins += GACHA_COIN_PER_STAMP * newlyStampedCount; // 通常のスタンプ報酬と同じ計算式に揃える
+            trackMissionEvent('stampsThisWeek', newlyStampedCount); trackMissionEvent('stampsTotal', newlyStampedCount);
+            currentStageIndex = finalIdx;
+            currentStageProgress = 0;
+            selectedStageIndex = finalIdx;
+            stageArrivalTime = Date.now();
+            closeModal('menu-modal');
+            triggerAreaTransition(stages[finalIdx].bg, () => {
+                updateDisplay(); saveGame();
+                const stampBtn = document.getElementById('stamp-press-btn');
+                if (stampBtn) stampBtn.style.display = 'none';
+                showMochiComment(`${stages[finalIdx].name}到着！（管理者機能でジャンプしたで）`);
+            });
         }
 
         // ===================================================================
@@ -666,7 +710,11 @@ import {
                 missionCounters.tapsToday = 0;
                 missionCounters.minigamesToday = 0;
                 missionCounters.omiyageBoughtToday = 0;
-                missionCounters.gachaSpinsToday = 0;
+                missionCounters.skillUsedToday = 0;
+                missionCounters.feedToday = 0;
+                // 🔴 昨日までに受け取り済みだったデイリーミッションを、今日また挑戦できるようにする
+                // （missionClaimedはミッションID単位のフラグなので、リセットしないと同じIDは二度と受け取れない）
+                DAILY_MISSION_POOL.forEach(m => { delete missionClaimed[m.id]; });
                 missionDailySelected = pickRandomMissions(DAILY_MISSION_POOL, DAILY_MISSION_COUNT);
                 trackMissionEvent('loginDaysThisWeek', 1);
                 // 「ログインする」は、日が変わった時点でその日ぶんは自動的に達成扱いにする
@@ -679,9 +727,10 @@ import {
                 missionCounters.stampsThisWeek = 0;
                 missionCounters.jackpotsThisWeek = 0;
                 missionCounters.minigamesThisWeek = 0;
-                missionCounters.gachaSpinsThisWeek = 0;
                 missionCounters.skillUsedThisWeek = 0;
                 missionCounters.loginDaysThisWeek = 1; // 週の変わり目＝今日ログインした1日目
+                // 🔴 デイリーと同様、週替わりで受け取り済みフラグをリセットする
+                WEEKLY_MISSION_POOL.forEach(m => { delete missionClaimed[m.id]; });
                 missionWeeklySelected = pickRandomMissions(WEEKLY_MISSION_POOL, WEEKLY_MISSION_COUNT);
             }
         }

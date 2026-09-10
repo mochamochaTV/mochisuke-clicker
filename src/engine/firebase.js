@@ -516,6 +516,8 @@ window.ensureMyFriendCode = async function () {
         return null;
     }
 };
+const FRIEND_LIMIT = 50; // 🔴 フレンドは1人あたり最大50人まで（一覧が使いづらくなりすぎないように）
+window.FRIEND_LIMIT = FRIEND_LIMIT; // UI側（social.js）のエラーメッセージでも同じ数字を使うため橋渡しする
 window.addFriendByCode = async function (code) {
     if (!fbReady || !db || !currentUid) return { success: false, reason: 'offline' };
     try {
@@ -525,6 +527,10 @@ window.addFriendByCode = async function (code) {
         const targetDoc = q.docs[0];
         const targetUid = targetDoc.id;
         if (targetUid === currentUid) return { success: false, reason: 'self' };
+
+        // 🔴 上限チェック：自分側が50人に達していたら追加させない
+        const myFriendsQ = await getDocs(query(collection(db, "friendships"), where("uids", "array-contains", currentUid)));
+        if (myFriendsQ.size >= FRIEND_LIMIT) return { success: false, reason: 'limit_reached' };
 
         const pairId = [currentUid, targetUid].sort().join('_');
         // 🐛修正：以前はコードの一致確認がクライアント側だけだったため、ルール上は

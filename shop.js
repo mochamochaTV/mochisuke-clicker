@@ -4,22 +4,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-10-001';
+} from './data.js?v=2026-09-10-002';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-10-001';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-10-001';
+} from './main.js?v=2026-09-10-002';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-10-002';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-10-001';
-import { saveGame, score, setScore } from './state.js?v=2026-09-10-001';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-10-001';
+} from './progress.js?v=2026-09-10-002';
+import { saveGame, score, setScore } from './state.js?v=2026-09-10-002';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-10-002';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-10-001';
+} from './ui.js?v=2026-09-10-002';
 
         // ===================================================================
         // 調整用の数値をまとめた設定オブジェクト。既に名前付きでexportされている
@@ -440,7 +440,7 @@ import {
                 return;
             }
             if (!IS_DEV_MODE) setGachaCoins(gachaCoins - (GACHA_COST_SINGLE));
-            trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
+            trackMissionEvent('gachaSpinsTotal', 1);
 
             currentGachaRarity = pickGachaRarity(); // 🎨 この回で出るレア度を先に決めておく（カプセルの色に反映する）
             pendingGachaResult = grantGachaPrizeForRarity(currentGachaRarity); // 🐛修正：景品もこの時点で確定・付与してしまう
@@ -710,7 +710,7 @@ import {
                 return;
             }
             if (!IS_DEV_MODE) setGachaCoins(gachaCoins - (GACHA_COST_TEN));
-            trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
+            trackMissionEvent('gachaSpinsTotal', 1);
             const rarities10 = [];
             for (let i = 0; i < CONFIG.GACHA_TEN_PULL_COUNT; i++) rarities10.push(pickGachaRarity());
             pendingGachaResults10 = rarities10.map(r => grantGachaPrizeForRarity(r)); // 🐛修正：この時点で10個分すべて確定・付与する

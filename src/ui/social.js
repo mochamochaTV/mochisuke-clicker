@@ -1,15 +1,15 @@
         // ui.js を機能ごとに分割したファイルの1つ（フレンド・他人の部屋への訪問（フレンドリスト・招待・訪問中の演出・移動メニュー・ものおき））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-10-001';
-        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-10-001';
-        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-10-001';
-        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-10-001';
-        import { saveGame } from '../../state.js?v=2026-09-10-001';
-        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-10-001';
-        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-10-001';
-        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-10-001';
-        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-10-001';
-        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-10-001';
+        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-10-002';
+        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-10-002';
+        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-10-002';
+        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-10-002';
+        import { saveGame } from '../../state.js?v=2026-09-10-002';
+        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-10-002';
+        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-10-002';
+        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-10-002';
+        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-10-002';
+        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-10-002';
 
         // 🔧 このファイル内で使う「調整可能な数値」をまとめた設定オブジェクト
         const CONFIG = {
@@ -918,6 +918,9 @@
                 result.style.color = '#e57373'; result.innerText = 'そのコードは見つかりませんでした';
             } else if (res.reason === 'self') {
                 result.style.color = '#e57373'; result.innerText = '自分のコードは追加できません';
+            } else if (res.reason === 'limit_reached') {
+                const limit = window.FRIEND_LIMIT || 50;
+                result.style.color = '#e57373'; result.innerText = `フレンドは${limit}人まで登録できます。これ以上は追加できません`;
             } else {
                 const errMsg = `通信エラーが発生しました${res.errorMessage ? '\n(' + res.errorMessage + ')' : ''}`;
                 result.style.color = '#e57373'; result.innerText = errMsg;
@@ -937,17 +940,21 @@
             renderFriendList();
         }
         window.toggleFavoriteFriend = toggleFavoriteFriend; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
-        export let lastGiftSentDateStr = null; // 🐛修正：1日1回までの送信制限。セーブデータにも保存し、リロードでリセットされないようにする
+        // 🐛修正：以前は日付を1つだけ覚える方式で「誰か1人に送ったら他の全員に送れない」状態だった。
+        // フレンドごとに1日1回、という意図に合わせて { [フレンドのuid]: 送った日の文字列 } で管理する。
+        // セーブデータにも保存し、リロードでリセットされないようにする
+        export let lastGiftSentDates = {};
         /**
-         * 指定したフレンドにガチャコインを1日1回だけ贈る。送信中はボタンを無効化し、成功時はチェックマーク表示に切り替える。window.sendGachaCoinGift としてグローバル公開され、onclick=""から呼ばれる橋渡し関数。
+         * 指定したフレンドにガチャコインを1日1回だけ贈る（フレンドごとに独立してカウントする）。
+         * 送信中はボタンを無効化し、成功時はチェックマーク表示に切り替える。window.sendGachaCoinGift としてグローバル公開され、onclick=""から呼ばれる橋渡し関数。
          * @param {string} uid - 贈り先フレンドのユーザーID
          * @param {HTMLElement} btnEl - 押されたボタン要素（表示・活性状態の更新に使う）
          * @returns {Promise<void>}
          */
         export async function sendGachaCoinGift(uid, btnEl) {
             const todayStr = new Date().toISOString().slice(0, 10);
-            if (lastGiftSentDateStr === todayStr) {
-                alert('🪙 今日はもう送りました。また明日！');
+            if (lastGiftSentDates[uid] === todayStr) {
+                alert('🪙 このフレンドには今日もう送りました。また明日！');
                 return;
             }
             if (!window.isRankingReady || !window.isRankingReady()) {
@@ -957,7 +964,7 @@
             btnEl.disabled = true;
             const res = await window.sendGiftCoin(uid);
             if (res.success) {
-                lastGiftSentDateStr = todayStr;
+                lastGiftSentDates[uid] = todayStr;
                 btnEl.innerHTML = '✅';
                 playAudioFile('audio/levelup.mp3');
                 saveGame();
@@ -990,10 +997,10 @@
             }
             listEl.innerHTML = '';
             const todayStr = new Date().toISOString().slice(0, 10);
-            const alreadySentToday = lastGiftSentDateStr === todayStr;
             friends.sort((a, b) => b.score - a.score);
             friends.forEach(f => {
                 const isFav = favoriteFriendIds.includes(f.uid);
+                const alreadySentToday = lastGiftSentDates[f.uid] === todayStr; // フレンドごとに個別判定
                 const row = document.createElement('div');
                 row.style.cssText = `display:flex; align-items:center; gap:8px; padding:9px 8px; margin-bottom:6px; border-radius:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.08);`;
                 row.innerHTML = `
@@ -1373,11 +1380,11 @@
             }
         }
         /**
-         * ガチャコインを最後に贈った日付文字列（1日1回制限の判定に使う）を設定する。セーブデータからの復元時などに使う。
-         * @param {string|null} v - 設定する日付文字列（'YYYY-MM-DD'形式）またはnull
+         * フレンドごとにガチャコインを最後に贈った日付文字列（1日1回制限の判定に使う）を設定する。セーブデータからの復元時などに使う。
+         * @param {Object} v - { [フレンドのuid]: 'YYYY-MM-DD'形式の日付文字列 }
          * @returns {void}
          */
-        export function setLastGiftSentDateStr(v) { lastGiftSentDateStr = v; }
+        export function setLastGiftSentDates(v) { lastGiftSentDates = v; }
         window.openFriendPlaceholder = openFriendPlaceholder;
         window.onLikeRoomTap = onLikeRoomTap;
         window.closeVisitMyroom = closeVisitMyroom;

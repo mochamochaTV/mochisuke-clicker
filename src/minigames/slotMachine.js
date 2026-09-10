@@ -19,11 +19,11 @@
 import {
   IS_DEV_MODE, getAudioContext, loadAudioBuffer, playAudioFile, playAudioFilePitched,
   screenFlash, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-10-001';
-import { gachaCoins, setGachaCoins, trackMissionEvent } from '../../progress.js?v=2026-09-10-001';
-import { saveGame } from '../../state.js?v=2026-09-10-001';
-import { updateDisplay } from '../../ui.js?v=2026-09-10-001';
-import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-10-001';
+} from '../../main.js?v=2026-09-10-002';
+import { gachaCoins, setGachaCoins, trackMissionEvent } from '../../progress.js?v=2026-09-10-002';
+import { saveGame } from '../../state.js?v=2026-09-10-002';
+import { updateDisplay } from '../../ui.js?v=2026-09-10-002';
+import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-10-002';
 
         const CONFIG = {
             SLOT_STRIP_LANDING_MARGIN: 2,          // リールが止まる位置を、帯の最後から何周ぶん手前にするか
@@ -708,7 +708,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-10-001';
             slotStoppedCount = 0;
             slotStoppedReels = [];
             slotTotalPulls++; slotPullsSinceJackpot++; // 総回転数・前回マーモットからの回転数は、リプレイぶんも含めて数える
-            trackMissionEvent('minigamesToday', 1); trackMissionEvent('minigamesPlayedTotal', 1); trackMissionEvent('gachaSpinsToday', 1); trackMissionEvent('minigamesThisWeek', 1); trackMissionEvent('gachaSpinsThisWeek', 1);
+            trackMissionEvent('minigamesToday', 1); trackMissionEvent('minigamesPlayedTotal', 1); trackMissionEvent('gachaSpinsTotal', 1); trackMissionEvent('minigamesThisWeek', 1);
             updateSlotPullsSinceJackpotDisplay();
             if (!slotNextSpinFree) {
                 slotPlaysRemaining--; // リプレイは無料なので、残り回数を消費しない

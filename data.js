@@ -213,6 +213,9 @@
             { text: 'さあ、日本一周の旅に出発や！応援してるで！', highlight: null, duration: 3500 },
         ];
         export const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3'];
+        // 🎵 BGMも起動時に先読みしておく一覧。していないと、初めてその場所（ショップ等）に入った瞬間に
+        // fetch＋デコードが走ってしまい、移動音とフェードが終わった後もBGMが少し遅れて始まってしまう
+        export const BGM_FILES = ['audio/bgm/bgm.mp3', 'audio/bgm/bgm_shop.mp3', 'audio/bgm/bgm_minigame.mp3', 'audio/bgm/bgm_myroom.mp3', 'audio/bgm/bgm_warehouse.mp3', 'audio/bgm/hissatsu_bgm.mp3'];
         export const cheerLines = {
             0: ["もちもちやろ？", "その調子や！", "ええ感じやで！", "もちすけ嬉しいわ！", "いいペースやな！", "もっともっと！", "楽しなってきたな！"],
             50: ["50コンボ突破や！", "頑張れ！", "やるやないか！", "その勢いええで！", "もっといけるやろ！", "ノリノリやな！", "ええ調子やで！"],
@@ -361,10 +364,16 @@
         // 💼 おしごとミッション：序盤の1本道チュートリアル → デイリー → ウィークリー、の3段階
         // 進捗は trackKey に対応するカウンター(missionCounters)を見て判定する
         // ===================================================================
+        // 🔰 チュートリアルミッション：一度きり・累計カウンター（Totalが付くキー）で進捗を見る。
+        // 「ガチャを回そう」はここに置く（デイリー/ウィークリーで毎回ガチャを要求するのはガチャ運要素と
+        // 相性が悪いという判断のため、初回だけ体験してもらう形に変更した）
         export const TUTORIAL_MISSIONS = [
             { id: 'tut_tap10', text: '10回タップしよう！', trackKey: 'totalTaps', target: 10, reward: 5 },
             { id: 'tut_buy_omiyage', text: 'ショップでおみやげを買おう！', trackKey: 'omiyageBoughtTotal', target: 1, reward: 5 },
             { id: 'tut_minigame', text: 'ミニゲームを1回遊ぼう！', trackKey: 'minigamesPlayedTotal', target: 1, reward: 10 },
+            { id: 'tut_gacha', text: 'ガチャ・スロットを1回まわしてみよう！', trackKey: 'gachaSpinsTotal', target: 1, reward: 5 },
+            { id: 'tut_skill', text: 'スキルを1回使ってみよう！', trackKey: 'skillUsedTotal', target: 1, reward: 5 },
+            { id: 'tut_stamp', text: '次の都道府県に進んでみよう！', trackKey: 'stampsTotal', target: 1, reward: 10 },
         ];
         export const DAILY_MISSION_POOL = [
             { id: 'daily_login', text: 'ログインする', trackKey: 'loginToday', target: 1, reward: 3 },
@@ -373,8 +382,6 @@
             { id: 'daily_minigame1', text: 'ミニゲームを1回遊ぶ', trackKey: 'minigamesToday', target: 1, reward: 5 },
             { id: 'daily_minigame2', text: 'ミニゲームを2回遊ぶ', trackKey: 'minigamesToday', target: 2, reward: 8 },
             { id: 'daily_buy1', text: 'おみやげを1つ買う', trackKey: 'omiyageBoughtToday', target: 1, reward: 5 },
-            { id: 'daily_gacha1', text: 'ガチャ・スロットを1回まわす', trackKey: 'gachaSpinsToday', target: 1, reward: 5 },
-            { id: 'daily_gacha3', text: 'ガチャ・スロットを3回まわす', trackKey: 'gachaSpinsToday', target: 3, reward: 12 },
             { id: 'daily_skill1', text: 'スキルを1回使う', trackKey: 'skillUsedToday', target: 1, reward: 5 },
             { id: 'daily_feed1', text: 'もちすけにお土産をあげる', trackKey: 'feedToday', target: 1, reward: 5 },
         ];
@@ -385,7 +392,6 @@
             { id: 'weekly_tap500', text: '合計500回タップする', trackKey: 'tapsThisWeek', target: 500, reward: 15 },
             { id: 'weekly_tap2000', text: '合計2000回タップする', trackKey: 'tapsThisWeek', target: 2000, reward: 25 },
             { id: 'weekly_minigame10', text: 'ミニゲームを合計10回遊ぶ', trackKey: 'minigamesThisWeek', target: 10, reward: 20 },
-            { id: 'weekly_gacha5', text: 'ガチャ・スロットを合計5回まわす', trackKey: 'gachaSpinsThisWeek', target: 5, reward: 20 },
             { id: 'weekly_skill5', text: 'スキルを合計5回使う', trackKey: 'skillUsedThisWeek', target: 5, reward: 15 },
         ];
         export const DAILY_MISSION_COUNT = 3; // 毎日、プールの中からこの数だけランダムに選ばれる

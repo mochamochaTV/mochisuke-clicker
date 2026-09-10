@@ -3,28 +3,28 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-10-001';
+} from './data.js?v=2026-09-10-002';
 import {
   audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
   getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-10-001';
-import { isMinigameActive } from './minigames.js?v=2026-09-10-001';
+} from './main.js?v=2026-09-10-002';
+import { isMinigameActive } from './minigames.js?v=2026-09-10-002';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-10-001';
+} from './progress.js?v=2026-09-10-002';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-10-001';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-10-001';
+} from './shop.js?v=2026-09-10-002';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-10-002';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-10-001';
+} from './ui.js?v=2026-09-10-002';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -887,7 +887,7 @@ import {
                 return;
             }
             if (s.currentCd > 0 || s.activeTimer > 0) return;
-            trackMissionEvent('skillUsedToday', 1); trackMissionEvent('skillUsedThisWeek', 1);
+            trackMissionEvent('skillUsedToday', 1); trackMissionEvent('skillUsedThisWeek', 1); trackMissionEvent('skillUsedTotal', 1);
 
             playAudioFile('audio/skill_tap.mp3');
             if (key === 'hissatsu') {

@@ -81,13 +81,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-09-10-001">
+    <link rel="stylesheet" href="style.css?v=2026-09-10-002">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
          匿名認証で「自分の記録」だけを更新できるようにしているので、他人のスコアを
          書き換えられる心配はありません（Firestoreのセキュリティルールで保護しています）。 -->
-    <script type="module" src="src/engine/firebase.js?v=2026-09-10-001"></script>
+    <script type="module" src="src/engine/firebase.js?v=2026-09-10-002"></script>
 </head>
 <body>
 
@@ -120,7 +120,7 @@
             <button onclick="copyCornerBtnCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
             <textarea id="corner-btn-copy-textarea" readonly style="display:none; width:100%; height:100px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
         </div>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-10-001</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-10-002</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -756,6 +756,7 @@
                         <button onclick="debugAddMochi()" style="background:#ff5722; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">🛠️ もち即注入</button>
                         <button onclick="debugLevelUpAllSkills()" style="background:#009688; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">⚡ 全解放&Lv+1</button>
                         <button onclick="debugResetCooldowns()" style="background:#2196f3; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">⏳ CDリセット</button>
+                        <button onclick="if(confirm('現在地から沖縄まで一気に進めます。よろしいですか？'))adminJumpToFinalStage()" style="background:#8bc34a; color:#fff; border:none; padding:5px 8px; border-radius:6px; font-size:0.68rem;">🏝️ 沖縄まで一気に進める</button>
                     </div>
                     <div style="text-align:center; font-size:0.65rem; color:#5d4037;">
                         個別LvUP:
@@ -1014,13 +1015,13 @@
 
     <!-- type="module"は実行順が「このタグの並び順」で保証される（defer相当）。
          各ファイルの依存関係はファイル先頭のimport文を参照（詳細はJS側のコメント参照） -->
-    <script type="module" src="data.js?v=2026-09-10-001"></script>
-    <script type="module" src="state.js?v=2026-09-10-001"></script>
-    <script type="module" src="tap.js?v=2026-09-10-001"></script>
-    <script type="module" src="shop.js?v=2026-09-10-001"></script>
-    <script type="module" src="progress.js?v=2026-09-10-001"></script>
-    <script type="module" src="minigames.js?v=2026-09-10-001"></script>
-    <script type="module" src="ui.js?v=2026-09-10-001"></script>
-    <script type="module" src="main.js?v=2026-09-10-001"></script>
+    <script type="module" src="data.js?v=2026-09-10-002"></script>
+    <script type="module" src="state.js?v=2026-09-10-002"></script>
+    <script type="module" src="tap.js?v=2026-09-10-002"></script>
+    <script type="module" src="shop.js?v=2026-09-10-002"></script>
+    <script type="module" src="progress.js?v=2026-09-10-002"></script>
+    <script type="module" src="minigames.js?v=2026-09-10-002"></script>
+    <script type="module" src="ui.js?v=2026-09-10-002"></script>
+    <script type="module" src="main.js?v=2026-09-10-002"></script>
 </body>
 </html>
