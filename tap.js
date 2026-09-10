@@ -3,28 +3,28 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-09-002';
+} from './data.js?v=2026-09-10-001';
 import {
   audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
   getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-09-002';
-import { isMinigameActive } from './minigames.js?v=2026-09-09-002';
+} from './main.js?v=2026-09-10-001';
+import { isMinigameActive } from './minigames.js?v=2026-09-10-001';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-09-002';
+} from './progress.js?v=2026-09-10-001';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-09-002';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-09-002';
+} from './shop.js?v=2026-09-10-001';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-10-001';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-09-002';
+} from './ui.js?v=2026-09-10-001';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）

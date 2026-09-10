@@ -15,9 +15,9 @@
  * ロジック・処理内容・数値は一切変更していない（ファイル分割とコードの再配置のみ）。
  * 分割の詳しい経緯・設計判断は、ぷにっかー指南書 4-6・4-6a を参照。
  */
-export * from './src/minigames/core.js?v=2026-09-09-003';
-export * from './src/minigames/quiz.js?v=2026-09-09-003';
-export * from './src/minigames/timeAttack.js?v=2026-09-09-003';
-export * from './src/minigames/concentration.js?v=2026-09-09-003';
-export * from './src/minigames/mochitsuki.js?v=2026-09-09-003';
-export * from './src/minigames/slotMachine.js?v=2026-09-09-003';
+export * from './src/minigames/core.js?v=2026-09-10-001';
+export * from './src/minigames/quiz.js?v=2026-09-10-001';
+export * from './src/minigames/timeAttack.js?v=2026-09-10-001';
+export * from './src/minigames/concentration.js?v=2026-09-10-001';
+export * from './src/minigames/mochitsuki.js?v=2026-09-10-001';
+export * from './src/minigames/slotMachine.js?v=2026-09-10-001';

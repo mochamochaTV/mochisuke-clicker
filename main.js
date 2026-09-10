@@ -2,28 +2,28 @@
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
 import {
   CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-09-003';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-09-003';
+} from './data.js?v=2026-09-10-001';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-10-001';
 import {
   checkAndRotateMissions, checkOfflineEarnings, checkStageProgress, currentStageIndex,
   currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems, prestigeCount,
   selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-09-003';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-09-003';
+} from './progress.js?v=2026-09-10-001';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-10-001';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-09-003';
+} from './state.js?v=2026-09-10-001';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-09-003';
+} from './tap.js?v=2026-09-10-001';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-09-003';
+} from './ui.js?v=2026-09-10-001';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -594,7 +594,15 @@ import {
         document.addEventListener('pointerdown', unlockAllPooledAudio, { capture: true });
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') unlockAllPooledAudio();
+            // 🛡️ セーブ漏れ対策：これまでsaveGame()は「ステージ到達」「ショップ購入」など特定の
+            // 操作をした時にしか呼ばれておらず、タップだけを続けてから何も購入せずにタブを閉じる／
+            // 他アプリへ切り替えると、その間に貯めたもちが保存されないまま失われる可能性があった。
+            // バックグラウンドに回った瞬間（タブ切り替え・アプリ切り替え・画面ロック）に必ず保存する。
+            if (document.visibilityState === 'hidden') { try { saveGame(); } catch (e) {} }
         });
+        // 🛡️ 同上の理由で、iOS Safariなど visibilitychange が発火しないケースの保険として
+        // pagehide でも保存する（ページが破棄される直前に同期的に発火するイベント）。
+        window.addEventListener('pagehide', () => { try { saveGame(); } catch (e) {} });
 
         // ※以前はここで画面のどこをタップしてもtap.mp3が鳴るグローバル監視をしていたが、
         // もちすけ以外（背景など）をタップしても音が鳴ってしまう原因になっていたため削除。
@@ -1127,21 +1135,35 @@ import {
                 if (ts - lastAmbientFrameTs < CONFIG.AMBIENT_FRAME_SKIP_MS) { requestAnimationFrame(updateAndRenderParticles); return; }
                 lastAmbientFrameTs = ts;
             }
+            // 🛡️ 個別のdrawImage例外は上のtry/catchで吸収しているが、それ以外の想定外のエラーで
+            // フレーム描画が止まっても、requestAnimationFrameの連鎖だけは必ず継続させる（finally）。
+            // これが無いと、たった1回のエラーで以後タップしても演出が一切出なくなってしまう。
+            try {
             renderMochiRainFrame(); // もちの雨も同じフレームでまとめて処理する（RAFを2重に走らせない）
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let i = particleList.length - 1; i >= 0; i--) {
                 const p = particleList[i];
                 p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
 
-                if (p.isGold) {
-                    // 金色みと輝きを強化（事前に焼き込んだ金色画像＋canvasネイティブのshadowで表現。
-                    // ctx.filterはモバイルブラウザで無視されることがあるため使わない）
-                    ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
-                    ctx.shadowBlur = CONFIG.GOLD_PARTICLE_SHADOW_BLUR;
-                    ctx.drawImage(goldParticleImg || particleImg, p.x - CONFIG.GOLD_PARTICLE_DRAW_OFFSET, p.y - CONFIG.GOLD_PARTICLE_DRAW_OFFSET, CONFIG.GOLD_PARTICLE_DRAW_SIZE, CONFIG.GOLD_PARTICLE_DRAW_SIZE);
-                    ctx.shadowBlur = 0; // 次の描画に影響しないよう明示的に戻す（save/restoreより軽い）
-                } else {
-                    ctx.drawImage(particleImg, p.x - CONFIG.PARTICLE_DRAW_OFFSET, p.y - CONFIG.PARTICLE_DRAW_OFFSET, CONFIG.PARTICLE_DRAW_SIZE, CONFIG.PARTICLE_DRAW_SIZE);
+                // 🛡️ 画像の読み込み失敗（'broken'状態）などでdrawImageが例外を投げると、対処しないままでは
+                // このrequestAnimationFrameループ全体がその場で止まり、以後タップしても一切の演出
+                // （パーティクル・波紋・浮き文字）が出なくなる事故につながる。該当パーティクルだけ諦めて
+                // リストから外し、ループ自体は必ず継続させる。
+                try {
+                    if (p.isGold) {
+                        // 金色みと輝きを強化（事前に焼き込んだ金色画像＋canvasネイティブのshadowで表現。
+                        // ctx.filterはモバイルブラウザで無視されることがあるため使わない）
+                        ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
+                        ctx.shadowBlur = CONFIG.GOLD_PARTICLE_SHADOW_BLUR;
+                        ctx.drawImage(goldParticleImg || particleImg, p.x - CONFIG.GOLD_PARTICLE_DRAW_OFFSET, p.y - CONFIG.GOLD_PARTICLE_DRAW_OFFSET, CONFIG.GOLD_PARTICLE_DRAW_SIZE, CONFIG.GOLD_PARTICLE_DRAW_SIZE);
+                        ctx.shadowBlur = 0; // 次の描画に影響しないよう明示的に戻す（save/restoreより軽い）
+                    } else {
+                        ctx.drawImage(particleImg, p.x - CONFIG.PARTICLE_DRAW_OFFSET, p.y - CONFIG.PARTICLE_DRAW_OFFSET, CONFIG.PARTICLE_DRAW_SIZE, CONFIG.PARTICLE_DRAW_SIZE);
+                    }
+                } catch (e) {
+                    ctx.shadowBlur = 0;
+                    particleList.splice(i, 1);
+                    continue;
                 }
 
                 if (p.y > canvas.height + CONFIG.PARTICLE_OFFSCREEN_MARGIN) { particleList.splice(i, 1); }
@@ -1218,6 +1240,9 @@ import {
                 ctx.fillStyle = f.color;
                 ctx.fillText(f.text, 0, 0);
                 ctx.restore();
+            }
+            } catch (e) {
+                console.error('パーティクル描画ループで予期しないエラーが発生しました。このフレームは中断しますが、ループは継続します。', e);
             }
 
             requestAnimationFrame(updateAndRenderParticles);

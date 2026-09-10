@@ -5,10 +5,10 @@
         // （export * from で、分割先の全部のexportをこのファイル経由でも見えるようにしています）。
         // ===================================================================
 
-        export * from './src/ui/core.js?v=2026-09-09-003';
-        export * from './src/ui/chat.js?v=2026-09-09-003';
-        export * from './src/ui/social.js?v=2026-09-09-003';
-        export * from './src/ui/myroom.js?v=2026-09-09-003';
-        export * from './src/ui/kisekae.js?v=2026-09-09-003';
-        export * from './src/ui/hud.js?v=2026-09-09-003';
-        export * from './src/ui/ranking.js?v=2026-09-09-003';
+        export * from './src/ui/core.js?v=2026-09-10-001';
+        export * from './src/ui/chat.js?v=2026-09-10-001';
+        export * from './src/ui/social.js?v=2026-09-10-001';
+        export * from './src/ui/myroom.js?v=2026-09-10-001';
+        export * from './src/ui/kisekae.js?v=2026-09-10-001';
+        export * from './src/ui/hud.js?v=2026-09-10-001';
+        export * from './src/ui/ranking.js?v=2026-09-10-001';
