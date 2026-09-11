@@ -3,21 +3,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-11-001';
+} from './data.js?v=2026-09-11-002';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-11-001';
-import { setPurchasedItems } from './shop.js?v=2026-09-11-001';
+} from './main.js?v=2026-09-11-002';
+import { setPurchasedItems } from './shop.js?v=2026-09-11-002';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-11-001';
-import { getMps, skills } from './tap.js?v=2026-09-11-001';
+} from './state.js?v=2026-09-11-002';
+import { getMps, skills } from './tap.js?v=2026-09-11-002';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-11-001';
+} from './ui.js?v=2026-09-11-002';
 
         // 🔧 CONFIG：ロジック中のマジックナンバーを調整しやすいようにまとめたもの
         const CONFIG = {

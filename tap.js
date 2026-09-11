@@ -3,28 +3,28 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-11-001';
+} from './data.js?v=2026-09-11-002';
 import {
   audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
   getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-11-001';
-import { isMinigameActive } from './minigames.js?v=2026-09-11-001';
+} from './main.js?v=2026-09-11-002';
+import { isMinigameActive } from './minigames.js?v=2026-09-11-002';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-11-001';
+} from './progress.js?v=2026-09-11-002';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-11-001';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-11-001';
+} from './shop.js?v=2026-09-11-002';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-11-002';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-11-001';
+} from './ui.js?v=2026-09-11-002';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -182,6 +182,16 @@ import {
         export const SQUEEZE_MAX_SQUASH = 0.22; // 伸びる方向と垂直に、最大どれだけ縮むか（-22%）
         export const SQUEEZE_MIN_DRAG = 9; // これ未満の移動は「タップ」として扱い、通常のもちっとアニメーションにする
         export const SQUEEZE_ELEMENT_RADIUS = 95; // もちすけの見た目上の半径の目安(px)。伸びを引っ張った側だけに見せるためのオフセット計算に使う
+
+        // 🫧🫧 2本指ストレッチ機能：指2本でもちすけを逆方向に引っ張ると、中心を固定したまま両側へ伸びる。
+        // 1本指スクイーズ（片側だけ固定して反対側だけ伸ばす）とは見た目の計算式が異なるため、状態・関数ともに分けている。
+        export let squeezePointers = new Map(); // pointerId -> {x, y}  現在もちすけに触れている指ごとの座標
+        export let twoFingerStretchActive = false; // 2本指ストレッチ中かどうか
+        export let twoFingerStartDist = 0;  // 2本目の指が触れた瞬間の、2点間の距離(px)。ここからの伸びだけを見る
+        export let twoFingerLastRatio = 0;  // 直近の2本指ストレッチ比率（0〜1）。離した時の揺れ戻りの大きさに使う
+        export let twoFingerLastAngleDeg = 0; // 直近の2本指ストレッチの軸の角度（離した時の揺れ戻りに使う）
+        export const TWO_FINGER_MAX_STRETCH_DIST = 130; // 2点間の距離がこれだけ開くと伸びが頭打ちになる(px)。指1本分のSQUEEZE_MAX_DRAGより大きめにしているのは、指2本だと自然と大きく開けるため
+        export const TWO_FINGER_MIN_STRETCH_RATIO = 0.05; // これ未満の伸びは「ただ2本指で触れただけ」として扱い、揺れ戻り演出を出さない
         export let stretchSoundSource = null, stretchSoundGain = null;
         
 
@@ -617,13 +627,25 @@ import {
                 mochiDeformWrap.style.transform = 'scale(1.55, 1.2)';
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.55, 1.2)');
             } else {
-                mochiDeformWrap.style.transform = 'scale(1.25, 0.72)';
-                clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)');
-                // 🫧 スクイーズ：ここから指の動きを追いかけて、引っ張った方向に伸縮させる
-                squeezeStartX = e.clientX; squeezeStartY = e.clientY;
-                isDraggingSqueeze = true;
-                updateMouthPatchVisibility();
-                startStretchSound();
+                // 🫧 指ごとの座標をpointerIdで記録する（2本指ストレッチの判定に使う）
+                squeezePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+                if (squeezePointers.size === 2) {
+                    // 🫧🫧 2本目の指が触れた瞬間：ここから「2本の指を逆方向に引っ張って両側から伸ばす」モードに切り替える。
+                    // 見た目（1本指の押し込みポーズ）は変えず、次のpointermoveから2本指用の計算に切り替わる。
+                    const pts = [...squeezePointers.values()];
+                    twoFingerStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
+                    twoFingerStretchActive = true;
+                } else if (squeezePointers.size === 1) {
+                    // 1本目の指：従来通り「引っ張った方向にだけ伸ばす」スクイーズを開始
+                    mochiDeformWrap.style.transform = 'scale(1.25, 0.72)';
+                    clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)');
+                    squeezeStartX = e.clientX; squeezeStartY = e.clientY;
+                    isDraggingSqueeze = true;
+                    updateMouthPatchVisibility();
+                    startStretchSound();
+                }
+                // 3本目以降の指は無視する（伸縮の計算が複雑になるだけなので、対象は指2本まで）
             }
 
             createRippleEffect(e.clientX, e.clientY);
@@ -710,6 +732,33 @@ import {
             return ratio;
         }
 
+        // 🫧🫧 2本指ストレッチ用のtransform。1本指版(squeezeTransformFor)は「片側だけ固定して反対側を伸ばす」ため
+        // translateでオフセットを付けているが、2本指は両端が均等に伸びて中心が動かないので、offsetは不要でscaleだけでよい。
+        /**
+         * 2本の指を結ぶ軸の角度と伸縮量dから、中心固定・左右対称なCSS transform文字列を組み立てる。
+         * @param {number} angleDeg - 2点を結ぶ軸の角度（度）
+         * @param {number} d - 伸縮量（正=伸び方向、負=揺れ戻りのオーバーシュート用）
+         * @returns {string} CSSのtransformプロパティ用文字列
+         */
+        export function twoFingerSqueezeTransformFor(angleDeg, d) {
+            const along = 1 + d * SQUEEZE_MAX_STRETCH;
+            const perp = 1 - d * SQUEEZE_MAX_SQUASH;
+            return `rotate(${angleDeg}deg) scale(${along}, ${perp}) rotate(${-angleDeg}deg)`;
+        }
+
+        // 2本の指が離れていく方向・距離から、今の伸縮状態を反映する（2本指ドラッグ中に毎回呼ばれる）
+        /**
+         * 2本指の伸縮比率から、もちすけ要素にtransformと伸び音を反映する。
+         * @param {number} angleDeg - 2点を結ぶ軸の角度（度）
+         * @param {number} ratio - 0〜1の伸縮比率
+         * @returns {void}
+         */
+        export function applyTwoFingerSqueezeTransform(angleDeg, ratio) {
+            mochiDeformWrap.style.transformOrigin = 'center center';
+            mochiDeformWrap.style.transform = twoFingerSqueezeTransformFor(angleDeg, ratio);
+            updateStretchSound(ratio);
+        }
+
         // 🔊 伸ばしている間だけ鳴る、ループ再生＋伸びに応じてピッチが変わる効果音
         /**
          * 伸ばしている間だけ鳴らす、ループ再生の伸び音を音量0の状態で再生開始する。
@@ -772,13 +821,44 @@ import {
             mochiDeformWrap.style.transform = 'scale(1, 1)';
         }
 
+        // 2本指版の揺れ戻り。1本指版と違い中心固定・左右対称なので、twoFingerSqueezeTransformForを使う。
         /**
-         * ポインタが離れた時の後処理全体を行い、必殺技中/スクイーズ中/通常タップの3パターンで戻りアニメーションを再生する。
+         * 2本指ストレッチを離した瞬間、伸ばしていた分だけオーバーシュートする揺れ戻りアニメーションを再生する。
+         * @param {number} angleDeg - 伸ばしていた軸の角度（度）
+         * @param {number} ratio - 0〜1の伸縮比率
          * @returns {void}
          */
-        export function releaseMochiSucre() {
+        export function releaseTwoFingerSqueezeWithOvershoot(angleDeg, ratio) {
+            const overshoot = ratio * CONFIG.SQUEEZE_OVERSHOOT_RATIO;
+
+            mochiDeformWrap.animate([
+                { transform: twoFingerSqueezeTransformFor(angleDeg, ratio) },
+                { transform: twoFingerSqueezeTransformFor(angleDeg, -overshoot * 0.65), offset: 0.32 },
+                { transform: twoFingerSqueezeTransformFor(angleDeg, overshoot * 0.32), offset: 0.58 },
+                { transform: twoFingerSqueezeTransformFor(angleDeg, -overshoot * 0.12), offset: 0.8 },
+                { transform: 'scale(1, 1)' },
+            ], { duration: CONFIG.SQUEEZE_OVERSHOOT_BASE_DURATION_MS + ratio * CONFIG.SQUEEZE_OVERSHOOT_DURATION_RANGE_MS, easing: 'ease-out' });
+            mochiDeformWrap.style.transform = 'scale(1, 1)';
+        }
+
+        /**
+         * ポインタが離れた時の後処理全体を行い、必殺技中/2本指ストレッチ中/1本指スクイーズ中/通常タップの
+         * 4パターンで戻りアニメーションを再生する。
+         * 🫧🫧 2本指ストレッチ中は、2本のうちどちらか片方でも指が離れた時点で「引っ張るのをやめた」とみなし、
+         * もう片方がまだ触れていても一連の動作を終わりとして大きく揺れ戻す（残り1本での1本指モードへの
+         * 引き継ぎはせず、指2本の状態が崩れたら必ずリセットする、というシンプルな設計にしている）。
+         * @param {PointerEvent} [e] - pointerup/pointerleave/pointercancelのイベント（離れた指を特定するため）
+         * @returns {void}
+         */
+        export function releaseMochiSucre(e) {
             if (!isMochiPressed) return;
+            if (e && e.pointerId !== undefined) squeezePointers.delete(e.pointerId);
+
+            const wasTwoFingerStretch = twoFingerStretchActive; // クリアする前に記憶しておく
+
             isMochiPressed = false;
+            squeezePointers.clear();
+            twoFingerStretchActive = false;
             clearTimeout(mochiLongPressTimer);
             stopStretchSound();
 
@@ -787,6 +867,19 @@ import {
             if (skills.hissatsu.activeTimer > 0) {
                 mochiDeformWrap.style.transform = 'scale(1.5)';
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.5)');
+            } else if (wasTwoFingerStretch && twoFingerLastRatio >= TWO_FINGER_MIN_STRETCH_RATIO) {
+                // 🫧🫧 2本指ストレッチ：一定以上伸ばされていた時だけ、中心固定で大きく「ぷるん」と揺れ戻る
+                releaseTwoFingerSqueezeWithOvershoot(twoFingerLastAngleDeg, twoFingerLastRatio);
+                setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
+                clones.forEach(c => {
+                    c.animate([
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.86, 1.14)', offset: 0.4 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.04, 0.96)', offset: 0.75 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)' }
+                    ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
+                    c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
+                });
             } else if (isDraggingSqueeze && Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy) >= SQUEEZE_MIN_DRAG) {
                 // 🫧 スクイーズ：一定以上引っ張られていた時だけ、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻る
                 releaseSqueezeWithOvershoot(squeezeLastDx, squeezeLastDy);
@@ -825,6 +918,7 @@ import {
             isSqueezeSettling = true; // 揺れ戻りアニメーションが収まるまで、口パーツは出さない
             updateMouthPatchVisibility();
             squeezeLastDx = 0; squeezeLastDy = 0;
+            twoFingerLastRatio = 0; twoFingerLastAngleDeg = 0;
 
             breatheTimer = setTimeout(() => {
                 if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
@@ -841,7 +935,23 @@ import {
 
         // 🫧 スクイーズ：押している間、指の動きを追いかけて伸縮を更新する（要素の外に出ても追従させたいのでdocument側で監視）
         document.addEventListener('pointermove', (e) => {
-            if (!isDraggingSqueeze || !isMochiPressed) return;
+            if (!isMochiPressed) return;
+            if (squeezePointers.has(e.pointerId)) {
+                squeezePointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); // 押している指の最新座標を更新
+            }
+            if (twoFingerStretchActive) {
+                // 🫧🫧 2本指ストレッチ中：2点間の距離の伸びから、中心固定の左右対称な伸縮を計算する
+                if (squeezePointers.size < 2) return; // 保険（通常はここに来る前にreleaseMochiSucreで解除される）
+                const pts = [...squeezePointers.values()];
+                const dx = pts[1].x - pts[0].x, dy = pts[1].y - pts[0].y;
+                const dist = Math.hypot(dx, dy);
+                const growth = Math.max(0, dist - twoFingerStartDist); // 2点が離れた分だけを「伸び」として扱う
+                twoFingerLastRatio = Math.min(growth, TWO_FINGER_MAX_STRETCH_DIST) / TWO_FINGER_MAX_STRETCH_DIST;
+                twoFingerLastAngleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
+                applyTwoFingerSqueezeTransform(twoFingerLastAngleDeg, twoFingerLastRatio);
+                return;
+            }
+            if (!isDraggingSqueeze) return;
             squeezeLastDx = e.clientX - squeezeStartX;
             squeezeLastDy = e.clientY - squeezeStartY;
             applySqueezeTransform(squeezeLastDx, squeezeLastDy);

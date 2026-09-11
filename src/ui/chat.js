@@ -1,9 +1,9 @@
         // ui.js を機能ごとに分割したファイルの1つ（マイルーム1対1ライブチャット（招待/参加・メッセージ送受信・年齢ゲート））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-11-001';
-        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-11-001';
-        import { closeModal, openModal } from './core.js?v=2026-09-11-001';
-        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-11-001';
+        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-11-002';
+        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-11-002';
+        import { closeModal, openModal } from './core.js?v=2026-09-11-002';
+        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-11-002';
 
         // 🔧 このファイル内で使う調整可能な数値をまとめたもの（値は変更せず、既存のリテラルを名前付きに置き換えただけ）
         const CONFIG = {
