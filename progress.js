@@ -3,21 +3,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-11-002';
+} from './data.js?v=2026-09-11-003';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-11-002';
-import { setPurchasedItems } from './shop.js?v=2026-09-11-002';
+} from './main.js?v=2026-09-11-003';
+import { setPurchasedItems } from './shop.js?v=2026-09-11-003';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-11-002';
-import { getMps, skills } from './tap.js?v=2026-09-11-002';
+} from './state.js?v=2026-09-11-003';
+import { getMps, skills } from './tap.js?v=2026-09-11-003';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-11-002';
+} from './ui.js?v=2026-09-11-003';
 
         // 🔧 CONFIG：ロジック中のマジックナンバーを調整しやすいようにまとめたもの
         const CONFIG = {
@@ -52,9 +52,10 @@ import {
             JAPAN_CLEAR_MESSAGE_DELAY_MS: 2300,  // もちすけのメッセージが出るまでの遅延
             JAPAN_CLEAR_BUTTONS_DELAY_MS: 3000,  // ボタンが出るまでの遅延
 
-            // 達成画像の保存（saveJapanClearImage）
+            // 達成画像の保存（saveJapanClearImage / shareOrDownloadJapanClearImage）
             SAVE_IMAGE_WIDTH: 900,
             SAVE_IMAGE_HEIGHT: 1600,
+            SAVE_IMAGE_OBJECT_URL_REVOKE_MS: 10000, // ダウンロードフォールバック時、blob URLを解放するまでの猶予時間
 
             // スタンプ演出（tapStampFrame）
             STAMP_VIBRATE_PATTERN: [25, 20, 70], // スタンプ時のバイブパターン(ms)
@@ -463,6 +464,15 @@ import {
         }
 
         // 📷 達成画面を、そのまま画像として保存できるようにする
+        // 🐛修正：PWA（ホーム画面に追加してアプリのように起動した状態）だと、通常のSafariタブでは
+        // 効いていた「画像を長押しして保存」がなぜか反応しないケースがある（iOSのstandalone表示モード
+        // 特有の制限と見られる）。CSS側の-webkit-touch-callout解除だけでは救えないため、
+        // 生成したcanvasをFileに変換し、Web Share API（navigator.share）で共有シートを直接呼び出す
+        // 「保存/共有する」ボタンを追加する。共有シートには「写真に保存」が含まれるため、
+        // 長押しが効かない環境でも確実に保存できる。非対応環境（PC等）では従来通りの
+        // ダウンロードリンクにフォールバックする。
+        export let lastJapanClearCanvas = null; // 直近に生成した達成画像のcanvas（共有/保存時にtoBlob()するために保持）
+
         /**
          * 日本制覇の達成内容をcanvasに描画し、画像として保存できるようプレビューモーダルを開く。
          * @returns {void}
@@ -505,12 +515,57 @@ import {
                 const dataUrl = canvas.toDataURL('image/png');
                 const imgEl = document.getElementById('save-image-preview');
                 if (imgEl) imgEl.src = dataUrl;
+                lastJapanClearCanvas = canvas;
                 openModal('save-image-modal');
             };
             bg.onerror = () => {
                 alert('画像の生成に失敗しました。しばらくしてからもう一度お試しください。');
             };
             bg.src = 'ui_images/backgrounds/japan_clear.webp';
+        }
+
+        /**
+         * 達成画像を「共有 or ダウンロード」する。
+         * PWA（ホーム画面起動）だと画像の長押し保存が効かない環境があるため、そちらでも
+         * 確実に保存できるよう、対応環境ではWeb Share API（navigator.share）で共有シートを開く。
+         * 共有シートには「写真に保存」等が含まれるため、長押しできない場合の代替手段になる。
+         * 非対応環境（主にPC）では、従来通り<a download>でファイルとしてダウンロードする。
+         * @returns {void}
+         */
+        export function shareOrDownloadJapanClearImage() {
+            if (!lastJapanClearCanvas) return;
+            lastJapanClearCanvas.toBlob(async (blob) => {
+                if (!blob) {
+                    alert('画像の生成に失敗しました。しばらくしてからもう一度お試しください。');
+                    return;
+                }
+                const file = new File([blob], 'punicker_japan_clear.png', { type: 'image/png' });
+                // navigator.canShareでfile共有に対応しているか確認してからnavigator.shareを呼ぶ
+                // （対応チェックをせず呼ぶと、非対応ブラウザで例外になったり無反応になったりするため）
+                if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+                    try {
+                        await navigator.share({
+                            files: [file],
+                            title: 'ぷにっかー -日本縦断編-',
+                            text: '日本全国制覇しました！🎉'
+                        });
+                        return;
+                    } catch (err) {
+                        // ユーザーが共有シートをキャンセルした場合（AbortError）は何もしない。
+                        // それ以外のエラーの場合のみ、ダウンロードにフォールバックする。
+                        if (err && err.name === 'AbortError') return;
+                    }
+                }
+                // Web Share API非対応、またはエラー時のフォールバック：通常のダウンロードリンク
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'punicker_japan_clear.png';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), CONFIG.SAVE_IMAGE_OBJECT_URL_REVOKE_MS);
+            }, 'image/png');
         }
 
         export let collectedStamps = {}; // { 都道府県のインデックス: true }  -- スタンプ帳に押した記録
@@ -957,5 +1012,6 @@ import {
         window.confirmCloseJapanClear = confirmCloseJapanClear;
         window.closeJapanClearAndExplainPrestige = closeJapanClearAndExplainPrestige;
         window.saveJapanClearImage = saveJapanClearImage;
+        window.shareOrDownloadJapanClearImage = shareOrDownloadJapanClearImage;
         window.openDiaryForStamping = openDiaryForStamping;
         window.tapStampFrame = tapStampFrame;

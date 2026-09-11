@@ -3,28 +3,28 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-11-002';
+} from './data.js?v=2026-09-11-003';
 import {
   audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
   getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
   screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-11-002';
-import { isMinigameActive } from './minigames.js?v=2026-09-11-002';
+} from './main.js?v=2026-09-11-003';
+import { isMinigameActive } from './minigames.js?v=2026-09-11-003';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-11-002';
+} from './progress.js?v=2026-09-11-003';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-11-002';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-11-002';
+} from './shop.js?v=2026-09-11-003';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-11-003';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-11-002';
+} from './ui.js?v=2026-09-11-003';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -190,8 +190,12 @@ import {
         export let twoFingerStartDist = 0;  // 2本目の指が触れた瞬間の、2点間の距離(px)。ここからの伸びだけを見る
         export let twoFingerLastRatio = 0;  // 直近の2本指ストレッチ比率（0〜1）。離した時の揺れ戻りの大きさに使う
         export let twoFingerLastAngleDeg = 0; // 直近の2本指ストレッチの軸の角度（離した時の揺れ戻りに使う）
-        export const TWO_FINGER_MAX_STRETCH_DIST = 130; // 2点間の距離がこれだけ開くと伸びが頭打ちになる(px)。指1本分のSQUEEZE_MAX_DRAGより大きめにしているのは、指2本だと自然と大きく開けるため
+        export const TWO_FINGER_MAX_STRETCH_DIST = 190; // 2点間の距離がこれだけ開くと伸びが頭打ちになる(px)。指1本分のSQUEEZE_MAX_DRAG(70px)より大きめにしているのは、指2本だと自然と大きく開けるため
         export const TWO_FINGER_MIN_STRETCH_RATIO = 0.05; // これ未満の伸びは「ただ2本指で触れただけ」として扱い、揺れ戻り演出を出さない
+        // 🆕 2本の指で両側から引っ張る方が、1本指で片側だけ引っ張るより大きく伸ばせるようにする（体感として自然なため）。
+        // SQUEEZE_MAX_STRETCH/SQUASH（1本指用）とは別に、2本指専用の上限値を用意する。
+        export const TWO_FINGER_MAX_STRETCH = 0.6; // 2本指の最大伸び率（+60%。1本指の+38%より大きい）
+        export const TWO_FINGER_MAX_SQUASH = 0.32; // 2本指で伸びる方向と垂直に、最大どれだけ縮むか（-32%。1本指の-22%より大きい）
         export let stretchSoundSource = null, stretchSoundGain = null;
         
 
@@ -741,8 +745,8 @@ import {
          * @returns {string} CSSのtransformプロパティ用文字列
          */
         export function twoFingerSqueezeTransformFor(angleDeg, d) {
-            const along = 1 + d * SQUEEZE_MAX_STRETCH;
-            const perp = 1 - d * SQUEEZE_MAX_SQUASH;
+            const along = 1 + d * TWO_FINGER_MAX_STRETCH;
+            const perp = 1 - d * TWO_FINGER_MAX_SQUASH;
             return `rotate(${angleDeg}deg) scale(${along}, ${perp}) rotate(${-angleDeg}deg)`;
         }
 

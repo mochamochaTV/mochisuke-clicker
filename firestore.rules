@@ -178,8 +178,19 @@ service cloud.firestore {
                          && get(/databases/$(database)/documents/rankings/$(request.resource.data.guestUid)).data.get('chatEligible', false) == true
                        )
                      )
+                  // 🎭🍙🚶 マイルームの見た目同期用フィールド（叫ぶ/ごはん等の演出イベントと、歩き回る位置の目的地）。
+                  // 経済的価値のない演出専用データなので厳密な型検証はせず、なりすまし防止だけ見る：
+                  // hostWalkはホスト本人、guestWalkはゲスト本人しか書けないようにする（roomActionはどちらでもOK）
+                  && (
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['hostWalk'])
+                       || request.auth.uid == resource.data.hostUid
+                     )
+                  && (
+                       !request.resource.data.diff(resource.data).affectedKeys().hasAny(['guestWalk'])
+                       || request.auth.uid == resource.data.guestUid
+                     )
                   && request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['hostUid', 'guestUid', 'hostPresentAt', 'guestPresentAt', 'hostLastSeenAt', 'guestLastSeenAt', 'endedAt', 'chatEnabled', 'sessionStartedAt']);
+                       .hasOnly(['hostUid', 'guestUid', 'hostPresentAt', 'guestPresentAt', 'hostLastSeenAt', 'guestLastSeenAt', 'endedAt', 'chatEnabled', 'sessionStartedAt', 'hostWalk', 'guestWalk', 'roomAction']);
       allow delete: if false;
 
       match /messages/{messageId} {
