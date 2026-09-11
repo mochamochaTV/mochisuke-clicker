@@ -1,12 +1,12 @@
         // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-10-003';
-        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-10-003';
-        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-10-003';
-        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-10-003';
-        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-10-003';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-10-003';
-        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-10-003';
+        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-11-001';
+        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-11-001';
+        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-11-001';
+        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-11-001';
+        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-11-001';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-11-001';
+        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-11-001';
 
         // 🔧 このファイル内でロジックに使う「調整可能な」数値をまとめたもの（CSS文字列内の値や、配列添字などの構造的な数値は対象外）
         const CONFIG = {

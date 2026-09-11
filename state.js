@@ -1,6 +1,6 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-10-003';
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-11-001';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -9,7 +9,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-10-003';
+} from './minigames.js?v=2026-09-11-001';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -22,25 +22,25 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-10-003';
+} from './progress.js?v=2026-09-11-001';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-10-003';
+} from './shop.js?v=2026-09-11-001';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-10-003';
+} from './tap.js?v=2026-09-11-001';
 import {
   hasSeenTutorial, lastGiftSentDates, seenButtonHints, setHasSeenTutorial,
   setLastGiftSentDates, setSeenButtonHints
-} from './ui.js?v=2026-09-10-003';
+} from './ui.js?v=2026-09-11-001';
 
         // 🔧 このファイル内で使うチューニング用の数値をまとめたもの（挙動は変えず、名前を付けただけ）
         const CONFIG = {
-            PLAYER_NAME_MAX_LENGTH: 20,           // プレイヤー名として受け付ける最大文字数
+            PLAYER_NAME_MAX_LENGTH: 8,             // プレイヤー名として受け付ける最大文字数（ランキング等での表示崩れ防止のため8文字に制限）
             PLAYER_NAME_RANDOM_SUFFIX_MAX: 10000, // 初期プレイヤー名の末尾に付けるランダム数字の範囲
             SAVE_GUARD_MIN_SCORE_FOR_PROGRESS: 100,   // セーブ安全装置：直前のscoreがこれを超えていたら「進行あり」と判定
             SAVE_GUARD_MIN_TAPS_FOR_PROGRESS: 20,     // セーブ安全装置：直前のtotalTapsCountがこれを超えていたら「進行あり」と判定
@@ -222,7 +222,10 @@ import {
         export const OFFLINE_EARNINGS_CAP_HOURS_BASE = 4; // オフライン収益として計算する時間の上限（これ以上離れていても4時間分だけ）
         export const OFFLINE_EARNINGS_MIN_SECONDS = 90; // これより短い離席では出さない（毎回のリロードで鬱陶しくならないように）
 
-        export let playerName = localStorage.getItem('punicker_player_name') || ('もちすけファン' + Math.floor(Math.random() * CONFIG.PLAYER_NAME_RANDOM_SUFFIX_MAX));
+        // 🐛修正：以前は初期名を「もちすけファン」+ 数字にしていたが、「もちすけファン」だけで7文字あり、
+        // 数字を足すと8文字制限(PLAYER_NAME_MAX_LENGTH)を超えてしまっていた（例：もちすけファン1111）。
+        // 「もちすけ」(4文字) + 最大4桁の数字 = 最大8文字となり、制限にちょうど収まる。
+        export let playerName = localStorage.getItem('punicker_player_name') || ('もちすけ' + Math.floor(Math.random() * CONFIG.PLAYER_NAME_RANDOM_SUFFIX_MAX));
 
         /**
          * ゲームの全状態を1つのオブジェクトにまとめ、不自然なデータ消失を検知する安全装置チェックを経てlocalStorageに保存する。

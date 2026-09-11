@@ -36,6 +36,15 @@
             -webkit-user-select: none; user-select: none;
             -webkit-user-drag: none;
         }
+        /* 🐛修正：上のimg { -webkit-touch-callout: none; }は「もちすけ等のUI画像を長押しした時に
+           画像保存メニューが誤って出ない」ようにするためのものだったが、これが全<img>に一律で
+           かかっていたため、唯一「長押しで保存してほしい」日本制覇の達成画像（#save-image-preview）
+           まで長押し保存できなくなってしまっていた。この画像だけ元の（ブラウザ標準の）挙動に戻す。 */
+        #save-image-preview {
+            -webkit-touch-callout: default;
+            -webkit-user-select: auto; user-select: auto;
+            -webkit-user-drag: auto;
+        }
         input, textarea {
             -webkit-user-select: text; user-select: text;
             -webkit-touch-callout: default;
@@ -144,8 +153,14 @@
         :root {
             --corner-btn-size: 44px; /* 4隅ボタンの共通の大きさ（管理者調整パネルから変更できる） */
         }
+        /* 🐛修正：この4隅ボタンは以前position:fixedだったため、ブラウザの表示領域（viewport）そのものの
+           端を基準に配置されていた。スマホでは#game-screenの幅(max-width:480px)がほぼ画面幅と一致するので
+           問題が見えなかったが、PCなど横幅の広い画面では#game-screen自体は480px幅で中央寄せされるだけなので、
+           position:fixedのボタンはブラウザウィンドウの本当の端（#game-screenの外、左右に余った空白の更に外側）
+           まで飛んでいってしまっていた。#game-screen自身がposition:relativeの基準になっているため、
+           position:absoluteに変えるだけで「#game-screenの四隅」を基準にした配置に直せる。 */
         #menu-toggle-btn {
-            position: fixed;
+            position: absolute;
             top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
             right: 10px;
             width: var(--corner-btn-size); height: var(--corner-btn-size);
@@ -160,7 +175,7 @@
         }
 
         #map-toggle-btn {
-            position: fixed;
+            position: absolute;
             top: calc(8px + env(safe-area-inset-top, 0px) + 78px);
             left: 10px;
             width: var(--corner-btn-size); height: var(--corner-btn-size);
@@ -176,7 +191,7 @@
         #menu-toggle-btn:active { transform: scale(0.9); }
 
         #ui-toggle-btn {
-            position: fixed;
+            position: absolute;
             bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 88px);
             left: 10px;
             width: var(--corner-btn-size); height: var(--corner-btn-size);
@@ -192,7 +207,7 @@
         #ui-toggle-btn:active { transform: scale(0.9); }
 
         #feed-toggle-btn {
-            position: fixed;
+            position: absolute;
             bottom: calc(14px + env(safe-area-inset-bottom, 0px) + 88px);
             right: 10px;
             width: var(--corner-btn-size); height: var(--corner-btn-size);

@@ -3,21 +3,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-10-003';
+} from './data.js?v=2026-09-11-001';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-10-003';
-import { setPurchasedItems } from './shop.js?v=2026-09-10-003';
+} from './main.js?v=2026-09-11-001';
+import { setPurchasedItems } from './shop.js?v=2026-09-11-001';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-10-003';
-import { getMps, skills } from './tap.js?v=2026-09-10-003';
+} from './state.js?v=2026-09-11-001';
+import { getMps, skills } from './tap.js?v=2026-09-11-001';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-10-003';
+} from './ui.js?v=2026-09-11-001';
 
         // 🔧 CONFIG：ロジック中のマジックナンバーを調整しやすいようにまとめたもの
         const CONFIG = {
@@ -449,13 +449,15 @@ import {
         export function closeJapanClearAndExplainPrestige() {
             document.getElementById('japan-clear-confirm').style.display = 'none';
             closeModal('japan-clear-modal');
-            // 転生について、ここで初めて説明する（倉庫から選べることも伝える）
+            // 🐛修正：以前は「転生は倉庫の画面から選べます」と案内していたが、実際には倉庫（おみやげ収納）に
+            // 転生の入り口は無く、本当のボタン(main-prestige-btn)は次のエリアまでのゲージの下、
+            // スタンプボタンと同じ場所に出る作りになっていた。案内文が実態と食い違っていたので修正する。
             setTimeout(() => {
                 alert(
                     '🔄 転生について\n\n' +
                     '日本を制覇したことで、「転生」ができるようになりました。\n' +
                     '転生すると、今の進行状況はリセットされますが、代わりに「転生ポイント」がもらえて、次の周回を有利に進められます。\n\n' +
-                    '転生は、倉庫の画面から選べます。焦らず、気が向いた時に挑戦してみてください。'
+                    '転生は、画面の「次のエリアまで」のゲージの下に出てくる「🔄 転生する」ボタンから選べます。焦らず、気が向いた時に挑戦してみてください。'
                 );
             }, 350);
         }

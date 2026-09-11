@@ -81,13 +81,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-09-10-003">
+    <link rel="stylesheet" href="style.css?v=2026-09-11-001">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
          匿名認証で「自分の記録」だけを更新できるようにしているので、他人のスコアを
          書き換えられる心配はありません（Firestoreのセキュリティルールで保護しています）。 -->
-    <script type="module" src="src/engine/firebase.js?v=2026-09-10-003"></script>
+    <script type="module" src="src/engine/firebase.js?v=2026-09-11-001"></script>
 </head>
 <body>
 
@@ -120,7 +120,7 @@
             <button onclick="copyCornerBtnCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
             <textarea id="corner-btn-copy-textarea" readonly style="display:none; width:100%; height:100px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
         </div>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-10-003</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-11-001</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
@@ -799,9 +799,9 @@
             </div>
 
             <div style="background:#f9f9f9; border-radius:10px; padding:12px; margin-bottom:16px;">
-                <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">🏆 ランキング表示名</div>
+                <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">🏆 ランキング表示名（8文字まで）</div>
                 <div style="display:flex; gap:6px;">
-                    <input type="text" id="player-name-input" maxlength="20" style="flex:1; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:8px; font-size:0.85rem;">
+                    <input type="text" id="player-name-input" maxlength="8" style="flex:1; box-sizing:border-box; border-radius:8px; border:1px solid #ddd; padding:8px; font-size:0.85rem;">
                     <button class="item-action-btn" onclick="savePlayerName()">保存</button>
                 </div>
             </div>
@@ -880,8 +880,8 @@
     <div id="tutorial-name-modal" class="modal">
         <div class="modal-content" style="text-align:center;">
             <h2>🍡 教えてほしいな</h2>
-            <p style="font-size:0.85rem; color:#5d4037; margin:8px 0 14px;">ランキングとかで使う名前、決めてな！</p>
-            <input type="text" id="tutorial-name-input" placeholder="なまえ" style="width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid #ddd; font-size:1rem; text-align:center; margin-bottom:14px;">
+            <p style="font-size:0.85rem; color:#5d4037; margin:8px 0 14px;">ランキングとかで使う名前、決めてな！（8文字まで）</p>
+            <input type="text" id="tutorial-name-input" maxlength="8" placeholder="なまえ" style="width:100%; box-sizing:border-box; padding:10px; border-radius:8px; border:1px solid #ddd; font-size:1rem; text-align:center; margin-bottom:14px;">
             <button class="btn-red" style="width:100%;" onclick="saveTutorialPlayerName()">これでいく！</button>
         </div>
     </div>
@@ -1015,13 +1015,13 @@
 
     <!-- type="module"は実行順が「このタグの並び順」で保証される（defer相当）。
          各ファイルの依存関係はファイル先頭のimport文を参照（詳細はJS側のコメント参照） -->
-    <script type="module" src="data.js?v=2026-09-10-003"></script>
-    <script type="module" src="state.js?v=2026-09-10-003"></script>
-    <script type="module" src="tap.js?v=2026-09-10-003"></script>
-    <script type="module" src="shop.js?v=2026-09-10-003"></script>
-    <script type="module" src="progress.js?v=2026-09-10-003"></script>
-    <script type="module" src="minigames.js?v=2026-09-10-003"></script>
-    <script type="module" src="ui.js?v=2026-09-10-003"></script>
-    <script type="module" src="main.js?v=2026-09-10-003"></script>
+    <script type="module" src="data.js?v=2026-09-11-001"></script>
+    <script type="module" src="state.js?v=2026-09-11-001"></script>
+    <script type="module" src="tap.js?v=2026-09-11-001"></script>
+    <script type="module" src="shop.js?v=2026-09-11-001"></script>
+    <script type="module" src="progress.js?v=2026-09-11-001"></script>
+    <script type="module" src="minigames.js?v=2026-09-11-001"></script>
+    <script type="module" src="ui.js?v=2026-09-11-001"></script>
+    <script type="module" src="main.js?v=2026-09-11-001"></script>
 </body>
 </html>

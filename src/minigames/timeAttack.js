@@ -11,9 +11,9 @@
  * この状態を持つ本ファイル自身に後始末専用の関数として切り出した。処理の中身は同じ。
  */
 
-import { playAudioFile, playAudioFilePitched, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-10-003';
-import { saveGame } from '../../state.js?v=2026-09-10-003';
-import { consumeMinigamePlay, grantMinigameReward, minigameBests, showMinigameResult } from './core.js?v=2026-09-10-003';
+import { playAudioFile, playAudioFilePitched, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-11-001';
+import { saveGame } from '../../state.js?v=2026-09-11-001';
+import { consumeMinigamePlay, grantMinigameReward, minigameBests, showMinigameResult } from './core.js?v=2026-09-11-001';
 
         const CONFIG = {
             TIME_ATTACK_TICK_MS: 1000,             // 残り時間を1減らす間隔
