@@ -3,36 +3,36 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-13-007';
+} from './data.js?v=2026-09-13-009';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-13-007';
-import { isMinigameActive } from './minigames.js?v=2026-09-13-007';
+} from './main.js?v=2026-09-13-009';
+import { isMinigameActive } from './minigames.js?v=2026-09-13-009';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
-  SQUEEZE_MAX_DRAG, assignSqueezeGlow, endSqueeze, releaseAllSqueezeGlows,
-  releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot, startStretchSound,
-  stopStretchSound, triggerSqueezeReleaseBurst, updateOneFingerSqueezeTarget,
+  SQUEEZE_MAX_DRAG, armSlimePokeImpact, assignSqueezeGlow, endSqueeze, releaseAllSqueezeGlows,
+  releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot, setSqueezeMaterial,
+  startStretchSound, stopStretchSound, triggerSqueezeReleaseBurst, updateOneFingerSqueezeTarget,
   updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-13-007';
+} from './src/squeeze/physics.js?v=2026-09-13-009';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-13-007';
+} from './progress.js?v=2026-09-13-009';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-13-007';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-007';
+} from './shop.js?v=2026-09-13-009';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-009';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-13-007';
+} from './ui.js?v=2026-09-13-009';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -647,6 +647,7 @@ import {
                     isDraggingSqueeze = true;
                     updateMouthPatchVisibility();
                     startStretchSound();
+                    armSlimePokeImpact(); // 🚧 管理者限定・試作中：スライムもちすけの「押した瞬間の強弱で音が変わる」ギミック（2-1参照）
                 }
                 // 3本目以降の指は無視する（伸縮の計算が複雑になるだけなので、対象は指2本まで）
             }
@@ -1476,3 +1477,4 @@ import {
         // 他ファイルからのimport参照・index.html内の静的onclick・動的に組み立てられるonclick文字列の
         // 3経路すべてを確認すること。
         window.useSkill = useSkill;
+        window.setSqueezeMaterial = setSqueezeMaterial; // 🧪 管理者限定・試作中：dev-tools-section内のボタンから呼ばれる（index.html参照）

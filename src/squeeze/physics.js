@@ -8,11 +8,15 @@
 //     （tap.js側のisMochiPressed/isDraggingSqueeze/twoFingerStretchActiveは読みに行かない）
 //   ・コンボ段階はtriggerSqueezeReleaseBurstの引数として数値を渡してもらう
 //     （getCheerTUer等tap.js内部のコンボロジックをこちらからimportしない）
-// 将来、スライムもちすけ等の新モード用にグリッドワープや素材パラメータのファイルを追加する時も
-// この src/squeeze/ ディレクトリにまとめていく予定。
+// 🧪 管理者限定・試作中：スライムもちすけ用に、素材（見た目・音）ごとの設定をmaterials.jsへ
+// 分離した（setSqueezeMaterial参照）。将来グリッドワープ等を追加する時も、この
+// src/squeeze/ ディレクトリにまとめていく予定。
 import {
-  audioBuffers, createBurstParticle, getAudioContext, playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-13-007';
+  IS_DEV_MODE, audioBuffers, createBurstParticle, getAudioContext, playAudioFilePitched, sfxVolumeMult, vibrate
+} from '../../main.js?v=2026-09-13-009';
+// 🧪 管理者限定・試作中：素材（見た目・音）ごとの設定はデータとしてmaterials.jsに分離してある
+// （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-13-009';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -37,6 +41,17 @@ const CONFIG = {
   // --- 🆕 スクイーズ：指が触れている場所が優しく光る演出 ---
   SQUEEZE_GLOW_MAX_SCALE: 1.35, // 伸び率が最大の時、光がどれだけ大きく広がるか
   SQUEEZE_GLOW_FADE_OUT_MS: 260,
+  // --- 🚧 管理者限定・試作中：スライムもちすけ「押した瞬間の強弱で音が変わる」ギミック ---
+  // まだスライム専用のスクイーズ衣装本体が無いため、既存のもちすけの1本指スクイーズに間借りする形の
+  // プロトタイプ。IS_DEV_MODEがtrueの時（?dev=1、または開発者モード記憶時）だけ動作し、
+  // 通常プレイヤーには一切聞こえない・処理コストもかからない。
+  // 「強さ」は本物の圧力センサーが無いため、pointerdown直後の最初の指の移動量÷経過時間（px/ms）を
+  // 疑似的な「押し込み速度」として使い、これを0〜1の強度にマッピングしている。
+  SLIME_POKE_IMPACT_MAX_SPEED_PX_MS: 1.5, // これ以上速い押し込みは強度1.0（頭打ち）として扱う
+  SLIME_POKE_MIN_VOLUME: 0.25, // 弱く押した時の音量
+  SLIME_POKE_MAX_VOLUME: 0.7,  // 強く押した時の音量
+  SLIME_POKE_MIN_PITCH: 0.7,   // 強く押した時のピッチ（強いほど低く・重い音にする）
+  SLIME_POKE_MAX_PITCH: 1.15,  // 弱く押した時のピッチ（弱いほど高く・軽い音にする）
 };
 
 // 🆕 「もっと伸ばせるようにしたい」というフィードバックを受けて、1本指スクイーズの限界を底上げ
@@ -65,6 +80,28 @@ const TWO_FINGER_MAX_SQUASH = 0.42; // 2本指で伸びる方向と垂直に、�
 
 const mochiBtnElement = document.getElementById('mochisuke-btn');
 const mochiDeformWrap = document.getElementById('mochisuke-deform-wrap'); // タップ・スクイーズの見た目の変形は、もちすけ本体ではなくこちらにかける（帽子・顔パーツ・口も道連れで一緒に動くように）
+
+// 🧪 管理者限定・試作中：現在有効なスクイーズ素材（'default'/'slime'。materials.js参照）。
+// 「もちすけの元々の画像」は起動時の1回だけ記録しておき、setSqueezeMaterial('default')で
+// 確実に元通りへ戻せるようにしている（kisekaeの装備状態など、他の仕組みには一切触れない）。
+let currentSqueezeMaterialKey = DEFAULT_SQUEEZE_MATERIAL_KEY;
+const originalMochiImageSrc = mochiBtnElement.getAttribute('src');
+
+/**
+ * スクイーズの素材（見た目・音）を切り替える。管理者専用の試作機能で、まだスクイーズ衣装として
+ * プレイヤーが選べる仕組みは無いため、開発者ツールから直接この関数を呼ぶ想定（index.html参照）。
+ * @param {string} key - materials.jsのSQUEEZE_MATERIALSに定義されているキー（'default'/'slime'）
+ * @returns {void}
+ */
+export function setSqueezeMaterial(key) {
+    const material = SQUEEZE_MATERIALS[key];
+    if (!material) {
+        console.warn(`[squeeze] 未知の素材キー: ${key}`);
+        return;
+    }
+    currentSqueezeMaterialKey = key;
+    mochiBtnElement.src = material.imageFile || originalMochiImageSrc;
+}
 
 // 🆕 指で触れている場所が優しく光って見える演出。衣装(kisekae)の絵とは別レイヤーに、
 // mix-blend-mode:screenで光を重ねるだけなので、どんな衣装を着せていても崩れずに使える
@@ -190,6 +227,12 @@ function twoFingerSqueezeTransformFor(angleDeg, d) {
 let currentMode = null;
 let oneFingerRawRatio = 0, oneFingerDx = 0, oneFingerDy = 0;
 let twoFingerRawRatio = 0, twoFingerAngleDeg = 0;
+// 🚧 管理者限定・試作中：スライムもちすけの「押した瞬間の強弱で音が変わる」ギミック用の状態。
+// armSlimePokeImpact()でpointerdownの瞬間の時刻を記録し、その後最初に来たupdateOneFingerSqueezeTarget
+// （＝最初のpointermove）1回分だけで強度を判定して音を鳴らし、以降は何もしない（1タップにつき1回だけ）。
+let slimePokeArmed = false;
+let slimePokeFired = false;
+let slimePokeStartTime = 0;
 // 🆕 実際の見た目・音に使う比率。stepSqueezeFollowが毎フレーム目標値へ近づける（追従の遅れ＝重み・粘り気）
 let squeezeVisualRatio = 0;
 let squeezeFollowRafId = null;
@@ -204,12 +247,50 @@ let squeezeFollowRafId = null;
  * @returns {number} 0〜1の生の伸縮比率（光演出の濃さ計算にそのまま使えるよう返す）
  */
 export function updateOneFingerSqueezeTarget(dx, dy) {
+    if (slimePokeArmed && !slimePokeFired) fireSlimePokeImpact(dx, dy); // 🚧 管理者限定：最初の1回だけ強度判定
     const dist = Math.min(Math.sqrt(dx * dx + dy * dy), SQUEEZE_MAX_DRAG);
     oneFingerRawRatio = dist / SQUEEZE_MAX_DRAG;
     oneFingerDx = dx; oneFingerDy = dy;
     currentMode = 'one';
     startSqueezeFollowLoop();
     return oneFingerRawRatio;
+}
+
+// 🚧 管理者限定・試作中：pointerdownの瞬間に呼んでおく「腕付け」関数。実際の音判定・再生は、
+// その後最初に来るupdateOneFingerSqueezeTarget側（＝最初のpointermove）で行う（pointerdown単体には
+// 移動量が無く「強さ」を測れないため）。IS_DEV_MODEでない、または今の素材にpokeSoundFileが
+// 無ければ（＝通常のもちすけ）即return。通常プレイヤーには一切無関係。
+/**
+ * 押した瞬間の強弱で音を変えるギミックを「待機」状態にする。実際の判定・再生は次のpointermoveで
+ * 行われる。管理者モード、かつ現在の素材(materials.js)にpokeSoundFileが設定されている時のみ有効。
+ * @returns {void}
+ */
+export function armSlimePokeImpact() {
+    if (!IS_DEV_MODE) return;
+    if (!SQUEEZE_MATERIALS[currentSqueezeMaterialKey].pokeSoundFile) return;
+    slimePokeArmed = true;
+    slimePokeFired = false;
+    slimePokeStartTime = performance.now();
+}
+
+/**
+ * pointerdownから最初のpointermoveまでの移動量と経過時間から押し込み速度を推定し、
+ * 0〜1の強度にマッピングして、強いほど低く・大きく、弱いほど高く・小さい音を1回だけ鳴らす。
+ * @param {number} dx - pointerdown位置からのX移動量
+ * @param {number} dy - pointerdown位置からのY移動量
+ * @returns {void}
+ */
+function fireSlimePokeImpact(dx, dy) {
+    slimePokeArmed = false;
+    slimePokeFired = true;
+    const pokeSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].pokeSoundFile;
+    if (!pokeSoundFile) return; // armSlimePokeImpact()後に素材が切り替わった場合の保険
+    const elapsedMs = Math.max(1, performance.now() - slimePokeStartTime);
+    const speed = Math.hypot(dx, dy) / elapsedMs; // px/ms。本物の圧力の代わりに使う疑似的な「押し込み速度」
+    const intensity = Math.min(1, speed / CONFIG.SLIME_POKE_IMPACT_MAX_SPEED_PX_MS);
+    const volume = CONFIG.SLIME_POKE_MIN_VOLUME + intensity * (CONFIG.SLIME_POKE_MAX_VOLUME - CONFIG.SLIME_POKE_MIN_VOLUME);
+    const pitch = CONFIG.SLIME_POKE_MAX_PITCH - intensity * (CONFIG.SLIME_POKE_MAX_PITCH - CONFIG.SLIME_POKE_MIN_PITCH); // 強いほど低いピッチ
+    playAudioFilePitched(pokeSoundFile, volume * sfxVolumeMult, pitch);
 }
 
 // 2本の指が離れていく方向・距離から、追従ループの目標値を更新する（2本指ドラッグ中に毎回呼ばれる）
@@ -299,7 +380,7 @@ export function startStretchSound() {
     if (stretchSoundSource) return;
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    const buffer = audioBuffers['audio/mochisuke/mochi_stretch.mp3'];
+    const buffer = audioBuffers[SQUEEZE_MATERIALS[currentSqueezeMaterialKey].stretchSoundFile];
     if (!buffer) return;
     stretchSoundPitchOffset = (Math.random() * 2 - 1) * CONFIG.STRETCH_SOUND_PITCH_VARIANCE;
     stretchSoundSource = ctx.createBufferSource();
@@ -398,7 +479,7 @@ export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio, comboTierIn
     for (let i = 0; i < count; i++) createBurstParticle(cx, cy);
 
     const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
-    playAudioFilePitched('audio/mochisuke/mochi_release_pop.mp3', CONFIG.SQUEEZE_RELEASE_POP_VOLUME * sfxVolumeMult, pitch);
+    playAudioFilePitched(SQUEEZE_MATERIALS[currentSqueezeMaterialKey].releasePopSoundFile, CONFIG.SQUEEZE_RELEASE_POP_VOLUME * sfxVolumeMult, pitch);
 
     if (visualRatio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
         vibrate(CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN);
