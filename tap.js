@@ -3,29 +3,29 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-13-004';
+} from './data.js?v=2026-09-13-005';
 import {
   audioBuffers, createBurstParticle, createFloatingText, createParticle, createRippleEffect,
   formatMochi, getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile,
   playAudioFilePitched, playBgmLoop, screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi,
   vibrate
-} from './main.js?v=2026-09-13-004';
-import { isMinigameActive } from './minigames.js?v=2026-09-13-004';
+} from './main.js?v=2026-09-13-005';
+import { isMinigameActive } from './minigames.js?v=2026-09-13-005';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-13-004';
+} from './progress.js?v=2026-09-13-005';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-13-004';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-004';
+} from './shop.js?v=2026-09-13-005';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-005';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-13-004';
+} from './ui.js?v=2026-09-13-005';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -205,12 +205,14 @@ import {
         export const SQUEEZE_MAX_SQUASH = 0.3; // 伸びる方向と垂直に、最大どれだけ縮むか（-30%）
         export const SQUEEZE_MIN_DRAG = 9; // これ未満の移動は「タップ」として扱い、通常のもちっとアニメーションにする
         export const SQUEEZE_ELEMENT_RADIUS = 95; // もちすけの見た目上の半径の目安(px)。伸びを引っ張った側だけに見せるためのオフセット計算に使う
-        // 🆕「重み・粘り気・弾力」を出すための2つの仕掛け。①抵抗カーブ：伸ばすほど、同じ指の移動量でも
+        // 🆕「重み・粘り気・弾力」を出すための3つの仕掛け。①抵抗カーブ：伸ばすほど、同じ指の移動量でも
         // 伸びが増えにくくなる（弾力の限界に近づく感覚）。②追従の遅れ：見た目は指の位置に一気に追従せず、
-        // 毎フレーム少しずつ近づく（重くて粘り気のある物体を引っ張っている感覚）。どちらも数値を変えるだけで
-        // 感触を調整できる
-        export const SQUEEZE_STRETCH_EASE_POWER = 1.7; // 1より大きいほど、伸ばすほど追加の伸びに必要な指の移動量が増える（抵抗が強くなる）
-        export const SQUEEZE_FOLLOW_LERP = 0.13; // 毎フレーム、目標値との差にこの割合だけ近づく。小さいほど追従が遅れて「重く・粘っこく」感じる（0.22→0.13でさらに重く）
+        // 毎フレーム少しずつ近づく（重くて粘り気のある物体を引っ張っている感覚）。③追従の遅れ自体も、
+        // 既にどれだけ伸びているかに応じてさらに遅くなる（伸びるほど重みが増して、後半になるほどゆっくり
+        // にしか伸びなくなる）。全部数値を変えるだけで感触を調整できる
+        export const SQUEEZE_STRETCH_EASE_POWER = 2.0; // 1より大きいほど、伸ばすほど追加の伸びに必要な指の移動量が増える（抵抗が強くなる）
+        export const SQUEEZE_FOLLOW_LERP = 0.075; // 毎フレーム、目標値との差にこの割合だけ近づく基本値。小さいほど追従が遅れて「重く・粘っこく」感じる
+        export const SQUEEZE_FOLLOW_HEAVY_END_FACTOR = 0.35; // 🆕 伸び切った時点で追従速度が基本値の何倍まで落ちるか。小さいほど「伸ばすほど重くなる」度合いが強い
 
         // 🫧🫧 2本指ストレッチ機能：指2本でもちすけを逆方向に引っ張ると、中心を固定したまま両側へ伸びる。
         // 1本指スクイーズ（片側だけ固定して反対側だけ伸ばす）とは見た目の計算式が異なるため、状態・関数ともに分けている。
@@ -885,15 +887,20 @@ import {
          */
         function stepSqueezeFollow() {
             if (!isMochiPressed || (!isDraggingSqueeze && !twoFingerStretchActive)) { squeezeFollowRafId = null; return; }
+            // 🆕 既にどれだけ伸びているか(squeezeVisualRatio)が大きいほど、追従速度そのものを落とす。
+            // 「すぐ伸ばそうとしても伸びない」「一気に伸ばそうとしても後半になるほどゆっくりになる」を
+            // 両方まとめて表現する：伸びていない序盤は基本値通り、伸び切るにつれてSQUEEZE_FOLLOW_HEAVY_END_FACTOR倍まで遅くなる
+            const heaviness = 1 - squeezeVisualRatio * (1 - SQUEEZE_FOLLOW_HEAVY_END_FACTOR);
+            const effectiveLerp = SQUEEZE_FOLLOW_LERP * heaviness;
             if (twoFingerStretchActive) {
                 const target = easeSqueezeRatio(twoFingerLastRatio);
-                squeezeVisualRatio += (target - squeezeVisualRatio) * SQUEEZE_FOLLOW_LERP;
+                squeezeVisualRatio += (target - squeezeVisualRatio) * effectiveLerp;
                 mochiDeformWrap.style.transformOrigin = 'center center';
                 mochiDeformWrap.style.transform = twoFingerSqueezeTransformFor(twoFingerLastAngleDeg, squeezeVisualRatio);
                 updateStretchSound(squeezeVisualRatio);
             } else {
                 const target = easeSqueezeRatio(squeezeLastRatio);
-                squeezeVisualRatio += (target - squeezeVisualRatio) * SQUEEZE_FOLLOW_LERP;
+                squeezeVisualRatio += (target - squeezeVisualRatio) * effectiveLerp;
                 mochiDeformWrap.style.transformOrigin = 'center center';
                 mochiDeformWrap.style.transform = squeezeTransformFor(squeezeLastDx, squeezeLastDy, squeezeVisualRatio);
                 updateStretchSound(squeezeVisualRatio);
