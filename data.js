@@ -358,6 +358,18 @@
                     img: 'ui_images/kisekae/fullbody_robo.webp', // 通常時（口閉じ）
                     mouthFrames: [1,2,3,4,5].map(n => `ui_images/kisekae/fullbody_robo_mouth_${n}.webp`), // 口が開くコマ送り
                 },
+                // 🧪 管理者限定・試作中：スクイーズ衣装の第一弾。全身衣装の一種として、他の衣装とまったく同じ
+                // カルーセル（外す✕・全身装着で帽子等が消える、等）で選べるようにしてある（2-1参照）。
+                // squeezeMaterialは装備中にsrc/squeeze/materials.jsのどのキーの素材（音）を使うかの指定で、
+                // kisekae.jsのapplyKisekaeToMainScreen()がここを見てsetSqueezeMaterial()に渡している。
+                // devOnly:trueの間は、ownedKisekaeItemsに入っていなくてもIS_DEV_MODEなら選べ、
+                // 通常プレイヤーの一覧には表示されない（ガチャ等での正式な入手経路はまだ無い）。
+                {
+                    id: 'fullbody_squeeze_slime', name: 'スクイーズもちすけ（スライム）', star: 4,
+                    img: 'ui_images/mochisuke/image_slime.webp',
+                    squeezeMaterial: 'slime',
+                    devOnly: true,
+                },
             ],
         };
         export const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服', back: '背中', fullbody: '全身' };

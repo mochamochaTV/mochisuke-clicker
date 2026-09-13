@@ -3,36 +3,36 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-13-010';
+} from './data.js?v=2026-09-13-011';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-13-010';
-import { isMinigameActive } from './minigames.js?v=2026-09-13-010';
+} from './main.js?v=2026-09-13-011';
+import { isMinigameActive } from './minigames.js?v=2026-09-13-011';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
   SQUEEZE_MAX_DRAG, armSlimePokeImpact, assignSqueezeGlow, endSqueeze, releaseAllSqueezeGlows,
-  releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot, setSqueezeMaterial,
+  releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot,
   startStretchSound, stopStretchSound, triggerSqueezeReleaseBurst, updateOneFingerSqueezeTarget,
   updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-13-010';
+} from './src/squeeze/physics.js?v=2026-09-13-011';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-13-010';
+} from './progress.js?v=2026-09-13-011';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-13-010';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-010';
+} from './shop.js?v=2026-09-13-011';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-011';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
-  getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
-  showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-13-010';
+  getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
+  setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
+} from './ui.js?v=2026-09-13-011';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -612,12 +612,22 @@ import {
             e.preventDefault();
             try { mochiBtnElement.setPointerCapture(e.pointerId); } catch (err) {}
             initAndPlayBGM();
-            playAudioFile('audio/tap.mp3'); 
-            setTotalTapsCount(totalTapsCount + 1);
-            trackMissionEvent('totalTaps', 1); trackMissionEvent('tapsToday', 1); trackMissionEvent('tapsThisWeek', 1);
-            chargeHissatsuByTap();
-            prefTaps[selectedStageIndex] = (prefTaps[selectedStageIndex] || 0) + 1;
-            
+
+            // 🧪 管理者限定・試作中：スクイーズ衣装（スライムもちすけ等）を装備中は「別枠」として扱い、
+            // 通常のタップ生産（もち・コンボ・ミッションカウント・必殺技ゲージ・会心/黄金抽選・タップ音や
+            // パーティクル）を一切発生させない。素材ごとの伸び・つつき演出は、この下のスクイーズ分岐が
+            // 装備に関係なくこれまで通り動く（4-3a・2-1参照）。
+            const squeezeCostumeMaterialKey = getEquippedSqueezeMaterialKey();
+            const isSqueezeCostumeActive = !!squeezeCostumeMaterialKey;
+
+            if (!isSqueezeCostumeActive) {
+                playAudioFile('audio/tap.mp3');
+                setTotalTapsCount(totalTapsCount + 1);
+                trackMissionEvent('totalTaps', 1); trackMissionEvent('tapsToday', 1); trackMissionEvent('tapsThisWeek', 1);
+                chargeHissatsuByTap();
+                prefTaps[selectedStageIndex] = (prefTaps[selectedStageIndex] || 0) + 1;
+            }
+
             lastTappedTime = Date.now();
             mochiBreatheWrapEl.classList.remove('breathe-idle');
             clearTimeout(breatheTimer);
@@ -625,7 +635,9 @@ import {
             isMochiPressed = true;
             const clones = bunshinCloneEls;
 
-            if (skills.hissatsu.activeTimer > 0) {
+            // スクイーズ衣装装備中は、必殺技が発動中でも通常の5連打つぶれポーズにはせず、
+            // 常にこの下のスクイーズ分岐（伸縮）に入れる
+            if (skills.hissatsu.activeTimer > 0 && !isSqueezeCostumeActive) {
                 mochiDeformWrap.style.transform = 'scale(1.55, 1.2)';
                 clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.55, 1.2)');
             } else {
@@ -660,15 +672,17 @@ import {
                 if (!isTutorialActive) showMochiComment(pickRandom(dialogueData.longPressComments));
             }, MOCHI_LONGPRESS_MS);
 
-            // 必殺技発動中なら1タップが5連打になる
-            // 会心演出のリセットは、この連打ループの前に1回だけ行う（以前はexecuteSingleTapの中で毎回やっていて、
-            // 5連打×連打で最大何十回にもなり、つぶれるアニメーションが再生されたりされなかったりする原因になっていた）
-            clearTimeout(critFilterTimeout);
-            resetMochiFilter();
-            let clickLoops = skills.hissatsu.activeTimer > 0 ? 5 : 1;
-            handleCombo(1); // コンボは何があっても「1タップ＝1コンボ」で固定（必殺技中でも増える量は変えない）
-            for (let i = 0; i < clickLoops; i++) {
-                executeSingleTap(e.clientX, e.clientY);
+            if (!isSqueezeCostumeActive) {
+                // 必殺技発動中なら1タップが5連打になる
+                // 会心演出のリセットは、この連打ループの前に1回だけ行う（以前はexecuteSingleTapの中で毎回やっていて、
+                // 5連打×連打で最大何十回にもなり、つぶれるアニメーションが再生されたりされなかったりする原因になっていた）
+                clearTimeout(critFilterTimeout);
+                resetMochiFilter();
+                let clickLoops = skills.hissatsu.activeTimer > 0 ? 5 : 1;
+                handleCombo(1); // コンボは何があっても「1タップ＝1コンボ」で固定（必殺技中でも増える量は変えない）
+                for (let i = 0; i < clickLoops; i++) {
+                    executeSingleTap(e.clientX, e.clientY);
+                }
             }
             updateDisplay();
         });
@@ -1477,4 +1491,3 @@ import {
         // 他ファイルからのimport参照・index.html内の静的onclick・動的に組み立てられるonclick文字列の
         // 3経路すべてを確認すること。
         window.useSkill = useSkill;
-        window.setSqueezeMaterial = setSqueezeMaterial; // 🧪 管理者限定・試作中：dev-tools-section内のボタンから呼ばれる（index.html参照）

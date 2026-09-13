@@ -8,15 +8,16 @@
 //     （tap.js側のisMochiPressed/isDraggingSqueeze/twoFingerStretchActiveは読みに行かない）
 //   ・コンボ段階はtriggerSqueezeReleaseBurstの引数として数値を渡してもらう
 //     （getCheerTUer等tap.js内部のコンボロジックをこちらからimportしない）
-// 🧪 管理者限定・試作中：スライムもちすけ用に、素材（見た目・音）ごとの設定をmaterials.jsへ
-// 分離した（setSqueezeMaterial参照）。将来グリッドワープ等を追加する時も、この
+// 🧪 管理者限定・試作中：スライムもちすけ用に、素材ごとの音の設定をmaterials.jsへ分離した
+// （setSqueezeMaterial参照。見た目の画像はkisekae.js側のKISEKAE_ITEMS.fullbodyが持つため、
+// このファイルは一切関知しない）。将来グリッドワープ等を追加する時も、この
 // src/squeeze/ ディレクトリにまとめていく予定。
 import {
   IS_DEV_MODE, audioBuffers, createBurstParticle, getAudioContext, playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-13-010';
-// 🧪 管理者限定・試作中：素材（見た目・音）ごとの設定はデータとしてmaterials.jsに分離してある
+} from '../../main.js?v=2026-09-13-011';
+// 🧪 管理者限定・試作中：素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-13-010';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-13-011';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -81,15 +82,18 @@ const TWO_FINGER_MAX_SQUASH = 0.42; // 2本指で伸びる方向と垂直に、�
 const mochiBtnElement = document.getElementById('mochisuke-btn');
 const mochiDeformWrap = document.getElementById('mochisuke-deform-wrap'); // タップ・スクイーズの見た目の変形は、もちすけ本体ではなくこちらにかける（帽子・顔パーツ・口も道連れで一緒に動くように）
 
-// 🧪 管理者限定・試作中：現在有効なスクイーズ素材（'default'/'slime'。materials.js参照）。
-// 「もちすけの元々の画像」は起動時の1回だけ記録しておき、setSqueezeMaterial('default')で
-// 確実に元通りへ戻せるようにしている（kisekaeの装備状態など、他の仕組みには一切触れない）。
+// 🧪 管理者限定・試作中：現在有効なスクイーズ素材（'default'/'slime'。materials.js参照）。音（伸び音・
+// 弾け音・つつき音）だけを担当し、見た目（画像）はここでは一切触らない。スクイーズ衣装は着せ替え
+// （kisekae.js）の全身カテゴリの1アイテムとして装備するようになっており、画像の表示・切り戻しは
+// kisekae.jsのapplyKisekaeToMainScreen()が一元的に担当している。もしここで画像にも触ってしまうと、
+// タップのたびに再描画されるapplyKisekaeToMainScreen()の結果と競合し、タップした瞬間に画像だけ
+// 通常のもちすけへ戻ってしまう、という不具合を過去に起こした（経緯は2-1参照）。
 let currentSqueezeMaterialKey = DEFAULT_SQUEEZE_MATERIAL_KEY;
-const originalMochiImageSrc = mochiBtnElement.getAttribute('src');
 
 /**
- * スクイーズの素材（見た目・音）を切り替える。管理者専用の試作機能で、まだスクイーズ衣装として
- * プレイヤーが選べる仕組みは無いため、開発者ツールから直接この関数を呼ぶ想定（index.html参照）。
+ * スクイーズの素材（音）を切り替える。装備している衣装が変わるたびに、kisekae.jsの
+ * applyKisekaeToMainScreen()から呼ばれる想定で、開発者ツール等から直接呼ぶことは想定していない
+ * （見た目の切り替えは一切行わないため、直接呼んでも画像は変わらない）。
  * @param {string} key - materials.jsのSQUEEZE_MATERIALSに定義されているキー（'default'/'slime'）
  * @returns {void}
  */
@@ -100,7 +104,6 @@ export function setSqueezeMaterial(key) {
         return;
     }
     currentSqueezeMaterialKey = key;
-    mochiBtnElement.src = material.imageFile || originalMochiImageSrc;
 }
 
 // 🆕 指で触れている場所が優しく光って見える演出。衣装(kisekae)の絵とは別レイヤーに、

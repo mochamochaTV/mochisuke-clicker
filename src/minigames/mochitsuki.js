@@ -10,9 +10,9 @@
  * この状態を持つ本ファイル自身に後始末専用の関数として切り出した。処理の中身は同じ。
  */
 
-import { pickRandom, playAudioFile, screenFlash, screenShake, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-13-010';
-import { showMochiComment } from '../../ui.js?v=2026-09-13-010';
-import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './core.js?v=2026-09-13-010';
+import { pickRandom, playAudioFile, screenFlash, screenShake, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-13-011';
+import { showMochiComment } from '../../ui.js?v=2026-09-13-011';
+import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './core.js?v=2026-09-13-011';
 
         const CONFIG = {
             MOCHI_BAND_OPACITY: 0.35,           // 判定帯（トラック上の色付きゾーン）の透明度

@@ -1,15 +1,17 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-13-010';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-13-010';
-        // 🧪 管理者限定・試作中：スクイーズ衣装の専用画面ができるまでの暫定動作で使う（onSqueezeModeButtonClick参照）
-        import { setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-13-010';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-13-010';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-13-010';
-        import { saveGame } from '../../state.js?v=2026-09-13-010';
-        import { closeModal, openModal } from './core.js?v=2026-09-13-010';
-        import { openTicketInventory } from './myroom.js?v=2026-09-13-010';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-13-010';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-13-011';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-13-011';
+        // 🧪 管理者限定・試作中：全身の「スクイーズ衣装」を装備/解除するたびに、スクイーズの音の素材を
+        // 同期させるために使う（applyKisekaeToMainScreen参照）
+        import { setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-13-011';
+        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-13-011';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-13-011';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-13-011';
+        import { saveGame } from '../../state.js?v=2026-09-13-011';
+        import { closeModal, openModal } from './core.js?v=2026-09-13-011';
+        import { openTicketInventory } from './myroom.js?v=2026-09-13-011';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-13-011';
 
         // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
         const CONFIG = {
@@ -88,23 +90,16 @@
 
         // 🆕 着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。ロボもちすけ等の全身衣装とは違い、
         // 着せ替えではなく専用のタップ画面（変形が自動で戻らない、素材ごとの触感を楽しむモード）に切り替える
-        // ためのもので、まだ画面自体を実装中。
-        // 🧪 管理者限定・試作中：専用画面ができるまでの間、開発者モードの時だけ、このボタンから
-        // 通常のタップ画面のスクイーズ素材をスライムもちすけへ暫定的に切り替えられるようにしている
-        // （src/squeeze/materials.js・2-1参照）。専用画面が完成したら、ここは本来の画面遷移に差し替える。
+        // ためのもので、まだ画面自体を実装中なので今は準備中メッセージだけ出す仮の中身にしている。
+        // 🧪 管理者限定・試作中：スクイーズ衣装そのもの（スライムもちすけ等）は、この専用画面を待たずに
+        // 先行して「全身」カテゴリの1着として試作中（KISEKAE_ITEMS.fullbody・2-1参照）。管理者はそちらの
+        // 通常の着せ替えカルーセルから試せるため、このボタン自体は専用画面ができるまでは変更しない。
         /**
-         * スクイーズボタンのクリックハンドラ（暫定）。開発者モードの時だけスライム素材へ切り替えて
-         * 着せ替え部屋を閉じ、通常のプレイヤーには引き続き準備中メッセージを出す。専用画面ができ次第、
-         * ここから本来の画面遷移に切り替える。
+         * スクイーズボタンのクリックハンドラ（暫定）。専用画面ができ次第、ここから切り替える。
          * @returns {void}
          */
         export function onSqueezeModeButtonClick() {
             playAudioFile('audio/tap.mp3');
-            if (IS_DEV_MODE) {
-                setSqueezeMaterial('slime');
-                closeKisekaeRoom();
-                return;
-            }
             alert('🫧 スクイーズもちすけは準備中！もうすぐ遊べるようになるよ');
         }
 
@@ -320,10 +315,14 @@
             const mainFullbody = document.getElementById('mochisuke-fullbody');
             const mouthAnchor = document.getElementById('mochisuke-mouth-anchor');
             const fullbodyId = equippedKisekae.fullbody;
+            const fbItem = fullbodyId ? KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId) : null;
+            // 🧪 管理者限定・試作中：装備中の全身衣装がスクイーズ素材を持っていれば（例：スライムもちすけ）
+            // 物理演算側の音をそれに同期させ、持っていなければ（ロボもちすけ・未装備含む）通常素材に戻す。
+            // 画像の表示自体はこの関数がこの後で担当するので、physics.js側は音だけを切り替える（2-1参照）。
+            setSqueezeMaterial((fbItem && fbItem.squeezeMaterial) || DEFAULT_SQUEEZE_MATERIAL_KEY);
 
             if (fullbodyId) {
                 // 全身装備中は、帽子・顔パーツ・通常の口パーツを隠す（display:noneではなくvisibility:hiddenで消す理由はrenderKisekaeMochisukeと同様）
-                const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
                 mainFullbody.src = fbItem.img;
                 mainFullbody.style.display = 'block';
                 mainBtn.style.opacity = '0';
@@ -364,6 +363,20 @@
                 });
             }
             updateKisekaeWingDisplay('main', fullbodyId ? null : equippedKisekae.back);
+        }
+        // 🧪 管理者限定・試作中：現在装備中の全身衣装がスクイーズ衣装なら、そのsqueezeMaterialキーを返す
+        // （スクイーズ衣装でなければ、通常のロボもちすけ・未装備を含めてnullを返す）。tap.js側がこれを見て、
+        // タップした時に通常のタップ生産（コンボ・パーティクル・ミッション等）を行うか、スクイーズ演出
+        // だけを行うかを分けている（ui.js経由でexport *されるので、tap.jsからはui.js参照でimportする）。
+        /**
+         * 現在装備中の全身衣装のsqueezeMaterialキーを返す（スクイーズ衣装でなければnull）。
+         * @returns {string|null}
+         */
+        export function getEquippedSqueezeMaterialKey() {
+            const fullbodyId = equippedKisekae.fullbody;
+            if (!fullbodyId) return null;
+            const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
+            return (fbItem && fbItem.squeezeMaterial) || null;
         }
         // 🛋️ マイルームのもちすけにも、装備中の着せ替えを反映する
         /**
@@ -463,7 +476,11 @@
             document.getElementById('kisekae-wing-volume-panel').style.display = showWingVolumePanel ? 'block' : 'none';
             if (showWingVolumePanel) document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
             kisekaeCurrentCategory = cat;
-            const sortedItems = [...KISEKAE_ITEMS[cat]].sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+            // 🧪 管理者限定・試作中：devOnly:trueのアイテム（スクイーズ衣装等）は、まだガチャ等の正式な
+            // 入手経路が無いため、開発者モードでない限り一覧にすら出さない（2-1参照）
+            const sortedItems = [...KISEKAE_ITEMS[cat]]
+                .filter(item => !item.devOnly || IS_DEV_MODE)
+                .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
             // 帽子・顔パーツは、一番左上に「外す」ボタンを置く（服は必ず何か着ている状態にするので対象外）
             const items = (cat === 'clothes') ? sortedItems : [{ id: null, name: '外す', isRemoveButton: true }, ...sortedItems];
             const owned = ownedKisekaeItems[cat] || [];
@@ -482,7 +499,9 @@
                     (i % 2 === 0 ? leftList : rightList).appendChild(cell);
                     return;
                 }
-                const isOwned = owned.includes(item.id);
+                // 🧪 管理者限定・試作中：devOnlyアイテムは、開発者モードなら所持チェックを免除して選べるようにする
+                // （ガチャに入っていないので、通常の所持判定だけでは管理者も永遠に選べなくなってしまう）
+                const isOwned = owned.includes(item.id) || (item.devOnly && IS_DEV_MODE);
                 const isEquipped = previewKisekae[cat] === item.id;
                 cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
                 const starStyle = item.star === CONFIG.KISEKAE_TOP_RARITY_STAR
