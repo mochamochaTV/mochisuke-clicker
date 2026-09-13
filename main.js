@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData,
   stages
-} from './data.js?v=2026-09-11-003';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-11-003';
+} from './data.js?v=2026-09-13-001';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-13-001';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-11-003';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-11-003';
+} from './progress.js?v=2026-09-13-001';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-13-001';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-11-003';
+} from './state.js?v=2026-09-13-001';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-11-003';
+} from './tap.js?v=2026-09-13-001';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-11-003';
+} from './ui.js?v=2026-09-13-001';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -113,6 +113,17 @@ import {
             SPARKLE_OUTER_RADIUS_MULT: 1.8,            // 外側の薄い円の半径倍率
             SPARKLE_OUTER_ALPHA: 0.16,                 // 外側の円の最大不透明度
             SPARKLE_INNER_ALPHA: 0.35,                 // 内側の円の最大不透明度
+
+            // 🆕 きなこ・粉っぽい「弾けるパーティクル」（createBurstParticle）専用。スコア用のparticleImg/
+            // goldParticleImgとは見た目の系統が違う（画像ではなく単純な円を描く）ため、descriptionを分けている
+            BURST_PARTICLE_VX_RANGE: 5.5,               // 中心から広がる横方向の初速の最大値
+            BURST_PARTICLE_VY_RANGE: 5.5,               // 中心から広がる縦方向の初速の最大値
+            BURST_PARTICLE_GRAVITY: 0.22,               // 弾けたあと、ふわっと落ちる程度の弱め重力
+            BURST_PARTICLE_LIFE_FRAMES_BASE: 26,        // 消えるまでの最低フレーム数
+            BURST_PARTICLE_LIFE_FRAMES_RANGE: 14,       // 消えるまでのフレーム数のランダム幅
+            BURST_PARTICLE_SIZE_BASE: 3,                // 粒の半径(px)の最低値
+            BURST_PARTICLE_SIZE_RANGE: 3,               // 粒の半径(px)のランダム幅
+            BURST_PARTICLE_COLOR: '#fff3d6',            // きなこ・粉っぽい淡いクリーム色
             RIPPLE_DURATION_MS: 400,                   // 波紋アニメーションの継続時間
             RIPPLE_PEAK_ALPHA: 0.6,                    // 波紋の開始時の不透明度
             RIPPLE_LINE_WIDTH: 4,                      // 波紋の線の太さ
@@ -1123,6 +1134,34 @@ import {
             });
         }
 
+        // 🆕 きなこ・粉っぽい「弾けるパーティクル」。スコア加算用のcreateParticleとは見た目も用途も違う
+        // （画像を貼るのではなく、単純な円を薄く描くだけ）ため、同じparticleListに積みつつ
+        // kind:'burst'で区別し、updateAndRenderParticles側で別扱いにする（drawImageの失敗処理などを
+        // burst用にわざわざ複製せずに済むよう、既存のループにそのまま相乗りさせる設計）。
+        /**
+         * 指定座標を中心に、四方へ広がって消えていく小さな円のパーティクルを1つ追加する。
+         * スクイーズを大きく伸ばして離した瞬間の「弾ける」演出に使う。
+         * @param {number} x - 画面上のX座標（中心）
+         * @param {number} y - 画面上のY座標（中心）
+         * @returns {void}
+         */
+        export function createBurstParticle(x, y) {
+            if (particleList.length > CONFIG.PARTICLE_MAX_COUNT) return;
+            const rect = getGameScreenRect();
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random();
+            particleList.push({
+                kind: 'burst',
+                x: x - rect.left, y: y - rect.top,
+                vx: Math.cos(angle) * speed * CONFIG.BURST_PARTICLE_VX_RANGE,
+                vy: Math.sin(angle) * speed * CONFIG.BURST_PARTICLE_VY_RANGE - 1.5, // 少しだけ上方向にも散るように補正
+                gravity: CONFIG.BURST_PARTICLE_GRAVITY,
+                life: 0,
+                maxLife: CONFIG.BURST_PARTICLE_LIFE_FRAMES_BASE + Math.random() * CONFIG.BURST_PARTICLE_LIFE_FRAMES_RANGE,
+                size: CONFIG.BURST_PARTICLE_SIZE_BASE + Math.random() * CONFIG.BURST_PARTICLE_SIZE_RANGE,
+            });
+        }
+
         // 🐛パフォーマンス修正：タップ演出（particleList/rippleList/floatingTextList）が全部空＝
         // 「今まさに反応が必要なものは何もない、環境演出だけが動いているアイドル状態」の時だけ、
         // 描画を約30fpsに間引いて負荷とバッテリー消費を抑える。タップした瞬間にこれらのリストへ
@@ -1156,6 +1195,23 @@ import {
             for (let i = particleList.length - 1; i >= 0; i--) {
                 const p = particleList[i];
                 p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
+
+                // 🆕 きなこ・粉っぽい「弾けるパーティクル」（createBurstParticle）は、スコア用の
+                // drawImage系パーティクルと見た目も寿命の管理方法も違うため、ここで先に分岐して処理してしまう
+                // （画像を使わないので、下のdrawImageの例外処理には一切乗せる必要が無い）。
+                if (p.kind === 'burst') {
+                    p.life++;
+                    if (p.life >= p.maxLife) { particleList.splice(i, 1); continue; }
+                    const t = p.life / p.maxLife;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, 1 - t);
+                    ctx.fillStyle = CONFIG.BURST_PARTICLE_COLOR;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * (1 - t * 0.3), 0, Math.PI * 2); // 消える直前、少しだけ縮む
+                    ctx.fill();
+                    ctx.restore();
+                    continue;
+                }
 
                 // 🛡️ 画像の読み込み失敗（'broken'状態）などでdrawImageが例外を投げると、対処しないままでは
                 // このrequestAnimationFrameループ全体がその場で止まり、以後タップしても一切の演出

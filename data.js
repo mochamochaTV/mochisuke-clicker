@@ -212,7 +212,7 @@
             { text: 'ここから、ワイにお土産をあげられるで！', highlight: 'feed-toggle-btn', duration: 4500 },
             { text: 'さあ、日本一周の旅に出発や！応援してるで！', highlight: null, duration: 3500 },
         ];
-        export const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3'];
+        export const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/mochi_release_pop.mp3', 'audio/mochisuke/mochi_kinako_crackle.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3'];
         // 🎵 BGMも起動時に先読みしておく一覧。していないと、初めてその場所（ショップ等）に入った瞬間に
         // fetch＋デコードが走ってしまい、移動音とフェードが終わった後もBGMが少し遅れて始まってしまう
         export const BGM_FILES = ['audio/bgm/bgm.mp3', 'audio/bgm/bgm_shop.mp3', 'audio/bgm/bgm_minigame.mp3', 'audio/bgm/bgm_myroom.mp3', 'audio/bgm/bgm_warehouse.mp3', 'audio/bgm/hissatsu_bgm.mp3'];

@@ -3,28 +3,29 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-11-003';
+} from './data.js?v=2026-09-13-001';
 import {
-  audioBuffers, createFloatingText, createParticle, createRippleEffect, formatMochi,
-  getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile, playBgmLoop,
-  screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-11-003';
-import { isMinigameActive } from './minigames.js?v=2026-09-11-003';
+  audioBuffers, createBurstParticle, createFloatingText, createParticle, createRippleEffect,
+  formatMochi, getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile,
+  playAudioFilePitched, playBgmLoop, screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi,
+  vibrate
+} from './main.js?v=2026-09-13-001';
+import { isMinigameActive } from './minigames.js?v=2026-09-13-001';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-11-003';
+} from './progress.js?v=2026-09-13-001';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-11-003';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-11-003';
+} from './shop.js?v=2026-09-13-001';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-001';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-11-003';
+} from './ui.js?v=2026-09-13-001';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -115,12 +116,30 @@ import {
           STRETCH_SOUND_BASE_PITCH: 0.85,
           STRETCH_SOUND_PITCH_RANGE: 0.5,
           STRETCH_SOUND_MAX_GAIN: 0.35,
+          // 🆕 同じ伸び具合でも毎回まったく同じ音にならないよう、指を触れた瞬間だけランダムに
+          // ピッチをずらす幅（±この割合）。ずっと遊ぶゲームでは「一番よく聞こえる音」ほど
+          // 完全に同一だと耳が慣れて刺激が薄れていくため、伸び音そのものに変化を持たせる。
+          STRETCH_SOUND_PITCH_VARIANCE: 0.04,
           SQUEEZE_OVERSHOOT_RATIO: 0.55, // 離した時の揺れ戻りの大きさ
           SQUEEZE_OVERSHOOT_BASE_DURATION_MS: 420,
           SQUEEZE_OVERSHOOT_DURATION_RANGE_MS: 280,
           SQUEEZE_TRANSFORM_ORIGIN_RESET_MS: 720,
           TAP_RELEASE_ANIM_DURATION_MS: 240, // 通常タップ後の「もちっ」アニメーション時間
           BREATHE_IDLE_DELAY_MS: 1200, // 指を離してから呼吸アニメーションに戻るまでの時間
+
+          // --- 🆕 スクイーズ：離した瞬間の「弾ける」演出 ---
+          SQUEEZE_RELEASE_BURST_MIN_RATIO: 0.5, // これ以上伸ばして離した時だけ、パーティクル＋ポン音を出す（軽いタップでは出さない）
+          SQUEEZE_RELEASE_BURST_COUNT_BASE: 6,  // 弾けるパーティクルの最低数
+          SQUEEZE_RELEASE_BURST_COUNT_RANGE: 8, // 伸び率に応じて上乗せされる最大数
+          SQUEEZE_RELEASE_POP_VOLUME: 0.55,
+          SQUEEZE_RELEASE_POP_PITCH_BASE: 0.95,       // ポン音の基本ピッチ
+          SQUEEZE_RELEASE_POP_PITCH_PER_TIER: 0.06,   // コンボtierが1段上がるごとに足すピッチ（見た目のコンボ演出と音を連動させる）
+          SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO: 0.85, // かなり大きく伸ばして離した時だけ、軽いバイブで区切りを付ける
+          SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN: [12, 25, 12],
+          KINAKO_CRACKLE_VOLUME: 0.4, // 触れた瞬間の「パラッ」というきなこ音の音量
+          // --- 🆕 スクイーズ：指が触れている場所がへこんで見える「くぼみ」演出 ---
+          SQUEEZE_DIMPLE_MAX_SCALE: 1.35, // 伸び率が最大の時、くぼみがどれだけ大きく広がるか
+          SQUEEZE_DIMPLE_FADE_OUT_MS: 260,
 
           // --- 給餌（おみやげ）まわり ---
           FEED_ICON_Y_OFFSET_PX: 68, // もちすけの足元からのアイコン初期位置オフセット
@@ -608,6 +627,75 @@ import {
         export const mochiBreatheWrapEl = document.getElementById('mochisuke-breathe-wrap'); // 呼吸アニメーションは、もちすけ画像と口パーツをまとめて包むこちらにかける
         mochiBtnElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
+        // 🆕 指で触れている場所がへこんで見える「くぼみ」演出。衣装(kisekae)の絵とは別レイヤーに丸い影を
+        // 重ねるだけなので、どんな衣装を着せていても崩れずに使える（帽子・顔パーツはこの上のz-indexなので隠れない）
+        const squeezeDimpleLayerEl = document.getElementById('squeeze-dimple-layer');
+        const squeezeDimplePointerMap = new Map(); // pointerId -> { el, fadeTimer }
+
+        /**
+         * 指が触れた瞬間、その位置に「くぼみ」演出用の要素を新しく作って表示する。
+         * @param {number} pointerId - ポインタID
+         * @param {number} clientX - 触れた位置のX座標（画面基準）
+         * @param {number} clientY - 触れた位置のY座標（画面基準）
+         * @returns {void}
+         */
+        export function assignSqueezeDimple(pointerId, clientX, clientY) {
+            const existing = squeezeDimplePointerMap.get(pointerId);
+            if (existing) { clearTimeout(existing.fadeTimer); existing.el.remove(); }
+            const el = document.createElement('div');
+            el.className = 'squeeze-dimple';
+            squeezeDimpleLayerEl.appendChild(el);
+            squeezeDimplePointerMap.set(pointerId, { el, fadeTimer: null });
+            updateSqueezeDimple(pointerId, clientX, clientY, 0);
+            requestAnimationFrame(() => el.classList.add('is-active'));
+        }
+
+        /**
+         * 指の現在位置と伸縮比率に応じて、くぼみ演出の位置・濃さ・大きさを更新する。
+         * @param {number} pointerId - ポインタID
+         * @param {number} clientX - 現在位置のX座標（画面基準）
+         * @param {number} clientY - 現在位置のY座標（画面基準）
+         * @param {number} ratio - 0〜1の伸縮比率（強く引っ張っているほどくぼみも大きく見せる）
+         * @returns {void}
+         */
+        export function updateSqueezeDimple(pointerId, clientX, clientY, ratio) {
+            const entry = squeezeDimplePointerMap.get(pointerId);
+            if (!entry) return;
+            const rect = mochiBtnElement.getBoundingClientRect();
+            if (rect.width === 0 || rect.height === 0) return;
+            const px = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
+            const py = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
+            entry.el.style.left = px + '%';
+            entry.el.style.top = py + '%';
+            entry.el.style.opacity = String(0.55 + ratio * 0.45);
+            entry.el.style.setProperty('--s', String(0.6 + ratio * (CONFIG.SQUEEZE_DIMPLE_MAX_SCALE - 0.6)));
+        }
+
+        /**
+         * 指を離した時、その指のくぼみ演出をフェードアウトさせてから要素を削除する。
+         * @param {number} pointerId - ポインタID
+         * @returns {void}
+         */
+        export function releaseSqueezeDimple(pointerId) {
+            const entry = squeezeDimplePointerMap.get(pointerId);
+            if (!entry) return;
+            entry.el.classList.remove('is-active');
+            entry.el.style.opacity = '0';
+            entry.el.style.setProperty('--s', '0.6');
+            entry.fadeTimer = setTimeout(() => {
+                entry.el.remove();
+                squeezeDimplePointerMap.delete(pointerId);
+            }, CONFIG.SQUEEZE_DIMPLE_FADE_OUT_MS);
+        }
+
+        /**
+         * 押していた指がすべて離れた時などに、残っているくぼみ演出をまとめてフェードアウトさせる。
+         * @returns {void}
+         */
+        export function releaseAllSqueezeDimples() {
+            [...squeezeDimplePointerMap.keys()].forEach(releaseSqueezeDimple);
+        }
+
         // メインのもちすけタップ処理
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             if (isMinigameActive) return;
@@ -633,6 +721,7 @@ import {
             } else {
                 // 🫧 指ごとの座標をpointerIdで記録する（2本指ストレッチの判定に使う）
                 squeezePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                assignSqueezeDimple(e.pointerId, e.clientX, e.clientY); // 🆕 触れた場所に「くぼみ」を表示開始
 
                 if (squeezePointers.size === 2) {
                     // 🫧🫧 2本目の指が触れた瞬間：ここから「2本の指を逆方向に引っ張って両側から伸ばす」モードに切り替える。
@@ -763,9 +852,16 @@ import {
             updateStretchSound(ratio);
         }
 
+        // 🆕 「指を触れた瞬間だけ」ランダムに決めて、伸びている間ずっと乗せておくピッチのオフセット。
+        // 伸び率に応じたリアルタイムの音程変化はそのまま保ちつつ、セッション（一回の指の触れ始めから
+        // 離すまで）ごとに微妙に違う声にすることで、何百回聞いても同じ音、という単調さを減らす。
+        export let stretchSoundPitchOffset = 0;
+
         // 🔊 伸ばしている間だけ鳴る、ループ再生＋伸びに応じてピッチが変わる効果音
         /**
          * 伸ばしている間だけ鳴らす、ループ再生の伸び音を音量0の状態で再生開始する。
+         * あわせて、その回だけのランダムなピッチオフセットを決め直し、触れた瞬間の
+         * 「パラッ」というきなこの粉っぽいクラック音を1回だけ鳴らす。
          * @returns {void}
          */
         export function startStretchSound() {
@@ -774,6 +870,8 @@ import {
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
             const buffer = audioBuffers['audio/mochisuke/mochi_stretch.mp3'];
             if (!buffer) return;
+            stretchSoundPitchOffset = (Math.random() * 2 - 1) * CONFIG.STRETCH_SOUND_PITCH_VARIANCE;
+            playAudioFile('audio/mochisuke/mochi_kinako_crackle.mp3', CONFIG.KINAKO_CRACKLE_VOLUME * sfxVolumeMult);
             stretchSoundSource = ctx.createBufferSource();
             stretchSoundSource.buffer = buffer;
             stretchSoundSource.loop = true;
@@ -789,7 +887,8 @@ import {
          */
         export function updateStretchSound(ratio) {
             if (!stretchSoundSource) return;
-            stretchSoundSource.playbackRate.value = CONFIG.STRETCH_SOUND_BASE_PITCH + ratio * CONFIG.STRETCH_SOUND_PITCH_RANGE; // 伸びるほど音が高くなる
+            // 伸びるほど音が高くなる基本カーブに、触れた瞬間だけ決めたstretchSoundPitchOffsetを常時上乗せする
+            stretchSoundSource.playbackRate.value = CONFIG.STRETCH_SOUND_BASE_PITCH + ratio * CONFIG.STRETCH_SOUND_PITCH_RANGE + stretchSoundPitchOffset;
             stretchSoundGain.gain.value = ratio * CONFIG.STRETCH_SOUND_MAX_GAIN * sfxVolumeMult; // 伸びるほど音が大きくなる
         }
         /**
@@ -845,6 +944,31 @@ import {
             mochiDeformWrap.style.transform = 'scale(1, 1)';
         }
 
+        // 🆕 スクイーズを一定以上伸ばして離した瞬間の「弾ける」演出。パーティクル＋ポン音（＋大きく伸ばした時だけ振動）。
+        /**
+         * 指を離した瞬間、伸ばしていた比率に応じて弾けるパーティクルとポン音を再生する。
+         * ポン音のピッチはその時点のコンボ段階に応じて少し上がっていき、コンボが盛り上がるほど
+         * 弾ける音も華やかになる。
+         * @param {number} ratio - 0〜1の伸縮比率
+         * @returns {void}
+         */
+        export function triggerSqueezeReleaseBurst(ratio) {
+            const rect = mochiBtnElement.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const count = Math.round(CONFIG.SQUEEZE_RELEASE_BURST_COUNT_BASE + ratio * CONFIG.SQUEEZE_RELEASE_BURST_COUNT_RANGE);
+            for (let i = 0; i < count; i++) createBurstParticle(cx, cy);
+
+            const comboTiers = [0, CONFIG.COMBO_TIER_50, CONFIG.COMBO_TIER_100, CONFIG.COMBO_TIER_500, CONFIG.COMBO_TIER_1000];
+            const tierIndex = comboTiers.indexOf(getCheerTier(comboCount));
+            const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, tierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
+            playAudioFilePitched('audio/mochisuke/mochi_release_pop.mp3', CONFIG.SQUEEZE_RELEASE_POP_VOLUME * sfxVolumeMult, pitch);
+
+            if (ratio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
+                vibrate(CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN);
+            }
+        }
+
         /**
          * ポインタが離れた時の後処理全体を行い、必殺技中/2本指ストレッチ中/1本指スクイーズ中/通常タップの
          * 4パターンで戻りアニメーションを再生する。
@@ -865,6 +989,7 @@ import {
             twoFingerStretchActive = false;
             clearTimeout(mochiLongPressTimer);
             stopStretchSound();
+            releaseAllSqueezeDimples(); // 🆕 押していた指がすべて離れたので、くぼみもまとめてフェードアウト
 
             const clones = bunshinCloneEls;
 
@@ -874,6 +999,7 @@ import {
             } else if (wasTwoFingerStretch && twoFingerLastRatio >= TWO_FINGER_MIN_STRETCH_RATIO) {
                 // 🫧🫧 2本指ストレッチ：一定以上伸ばされていた時だけ、中心固定で大きく「ぷるん」と揺れ戻る
                 releaseTwoFingerSqueezeWithOvershoot(twoFingerLastAngleDeg, twoFingerLastRatio);
+                if (twoFingerLastRatio >= CONFIG.SQUEEZE_RELEASE_BURST_MIN_RATIO) triggerSqueezeReleaseBurst(twoFingerLastRatio);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
                 clones.forEach(c => {
                     c.animate([
@@ -887,6 +1013,8 @@ import {
             } else if (isDraggingSqueeze && Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy) >= SQUEEZE_MIN_DRAG) {
                 // 🫧 スクイーズ：一定以上引っ張られていた時だけ、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻る
                 releaseSqueezeWithOvershoot(squeezeLastDx, squeezeLastDy);
+                const releaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
+                if (releaseRatio >= CONFIG.SQUEEZE_RELEASE_BURST_MIN_RATIO) triggerSqueezeReleaseBurst(releaseRatio);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
                 clones.forEach(c => {
                     c.animate([
@@ -953,12 +1081,17 @@ import {
                 twoFingerLastRatio = Math.min(growth, TWO_FINGER_MAX_STRETCH_DIST) / TWO_FINGER_MAX_STRETCH_DIST;
                 twoFingerLastAngleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
                 applyTwoFingerSqueezeTransform(twoFingerLastAngleDeg, twoFingerLastRatio);
+                // 🆕 2本指それぞれの「くぼみ」を、その指の現在位置・共通の伸縮比率で更新する
+                const [id0, id1] = [...squeezePointers.keys()];
+                updateSqueezeDimple(id0, pts[0].x, pts[0].y, twoFingerLastRatio);
+                updateSqueezeDimple(id1, pts[1].x, pts[1].y, twoFingerLastRatio);
                 return;
             }
             if (!isDraggingSqueeze) return;
             squeezeLastDx = e.clientX - squeezeStartX;
             squeezeLastDy = e.clientY - squeezeStartY;
-            applySqueezeTransform(squeezeLastDx, squeezeLastDy);
+            const squeezeRatio = applySqueezeTransform(squeezeLastDx, squeezeLastDy);
+            updateSqueezeDimple(e.pointerId, e.clientX, e.clientY, squeezeRatio); // 🆕 くぼみも指の動きに追従させる
         });
 
         /* 🔮 スキル発動＆タイマー管理システムロジック */
