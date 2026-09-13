@@ -1,15 +1,15 @@
         // ui.js を機能ごとに分割したファイルの1つ（フレンド・他人の部屋への訪問（フレンドリスト・招待・訪問中の演出・移動メニュー・ものおき））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-13-011';
-        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-13-011';
-        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-13-011';
-        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-13-011';
-        import { saveGame } from '../../state.js?v=2026-09-13-011';
-        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-13-011';
-        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-13-011';
-        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-13-011';
-        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-13-011';
-        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-13-011';
+        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-13-012';
+        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-13-012';
+        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-13-012';
+        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-13-012';
+        import { saveGame } from '../../state.js?v=2026-09-13-012';
+        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-13-012';
+        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-13-012';
+        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-13-012';
+        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-13-012';
+        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-13-012';
 
         // 🔧 このファイル内で使う「調整可能な数値」をまとめた設定オブジェクト
         const CONFIG = {

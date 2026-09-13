@@ -1,17 +1,17 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-13-011';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-13-011';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-13-012';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-13-012';
         // 🧪 管理者限定・試作中：全身の「スクイーズ衣装」を装備/解除するたびに、スクイーズの音の素材を
         // 同期させるために使う（applyKisekaeToMainScreen参照）
-        import { setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-13-011';
-        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-13-011';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-13-011';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-13-011';
-        import { saveGame } from '../../state.js?v=2026-09-13-011';
-        import { closeModal, openModal } from './core.js?v=2026-09-13-011';
-        import { openTicketInventory } from './myroom.js?v=2026-09-13-011';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-13-011';
+        import { setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-13-012';
+        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-13-012';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-13-012';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-13-012';
+        import { saveGame } from '../../state.js?v=2026-09-13-012';
+        import { closeModal, openModal } from './core.js?v=2026-09-13-012';
+        import { openTicketInventory } from './myroom.js?v=2026-09-13-012';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-13-012';
 
         // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
         const CONFIG = {
@@ -88,19 +88,20 @@
             }, CONFIG.KISEKAE_ROOM_CLOSE_FADE_MS);
         }
 
-        // 🆕 着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。ロボもちすけ等の全身衣装とは違い、
-        // 着せ替えではなく専用のタップ画面（変形が自動で戻らない、素材ごとの触感を楽しむモード）に切り替える
-        // ためのもので、まだ画面自体を実装中なので今は準備中メッセージだけ出す仮の中身にしている。
-        // 🧪 管理者限定・試作中：スクイーズ衣装そのもの（スライムもちすけ等）は、この専用画面を待たずに
-        // 先行して「全身」カテゴリの1着として試作中（KISEKAE_ITEMS.fullbody・2-1参照）。管理者はそちらの
-        // 通常の着せ替えカルーセルから試せるため、このボタン自体は専用画面ができるまでは変更しない。
+        // 🧪 管理者限定・試作中：着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。
+        // スクイーズ衣装（スライムもちすけ等）は、他の全身衣装（ロボもちすけ等）とまったく同じ
+        // 「全身」カテゴリの1着として実装されているため（KISEKAE_ITEMS.fullbody・2-1参照）、
+        // このボタンは「全身」カテゴリボタン（🤖）を押した時とまったく同じ一覧を開く、専用の近道
+        // という位置づけにしている。以前はここを「専用のタップ画面ができるまでの仮の準備中メッセージ」
+        // にしていたが、それだと管理者が試作中の衣装を試す入口として機能しなくなってしまうため、
+        // 実際に選べる一覧を開くように変更した。
         /**
-         * スクイーズボタンのクリックハンドラ（暫定）。専用画面ができ次第、ここから切り替える。
+         * スクイーズボタンのクリックハンドラ。「全身」カテゴリの一覧をそのまま開く。
          * @returns {void}
          */
         export function onSqueezeModeButtonClick() {
             playAudioFile('audio/tap.mp3');
-            alert('🫧 スクイーズもちすけは準備中！もうすぐ遊べるようになるよ');
+            openKisekaeCategory('fullbody');
         }
 
         // 着せ替え部屋のもちすけと、通常のタップ画面のもちすけ、両方に今の装着状態を反映する
