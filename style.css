@@ -1240,21 +1240,23 @@
             100% { transform: scale(1, 1); }
         }
 
-        /* 🆕 指で触れている場所がへこんで見える「くぼみ」演出。指の座標に合わせてJS側でtransformを更新する。
-           衣装(kisekae)の絵とは独立したレイヤーの上に重ねるだけの丸い影なので、どんな衣装とも組み合わせられる */
-        .squeeze-dimple {
+        /* 🆕 指で触れている場所が優しく光る演出。指の座標に合わせてJS側でtransformを更新する。
+           衣装(kisekae)の絵とは独立したレイヤーの上に重ねるだけの光なので、どんな衣装とも組み合わせられる。
+           mix-blend-mode:screenで「乗せる」ことで、単なる白い円ではなく画像を照らす光っぽく見せている */
+        .squeeze-glow {
             --s: 0.6;
             position: absolute;
             top: 0; left: 0;
             width: 34%; aspect-ratio: 1 / 1;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(0,0,0,0.32) 0%, rgba(0,0,0,0.16) 45%, rgba(0,0,0,0) 72%);
+            background: radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,250,230,0.45) 45%, rgba(255,250,230,0) 72%);
+            mix-blend-mode: screen;
             transform: translate(-50%, -50%) scale(var(--s));
             opacity: 0;
             will-change: transform, opacity;
             transition: opacity 0.26s ease-out, transform 0.26s ease-out;
         }
-        .squeeze-dimple.is-active {
+        .squeeze-glow.is-active {
             transition: opacity 0.06s ease-out, transform 0.06s ease-out;
         }
 

@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData,
   stages
-} from './data.js?v=2026-09-13-001';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-13-001';
+} from './data.js?v=2026-09-13-002';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-13-002';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-13-001';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-13-001';
+} from './progress.js?v=2026-09-13-002';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-13-002';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-13-001';
+} from './state.js?v=2026-09-13-002';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-13-001';
+} from './tap.js?v=2026-09-13-002';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-13-001';
+} from './ui.js?v=2026-09-13-002';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -128,6 +128,11 @@ import {
             RIPPLE_PEAK_ALPHA: 0.6,                    // 波紋の開始時の不透明度
             RIPPLE_LINE_WIDTH: 4,                      // 波紋の線の太さ
             RIPPLE_MAX_RADIUS: 65,                     // 波紋が広がる最大半径
+            // 🆕 もちすけ以外（背景など）をタップした時用の、控えめな波紋。もちすけタップ時の主張の強い波紋とは
+            // 差をつけて、あくまで「触れたことへの軽いフィードバック」に留める
+            RIPPLE_LIGHT_ALPHA_MULT: 0.5,
+            RIPPLE_LIGHT_RADIUS_MULT: 0.7,
+            RIPPLE_LIGHT_LINE_WIDTH_MULT: 0.6,
             FLOATING_TEXT_DURATION_MS: 600,            // 浮き文字アニメーションの継続時間
             FLOATING_TEXT_RISE_PHASE_END: 0.2,         // 上昇フェーズが終わるとみなす経過割合
             FLOATING_TEXT_SCALE_START: 0.8,            // 上昇フェーズ開始時の拡大率
@@ -1091,9 +1096,12 @@ import {
          * @param {number} y - 画面上のY座標
          * @returns {void}
          */
-        export function createRippleEffect(x, y) {
+        /**
+         * @param {boolean} [light=false] - true時は、もちすけ以外をタップした時用の控えめな波紋にする
+         */
+        export function createRippleEffect(x, y, light = false) {
             const rect = getGameScreenRect();
-            rippleList.push({ x: x - rect.left, y: y - rect.top, start: performance.now() });
+            rippleList.push({ x: x - rect.left, y: y - rect.top, start: performance.now(), light });
         }
 
         /**
@@ -1271,10 +1279,12 @@ import {
                 const t = (now - r.start) / CONFIG.RIPPLE_DURATION_MS; // 0.4秒
                 if (t >= 1) { rippleList.splice(i, 1); continue; }
                 const eased = 1 - Math.pow(1 - t, 2);
-                ctx.strokeStyle = `rgba(255, 152, 0, ${(CONFIG.RIPPLE_PEAK_ALPHA * (1 - t)).toFixed(3)})`;
-                ctx.lineWidth = CONFIG.RIPPLE_LINE_WIDTH;
+                const peakAlpha = r.light ? CONFIG.RIPPLE_PEAK_ALPHA * CONFIG.RIPPLE_LIGHT_ALPHA_MULT : CONFIG.RIPPLE_PEAK_ALPHA;
+                const maxRadius = r.light ? CONFIG.RIPPLE_MAX_RADIUS * CONFIG.RIPPLE_LIGHT_RADIUS_MULT : CONFIG.RIPPLE_MAX_RADIUS;
+                ctx.strokeStyle = `rgba(255, 152, 0, ${(peakAlpha * (1 - t)).toFixed(3)})`;
+                ctx.lineWidth = r.light ? CONFIG.RIPPLE_LINE_WIDTH * CONFIG.RIPPLE_LIGHT_LINE_WIDTH_MULT : CONFIG.RIPPLE_LINE_WIDTH;
                 ctx.beginPath();
-                ctx.arc(r.x, r.y, eased * CONFIG.RIPPLE_MAX_RADIUS, 0, Math.PI * 2);
+                ctx.arc(r.x, r.y, eased * maxRadius, 0, Math.PI * 2);
                 ctx.stroke();
             }
 

@@ -3,29 +3,29 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-13-001';
+} from './data.js?v=2026-09-13-002';
 import {
   audioBuffers, createBurstParticle, createFloatingText, createParticle, createRippleEffect,
   formatMochi, getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile,
   playAudioFilePitched, playBgmLoop, screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi,
   vibrate
-} from './main.js?v=2026-09-13-001';
-import { isMinigameActive } from './minigames.js?v=2026-09-13-001';
+} from './main.js?v=2026-09-13-002';
+import { isMinigameActive } from './minigames.js?v=2026-09-13-002';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-13-001';
+} from './progress.js?v=2026-09-13-002';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-13-001';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-001';
+} from './shop.js?v=2026-09-13-002';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-002';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-13-001';
+} from './ui.js?v=2026-09-13-002';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -136,10 +136,9 @@ import {
           SQUEEZE_RELEASE_POP_PITCH_PER_TIER: 0.06,   // コンボtierが1段上がるごとに足すピッチ（見た目のコンボ演出と音を連動させる）
           SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO: 0.85, // かなり大きく伸ばして離した時だけ、軽いバイブで区切りを付ける
           SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN: [12, 25, 12],
-          KINAKO_CRACKLE_VOLUME: 0.4, // 触れた瞬間の「パラッ」というきなこ音の音量
-          // --- 🆕 スクイーズ：指が触れている場所がへこんで見える「くぼみ」演出 ---
-          SQUEEZE_DIMPLE_MAX_SCALE: 1.35, // 伸び率が最大の時、くぼみがどれだけ大きく広がるか
-          SQUEEZE_DIMPLE_FADE_OUT_MS: 260,
+          // --- 🆕 スクイーズ：指が触れている場所が優しく光る演出（きなこクラック音とダーク系くぼみ案はボツ後の第2案） ---
+          SQUEEZE_GLOW_MAX_SCALE: 1.35, // 伸び率が最大の時、光がどれだけ大きく広がるか
+          SQUEEZE_GLOW_FADE_OUT_MS: 260,
 
           // --- 給餌（おみやげ）まわり ---
           FEED_ICON_Y_OFFSET_PX: 68, // もちすけの足元からのアイコン初期位置オフセット
@@ -196,9 +195,11 @@ import {
         // 🫧 スクイーズ機能：引っ張った方向にもちすけが伸び縮みする（回転はしない）
         export let squeezeStartX = 0, squeezeStartY = 0, isDraggingSqueeze = false, isSqueezeSettling = false;
         export let squeezeLastDx = 0, squeezeLastDy = 0;
-        export const SQUEEZE_MAX_DRAG = 70; // これ以上引っ張っても伸びが頭打ちになる距離(px)
-        export const SQUEEZE_MAX_STRETCH = 0.38; // 最大でどれだけ伸びるか（+38%）
-        export const SQUEEZE_MAX_SQUASH = 0.22; // 伸びる方向と垂直に、最大どれだけ縮むか（-22%）
+        // 🆕 「もっと伸ばせるようにしたい」というフィードバックを受けて、1本指スクイーズの限界を底上げ
+        // （70px/+38%→100px/+55%。伸びをより長い距離まで追従させつつ、伸び率そのものも大きくしている）
+        export const SQUEEZE_MAX_DRAG = 100; // これ以上引っ張っても伸びが頭打ちになる距離(px)
+        export const SQUEEZE_MAX_STRETCH = 0.55; // 最大でどれだけ伸びるか（+55%）
+        export const SQUEEZE_MAX_SQUASH = 0.3; // 伸びる方向と垂直に、最大どれだけ縮むか（-30%）
         export const SQUEEZE_MIN_DRAG = 9; // これ未満の移動は「タップ」として扱い、通常のもちっとアニメーションにする
         export const SQUEEZE_ELEMENT_RADIUS = 95; // もちすけの見た目上の半径の目安(px)。伸びを引っ張った側だけに見せるためのオフセット計算に使う
 
@@ -209,12 +210,12 @@ import {
         export let twoFingerStartDist = 0;  // 2本目の指が触れた瞬間の、2点間の距離(px)。ここからの伸びだけを見る
         export let twoFingerLastRatio = 0;  // 直近の2本指ストレッチ比率（0〜1）。離した時の揺れ戻りの大きさに使う
         export let twoFingerLastAngleDeg = 0; // 直近の2本指ストレッチの軸の角度（離した時の揺れ戻りに使う）
-        export const TWO_FINGER_MAX_STRETCH_DIST = 190; // 2点間の距離がこれだけ開くと伸びが頭打ちになる(px)。指1本分のSQUEEZE_MAX_DRAG(70px)より大きめにしているのは、指2本だと自然と大きく開けるため
+        export const TWO_FINGER_MAX_STRETCH_DIST = 230; // 2点間の距離がこれだけ開くと伸びが頭打ちになる(px)。指1本分のSQUEEZE_MAX_DRAG(100px)より大きめにしているのは、指2本だと自然と大きく開けるため
         export const TWO_FINGER_MIN_STRETCH_RATIO = 0.05; // これ未満の伸びは「ただ2本指で触れただけ」として扱い、揺れ戻り演出を出さない
         // 🆕 2本の指で両側から引っ張る方が、1本指で片側だけ引っ張るより大きく伸ばせるようにする（体感として自然なため）。
-        // SQUEEZE_MAX_STRETCH/SQUASH（1本指用）とは別に、2本指専用の上限値を用意する。
-        export const TWO_FINGER_MAX_STRETCH = 0.6; // 2本指の最大伸び率（+60%。1本指の+38%より大きい）
-        export const TWO_FINGER_MAX_SQUASH = 0.32; // 2本指で伸びる方向と垂直に、最大どれだけ縮むか（-32%。1本指の-22%より大きい）
+        // SQUEEZE_MAX_STRETCH/SQUASH（1本指用）とは別に、2本指専用の上限値を用意する。1本指側の底上げに合わせてこちらも底上げ。
+        export const TWO_FINGER_MAX_STRETCH = 0.85; // 2本指の最大伸び率（+85%。1本指の+55%より大きい）
+        export const TWO_FINGER_MAX_SQUASH = 0.42; // 2本指で伸びる方向と垂直に、最大どれだけ縮むか（-42%。1本指の-30%より大きい）
         export let stretchSoundSource = null, stretchSoundGain = null;
         
 
@@ -627,39 +628,40 @@ import {
         export const mochiBreatheWrapEl = document.getElementById('mochisuke-breathe-wrap'); // 呼吸アニメーションは、もちすけ画像と口パーツをまとめて包むこちらにかける
         mochiBtnElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // 🆕 指で触れている場所がへこんで見える「くぼみ」演出。衣装(kisekae)の絵とは別レイヤーに丸い影を
-        // 重ねるだけなので、どんな衣装を着せていても崩れずに使える（帽子・顔パーツはこの上のz-indexなので隠れない）
-        const squeezeDimpleLayerEl = document.getElementById('squeeze-dimple-layer');
-        const squeezeDimplePointerMap = new Map(); // pointerId -> { el, fadeTimer }
+        // 🆕 指で触れている場所が優しく光って見える演出。衣装(kisekae)の絵とは別レイヤーに、
+        // mix-blend-mode:screenで光を重ねるだけなので、どんな衣装を着せていても崩れずに使える
+        // （帽子・顔パーツはこの上のz-indexなので隠れない）
+        const squeezeGlowLayerEl = document.getElementById('squeeze-glow-layer');
+        const squeezeGlowPointerMap = new Map(); // pointerId -> { el, fadeTimer }
 
         /**
-         * 指が触れた瞬間、その位置に「くぼみ」演出用の要素を新しく作って表示する。
+         * 指が触れた瞬間、その位置に「光」演出用の要素を新しく作って表示する。
          * @param {number} pointerId - ポインタID
          * @param {number} clientX - 触れた位置のX座標（画面基準）
          * @param {number} clientY - 触れた位置のY座標（画面基準）
          * @returns {void}
          */
-        export function assignSqueezeDimple(pointerId, clientX, clientY) {
-            const existing = squeezeDimplePointerMap.get(pointerId);
+        export function assignSqueezeGlow(pointerId, clientX, clientY) {
+            const existing = squeezeGlowPointerMap.get(pointerId);
             if (existing) { clearTimeout(existing.fadeTimer); existing.el.remove(); }
             const el = document.createElement('div');
-            el.className = 'squeeze-dimple';
-            squeezeDimpleLayerEl.appendChild(el);
-            squeezeDimplePointerMap.set(pointerId, { el, fadeTimer: null });
-            updateSqueezeDimple(pointerId, clientX, clientY, 0);
+            el.className = 'squeeze-glow';
+            squeezeGlowLayerEl.appendChild(el);
+            squeezeGlowPointerMap.set(pointerId, { el, fadeTimer: null });
+            updateSqueezeGlow(pointerId, clientX, clientY, 0);
             requestAnimationFrame(() => el.classList.add('is-active'));
         }
 
         /**
-         * 指の現在位置と伸縮比率に応じて、くぼみ演出の位置・濃さ・大きさを更新する。
+         * 指の現在位置と伸縮比率に応じて、光演出の位置・濃さ・大きさを更新する。
          * @param {number} pointerId - ポインタID
          * @param {number} clientX - 現在位置のX座標（画面基準）
          * @param {number} clientY - 現在位置のY座標（画面基準）
-         * @param {number} ratio - 0〜1の伸縮比率（強く引っ張っているほどくぼみも大きく見せる）
+         * @param {number} ratio - 0〜1の伸縮比率（強く引っ張っているほど光も大きく見せる）
          * @returns {void}
          */
-        export function updateSqueezeDimple(pointerId, clientX, clientY, ratio) {
-            const entry = squeezeDimplePointerMap.get(pointerId);
+        export function updateSqueezeGlow(pointerId, clientX, clientY, ratio) {
+            const entry = squeezeGlowPointerMap.get(pointerId);
             if (!entry) return;
             const rect = mochiBtnElement.getBoundingClientRect();
             if (rect.width === 0 || rect.height === 0) return;
@@ -668,32 +670,32 @@ import {
             entry.el.style.left = px + '%';
             entry.el.style.top = py + '%';
             entry.el.style.opacity = String(0.55 + ratio * 0.45);
-            entry.el.style.setProperty('--s', String(0.6 + ratio * (CONFIG.SQUEEZE_DIMPLE_MAX_SCALE - 0.6)));
+            entry.el.style.setProperty('--s', String(0.6 + ratio * (CONFIG.SQUEEZE_GLOW_MAX_SCALE - 0.6)));
         }
 
         /**
-         * 指を離した時、その指のくぼみ演出をフェードアウトさせてから要素を削除する。
+         * 指を離した時、その指の光演出をフェードアウトさせてから要素を削除する。
          * @param {number} pointerId - ポインタID
          * @returns {void}
          */
-        export function releaseSqueezeDimple(pointerId) {
-            const entry = squeezeDimplePointerMap.get(pointerId);
+        export function releaseSqueezeGlow(pointerId) {
+            const entry = squeezeGlowPointerMap.get(pointerId);
             if (!entry) return;
             entry.el.classList.remove('is-active');
             entry.el.style.opacity = '0';
             entry.el.style.setProperty('--s', '0.6');
             entry.fadeTimer = setTimeout(() => {
                 entry.el.remove();
-                squeezeDimplePointerMap.delete(pointerId);
-            }, CONFIG.SQUEEZE_DIMPLE_FADE_OUT_MS);
+                squeezeGlowPointerMap.delete(pointerId);
+            }, CONFIG.SQUEEZE_GLOW_FADE_OUT_MS);
         }
 
         /**
-         * 押していた指がすべて離れた時などに、残っているくぼみ演出をまとめてフェードアウトさせる。
+         * 押していた指がすべて離れた時などに、残っている光演出をまとめてフェードアウトさせる。
          * @returns {void}
          */
-        export function releaseAllSqueezeDimples() {
-            [...squeezeDimplePointerMap.keys()].forEach(releaseSqueezeDimple);
+        export function releaseAllSqueezeGlows() {
+            [...squeezeGlowPointerMap.keys()].forEach(releaseSqueezeGlow);
         }
 
         // メインのもちすけタップ処理
@@ -721,7 +723,7 @@ import {
             } else {
                 // 🫧 指ごとの座標をpointerIdで記録する（2本指ストレッチの判定に使う）
                 squeezePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-                assignSqueezeDimple(e.pointerId, e.clientX, e.clientY); // 🆕 触れた場所に「くぼみ」を表示開始
+                assignSqueezeGlow(e.pointerId, e.clientX, e.clientY); // 🆕 触れた場所に「光」を表示開始
 
                 if (squeezePointers.size === 2) {
                     // 🫧🫧 2本目の指が触れた瞬間：ここから「2本の指を逆方向に引っ張って両側から伸ばす」モードに切り替える。
@@ -762,26 +764,30 @@ import {
             updateDisplay();
         });
 
-        // 必殺技（もちもちビッグバン）発動中の「画面のどこを触っても連打」をゲームスクリーン全体で検知
+        // 必殺技（もちもちビッグバン）発動中の「画面のどこを触っても連打」をゲームスクリーン全体で検知。
+        // 🆕 それ以外の通常時も、もちすけ以外（背景など）をタップした時に軽い波紋だけ出す（連打やもち増加はしない、あくまで触れた手応え用）
         document.getElementById('game-screen').addEventListener('pointerdown', (e) => {
             if (isMinigameActive) return;
+            // UIボタンやメニュー、モーダル内部の誤反応を防止
+            if (e.target.closest('#control-panel') || e.target.closest('#header-container') || e.target.closest('#progress-area') || e.target.closest('#ui-toggle-btn') || e.target.closest('.modal')) {
+                return;
+            }
+            if (e.target.id === 'mochisuke-btn') return; // もちすけ本体は専用のpointerdownハンドラで既に処理済み
+
             if (skills.hissatsu.activeTimer > 0) {
-                // UIボタンやメニュー、モーダル内部の誤反応を防止
-                if (e.target.closest('#control-panel') || e.target.closest('#header-container') || e.target.closest('#progress-area') || e.target.closest('#ui-toggle-btn') || e.target.closest('.modal')) {
-                    return; 
-                }
                 // もちすけ本体以外をタップした時に5連打を発動
-                if (e.target.id !== 'mochisuke-btn') {
-                    playAudioFile('audio/tap.mp3');
-                    createRippleEffect(e.clientX, e.clientY);
-                    clearTimeout(critFilterTimeout);
-                    resetMochiFilter();
-                    handleCombo(1); // コンボは何があっても「1タップ＝1コンボ」で固定
-                    for (let i = 0; i < 5; i++) {
-                        executeSingleTap(e.clientX, e.clientY);
-                    }
-                    updateDisplay();
+                playAudioFile('audio/tap.mp3');
+                createRippleEffect(e.clientX, e.clientY);
+                clearTimeout(critFilterTimeout);
+                resetMochiFilter();
+                handleCombo(1); // コンボは何があっても「1タップ＝1コンボ」で固定
+                for (let i = 0; i < 5; i++) {
+                    executeSingleTap(e.clientX, e.clientY);
                 }
+                updateDisplay();
+            } else {
+                // 🆕 通常時：背景タップへの軽いフィードバックとして、控えめな波紋だけ出す
+                createRippleEffect(e.clientX, e.clientY, true);
             }
         });
 
@@ -860,8 +866,7 @@ import {
         // 🔊 伸ばしている間だけ鳴る、ループ再生＋伸びに応じてピッチが変わる効果音
         /**
          * 伸ばしている間だけ鳴らす、ループ再生の伸び音を音量0の状態で再生開始する。
-         * あわせて、その回だけのランダムなピッチオフセットを決め直し、触れた瞬間の
-         * 「パラッ」というきなこの粉っぽいクラック音を1回だけ鳴らす。
+         * あわせて、その回だけのランダムなピッチオフセットを決め直す。
          * @returns {void}
          */
         export function startStretchSound() {
@@ -871,7 +876,6 @@ import {
             const buffer = audioBuffers['audio/mochisuke/mochi_stretch.mp3'];
             if (!buffer) return;
             stretchSoundPitchOffset = (Math.random() * 2 - 1) * CONFIG.STRETCH_SOUND_PITCH_VARIANCE;
-            playAudioFile('audio/mochisuke/mochi_kinako_crackle.mp3', CONFIG.KINAKO_CRACKLE_VOLUME * sfxVolumeMult);
             stretchSoundSource = ctx.createBufferSource();
             stretchSoundSource.buffer = buffer;
             stretchSoundSource.loop = true;
@@ -989,7 +993,7 @@ import {
             twoFingerStretchActive = false;
             clearTimeout(mochiLongPressTimer);
             stopStretchSound();
-            releaseAllSqueezeDimples(); // 🆕 押していた指がすべて離れたので、くぼみもまとめてフェードアウト
+            releaseAllSqueezeGlows(); // 🆕 押していた指がすべて離れたので、光もまとめてフェードアウト
 
             const clones = bunshinCloneEls;
 
@@ -1081,17 +1085,17 @@ import {
                 twoFingerLastRatio = Math.min(growth, TWO_FINGER_MAX_STRETCH_DIST) / TWO_FINGER_MAX_STRETCH_DIST;
                 twoFingerLastAngleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
                 applyTwoFingerSqueezeTransform(twoFingerLastAngleDeg, twoFingerLastRatio);
-                // 🆕 2本指それぞれの「くぼみ」を、その指の現在位置・共通の伸縮比率で更新する
+                // 🆕 2本指それぞれの「光」を、その指の現在位置・共通の伸縮比率で更新する
                 const [id0, id1] = [...squeezePointers.keys()];
-                updateSqueezeDimple(id0, pts[0].x, pts[0].y, twoFingerLastRatio);
-                updateSqueezeDimple(id1, pts[1].x, pts[1].y, twoFingerLastRatio);
+                updateSqueezeGlow(id0, pts[0].x, pts[0].y, twoFingerLastRatio);
+                updateSqueezeGlow(id1, pts[1].x, pts[1].y, twoFingerLastRatio);
                 return;
             }
             if (!isDraggingSqueeze) return;
             squeezeLastDx = e.clientX - squeezeStartX;
             squeezeLastDy = e.clientY - squeezeStartY;
             const squeezeRatio = applySqueezeTransform(squeezeLastDx, squeezeLastDy);
-            updateSqueezeDimple(e.pointerId, e.clientX, e.clientY, squeezeRatio); // 🆕 くぼみも指の動きに追従させる
+            updateSqueezeGlow(e.pointerId, e.clientX, e.clientY, squeezeRatio); // 🆕 光も指の動きに追従させる
         });
 
         /* 🔮 スキル発動＆タイマー管理システムロジック */
