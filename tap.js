@@ -3,29 +3,36 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-13-006';
+} from './data.js?v=2026-09-13-007';
 import {
-  audioBuffers, createBurstParticle, createFloatingText, createParticle, createRippleEffect,
-  formatMochi, getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile,
-  playAudioFilePitched, playBgmLoop, screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi,
-  vibrate
-} from './main.js?v=2026-09-13-006';
-import { isMinigameActive } from './minigames.js?v=2026-09-13-006';
+  createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
+  isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
+  spawnGoldMochi, vibrate
+} from './main.js?v=2026-09-13-007';
+import { isMinigameActive } from './minigames.js?v=2026-09-13-007';
+// 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
+// tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
+import {
+  SQUEEZE_MAX_DRAG, assignSqueezeGlow, endSqueeze, releaseAllSqueezeGlows,
+  releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot, startStretchSound,
+  stopStretchSound, triggerSqueezeReleaseBurst, updateOneFingerSqueezeTarget,
+  updateSqueezeGlow, updateTwoFingerSqueezeTarget
+} from './src/squeeze/physics.js?v=2026-09-13-007';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-13-006';
+} from './progress.js?v=2026-09-13-007';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-13-006';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-006';
+} from './shop.js?v=2026-09-13-007';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-007';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-13-006';
+} from './ui.js?v=2026-09-13-007';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -113,32 +120,12 @@ import {
           BUNSHIN_CLONE_OPACITY: 0.55,
 
           // --- スクイーズ（引っ張り伸縮） ---
-          STRETCH_SOUND_BASE_PITCH: 0.85,
-          STRETCH_SOUND_PITCH_RANGE: 0.5,
-          STRETCH_SOUND_MAX_GAIN: 0.35,
-          // 🆕 同じ伸び具合でも毎回まったく同じ音にならないよう、指を触れた瞬間だけランダムに
-          // ピッチをずらす幅（±この割合）。ずっと遊ぶゲームでは「一番よく聞こえる音」ほど
-          // 完全に同一だと耳が慣れて刺激が薄れていくため、伸び音そのものに変化を持たせる。
-          STRETCH_SOUND_PITCH_VARIANCE: 0.04,
-          SQUEEZE_OVERSHOOT_RATIO: 0.55, // 離した時の揺れ戻りの大きさ
-          SQUEEZE_OVERSHOOT_BASE_DURATION_MS: 420,
-          SQUEEZE_OVERSHOOT_DURATION_RANGE_MS: 280,
+          // 🆕 伸縮の物理・追従ループ・伸び音・光演出・弾け演出まわりのマジックナンバーは
+          // src/squeeze/physics.js側のローカルCONFIGに移動した。ここに残っているのは、
+          // tap.js自身（releaseMochiSucreなど）が直接使うものだけ
           SQUEEZE_TRANSFORM_ORIGIN_RESET_MS: 720,
           TAP_RELEASE_ANIM_DURATION_MS: 240, // 通常タップ後の「もちっ」アニメーション時間
           BREATHE_IDLE_DELAY_MS: 1200, // 指を離してから呼吸アニメーションに戻るまでの時間
-
-          // --- 🆕 スクイーズ：離した瞬間の「弾ける」演出 ---
-          SQUEEZE_RELEASE_BURST_MIN_RATIO: 0.5, // これ以上伸ばして離した時だけ、パーティクル＋ポン音を出す（軽いタップでは出さない）
-          SQUEEZE_RELEASE_BURST_COUNT_BASE: 6,  // 弾けるパーティクルの最低数
-          SQUEEZE_RELEASE_BURST_COUNT_RANGE: 8, // 伸び率に応じて上乗せされる最大数
-          SQUEEZE_RELEASE_POP_VOLUME: 0.55,
-          SQUEEZE_RELEASE_POP_PITCH_BASE: 0.95,       // ポン音の基本ピッチ
-          SQUEEZE_RELEASE_POP_PITCH_PER_TIER: 0.06,   // コンボtierが1段上がるごとに足すピッチ（見た目のコンボ演出と音を連動させる）
-          SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO: 0.85, // かなり大きく伸ばして離した時だけ、軽いバイブで区切りを付ける
-          SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN: [12, 25, 12],
-          // --- 🆕 スクイーズ：指が触れている場所が優しく光る演出（きなこクラック音とダーク系くぼみ案はボツ後の第2案） ---
-          SQUEEZE_GLOW_MAX_SCALE: 1.35, // 伸び率が最大の時、光がどれだけ大きく広がるか
-          SQUEEZE_GLOW_FADE_OUT_MS: 260,
 
           // --- 給餌（おみやげ）まわり ---
           FEED_ICON_Y_OFFSET_PX: 68, // もちすけの足元からのアイコン初期位置オフセット
@@ -192,30 +179,15 @@ import {
         // すべて配列に1行追加するだけで増やせます。改行はできないので、長い文は短く区切ってください。
         // ===================================================================
         export let breatheTimer = null; export let isMochiPressed = false;
-        // 🫧 スクイーズ機能：引っ張った方向にもちすけが伸び縮みする（回転はしない）
+        // 🫧 スクイーズ機能：引っ張った方向にもちすけが伸び縮みする（回転はしない）。
+        // 🆕 実際の伸縮の物理・追従ループ・伸び音・光演出はsrc/squeeze/physics.jsに分離済み。
+        // ここに残っているのは、tap.js側で「引っ張り開始からの生の移動量」や「揺れ戻り判定に
+        // 使うしきい値」として引き続き必要な状態・定数だけ
         export let squeezeStartX = 0, squeezeStartY = 0, isDraggingSqueeze = false, isSqueezeSettling = false;
         export let squeezeLastDx = 0, squeezeLastDy = 0;
-        export let squeezeLastRatio = 0; // 🆕 1本指スクイーズの直近の「生の」伸び比率（抵抗カーブ適用前）
-        export let squeezeVisualRatio = 0; // 🆕 実際の見た目・音に使う比率。stepSqueezeFollowが毎フレーム目標値へ近づける（追従の遅れ＝重み・粘り気）
-        let squeezeFollowRafId = null;
-        // 🆕 「もっと伸ばせるようにしたい」というフィードバックを受けて、1本指スクイーズの限界を底上げ
-        // （70px/+38%→100px/+55%。伸びをより長い距離まで追従させつつ、伸び率そのものも大きくしている）
-        export const SQUEEZE_MAX_DRAG = 100; // これ以上引っ張っても伸びが頭打ちになる距離(px)
-        export const SQUEEZE_MAX_STRETCH = 0.55; // 最大でどれだけ伸びるか（+55%）
-        export const SQUEEZE_MAX_SQUASH = 0.3; // 伸びる方向と垂直に、最大どれだけ縮むか（-30%）
         export const SQUEEZE_MIN_DRAG = 9; // これ未満の移動は「タップ」として扱い、通常のもちっとアニメーションにする
-        export const SQUEEZE_ELEMENT_RADIUS = 95; // もちすけの見た目上の半径の目安(px)。伸びを引っ張った側だけに見せるためのオフセット計算に使う
-        // 🆕「重み・粘り気・弾力」を出すための3つの仕掛け。①抵抗カーブ：伸ばすほど、同じ指の移動量でも
-        // 伸びが増えにくくなる（弾力の限界に近づく感覚）。②追従の遅れ：見た目は指の位置に一気に追従せず、
-        // 毎フレーム少しずつ近づく（重くて粘り気のある物体を引っ張っている感覚）。③追従の遅れ自体も、
-        // 既にどれだけ伸びているかに応じてさらに遅くなる（伸びるほど重みが増して、後半になるほどゆっくり
-        // にしか伸びなくなる）。全部数値を変えるだけで感触を調整できる
-        export const SQUEEZE_STRETCH_EASE_POWER = 2.0; // 1より大きいほど、伸ばすほど追加の伸びに必要な指の移動量が増える（抵抗が強くなる）
-        export const SQUEEZE_FOLLOW_LERP = 0.075; // 毎フレーム、目標値との差にこの割合だけ近づく基本値。小さいほど追従が遅れて「重く・粘っこく」感じる
-        export const SQUEEZE_FOLLOW_HEAVY_END_FACTOR = 0.35; // 🆕 伸び切った時点で追従速度が基本値の何倍まで落ちるか。小さいほど「伸ばすほど重くなる」度合いが強い
 
         // 🫧🫧 2本指ストレッチ機能：指2本でもちすけを逆方向に引っ張ると、中心を固定したまま両側へ伸びる。
-        // 1本指スクイーズ（片側だけ固定して反対側だけ伸ばす）とは見た目の計算式が異なるため、状態・関数ともに分けている。
         export let squeezePointers = new Map(); // pointerId -> {x, y}  現在もちすけに触れている指ごとの座標
         export let twoFingerStretchActive = false; // 2本指ストレッチ中かどうか
         export let twoFingerStartDist = 0;  // 2本目の指が触れた瞬間の、2点間の距離(px)。ここからの伸びだけを見る
@@ -223,12 +195,7 @@ import {
         export let twoFingerLastAngleDeg = 0; // 直近の2本指ストレッチの軸の角度（離した時の揺れ戻りに使う）
         export const TWO_FINGER_MAX_STRETCH_DIST = 230; // 2点間の距離がこれだけ開くと伸びが頭打ちになる(px)。指1本分のSQUEEZE_MAX_DRAG(100px)より大きめにしているのは、指2本だと自然と大きく開けるため
         export const TWO_FINGER_MIN_STRETCH_RATIO = 0.05; // これ未満の伸びは「ただ2本指で触れただけ」として扱い、揺れ戻り演出を出さない
-        // 🆕 2本の指で両側から引っ張る方が、1本指で片側だけ引っ張るより大きく伸ばせるようにする（体感として自然なため）。
-        // SQUEEZE_MAX_STRETCH/SQUASH（1本指用）とは別に、2本指専用の上限値を用意する。1本指側の底上げに合わせてこちらも底上げ。
-        export const TWO_FINGER_MAX_STRETCH = 0.85; // 2本指の最大伸び率（+85%。1本指の+55%より大きい）
-        export const TWO_FINGER_MAX_SQUASH = 0.42; // 2本指で伸びる方向と垂直に、最大どれだけ縮むか（-42%。1本指の-30%より大きい）
-        export let stretchSoundSource = null, stretchSoundGain = null;
-        
+
 
         // 🔊 効果音再生システム（Web Audio API方式）
         // これまでは<audio>要素を1音につき6個ずつ使い回すプール方式でしたが、iOSは
@@ -639,76 +606,6 @@ import {
         export const mochiBreatheWrapEl = document.getElementById('mochisuke-breathe-wrap'); // 呼吸アニメーションは、もちすけ画像と口パーツをまとめて包むこちらにかける
         mochiBtnElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // 🆕 指で触れている場所が優しく光って見える演出。衣装(kisekae)の絵とは別レイヤーに、
-        // mix-blend-mode:screenで光を重ねるだけなので、どんな衣装を着せていても崩れずに使える
-        // （帽子・顔パーツはこの上のz-indexなので隠れない）
-        const squeezeGlowLayerEl = document.getElementById('squeeze-glow-layer');
-        const squeezeGlowPointerMap = new Map(); // pointerId -> { el, fadeTimer }
-
-        /**
-         * 指が触れた瞬間、その位置に「光」演出用の要素を新しく作って表示する。
-         * @param {number} pointerId - ポインタID
-         * @param {number} clientX - 触れた位置のX座標（画面基準）
-         * @param {number} clientY - 触れた位置のY座標（画面基準）
-         * @returns {void}
-         */
-        export function assignSqueezeGlow(pointerId, clientX, clientY) {
-            const existing = squeezeGlowPointerMap.get(pointerId);
-            if (existing) { clearTimeout(existing.fadeTimer); existing.el.remove(); }
-            const el = document.createElement('div');
-            el.className = 'squeeze-glow';
-            squeezeGlowLayerEl.appendChild(el);
-            squeezeGlowPointerMap.set(pointerId, { el, fadeTimer: null });
-            updateSqueezeGlow(pointerId, clientX, clientY, 0);
-            requestAnimationFrame(() => el.classList.add('is-active'));
-        }
-
-        /**
-         * 指の現在位置と伸縮比率に応じて、光演出の位置・濃さ・大きさを更新する。
-         * @param {number} pointerId - ポインタID
-         * @param {number} clientX - 現在位置のX座標（画面基準）
-         * @param {number} clientY - 現在位置のY座標（画面基準）
-         * @param {number} ratio - 0〜1の伸縮比率（強く引っ張っているほど光も大きく見せる）
-         * @returns {void}
-         */
-        export function updateSqueezeGlow(pointerId, clientX, clientY, ratio) {
-            const entry = squeezeGlowPointerMap.get(pointerId);
-            if (!entry) return;
-            const rect = mochiBtnElement.getBoundingClientRect();
-            if (rect.width === 0 || rect.height === 0) return;
-            const px = Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
-            const py = Math.min(100, Math.max(0, ((clientY - rect.top) / rect.height) * 100));
-            entry.el.style.left = px + '%';
-            entry.el.style.top = py + '%';
-            entry.el.style.opacity = String(0.55 + ratio * 0.45);
-            entry.el.style.setProperty('--s', String(0.6 + ratio * (CONFIG.SQUEEZE_GLOW_MAX_SCALE - 0.6)));
-        }
-
-        /**
-         * 指を離した時、その指の光演出をフェードアウトさせてから要素を削除する。
-         * @param {number} pointerId - ポインタID
-         * @returns {void}
-         */
-        export function releaseSqueezeGlow(pointerId) {
-            const entry = squeezeGlowPointerMap.get(pointerId);
-            if (!entry) return;
-            entry.el.classList.remove('is-active');
-            entry.el.style.opacity = '0';
-            entry.el.style.setProperty('--s', '0.6');
-            entry.fadeTimer = setTimeout(() => {
-                entry.el.remove();
-                squeezeGlowPointerMap.delete(pointerId);
-            }, CONFIG.SQUEEZE_GLOW_FADE_OUT_MS);
-        }
-
-        /**
-         * 押していた指がすべて離れた時などに、残っている光演出をまとめてフェードアウトさせる。
-         * @returns {void}
-         */
-        export function releaseAllSqueezeGlows() {
-            [...squeezeGlowPointerMap.keys()].forEach(releaseSqueezeGlow);
-        }
-
         // メインのもちすけタップ処理
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             if (isMinigameActive) return;
@@ -802,237 +699,6 @@ import {
             }
         });
 
-        // 引っ張った方向・つぶれ量dから変形のtransform文字列を作る。
-        // d が正＝引っ張り/つぶし方向、負＝その逆方向（オーバーシュート用）に使える共通関数。
-        // 下向き成分の方が大きい場合は「伸ばす」のではなく「つぶす」動きにする（体積保存的に横へ少し膨らむ）。
-        // 横・斜め方向は、引っ張った側だけに伸びるよう、反対側を起点に固定して見せる（transformOriginではなくtranslateで実現）。
-        /**
-         * 引っ張り/つぶし量dと方向(dx,dy)から、伸縮とオフセットを含むCSS transform文字列を組み立てる。
-         * @param {number} dx - 引っ張り方向のX成分
-         * @param {number} dy - 引っ張り方向のY成分
-         * @param {number} d - 伸縮量（正=伸び/つぶし方向、負=逆方向のオーバーシュート）
-         * @returns {string} CSSのtransformプロパティ用文字列
-         */
-        export function squeezeTransformFor(dx, dy, d) {
-            const angleRad = Math.atan2(dy, dx);
-            const angleDeg = angleRad * (180 / Math.PI);
-
-            const along = 1 + d * SQUEEZE_MAX_STRETCH;
-            const perp = 1 - d * SQUEEZE_MAX_SQUASH;
-            const growthPx = SQUEEZE_ELEMENT_RADIUS * 2 * (along - 1);
-            const offsetPx = growthPx / 2;
-            const offsetX = Math.cos(angleRad) * offsetPx;
-            const offsetY = Math.sin(angleRad) * offsetPx;
-            return `translate(${offsetX}px, ${offsetY}px) rotate(${angleDeg}deg) scale(${along}, ${perp}) rotate(${-angleDeg}deg)`;
-        }
-
-        // 🆕 生の伸び比率(0〜1)に「伸ばすほど抵抗が強くなる」カーブをかける。序盤は指の動きよりわずかに
-        // 大きく伸び（柔らかい餅が素直に伸びる感じ）、終盤は指を動かしてもなかなか伸びなくなる（弾力の限界）。
-        /**
-         * @param {number} rawRatio - 0〜1の生の伸び比率
-         * @returns {number} 抵抗カーブ適用後の比率(0〜1)
-         */
-        export function easeSqueezeRatio(rawRatio) {
-            const r = Math.min(1, Math.max(0, rawRatio));
-            return 1 - Math.pow(1 - r, SQUEEZE_STRETCH_EASE_POWER);
-        }
-
-        // 引っ張った方向・距離から、今の生の伸縮比率を記録する（ドラッグ中に毎回呼ばれる）
-        /**
-         * ドラッグ移動量から生の伸縮比率を計算して記録する。実際の見た目・伸び音への反映は、
-         * 重み・粘り気の演出のためstepSqueezeFollow（毎フレームの追従ループ）側でまとめて行う。
-         * @param {number} dx - 開始位置からのX移動量
-         * @param {number} dy - 開始位置からのY移動量
-         * @returns {number} 0〜1の生の伸縮比率
-         */
-        export function applySqueezeTransform(dx, dy) {
-            const dist = Math.min(Math.sqrt(dx * dx + dy * dy), SQUEEZE_MAX_DRAG);
-            squeezeLastRatio = dist / SQUEEZE_MAX_DRAG;
-            startSqueezeFollowLoop();
-            return squeezeLastRatio;
-        }
-
-        // 🫧🫧 2本指ストレッチ用のtransform。1本指版(squeezeTransformFor)は「片側だけ固定して反対側を伸ばす」ため
-        // translateでオフセットを付けているが、2本指は両端が均等に伸びて中心が動かないので、offsetは不要でscaleだけでよい。
-        /**
-         * 2本の指を結ぶ軸の角度と伸縮量dから、中心固定・左右対称なCSS transform文字列を組み立てる。
-         * @param {number} angleDeg - 2点を結ぶ軸の角度（度）
-         * @param {number} d - 伸縮量（正=伸び方向、負=揺れ戻りのオーバーシュート用）
-         * @returns {string} CSSのtransformプロパティ用文字列
-         */
-        export function twoFingerSqueezeTransformFor(angleDeg, d) {
-            const along = 1 + d * TWO_FINGER_MAX_STRETCH;
-            const perp = 1 - d * TWO_FINGER_MAX_SQUASH;
-            return `rotate(${angleDeg}deg) scale(${along}, ${perp}) rotate(${-angleDeg}deg)`;
-        }
-
-        // 2本の指が離れていく方向・距離から、今の伸縮状態を反映する（2本指ドラッグ中に毎回呼ばれる）
-        /**
-         * 2本指の伸縮比率から、もちすけ要素にtransformと伸び音を反映する。
-         * @param {number} angleDeg - 2点を結ぶ軸の角度（度）
-         * @param {number} ratio - 0〜1の伸縮比率
-         * @returns {void}
-         */
-        export function applyTwoFingerSqueezeTransform(angleDeg, ratio) {
-            startSqueezeFollowLoop();
-        }
-
-        // 🆕 押している間、squeezeVisualRatioを目標値（抵抗カーブ適用後の生の比率）へ毎フレーム少しずつ
-        // 近づけながら実際の見た目・伸び音に反映する追従ループ。目標に一気に到達させず「遅れて追いつく」
-        // ことで、指の動きに対してもちすけ自体に重み・粘り気があるように感じさせる（指を止めて保持していても、
-        // 追いつくまでの「もにゅっ」とした動きがわずかに残り続ける）。
-        /**
-         * 追従ループの1フレーム分の更新。スクイーズ関連の状態でなくなったら自動的に止まる。
-         * @returns {void}
-         */
-        function stepSqueezeFollow() {
-            if (!isMochiPressed || (!isDraggingSqueeze && !twoFingerStretchActive)) { squeezeFollowRafId = null; return; }
-            // 🆕 既にどれだけ伸びているか(squeezeVisualRatio)が大きいほど、追従速度そのものを落とす。
-            // 「すぐ伸ばそうとしても伸びない」「一気に伸ばそうとしても後半になるほどゆっくりになる」を
-            // 両方まとめて表現する：伸びていない序盤は基本値通り、伸び切るにつれてSQUEEZE_FOLLOW_HEAVY_END_FACTOR倍まで遅くなる
-            const heaviness = 1 - squeezeVisualRatio * (1 - SQUEEZE_FOLLOW_HEAVY_END_FACTOR);
-            const effectiveLerp = SQUEEZE_FOLLOW_LERP * heaviness;
-            if (twoFingerStretchActive) {
-                const target = easeSqueezeRatio(twoFingerLastRatio);
-                squeezeVisualRatio += (target - squeezeVisualRatio) * effectiveLerp;
-                mochiDeformWrap.style.transformOrigin = 'center center';
-                mochiDeformWrap.style.transform = twoFingerSqueezeTransformFor(twoFingerLastAngleDeg, squeezeVisualRatio);
-                updateStretchSound(squeezeVisualRatio);
-            } else {
-                const target = easeSqueezeRatio(squeezeLastRatio);
-                squeezeVisualRatio += (target - squeezeVisualRatio) * effectiveLerp;
-                mochiDeformWrap.style.transformOrigin = 'center center';
-                mochiDeformWrap.style.transform = squeezeTransformFor(squeezeLastDx, squeezeLastDy, squeezeVisualRatio);
-                updateStretchSound(squeezeVisualRatio);
-            }
-            squeezeFollowRafId = requestAnimationFrame(stepSqueezeFollow);
-        }
-
-        /**
-         * squeezeVisualRatioの追従ループを開始する（すでに動いていれば何もしない）。
-         * @returns {void}
-         */
-        function startSqueezeFollowLoop() {
-            if (squeezeFollowRafId !== null) return;
-            squeezeFollowRafId = requestAnimationFrame(stepSqueezeFollow);
-        }
-
-        // 🆕 「指を触れた瞬間だけ」ランダムに決めて、伸びている間ずっと乗せておくピッチのオフセット。
-        // 伸び率に応じたリアルタイムの音程変化はそのまま保ちつつ、セッション（一回の指の触れ始めから
-        // 離すまで）ごとに微妙に違う声にすることで、何百回聞いても同じ音、という単調さを減らす。
-        export let stretchSoundPitchOffset = 0;
-
-        // 🔊 伸ばしている間だけ鳴る、ループ再生＋伸びに応じてピッチが変わる効果音
-        /**
-         * 伸ばしている間だけ鳴らす、ループ再生の伸び音を音量0の状態で再生開始する。
-         * あわせて、その回だけのランダムなピッチオフセットを決め直す。
-         * @returns {void}
-         */
-        export function startStretchSound() {
-            if (stretchSoundSource) return;
-            const ctx = getAudioContext();
-            if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-            const buffer = audioBuffers['audio/mochisuke/mochi_stretch.mp3'];
-            if (!buffer) return;
-            stretchSoundPitchOffset = (Math.random() * 2 - 1) * CONFIG.STRETCH_SOUND_PITCH_VARIANCE;
-            stretchSoundSource = ctx.createBufferSource();
-            stretchSoundSource.buffer = buffer;
-            stretchSoundSource.loop = true;
-            stretchSoundGain = ctx.createGain();
-            stretchSoundGain.gain.value = 0;
-            stretchSoundSource.connect(stretchSoundGain).connect(ctx.destination);
-            stretchSoundSource.start(0);
-        }
-        /**
-         * 伸縮比率に応じて、再生中の伸び音のピッチと音量を更新する。
-         * @param {number} ratio - 0〜1の伸縮比率
-         * @returns {void}
-         */
-        export function updateStretchSound(ratio) {
-            if (!stretchSoundSource) return;
-            // 伸びるほど音が高くなる基本カーブに、触れた瞬間だけ決めたstretchSoundPitchOffsetを常時上乗せする
-            stretchSoundSource.playbackRate.value = CONFIG.STRETCH_SOUND_BASE_PITCH + ratio * CONFIG.STRETCH_SOUND_PITCH_RANGE + stretchSoundPitchOffset;
-            stretchSoundGain.gain.value = ratio * CONFIG.STRETCH_SOUND_MAX_GAIN * sfxVolumeMult; // 伸びるほど音が大きくなる
-        }
-        /**
-         * 再生中の伸び音を停止し、参照をクリアする。
-         * @returns {void}
-         */
-        export function stopStretchSound() {
-            if (!stretchSoundSource) return;
-            try { stretchSoundSource.stop(); } catch (e) {}
-            stretchSoundSource = null;
-            stretchSoundGain = null;
-        }
-
-        // 指を離した時、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻ってから通常に収束する
-        /**
-         * 指を離した瞬間、伸ばして/つぶしていた分だけオーバーシュートする揺れ戻りアニメーションを再生する。
-         * @param {number} dx - 引っ張り方向のX成分
-         * @param {number} dy - 引っ張り方向のY成分
-         * @param {number} ratio - 揺れ戻り開始時点の伸縮比率。指の生の移動量ではなくsqueezeVisualRatio
-         *   （追従ループが実際に描画していた値）を渡すことで、離した瞬間に見た目が急にジャンプしないようにする
-         * @returns {void}
-         */
-        export function releaseSqueezeWithOvershoot(dx, dy, ratio) {
-            const overshoot = ratio * CONFIG.SQUEEZE_OVERSHOOT_RATIO; // 伸ばした/つぶした分だけ、戻る時のプルンも大きくなる
-
-            mochiDeformWrap.animate([
-                { transform: squeezeTransformFor(dx, dy, ratio) },
-                { transform: squeezeTransformFor(dx, dy, -overshoot * 0.65), offset: 0.32 },
-                { transform: squeezeTransformFor(dx, dy, overshoot * 0.32), offset: 0.58 },
-                { transform: squeezeTransformFor(dx, dy, -overshoot * 0.12), offset: 0.8 },
-                { transform: 'scale(1, 1)' },
-            ], { duration: CONFIG.SQUEEZE_OVERSHOOT_BASE_DURATION_MS + ratio * CONFIG.SQUEEZE_OVERSHOOT_DURATION_RANGE_MS, easing: 'ease-out' });
-            mochiDeformWrap.style.transform = 'scale(1, 1)';
-        }
-
-        // 2本指版の揺れ戻り。1本指版と違い中心固定・左右対称なので、twoFingerSqueezeTransformForを使う。
-        /**
-         * 2本指ストレッチを離した瞬間、伸ばしていた分だけオーバーシュートする揺れ戻りアニメーションを再生する。
-         * @param {number} angleDeg - 伸ばしていた軸の角度（度）
-         * @param {number} ratio - 揺れ戻り開始時点の伸縮比率。指の生の移動量ではなくsqueezeVisualRatio
-         *   （追従ループが実際に描画していた値）を渡すことで、離した瞬間に見た目が急にジャンプしないようにする
-         * @returns {void}
-         */
-        export function releaseTwoFingerSqueezeWithOvershoot(angleDeg, ratio) {
-            const overshoot = ratio * CONFIG.SQUEEZE_OVERSHOOT_RATIO;
-
-            mochiDeformWrap.animate([
-                { transform: twoFingerSqueezeTransformFor(angleDeg, ratio) },
-                { transform: twoFingerSqueezeTransformFor(angleDeg, -overshoot * 0.65), offset: 0.32 },
-                { transform: twoFingerSqueezeTransformFor(angleDeg, overshoot * 0.32), offset: 0.58 },
-                { transform: twoFingerSqueezeTransformFor(angleDeg, -overshoot * 0.12), offset: 0.8 },
-                { transform: 'scale(1, 1)' },
-            ], { duration: CONFIG.SQUEEZE_OVERSHOOT_BASE_DURATION_MS + ratio * CONFIG.SQUEEZE_OVERSHOOT_DURATION_RANGE_MS, easing: 'ease-out' });
-            mochiDeformWrap.style.transform = 'scale(1, 1)';
-        }
-
-        // 🆕 スクイーズを一定以上伸ばして離した瞬間の「弾ける」演出。パーティクル＋ポン音（＋大きく伸ばした時だけ振動）。
-        /**
-         * 指を離した瞬間、伸ばしていた比率に応じて弾けるパーティクルとポン音を再生する。
-         * ポン音のピッチはその時点のコンボ段階に応じて少し上がっていき、コンボが盛り上がるほど
-         * 弾ける音も華やかになる。
-         * @param {number} ratio - 0〜1の伸縮比率
-         * @returns {void}
-         */
-        export function triggerSqueezeReleaseBurst(ratio) {
-            const rect = mochiBtnElement.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
-            const count = Math.round(CONFIG.SQUEEZE_RELEASE_BURST_COUNT_BASE + ratio * CONFIG.SQUEEZE_RELEASE_BURST_COUNT_RANGE);
-            for (let i = 0; i < count; i++) createBurstParticle(cx, cy);
-
-            const comboTiers = [0, CONFIG.COMBO_TIER_50, CONFIG.COMBO_TIER_100, CONFIG.COMBO_TIER_500, CONFIG.COMBO_TIER_1000];
-            const tierIndex = comboTiers.indexOf(getCheerTier(comboCount));
-            const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, tierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
-            playAudioFilePitched('audio/mochisuke/mochi_release_pop.mp3', CONFIG.SQUEEZE_RELEASE_POP_VOLUME * sfxVolumeMult, pitch);
-
-            if (ratio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
-                vibrate(CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN);
-            }
-        }
-
         /**
          * ポインタが離れた時の後処理全体を行い、必殺技中/2本指ストレッチ中/1本指スクイーズ中/通常タップの
          * 4パターンで戻りアニメーションを再生する。
@@ -1054,6 +720,12 @@ import {
             clearTimeout(mochiLongPressTimer);
             stopStretchSound();
             releaseAllSqueezeGlows(); // 🆕 押していた指がすべて離れたので、光もまとめてフェードアウト
+            // 🆕 追従ループを止めて、その時点で実際に描画されていた最終的な伸縮比率を受け取る
+            // （指の生の移動量ではなく、追従の遅れ込みの値。揺れ戻り・弾け演出の見た目のジャンプを防ぐ）
+            const finalSqueezeVisualRatio = endSqueeze();
+            // 🆕 弾け演出のポン音ピッチに使うコンボ段階（コンボ内部ロジックはtap.js側で持ったまま、
+            // 数値だけをsrc/squeeze/physics.jsのtriggerSqueezeReleaseBurstに渡す）
+            const comboTierIndex = [0, CONFIG.COMBO_TIER_50, CONFIG.COMBO_TIER_100, CONFIG.COMBO_TIER_500, CONFIG.COMBO_TIER_1000].indexOf(getCheerTier(comboCount));
 
             const clones = bunshinCloneEls;
 
@@ -1063,9 +735,9 @@ import {
             } else if (wasTwoFingerStretch && twoFingerLastRatio >= TWO_FINGER_MIN_STRETCH_RATIO) {
                 // 🫧🫧 2本指ストレッチ：一定以上伸ばされていた時だけ、中心固定で大きく「ぷるん」と揺れ戻る
                 // 🆕 「伸ばして良いか」の判定は指の生の移動量(twoFingerLastRatio)のまま、揺れ戻りの見た目は
-                // 実際に描画されていたsqueezeVisualRatio（追従の遅れ込み）を使うことでジャンプを防ぐ
-                releaseTwoFingerSqueezeWithOvershoot(twoFingerLastAngleDeg, squeezeVisualRatio);
-                if (twoFingerLastRatio >= CONFIG.SQUEEZE_RELEASE_BURST_MIN_RATIO) triggerSqueezeReleaseBurst(squeezeVisualRatio);
+                // 実際に描画されていたfinalSqueezeVisualRatio（追従の遅れ込み）を使うことでジャンプを防ぐ
+                releaseTwoFingerSqueezeWithOvershoot(twoFingerLastAngleDeg, finalSqueezeVisualRatio);
+                triggerSqueezeReleaseBurst(twoFingerLastRatio, finalSqueezeVisualRatio, comboTierIndex);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
                 clones.forEach(c => {
                     c.animate([
@@ -1079,10 +751,10 @@ import {
             } else if (isDraggingSqueeze && Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy) >= SQUEEZE_MIN_DRAG) {
                 // 🫧 スクイーズ：一定以上引っ張られていた時だけ、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻る
                 // 🆕 「伸ばして良いか」の判定は指の生の移動量のまま、揺れ戻りの見た目は実際に描画されていた
-                // squeezeVisualRatio（追従の遅れ込み）を使うことでジャンプを防ぐ
-                releaseSqueezeWithOvershoot(squeezeLastDx, squeezeLastDy, squeezeVisualRatio);
+                // finalSqueezeVisualRatio（追従の遅れ込み）を使うことでジャンプを防ぐ
+                releaseSqueezeWithOvershoot(squeezeLastDx, squeezeLastDy, finalSqueezeVisualRatio);
                 const releaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
-                if (releaseRatio >= CONFIG.SQUEEZE_RELEASE_BURST_MIN_RATIO) triggerSqueezeReleaseBurst(squeezeVisualRatio);
+                triggerSqueezeReleaseBurst(releaseRatio, finalSqueezeVisualRatio, comboTierIndex);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
                 clones.forEach(c => {
                     c.animate([
@@ -1118,8 +790,7 @@ import {
             isSqueezeSettling = true; // 揺れ戻りアニメーションが収まるまで、口パーツは出さない
             updateMouthPatchVisibility();
             squeezeLastDx = 0; squeezeLastDy = 0;
-            twoFingerLastRatio = 0; twoFingerLastAngleDeg = 0;
-            squeezeLastRatio = 0; squeezeVisualRatio = 0; // 🆕 次に触れた時のためにリセット（追従ループはisMochiPressed=falseで既に自動停止済み）
+            twoFingerLastRatio = 0; twoFingerLastAngleDeg = 0; // 🆕 追従ループ側の状態はendSqueeze()が既にリセット済み
 
             breatheTimer = setTimeout(() => {
                 if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
@@ -1149,7 +820,7 @@ import {
                 const growth = Math.max(0, dist - twoFingerStartDist); // 2点が離れた分だけを「伸び」として扱う
                 twoFingerLastRatio = Math.min(growth, TWO_FINGER_MAX_STRETCH_DIST) / TWO_FINGER_MAX_STRETCH_DIST;
                 twoFingerLastAngleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
-                applyTwoFingerSqueezeTransform(twoFingerLastAngleDeg, twoFingerLastRatio);
+                updateTwoFingerSqueezeTarget(twoFingerLastAngleDeg, twoFingerLastRatio);
                 // 🆕 2本指それぞれの「光」を、その指の現在位置・共通の伸縮比率で更新する
                 const [id0, id1] = [...squeezePointers.keys()];
                 updateSqueezeGlow(id0, pts[0].x, pts[0].y, twoFingerLastRatio);
@@ -1159,7 +830,7 @@ import {
             if (!isDraggingSqueeze) return;
             squeezeLastDx = e.clientX - squeezeStartX;
             squeezeLastDy = e.clientY - squeezeStartY;
-            const squeezeRatio = applySqueezeTransform(squeezeLastDx, squeezeLastDy);
+            const squeezeRatio = updateOneFingerSqueezeTarget(squeezeLastDx, squeezeLastDy);
             updateSqueezeGlow(e.pointerId, e.clientX, e.clientY, squeezeRatio); // 🆕 光も指の動きに追従させる
         });
 
