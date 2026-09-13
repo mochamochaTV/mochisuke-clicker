@@ -1,13 +1,13 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-13-005';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-13-005';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-13-005';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-13-005';
-        import { saveGame } from '../../state.js?v=2026-09-13-005';
-        import { closeModal, openModal } from './core.js?v=2026-09-13-005';
-        import { openTicketInventory } from './myroom.js?v=2026-09-13-005';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-13-005';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-13-006';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-13-006';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-13-006';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-13-006';
+        import { saveGame } from '../../state.js?v=2026-09-13-006';
+        import { closeModal, openModal } from './core.js?v=2026-09-13-006';
+        import { openTicketInventory } from './myroom.js?v=2026-09-13-006';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-13-006';
 
         // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
         const CONFIG = {
@@ -82,6 +82,18 @@
                 closeModal('kisekae-room-modal');
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.KISEKAE_ROOM_FADE_CLEANUP_MS);
             }, CONFIG.KISEKAE_ROOM_CLOSE_FADE_MS);
+        }
+
+        // 🆕 着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。ロボもちすけ等の全身衣装とは違い、
+        // 着せ替えではなく専用のタップ画面（変形が自動で戻らない、素材ごとの触感を楽しむモード）に切り替える
+        // ためのもので、まだ画面自体を実装中なので今は準備中メッセージだけ出す仮の中身にしている。
+        /**
+         * スクイーズボタンのクリックハンドラ（暫定）。専用画面ができ次第、ここから切り替える。
+         * @returns {void}
+         */
+        export function onSqueezeModeButtonClick() {
+            playAudioFile('audio/tap.mp3');
+            alert('🫧 スクイーズもちすけは準備中！もうすぐ遊べるようになるよ');
         }
 
         // 着せ替え部屋のもちすけと、通常のタップ画面のもちすけ、両方に今の装着状態を反映する
@@ -878,6 +890,7 @@
         window.adjustWingFlapSpeed = adjustWingFlapSpeed;
         window.copyWingFlapSpeed = copyWingFlapSpeed;
         window.openKisekaeCategory = openKisekaeCategory;
+        window.onSqueezeModeButtonClick = onSqueezeModeButtonClick;
         window.confirmKisekaeOutfit = confirmKisekaeOutfit;
         window.toggleKisekaeAdjustMode = toggleKisekaeAdjustMode;
         window.onKisekaeAdjustTargetChange = onKisekaeAdjustTargetChange;
