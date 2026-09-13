@@ -3,29 +3,29 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-13-003';
+} from './data.js?v=2026-09-13-004';
 import {
   audioBuffers, createBurstParticle, createFloatingText, createParticle, createRippleEffect,
   formatMochi, getAudioContext, initAndPlayBGM, isBgmInitialized, pickRandom, playAudioFile,
   playAudioFilePitched, playBgmLoop, screenFlash, screenShake, sfxVolumeMult, spawnGoldMochi,
   vibrate
-} from './main.js?v=2026-09-13-003';
-import { isMinigameActive } from './minigames.js?v=2026-09-13-003';
+} from './main.js?v=2026-09-13-004';
+import { isMinigameActive } from './minigames.js?v=2026-09-13-004';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-13-003';
+} from './progress.js?v=2026-09-13-004';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-13-003';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-003';
+} from './shop.js?v=2026-09-13-004';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-13-004';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getLocalDateString, hideMochiComment, isTutorialActive, setBalloonAutoHideTimer,
   showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-13-003';
+} from './ui.js?v=2026-09-13-004';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -210,7 +210,7 @@ import {
         // 毎フレーム少しずつ近づく（重くて粘り気のある物体を引っ張っている感覚）。どちらも数値を変えるだけで
         // 感触を調整できる
         export const SQUEEZE_STRETCH_EASE_POWER = 1.7; // 1より大きいほど、伸ばすほど追加の伸びに必要な指の移動量が増える（抵抗が強くなる）
-        export const SQUEEZE_FOLLOW_LERP = 0.22; // 毎フレーム、目標値との差にこの割合だけ近づく。小さいほど追従が遅れて「重く・粘っこく」感じる
+        export const SQUEEZE_FOLLOW_LERP = 0.13; // 毎フレーム、目標値との差にこの割合だけ近づく。小さいほど追従が遅れて「重く・粘っこく」感じる（0.22→0.13でさらに重く）
 
         // 🫧🫧 2本指ストレッチ機能：指2本でもちすけを逆方向に引っ張ると、中心を固定したまま両側へ伸びる。
         // 1本指スクイーズ（片側だけ固定して反対側だけ伸ばす）とは見た目の計算式が異なるため、状態・関数ともに分けている。
