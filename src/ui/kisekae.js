@@ -1,13 +1,15 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-13-009';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-13-009';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-13-009';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-13-009';
-        import { saveGame } from '../../state.js?v=2026-09-13-009';
-        import { closeModal, openModal } from './core.js?v=2026-09-13-009';
-        import { openTicketInventory } from './myroom.js?v=2026-09-13-009';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-13-009';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-13-010';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-13-010';
+        // 🧪 管理者限定・試作中：スクイーズ衣装の専用画面ができるまでの暫定動作で使う（onSqueezeModeButtonClick参照）
+        import { setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-13-010';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-13-010';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-13-010';
+        import { saveGame } from '../../state.js?v=2026-09-13-010';
+        import { closeModal, openModal } from './core.js?v=2026-09-13-010';
+        import { openTicketInventory } from './myroom.js?v=2026-09-13-010';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-13-010';
 
         // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
         const CONFIG = {
@@ -86,13 +88,23 @@
 
         // 🆕 着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。ロボもちすけ等の全身衣装とは違い、
         // 着せ替えではなく専用のタップ画面（変形が自動で戻らない、素材ごとの触感を楽しむモード）に切り替える
-        // ためのもので、まだ画面自体を実装中なので今は準備中メッセージだけ出す仮の中身にしている。
+        // ためのもので、まだ画面自体を実装中。
+        // 🧪 管理者限定・試作中：専用画面ができるまでの間、開発者モードの時だけ、このボタンから
+        // 通常のタップ画面のスクイーズ素材をスライムもちすけへ暫定的に切り替えられるようにしている
+        // （src/squeeze/materials.js・2-1参照）。専用画面が完成したら、ここは本来の画面遷移に差し替える。
         /**
-         * スクイーズボタンのクリックハンドラ（暫定）。専用画面ができ次第、ここから切り替える。
+         * スクイーズボタンのクリックハンドラ（暫定）。開発者モードの時だけスライム素材へ切り替えて
+         * 着せ替え部屋を閉じ、通常のプレイヤーには引き続き準備中メッセージを出す。専用画面ができ次第、
+         * ここから本来の画面遷移に切り替える。
          * @returns {void}
          */
         export function onSqueezeModeButtonClick() {
             playAudioFile('audio/tap.mp3');
+            if (IS_DEV_MODE) {
+                setSqueezeMaterial('slime');
+                closeKisekaeRoom();
+                return;
+            }
             alert('🫧 スクイーズもちすけは準備中！もうすぐ遊べるようになるよ');
         }
 
