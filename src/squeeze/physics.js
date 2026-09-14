@@ -14,10 +14,10 @@
 // src/squeeze/ ディレクトリにまとめていく予定。
 import {
   audioBuffers, createBurstParticle, getAudioContext, playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-14-004';
+} from '../../main.js?v=2026-09-14-005';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-004';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-005';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -63,7 +63,12 @@ const CONFIG = {
   // 新しい方向へ伸ばし直す（「もちすけの中心付近を一度通ってから反対側へ伸びる」感触にするため）。
   // 他の方向を経由してじわじわ反対方向に持っていった場合は、見た目の方向(squeezeVisualDx/Dy)が生の方向に
   // 毎フレームほぼ追従できているため、内積の変化が緩やかで、この閾値を割り込まない＝この特別処理には入らない。
-  SQUEEZE_REVERSAL_DOT_THRESHOLD: -0.5, // 見た目の方向と新しい生の方向、正規化した内積がこれ未満＝なす角がおよそ120度を超えたら「急な反転」とみなす
+  // 🆕 -0.5（およそ120度）だと「急な反転」判定の対象が狭すぎ、それより少し浅い角度（100度台前半など）で
+  // 急に引っ張った時に、この特別処理に入らずそのまま方向をlerpしてしまい、ぐるんと回って見えることがある
+  // というまもすいの指摘を受けて、-0.3（およそ107度）まで緩めた。判定範囲が広がるほど「反転」寄りに倒れ、
+  // 素早い斜め方向転換まで一瞬中心に戻る動きに巻き込みやすくなるトレードオフがあるため、様子を見ながら
+  // 微調整する前提の値（2-1-b23参照）。
+  SQUEEZE_REVERSAL_DOT_THRESHOLD: -0.3, // 見た目の方向と新しい生の方向、正規化した内積がこれ未満＝なす角がおよそ107度を超えたら「急な反転」とみなす
   SQUEEZE_REVERSAL_RETRACT_LERP: 0.3, // 急な反転を検出した時、伸び率だけをこの速さで0へ戻す（大きさの重みheavinessの影響を受けない、常に一定の軽快さ）
   SQUEEZE_REVERSAL_RATIO_EPSILON: 0.04, // 伸び率がここまで縮んだら「中心に戻った」とみなし、方向を新しい向きへ切り替えて伸ばし直す
 };
