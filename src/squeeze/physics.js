@@ -14,10 +14,10 @@
 // src/squeeze/ ディレクトリにまとめていく予定。
 import {
   audioBuffers, createBurstParticle, getAudioContext, playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-14-005';
+} from '../../main.js?v=2026-09-14-006';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-005';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-006';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -71,6 +71,15 @@ const CONFIG = {
   SQUEEZE_REVERSAL_DOT_THRESHOLD: -0.3, // 見た目の方向と新しい生の方向、正規化した内積がこれ未満＝なす角がおよそ107度を超えたら「急な反転」とみなす
   SQUEEZE_REVERSAL_RETRACT_LERP: 0.3, // 急な反転を検出した時、伸び率だけをこの速さで0へ戻す（大きさの重みheavinessの影響を受けない、常に一定の軽快さ）
   SQUEEZE_REVERSAL_RATIO_EPSILON: 0.04, // 伸び率がここまで縮んだら「中心に戻った」とみなし、方向を新しい向きへ切り替えて伸ばし直す
+
+  // --- 🆕 スクイーズ「専用モード」（まもすいが最初から考えていた本来の姿。2-1参照） ---
+  // 通常のタップ生産とは完全に別枠の遊び方：スクイーズ衣装を装備している間だけ、触るたびに変形が
+  // 完全には戻らず少しずつ永続的に蓄積していく（＝好きなだけ変形させ続けられる）。tap.js側の
+  // 「戻す」ボタンを押した時だけ、その時点までの蓄積量に応じてまとめてもちを獲得し、もちすけは
+  // 弾けるように元の形へ戻る。1本指スクイーズのみ対象（2本指ストレッチは今まで通り常に完全に戻る）。
+  SQUEEZE_ACCUM_MAX_D: 2.2, // 永続変形(d値)の実質的な上限。squeezeTransformForのperpが0を割らない安全な範囲に収めている（このd値自体は無制限に狙えるが、後述のdiminishing returnsでここへ漸近するだけになる）
+  SQUEEZE_ACCUM_GROWTH_RATE: 0.35, // 1回離すごとに、その時の伸び率(0〜1)がどれだけ永続変形へ上乗せされるかの基本倍率。既に貯まっているほど上乗せ分が小さくなる（下のgrowAccum参照）
+  SQUEEZE_ACCUM_IDLE_SETTLE_LERP: 0.1, // 指を離した瞬間の見た目（伸ばした分だけ底上げされた状態）から、新しい永続形へ「もにゅっ」と収まっていく速さ
 };
 
 // 🆕 「もっと伸ばせるようにしたい」というフィードバックを受けて、1本指スクイーズの限界を底上げ
@@ -128,10 +137,15 @@ export function setSqueezeMaterial(key) {
 // mix-blend-mode:screenで光を重ねるだけなので、どんな衣装を着せていても崩れずに使える
 // （帽子・顔パーツはこの上のz-indexなので隠れない）
 const squeezeGlowLayerEl = document.getElementById('squeeze-glow-layer');
-const squeezeGlowPointerMap = new Map(); // pointerId -> { el, fadeTimer }
+const squeezeGlowPointerMap = new Map(); // pointerId -> { el, dentEl, fadeTimer }
+// 🆕 専用モード中だけ使う「へこみ」レイヤーと「みずみずしい」光沢レイヤー（まもすいが最初から
+// 考えていた質感演出。2-1参照）。どちらも通常のスクイーズの見た目には一切影響しない別レイヤー。
+const squeezeDentLayerEl = document.getElementById('squeeze-dent-layer');
+const squeezeJuicySheenEl = document.getElementById('squeeze-juicy-sheen');
 
 /**
- * 指が触れた瞬間、その位置に「光」演出用の要素を新しく作って表示する。
+ * 指が触れた瞬間、その位置に「光」演出用の要素を新しく作って表示する。専用モード中は同じ位置に
+ * 「へこみ」演出用の要素もあわせて作る（通常のスクイーズでは作らない＝見た目を変えないため）。
  * @param {number} pointerId - ポインタID
  * @param {number} clientX - 触れた位置のX座標（画面基準）
  * @param {number} clientY - 触れた位置のY座標（画面基準）
@@ -139,13 +153,19 @@ const squeezeGlowPointerMap = new Map(); // pointerId -> { el, fadeTimer }
  */
 export function assignSqueezeGlow(pointerId, clientX, clientY) {
     const existing = squeezeGlowPointerMap.get(pointerId);
-    if (existing) { clearTimeout(existing.fadeTimer); existing.el.remove(); }
+    if (existing) { clearTimeout(existing.fadeTimer); existing.el.remove(); if (existing.dentEl) existing.dentEl.remove(); }
     const el = document.createElement('div');
     el.className = 'squeeze-glow';
     squeezeGlowLayerEl.appendChild(el);
-    squeezeGlowPointerMap.set(pointerId, { el, fadeTimer: null });
+    let dentEl = null;
+    if (accumulateModeActive && squeezeDentLayerEl) {
+        dentEl = document.createElement('div');
+        dentEl.className = 'squeeze-dent';
+        squeezeDentLayerEl.appendChild(dentEl);
+    }
+    squeezeGlowPointerMap.set(pointerId, { el, dentEl, fadeTimer: null });
     updateSqueezeGlow(pointerId, clientX, clientY, 0);
-    requestAnimationFrame(() => el.classList.add('is-active'));
+    requestAnimationFrame(() => { el.classList.add('is-active'); if (dentEl) dentEl.classList.add('is-active'); });
 }
 
 /**
@@ -167,6 +187,12 @@ export function updateSqueezeGlow(pointerId, clientX, clientY, ratio) {
     entry.el.style.top = py + '%';
     entry.el.style.opacity = String(0.55 + ratio * 0.45);
     entry.el.style.setProperty('--s', String(0.6 + ratio * (CONFIG.SQUEEZE_GLOW_MAX_SCALE - 0.6)));
+    if (entry.dentEl) {
+        entry.dentEl.style.left = px + '%';
+        entry.dentEl.style.top = py + '%';
+        entry.dentEl.style.opacity = String(0.4 + ratio * 0.4);
+        entry.dentEl.style.setProperty('--s', String(0.55 + ratio * 0.5));
+    }
 }
 
 /**
@@ -180,8 +206,14 @@ export function releaseSqueezeGlow(pointerId) {
     entry.el.classList.remove('is-active');
     entry.el.style.opacity = '0';
     entry.el.style.setProperty('--s', '0.6');
+    if (entry.dentEl) {
+        entry.dentEl.classList.remove('is-active');
+        entry.dentEl.style.opacity = '0';
+        entry.dentEl.style.setProperty('--s', '0.55');
+    }
     entry.fadeTimer = setTimeout(() => {
         entry.el.remove();
+        if (entry.dentEl) entry.dentEl.remove();
         squeezeGlowPointerMap.delete(pointerId);
     }, CONFIG.SQUEEZE_GLOW_FADE_OUT_MS);
 }
@@ -210,7 +242,11 @@ function squeezeTransformFor(dx, dy, d) {
     const angleDeg = angleRad * (180 / Math.PI);
 
     const along = 1 + d * SQUEEZE_MAX_STRETCH;
-    const perp = 1 - d * SQUEEZE_MAX_SQUASH;
+    // 🆕 通常のスクイーズはd(伸縮量)が0〜1の範囲にしか来ないため元々問題にならなかったが、
+    // 専用モードの永続変形はdが1を大きく超えることがあり（SQUEEZE_ACCUM_MAX_D参照）、
+    // 何もしないとperpが0を割り込んで見た目が反転・破綻する。他の呼び出し元には影響しない
+    // 安全な下限（0.12）でクランプしておく。
+    const perp = Math.max(0.12, 1 - d * SQUEEZE_MAX_SQUASH);
     const growthPx = SQUEEZE_ELEMENT_RADIUS * 2 * (along - 1);
     const offsetPx = growthPx / 2;
     const offsetX = Math.cos(angleRad) * offsetPx;
@@ -268,6 +304,124 @@ let squeezeVisualDx = 0, squeezeVisualDy = 0;
 // その時点でほぼ見えなくなっている方向を新しい生の方向へ切り替えてfalseに戻す（2-1-b23参照）。
 let squeezeReversalActive = false;
 let squeezeFollowRafId = null;
+
+// --- 🆕 スクイーズ「専用モード」の状態（2-1参照）。tap.js側のisSqueezeCostumeActiveが変わるたびに
+// setAccumulateModeActive()経由で教えてもらう（このファイルからtap.jsへは相変わらず一切importしない）。
+let accumulateModeActive = false;
+let accumD = 0; // 現在の「永続変形」量（d値）。0で通常の丸い形、離すたびに少しずつ増えていく。戻すボタンで0に戻る
+let accumVisualD = 0; // 実際に描画しているd値。accumDへ毎フレーム少しずつ近づける（アイドル中の「もにゅっ」とした収まり）
+let accumDx = 1, accumDy = 0; // 永続変形の方向（最後に指を離した時の伸び方向をそのまま引き継ぐ）
+let accumIdleRafId = null;
+
+/**
+ * 現在装備している衣装がスクイーズ専用モードの対象かどうかを切り替える。kisekae.jsの
+ * applyKisekaeToMainScreen()から、衣装が変わるたびに呼ばれる想定（保険としてtap.js側の
+ * pointerdownからも毎回同じ値で呼ばれるが、値が変わらなければ即returnするので無害）。
+ * @param {boolean} active - スクイーズ専用モード対象の衣装を装備しているか
+ * @returns {void}
+ */
+export function setAccumulateModeActive(active) {
+    if (accumulateModeActive === active) return;
+    accumulateModeActive = active;
+    if (!active) {
+        // 🆕 衣装を外した/切り替えた時点で、精算していなかった蓄積分は破棄する（見た目もすぐ元に戻す）。
+        // 装備を変えた瞬間はどのみち見た目の画像自体が別衣装に切り替わるため、中途半端に変形した
+        // transformを残さないことが重要
+        accumD = 0; accumVisualD = 0; accumDx = 1; accumDy = 0;
+        if (accumIdleRafId !== null) { cancelAnimationFrame(accumIdleRafId); accumIdleRafId = null; }
+        if (currentMode === null) {
+            mochiDeformWrap.style.transform = 'scale(1, 1)';
+            updateJuicySheen(0);
+        }
+    }
+}
+
+/**
+ * 現在スクイーズ専用モードが有効かどうかを返す（tap.js側のHUD表示・報酬計算用）。
+ * @returns {boolean}
+ */
+export function isAccumulateModeActive() { return accumulateModeActive; }
+
+/**
+ * 現在蓄積されている永続変形量(d値)を返す（tap.js側の「戻す」ボタンのプレビュー・報酬計算用）。
+ * @returns {number}
+ */
+export function getAccumD() { return accumD; }
+
+// 🆕 1回分の指の伸び(liveRatio, 0〜1)を永続変形へ上乗せする。既に貯まっているほど上乗せ分が
+// 小さくなる（SQUEEZE_ACCUM_MAX_DへのDiminishing returns）ことで、「無制限に触り続けられる」ようにしつつ、
+// squeezeTransformForの計算が破綻しない範囲に自然と収まるようにしている。
+/**
+ * @param {number} liveRatio - 今回離した瞬間の生の伸び率(0〜1、easeSqueezeRatio適用後)
+ * @param {number} dx - 今回の伸び方向のX成分
+ * @param {number} dy - 今回の伸び方向のY成分
+ * @returns {void}
+ */
+function growAccum(liveRatio, dx, dy) {
+    if (liveRatio <= 0) return;
+    const remaining = Math.max(0, CONFIG.SQUEEZE_ACCUM_MAX_D - accumD);
+    const growth = liveRatio * CONFIG.SQUEEZE_ACCUM_GROWTH_RATE * (remaining / CONFIG.SQUEEZE_ACCUM_MAX_D);
+    accumD = Math.min(CONFIG.SQUEEZE_ACCUM_MAX_D, accumD + growth);
+    accumDx = dx; accumDy = dy;
+}
+
+/**
+ * 「戻す」ボタンが押された時に呼ぶ。蓄積されていた変形量を返しつつ内部状態を0に戻し、
+ * 既存の揺れ戻り演出(releaseSqueezeWithOvershoot)をそのまま流用して、弾けるように元の形へ戻す
+ * （蓄積が大きいほど、戻る時のプルンも大きくなる）。もち報酬の計算はtap.js側の責務。
+ * @returns {number} 精算前に蓄積されていた変形量(d値)。0以下だった場合は何もせず0を返す
+ */
+export function resetSqueezeAccum() {
+    const energy = accumD;
+    if (energy <= 0) return 0;
+    accumD = 0; accumVisualD = 0;
+    if (accumIdleRafId !== null) { cancelAnimationFrame(accumIdleRafId); accumIdleRafId = null; }
+    releaseSqueezeWithOvershoot(accumDx, accumDy, energy);
+    updateJuicySheen(0);
+    return energy;
+}
+
+/**
+ * 専用モード中、蓄積された変形量に応じて「みずみずしい」光沢オーバーレイの強さを更新する。
+ * 通常のスクイーズ（専用モード対象外の衣装）では一切使わないレイヤーなので、見た目に影響しない。
+ * @param {number} d - 現在描画している変形量(d値)
+ * @returns {void}
+ */
+function updateJuicySheen(d) {
+    if (!squeezeJuicySheenEl) return;
+    squeezeJuicySheenEl.style.opacity = String(Math.max(0, Math.min(1, d / CONFIG.SQUEEZE_ACCUM_MAX_D)));
+}
+
+// 🆕 指を触れていない間（currentMode===null）、永続変形の見た目(accumVisualD)をaccumDへ
+// 少しずつ近づけ続けるループ。endSqueeze()で指を離した直後は、離した瞬間の見た目からスタートして
+// 新しい（一部だけが残った、より小さい）永続量へ「もにゅっ」と収まっていく見た目になる。
+/**
+ * アイドル中の永続変形の追従ループを1フレーム分進める。専用モードが無効化されたか、
+ * 指で触れ始めたら自動的に止まる。
+ * @returns {void}
+ */
+function stepAccumIdle() {
+    if (!accumulateModeActive || currentMode !== null) { accumIdleRafId = null; return; }
+    accumVisualD += (accumD - accumVisualD) * CONFIG.SQUEEZE_ACCUM_IDLE_SETTLE_LERP;
+    mochiDeformWrap.style.transformOrigin = 'center center';
+    mochiDeformWrap.style.transform = squeezeTransformFor(accumDx, accumDy, accumVisualD);
+    updateJuicySheen(accumVisualD);
+    if (Math.abs(accumD - accumVisualD) > 0.002) {
+        accumIdleRafId = requestAnimationFrame(stepAccumIdle);
+    } else {
+        accumVisualD = accumD;
+        accumIdleRafId = null;
+    }
+}
+
+/**
+ * アイドル中の永続変形の追従ループを開始する（すでに動いていれば何もしない）。
+ * @returns {void}
+ */
+function startAccumIdleLoop() {
+    if (accumIdleRafId !== null) return;
+    accumIdleRafId = requestAnimationFrame(stepAccumIdle);
+}
 
 // 引っ張った方向・距離から、今の生の伸縮比率を記録し、追従ループの目標値を更新する（1本指ドラッグ中に毎回呼ばれる）
 /**
@@ -393,9 +547,14 @@ function stepSqueezeFollow() {
                 squeezeVisualDy += (oneFingerDy - squeezeVisualDy) * CONFIG.SQUEEZE_DIRECTION_FOLLOW_LERP;
             }
         }
+        // 🆕 専用モード中は、永続変形(accumVisualD)を土台にして、その上に今回の生の伸びを重ねて描画する。
+        // こうすることで「触れた瞬間に一度中央へ戻ってから伸びる」ような不自然なジャンプが起きず、
+        // 前回までの蓄積分から連続的に伸びていくように見える（実際に蓄積へ反映するのはendSqueeze()側）。
+        const effectiveD = accumulateModeActive ? (accumVisualD + squeezeVisualRatio) : squeezeVisualRatio;
         mochiDeformWrap.style.transformOrigin = 'center center';
-        mochiDeformWrap.style.transform = squeezeTransformFor(squeezeVisualDx, squeezeVisualDy, squeezeVisualRatio);
+        mochiDeformWrap.style.transform = squeezeTransformFor(squeezeVisualDx, squeezeVisualDy, effectiveD);
         updateStretchSound(squeezeVisualRatio);
+        if (accumulateModeActive) updateJuicySheen(effectiveD);
     }
     squeezeFollowRafId = requestAnimationFrame(stepSqueezeFollow);
 }
@@ -420,10 +579,21 @@ function startSqueezeFollowLoop() {
  * @returns {{ratio: number, dx: number, dy: number}} 離した瞬間の最終的な伸縮比率(0〜1)と伸び方向
  */
 export function endSqueeze() {
+    // 🆕 専用モードの蓄積は1本指スクイーズのみ対象（2本指ストレッチは今まで通り常に完全に戻る）。
+    // currentModeをnullにする前に判定しておく必要がある
+    const wasOneFinger = currentMode === 'one';
     currentMode = null;
     if (squeezeFollowRafId !== null) { cancelAnimationFrame(squeezeFollowRafId); squeezeFollowRafId = null; }
     const finalRatio = squeezeVisualRatio;
     const finalDx = squeezeVisualDx, finalDy = squeezeVisualDy;
+    if (accumulateModeActive && wasOneFinger && finalRatio > 0) {
+        // 🆕 専用モード：離した瞬間の見た目（永続変形＋今回の伸び）をそのままaccumVisualDに引き継いでから、
+        // 今回の伸びの一部だけを新しい永続量として蓄積する。アイドルループが、この底上げされた見た目から
+        // 新しい（より小さい）永続量へ「もにゅっ」と収まっていく様子を描画する（バキッと縮まない）
+        accumVisualD = accumVisualD + finalRatio;
+        growAccum(finalRatio, finalDx, finalDy);
+        startAccumIdleLoop();
+    }
     squeezeVisualRatio = 0;
     squeezeVisualDx = 0; squeezeVisualDy = 0;
     squeezeReversalActive = false; // 🆕 次にスクイーズを始めた時に反転検出の状態を持ち越さないようにする

@@ -1260,6 +1260,42 @@
             transition: opacity 0.06s ease-out, transform 0.06s ease-out;
         }
 
+        /* 🆕 スクイーズ「専用モード」中だけ使う「へこみ」演出。squeeze-glowと同じ座標追従の仕組みを
+           共有しつつ（src/squeeze/physics.js参照）、暗めの色をmix-blend-mode:multiplyで「沈み込ませる」
+           ことで、光とは逆に指がめり込んでいるような質感を出す。通常のスクイーズでは一切生成されない。 */
+        .squeeze-dent {
+            --s: 0.55;
+            position: absolute;
+            top: 0; left: 0;
+            width: 30%; aspect-ratio: 1 / 1;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(70,45,20,0.55) 0%, rgba(70,45,20,0.22) 45%, rgba(70,45,20,0) 72%);
+            mix-blend-mode: multiply;
+            transform: translate(-50%, -50%) scale(var(--s));
+            opacity: 0;
+            will-change: transform, opacity;
+            transition: opacity 0.26s ease-out, transform 0.26s ease-out;
+        }
+        .squeeze-dent.is-active {
+            transition: opacity 0.06s ease-out, transform 0.06s ease-out;
+        }
+
+        /* 🆕 スクイーズ「専用モード」中だけ使う「みずみずしい」光沢オーバーレイ。蓄積した変形量が
+           大きいほど（＝もちすけ本体がより伸びている・張り詰めているほど）opacityをJS側で上げていく。
+           左上のハイライトが「濡れたような」ツヤを、下側の淡いブルーが半透明感を演出する。 */
+        #squeeze-juicy-sheen {
+            background:
+                radial-gradient(circle at 30% 24%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.28) 16%, rgba(255,255,255,0) 36%),
+                radial-gradient(ellipse at 50% 84%, rgba(120,210,255,0.35) 0%, rgba(120,210,255,0) 60%);
+            mix-blend-mode: screen;
+            transition: opacity 0.25s ease-out;
+        }
+
+        /* 🆕 「戻す」ボタン：蓄積が0の間はdisabledにして押せないようにし、見た目でも分かるようにする */
+        #squeeze-accum-reset-btn:disabled {
+            opacity: 0.45; cursor: not-allowed; filter: grayscale(0.4);
+        }
+
         /* 中央必殺技ボタン */
         .hissatsu-btn {
             position: relative;

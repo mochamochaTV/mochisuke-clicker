@@ -1,17 +1,17 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-14-005';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-14-005';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-14-006';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-14-006';
         // 🧪 管理者限定・試作中：全身の「スクイーズ衣装」を装備/解除するたびに、スクイーズの音の素材を
         // 同期させるために使う（applyKisekaeToMainScreen参照）
-        import { setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-14-005';
-        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-14-005';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-14-005';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-14-005';
-        import { saveGame } from '../../state.js?v=2026-09-14-005';
-        import { closeModal, openModal } from './core.js?v=2026-09-14-005';
-        import { openTicketInventory } from './myroom.js?v=2026-09-14-005';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-14-005';
+        import { setAccumulateModeActive, setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-14-006';
+        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-14-006';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-14-006';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-14-006';
+        import { saveGame } from '../../state.js?v=2026-09-14-006';
+        import { closeModal, openModal } from './core.js?v=2026-09-14-006';
+        import { openTicketInventory } from './myroom.js?v=2026-09-14-006';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-14-006';
 
         // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
         const CONFIG = {
@@ -346,6 +346,15 @@
             // 物理演算側の音をそれに同期させ、持っていなければ（ロボもちすけ・未装備含む）通常素材に戻す。
             // 画像の表示自体はこの関数がこの後で担当するので、physics.js側は音だけを切り替える（2-1参照）。
             setSqueezeMaterial((fbItem && fbItem.squeezeMaterial) || DEFAULT_SQUEEZE_MATERIAL_KEY);
+            // 🆕 スクイーズ「専用モード」（触るたびに変形が蓄積し、「戻す」ボタンで精算する遊び方。
+            // src/squeeze/physics.js参照）は、squeezeMaterialを持つ衣装を装備している間だけ有効にする。
+            // tap.js側は循環依存を避けるためこの関数をimportしていないので、HUD（「戻す」ボタン）の
+            // 表示・非表示もここでDOM直接操作でまとめて済ませる（tap.js側のrefreshSqueezeAccumHud()でも
+            // 同じ判定を毎回やり直すため、二重に安全になっている）
+            const isSqueezeCostume = !!(fbItem && fbItem.squeezeMaterial);
+            setAccumulateModeActive(isSqueezeCostume);
+            const accumHudEl = document.getElementById('squeeze-accum-hud');
+            if (accumHudEl) accumHudEl.style.display = isSqueezeCostume ? 'flex' : 'none';
 
             if (fullbodyId) {
                 // 全身装備中は、帽子・顔パーツ・通常の口パーツを隠す（display:noneではなくvisibility:hiddenで消す理由はrenderKisekaeMochisukeと同様）

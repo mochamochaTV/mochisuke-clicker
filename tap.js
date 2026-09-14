@@ -3,36 +3,37 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-14-005';
+} from './data.js?v=2026-09-14-006';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-14-005';
-import { isMinigameActive } from './minigames.js?v=2026-09-14-005';
+} from './main.js?v=2026-09-14-006';
+import { isMinigameActive } from './minigames.js?v=2026-09-14-006';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
-  SQUEEZE_MAX_DRAG, armPokeImpact, assignSqueezeGlow, endSqueeze, releaseAllSqueezeGlows,
-  releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot,
+  SQUEEZE_MAX_DRAG, armPokeImpact, assignSqueezeGlow, endSqueeze, getAccumD,
+  isAccumulateModeActive, releaseAllSqueezeGlows, releaseSqueezeWithOvershoot,
+  releaseTwoFingerSqueezeWithOvershoot, resetSqueezeAccum, setAccumulateModeActive,
   startStretchSound, stopStretchSound, triggerSqueezeReleaseBurst, updateOneFingerSqueezeTarget,
   updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-14-005';
+} from './src/squeeze/physics.js?v=2026-09-14-006';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-14-005';
+} from './progress.js?v=2026-09-14-006';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-14-005';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-14-005';
+} from './shop.js?v=2026-09-14-006';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-14-006';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-14-005';
+} from './ui.js?v=2026-09-14-006';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -126,6 +127,12 @@ import {
           SQUEEZE_TRANSFORM_ORIGIN_RESET_MS: 720,
           TAP_RELEASE_ANIM_DURATION_MS: 240, // 通常タップ後の「もちっ」アニメーション時間
           BREATHE_IDLE_DELAY_MS: 1200, // 指を離してから呼吸アニメーションに戻るまでの時間
+
+          // --- 🆕 スクイーズ「専用モード」：蓄積した変形量に応じた「戻す」報酬 ---
+          // 蓄積量(d値。src/squeeze/physics.jsのSQUEEZE_ACCUM_MAX_D参照)そのものに単価をかけるのではなく、
+          // その時点のタップ力(getTapPower())にも比例させることで、ゲームの進行度に応じて報酬もスケールする
+          SQUEEZE_ACCUM_RESET_REWARD_MULT: 10, // 戻す時のもち報酬 = tapPower × これ × 蓄積量^POWER
+          SQUEEZE_ACCUM_RESET_REWARD_POWER: 1.15, // 貯めた量が多いほど単価が僅かに上がる、緩いカーブ（急にしすぎると「ずっと貯め続けるのが最適解」になってしまうため控えめに）
 
           // --- 給餌（おみやげ）まわり ---
           FEED_ICON_Y_OFFSET_PX: 68, // もちすけの足元からのアイコン初期位置オフセット
@@ -606,6 +613,59 @@ import {
         export const mochiBreatheWrapEl = document.getElementById('mochisuke-breathe-wrap'); // 呼吸アニメーションは、もちすけ画像と口パーツをまとめて包むこちらにかける
         mochiBtnElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
+        // --- 🆕 スクイーズ「専用モード」：蓄積した変形を「戻す」ボタンでもちに精算するHUD ---
+        // 実際の蓄積・見た目はsrc/squeeze/physics.jsが持っており、ここではその状態を読みに行って
+        // ボタンの表示・プレビュー文言を更新するだけ（tap.js側は経済まわり＝報酬計算とscore加算を担当）。
+        const squeezeAccumHudEl = document.getElementById('squeeze-accum-hud');
+        const squeezeAccumPreviewEl = document.getElementById('squeeze-accum-preview');
+        const squeezeAccumResetBtnEl = document.getElementById('squeeze-accum-reset-btn');
+
+        /**
+         * 蓄積されている変形量(d値)から、「戻す」で獲得できるもちの量を計算する。
+         * @param {number} d - 蓄積されている変形量
+         * @returns {number} 獲得できるもちの量（貯まりが無ければ0）
+         */
+        function computeSqueezeAccumReward(d) {
+            if (d <= 0) return 0;
+            return Math.max(1, Math.floor(getTapPower() * CONFIG.SQUEEZE_ACCUM_RESET_REWARD_MULT * Math.pow(d, CONFIG.SQUEEZE_ACCUM_RESET_REWARD_POWER)));
+        }
+
+        /**
+         * スクイーズ専用モードのHUD（「戻す」ボタンとプレビュー表示）を、現在の装備・蓄積量に合わせて更新する。
+         * 表示・非表示自体はsrc/ui/kisekae.jsのapplyKisekaeToMainScreen()でも同じ判定を行っており
+         * （衣装を変えた瞬間に即座に反映するため）、ここでの呼び出しは主にプレビュー文言の更新用。
+         * @returns {void}
+         */
+        function refreshSqueezeAccumHud() {
+            if (!squeezeAccumHudEl) return;
+            const active = isAccumulateModeActive();
+            squeezeAccumHudEl.style.display = active ? 'flex' : 'none';
+            if (!active) return;
+            const d = getAccumD();
+            const reward = computeSqueezeAccumReward(d);
+            squeezeAccumPreviewEl.textContent = `ためた変形：+${formatMochi(reward)} もち`;
+            squeezeAccumResetBtnEl.disabled = d <= 0;
+        }
+
+        /**
+         * 「戻す」ボタンが押された時の処理。蓄積されていた変形量ぶんのもちを獲得し、
+         * もちすけの見た目は弾けるように元の形へ戻る（見た目自体はresetSqueezeAccum内部が担当）。
+         * @returns {void}
+         */
+        export function onSqueezeResetButtonClick() {
+            const d = getAccumD();
+            if (d <= 0) return;
+            const reward = computeSqueezeAccumReward(d);
+            setScore(score + reward);
+            const rect = mochiBtnElement.getBoundingClientRect();
+            createFloatingText(rect.left + rect.width / 2, rect.top + rect.height / 2, `💧+${formatMochi(reward)} もち`, "#0288d1", "1.5rem");
+            resetSqueezeAccum();
+            refreshSqueezeAccumHud();
+            saveGame();
+            updateDisplay();
+        }
+        window.onSqueezeResetButtonClick = onSqueezeResetButtonClick; // HTMLのonclick=""から呼ぶための橋渡し
+
         // メインのもちすけタップ処理
         mochiBtnElement.addEventListener('pointerdown', (e) => {
             if (isMinigameActive) return;
@@ -619,6 +679,9 @@ import {
             // 装備に関係なくこれまで通り動く（4-3a・2-1参照）。
             const squeezeCostumeMaterialKey = getEquippedSqueezeMaterialKey();
             const isSqueezeCostumeActive = !!squeezeCostumeMaterialKey;
+            // 🆕 専用モードの有効/無効を毎タップ同期しておく保険（主な同期はkisekae.js側の
+            // applyKisekaeToMainScreen()。値が変わらなければ即returnするので無害）
+            setAccumulateModeActive(isSqueezeCostumeActive);
 
             if (!isSqueezeCostumeActive) {
                 playAudioFile('audio/tap.mp3');
@@ -684,6 +747,7 @@ import {
                     executeSingleTap(e.clientX, e.clientY);
                 }
             }
+            refreshSqueezeAccumHud(); // 🆕 衣装を変えた直後、タップ済みかどうかに関わらずHUDの状態を合わせておく
             updateDisplay();
         });
 
@@ -766,6 +830,11 @@ import {
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
                 });
+            } else if (isAccumulateModeActive() && isDraggingSqueeze) {
+                // 🆕 専用モード：離しても中心に戻さない。見た目の収束（離した瞬間から新しい永続量へ
+                // 「もにゅっ」と収まっていく処理）は、endSqueeze()の時点でsrc/squeeze/physics.js側の
+                // アイドルループが既に開始済みなので、ここでは揺れ戻り・弾け演出をあえて何も出さない
+                setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
             } else if (isDraggingSqueeze && Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy) >= SQUEEZE_MIN_DRAG) {
                 // 🫧 スクイーズ：一定以上引っ張られていた時だけ、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻る
                 // 🆕 「伸ばして良いか」の判定は指の生の移動量(squeezeLastDx/Dy)のまま、揺れ戻りの見た目（大きさ・向き
@@ -809,6 +878,7 @@ import {
             updateMouthPatchVisibility();
             squeezeLastDx = 0; squeezeLastDy = 0;
             twoFingerLastRatio = 0; twoFingerLastAngleDeg = 0; // 🆕 追従ループ側の状態はendSqueeze()が既にリセット済み
+            refreshSqueezeAccumHud(); // 🆕 今回の一本指スクイーズで蓄積が増えていれば、「戻す」ボタンのプレビューに反映する
 
             breatheTimer = setTimeout(() => {
                 if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
@@ -850,6 +920,8 @@ import {
             squeezeLastDy = e.clientY - squeezeStartY;
             const squeezeRatio = updateOneFingerSqueezeTarget(squeezeLastDx, squeezeLastDy);
             updateSqueezeGlow(e.pointerId, e.clientX, e.clientY, squeezeRatio); // 🆕 光も指の動きに追従させる
+            if (isAccumulateModeActive()) refreshSqueezeAccumHud(); // 🆕 専用モード中は、ドラッグ中も「今離したら貯まる量」をライブでプレビューしたいが、
+            // 実際の蓄積(accumD)自体はendSqueeze()を呼ぶまで増えないため、ここでは表示上の見た目のズレは無い
         });
 
         /* 🔮 スキル発動＆タイマー管理システムロジック */
