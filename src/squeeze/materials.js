@@ -1,4 +1,4 @@
-// 🧪 管理者限定・試作中：スクイーズの「素材」ごとの音・調整値をまとめたデータファイル。
+// スクイーズの「素材」ごとの音・調整値をまとめたデータファイル。
 // data.js（ゲーム全体のデータ）と同じ考え方で、ロジック（physics.js）とデータ（このファイル）を
 // 分けている。新しい素材（砂もちすけ等）を増やす時は、このファイルにオブジェクトを1つ足すだけでよく、
 // physics.js側のロジックには一切手を入れなくて済む設計にしている。
@@ -15,12 +15,17 @@
 //   releasePopSoundFile: 離した瞬間に鳴る「弾け」音
 //   pokeSoundFile      : 押した瞬間の強弱で変化する「ポヨン」音。nullなら、この素材では
 //                        このギミック自体が発動しない（＝もちすけ本体は今まで通り無音のまま）
+//
+// 🆕 pokeSoundFileはもともと「スライムもちすけ専用・管理者限定」の試作ギミックだったが、
+// 「スクイーズにかぎらず通常のタップ・長押しでも、押す強さで音が変わってほしい」という要望を受け、
+// 通常のもちすけ（'default'）にも用意し、全プレイヤー向けの機能に昇格させた（2-1参照）。
+// 新しい素材を追加する時も、ここにpokeSoundFileを1つ足すだけで同じ強弱ギミックがそのまま使える。
 export const SQUEEZE_MATERIALS = {
   default: {
     label: 'もちすけ（通常）',
     stretchSoundFile: 'audio/mochisuke/mochi_stretch.mp3',
     releasePopSoundFile: 'audio/mochisuke/mochi_release_pop.mp3',
-    pokeSoundFile: null,
+    pokeSoundFile: 'audio/mochisuke/mochi_poke.mp3',
   },
   slime: {
     label: 'スライムもちすけ',
