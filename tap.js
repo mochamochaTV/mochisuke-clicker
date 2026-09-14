@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-14-001';
+} from './data.js?v=2026-09-14-002';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-14-001';
-import { isMinigameActive } from './minigames.js?v=2026-09-14-001';
+} from './main.js?v=2026-09-14-002';
+import { isMinigameActive } from './minigames.js?v=2026-09-14-002';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -17,22 +17,22 @@ import {
   releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot,
   startStretchSound, stopStretchSound, triggerSqueezeReleaseBurst, updateOneFingerSqueezeTarget,
   updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-14-001';
+} from './src/squeeze/physics.js?v=2026-09-14-002';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-14-001';
+} from './progress.js?v=2026-09-14-002';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-14-001';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-14-001';
+} from './shop.js?v=2026-09-14-002';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-14-002';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-14-001';
+} from './ui.js?v=2026-09-14-002';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -735,9 +735,12 @@ import {
             clearTimeout(mochiLongPressTimer);
             stopStretchSound();
             releaseAllSqueezeGlows(); // 🆕 押していた指がすべて離れたので、光もまとめてフェードアウト
-            // 🆕 追従ループを止めて、その時点で実際に描画されていた最終的な伸縮比率を受け取る
-            // （指の生の移動量ではなく、追従の遅れ込みの値。揺れ戻り・弾け演出の見た目のジャンプを防ぐ）
-            const finalSqueezeVisualRatio = endSqueeze();
+            // 🆕 追従ループを止めて、その時点で実際に描画されていた最終的な伸縮比率・伸び方向を受け取る
+            // （指の生の移動量ではなく、追従の遅れ込みの値。揺れ戻り・弾け演出の見た目のジャンプを、
+            // 大きさだけでなく向きについても防ぐ。以前はここでratioの数値だけを受け取り、揺れ戻りの
+            // 向きには生のsqueezeLastDx/Dyを使っていたため、急に逆方向へ引っ張って離した直後だけ
+            // 向きが一瞬で反転して見える違和感があった＝まもすいからの指摘）
+            const { ratio: finalSqueezeVisualRatio, dx: finalSqueezeVisualDx, dy: finalSqueezeVisualDy } = endSqueeze();
             // 🆕 弾け演出のポン音ピッチに使うコンボ段階（コンボ内部ロジックはtap.js側で持ったまま、
             // 数値だけをsrc/squeeze/physics.jsのtriggerSqueezeReleaseBurstに渡す）
             const comboTierIndex = [0, CONFIG.COMBO_TIER_50, CONFIG.COMBO_TIER_100, CONFIG.COMBO_TIER_500, CONFIG.COMBO_TIER_1000].indexOf(getCheerTier(comboCount));
@@ -765,9 +768,9 @@ import {
                 });
             } else if (isDraggingSqueeze && Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy) >= SQUEEZE_MIN_DRAG) {
                 // 🫧 スクイーズ：一定以上引っ張られていた時だけ、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻る
-                // 🆕 「伸ばして良いか」の判定は指の生の移動量のまま、揺れ戻りの見た目は実際に描画されていた
-                // finalSqueezeVisualRatio（追従の遅れ込み）を使うことでジャンプを防ぐ
-                releaseSqueezeWithOvershoot(squeezeLastDx, squeezeLastDy, finalSqueezeVisualRatio);
+                // 🆕 「伸ばして良いか」の判定は指の生の移動量(squeezeLastDx/Dy)のまま、揺れ戻りの見た目（大きさ・向き
+                // 両方）は実際に描画されていたfinalSqueezeVisualRatio/Dx/Dy（追従の遅れ込み）を使うことでジャンプを防ぐ
+                releaseSqueezeWithOvershoot(finalSqueezeVisualDx, finalSqueezeVisualDy, finalSqueezeVisualRatio);
                 const releaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
                 triggerSqueezeReleaseBurst(releaseRatio, finalSqueezeVisualRatio, comboTierIndex);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);

@@ -14,10 +14,10 @@
 // src/squeeze/ ディレクトリにまとめていく予定。
 import {
   audioBuffers, createBurstParticle, getAudioContext, playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-14-001';
+} from '../../main.js?v=2026-09-14-002';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-001';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-002';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -239,6 +239,12 @@ let pokeFired = false;
 let pokeStartTime = 0;
 // 🆕 実際の見た目・音に使う比率。stepSqueezeFollowが毎フレーム目標値へ近づける（追従の遅れ＝重み・粘り気）
 let squeezeVisualRatio = 0;
+// 🆕 1本指スクイーズの「見た目の伸び方向」。伸び率(squeezeVisualRatio)と同じように、指の生の方向
+// (oneFingerDx/Dy)へ毎フレーム少しずつ近づける（追従の遅れ）。以前は伸び率だけに重みを付けていて方向は
+// 指の位置に瞬時に追従していたため、急に逆方向へ引っ張ると、伸びの大きさは重そうなのに向きだけ一瞬で
+// 反転する、という違和感があった（まもすいからの指摘）。方向にも同じ重みを持たせることで、
+// 「大きく伸びている時ほど、向きを変えるのにも力と時間がかかる」という一貫した感触になる。
+let squeezeVisualDx = 0, squeezeVisualDy = 0;
 let squeezeFollowRafId = null;
 
 // 引っ張った方向・距離から、今の生の伸縮比率を記録し、追従ループの目標値を更新する（1本指ドラッグ中に毎回呼ばれる）
@@ -334,8 +340,17 @@ function stepSqueezeFollow() {
     } else {
         const target = easeSqueezeRatio(oneFingerRawRatio);
         squeezeVisualRatio += (target - squeezeVisualRatio) * effectiveLerp;
+        // 🆕 方向にも伸び率と同じ「重み」を持たせる：生の指の方向(oneFingerDx/Dy)に瞬時に合わせず、
+        // 同じeffectiveLerpで毎フレーム少しずつ近づける。指の移動量がほぼ無い(dist≈0)瞬間は
+        // 方向そのものが定まらない（atan2の入力が(0,0)付近で不安定）ため、その間は直前の方向を
+        // 維持し、ノイズで方向が暴れるのを防ぐ。
+        const rawDist = Math.sqrt(oneFingerDx * oneFingerDx + oneFingerDy * oneFingerDy);
+        if (rawDist > 0.5) {
+            squeezeVisualDx += (oneFingerDx - squeezeVisualDx) * effectiveLerp;
+            squeezeVisualDy += (oneFingerDy - squeezeVisualDy) * effectiveLerp;
+        }
         mochiDeformWrap.style.transformOrigin = 'center center';
-        mochiDeformWrap.style.transform = squeezeTransformFor(oneFingerDx, oneFingerDy, squeezeVisualRatio);
+        mochiDeformWrap.style.transform = squeezeTransformFor(squeezeVisualDx, squeezeVisualDy, squeezeVisualRatio);
         updateStretchSound(squeezeVisualRatio);
     }
     squeezeFollowRafId = requestAnimationFrame(stepSqueezeFollow);
@@ -352,19 +367,24 @@ function startSqueezeFollowLoop() {
 
 /**
  * 指が離れた時に呼ぶ。追従ループを止め、その時点で実際に描画されていた最終的な伸縮比率
- * （squeezeVisualRatio。指の生の移動量ではなく追従の遅れ込みの値）を返してから内部状態をリセットする。
+ * （squeezeVisualRatio）と伸び方向（squeezeVisualDx/Dy。どちらも指の生の値ではなく追従の
+ * 遅れ込みの値）をまとめて返してから内部状態をリセットする。
  * 呼び出し側（tap.js）はこの戻り値を、揺れ戻りアニメーションや弾け演出の見た目にそのまま使うことで、
- * 離した瞬間に見た目が急にジャンプしないようにする。
- * @returns {number} 離した瞬間の最終的な伸縮比率(0〜1)
+ * 離した瞬間に見た目が急にジャンプ（大きさだけでなく向きも）しないようにする
+ * （🆕 以前はratioの数値だけを返しており、揺れ戻りの向きは呼び出し側が持つ生のdx/dyを使っていたため、
+ * 急に逆方向へ引っ張って離した直後だけ向きが一瞬で反転して見える違和感があった）。
+ * @returns {{ratio: number, dx: number, dy: number}} 離した瞬間の最終的な伸縮比率(0〜1)と伸び方向
  */
 export function endSqueeze() {
     currentMode = null;
     if (squeezeFollowRafId !== null) { cancelAnimationFrame(squeezeFollowRafId); squeezeFollowRafId = null; }
     const finalRatio = squeezeVisualRatio;
+    const finalDx = squeezeVisualDx, finalDy = squeezeVisualDy;
     squeezeVisualRatio = 0;
+    squeezeVisualDx = 0; squeezeVisualDy = 0;
     oneFingerRawRatio = 0; oneFingerDx = 0; oneFingerDy = 0;
     twoFingerRawRatio = 0; twoFingerAngleDeg = 0;
-    return finalRatio;
+    return { ratio: finalRatio, dx: finalDx, dy: finalDy };
 }
 
 // 🆕 「指を触れた瞬間だけ」ランダムに決めて、伸びている間ずっと乗せておくピッチのオフセット。
