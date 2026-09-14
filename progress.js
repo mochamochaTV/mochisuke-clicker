@@ -3,21 +3,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-14-002';
+} from './data.js?v=2026-09-14-004';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-14-002';
-import { setPurchasedItems } from './shop.js?v=2026-09-14-002';
+} from './main.js?v=2026-09-14-004';
+import { setPurchasedItems } from './shop.js?v=2026-09-14-004';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-14-002';
-import { getMps, skills } from './tap.js?v=2026-09-14-002';
+} from './state.js?v=2026-09-14-004';
+import { getMps, skills } from './tap.js?v=2026-09-14-004';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-14-002';
+} from './ui.js?v=2026-09-14-004';
 
         // 🔧 CONFIG：ロジック中のマジックナンバーを調整しやすいようにまとめたもの
         const CONFIG = {
@@ -68,7 +68,11 @@ import {
         export let prestigeCount = 0;      // 転生した回数
 
         // 👗 着せ替え部屋：所持アイテムと、今装着中のアイテム（カテゴリごとに1つだけ）
-        export let ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [] };
+        // 🆕 squeeze（スクイーズ衣装）はカルーセルの見た目上は別カテゴリだが、実際に装備する場所は
+        // fullbodyと共用の1つの「全身スロット」なので、equippedKisekae/previewKisekaeにはsqueeze用の
+        // フィールドを増やしていない（kisekae.jsのfindFullbodySlotItem()参照）。所持状況だけは
+        // カテゴリごとに別々に持つ必要があるため、ownedKisekaeItemsにはsqueezeを追加している。
+        export let ownedKisekaeItems = { hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [], squeeze: [] };
         export let equippedKisekae = { hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null };
 
         // 💼 おしごとミッション：進捗カウンター・選ばれているミッション・受け取り済みの管理

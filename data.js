@@ -361,8 +361,17 @@
                     img: 'ui_images/kisekae/fullbody_robo.webp', // 通常時（口閉じ）
                     mouthFrames: [1,2,3,4,5].map(n => `ui_images/kisekae/fullbody_robo_mouth_${n}.webp`), // 口が開くコマ送り
                 },
-                // 🧪 管理者限定・試作中：スクイーズ衣装の第一弾。全身衣装の一種として、他の衣装とまったく同じ
-                // カルーセル（外す✕・全身装着で帽子等が消える、等）で選べるようにしてある（2-1参照）。
+            ],
+            // 🆕 以前はfullbodyの中に一緒に入れていたが、「着せ替え部屋でスクイーズ衣装とロボもちすけを
+            // 別枠にしてほしい」というまもすいの要望を受け、専用のカテゴリとして分離した（2-6・4-12参照）。
+            // 見た目上のカルーセル・カテゴリボタンだけを分けており、実際に装備する時の置き場所
+            // （equippedKisekae.fullbody / previewKisekae.fullbody という1つの「全身スロット」）は
+            // fullbodyのアイテムと共用したまま。どちらのカテゴリのアイテムも同じ1スロットを取り合う形なので、
+            // 「fullbodyとsqueezeは同時装着できない」という仕様は今まで通り自然に保たれている
+            // （kisekae.jsのfindFullbodySlotItem()参照）。
+            squeeze: [
+                // 🧪 試作中：スクイーズ衣装の第一弾。全身スロットを使う衣装の一種として、他の衣装と
+                // まったく同じカルーセル（外す✕・装着で帽子等が消える、等）で選べるようにしてある（2-1参照）。
                 // squeezeMaterialは装備中にsrc/squeeze/materials.jsのどのキーの素材（音）を使うかの指定で、
                 // kisekae.jsのapplyKisekaeToMainScreen()がここを見てsetSqueezeMaterial()に渡している。
                 // devOnly:trueの間は、ownedKisekaeItemsに入っていなくてもIS_DEV_MODEなら選べ、
@@ -375,7 +384,7 @@
                 },
             ],
         };
-        export const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服', back: '背中', fullbody: '全身' };
+        export const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服', back: '背中', fullbody: '全身', squeeze: 'スクイーズ' };
         export const DEFAULT_MOUTH_POSITION = { top: 36.986245, left: 48.44735, width: 17 }; // 服の指定が無い時（初期衣装含む）はこちら
 
         // ===================================================================

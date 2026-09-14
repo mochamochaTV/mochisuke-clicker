@@ -1,12 +1,16 @@
         // ui.js を機能ごとに分割したファイルの1つ（ランキング・日記帳）。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-14-002';
-        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-14-002';
-        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-14-002';
-        import { purchasedItems } from '../../shop.js?v=2026-09-14-002';
-        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-14-002';
-        import { closeModal, openModal } from './core.js?v=2026-09-14-002';
-        import { setupChatInputEnterKey } from './chat.js?v=2026-09-14-002';
+        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-14-004';
+        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-14-004';
+        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-14-004';
+        import { purchasedItems } from '../../shop.js?v=2026-09-14-004';
+        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-14-004';
+        import { closeModal, openModal } from './core.js?v=2026-09-14-004';
+        import { setupChatInputEnterKey } from './chat.js?v=2026-09-14-004';
+        // 🆕 全身スロット（fullbody/squeeze共用）のアイテムを、カテゴリを問わずidだけで引くための
+        // 共有ヘルパー（2-6・4-12参照）。KISEKAE_ITEMS.fullbodyだけを見ていると、スクイーズ衣装を
+        // 着けたまま訪問した相手のプレビューが表示できなくなる。
+        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-14-004';
 
 
         const CONFIG = {
@@ -83,7 +87,7 @@
         export function renderRankOutfitPreviewHtml(outfit) {
             const fullbodyId = outfit && outfit.fullbody;
             if (fullbodyId) {
-                const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
+                const fbItem = findFullbodySlotItem(fullbodyId);
                 if (fbItem) return `<img src="${fbItem.img}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">`;
             }
             const clothesItem = (outfit && KISEKAE_ITEMS.clothes.find(i => i.id === outfit.clothes)) || KISEKAE_ITEMS.clothes[0];

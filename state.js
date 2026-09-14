@@ -1,6 +1,6 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-14-002';
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-14-004';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -9,7 +9,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-14-002';
+} from './minigames.js?v=2026-09-14-004';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -22,21 +22,21 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-14-002';
+} from './progress.js?v=2026-09-14-004';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-14-002';
+} from './shop.js?v=2026-09-14-004';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-14-002';
+} from './tap.js?v=2026-09-14-004';
 import {
   hasSeenTutorial, lastGiftSentDates, seenButtonHints, setHasSeenTutorial,
   setLastGiftSentDates, setSeenButtonHints
-} from './ui.js?v=2026-09-14-002';
+} from './ui.js?v=2026-09-14-004';
 
         // 🔧 このファイル内で使うチューニング用の数値をまとめたもの（挙動は変えず、名前を付けただけ）
         const CONFIG = {
@@ -377,7 +377,7 @@ import {
                     setSlotJackpotCount(state.slotJackpotCount ?? 0);
                     setSlotShortestJackpotPulls(state.slotShortestJackpotPulls ?? null);
                     setSlotLongestJackpotPulls(state.slotLongestJackpotPulls ?? null);
-                    setOwnedKisekaeItems({ hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [], ...(state.ownedKisekaeItems || {}) });
+                    setOwnedKisekaeItems({ hat: [], face: [], clothes: ['clothes_mochisuke_tshirt'], back: [], fullbody: [], squeeze: [], ...(state.ownedKisekaeItems || {}) });
                     setEquippedKisekae({ hat: null, face: null, clothes: 'clothes_mochisuke_tshirt', back: null, fullbody: null, ...(state.equippedKisekae || {}) });
                     setMissionCounters({ ...missionCounters, ...(state.missionCounters || {}) });
                     setMissionDailyDate(state.missionDailyDate ?? '');

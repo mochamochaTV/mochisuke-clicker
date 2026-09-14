@@ -14,10 +14,10 @@
 // src/squeeze/ ディレクトリにまとめていく予定。
 import {
   audioBuffers, createBurstParticle, getAudioContext, playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-14-002';
+} from '../../main.js?v=2026-09-14-004';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-002';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-004';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -54,6 +54,18 @@ const CONFIG = {
   POKE_MAX_VOLUME: 0.7,  // 強く押した時の音量
   POKE_MIN_PITCH: 0.7,   // 強く押した時のピッチ（強いほど低く・重い音にする）
   POKE_MAX_PITCH: 1.15,  // 弱く押した時のピッチ（弱いほど高く・軽い音にする）
+  // --- 🆕 スクイーズ：伸びる「方向」の追従（2-1-b22で追加、2-1-b23で調整） ---
+  // 最初は大きさ(SQUEEZE_FOLLOW_LERP)とまったく同じ追従係数・同じ「伸びるほど重くなる」heaviness補正を
+  // 方向にもかけていたが、「重みのせいでもちすけを暴れさせる楽しさが無くなった」というまもすいからの
+  // フィードバックを受け、方向は伸び具合に関わらず常に一定の軽さで追従するよう分離した（heaviness補正なし）。
+  SQUEEZE_DIRECTION_FOLLOW_LERP: 0.22, // 方向の追従係数。SQUEEZE_FOLLOW_LERP(0.045)よりずっと大きく＝軽く速い
+  // 急に正反対の方向へ引っ張った時だけ、指の生の方向へ直接向きを変えるのではなく、一度伸びを縮めてから
+  // 新しい方向へ伸ばし直す（「もちすけの中心付近を一度通ってから反対側へ伸びる」感触にするため）。
+  // 他の方向を経由してじわじわ反対方向に持っていった場合は、見た目の方向(squeezeVisualDx/Dy)が生の方向に
+  // 毎フレームほぼ追従できているため、内積の変化が緩やかで、この閾値を割り込まない＝この特別処理には入らない。
+  SQUEEZE_REVERSAL_DOT_THRESHOLD: -0.5, // 見た目の方向と新しい生の方向、正規化した内積がこれ未満＝なす角がおよそ120度を超えたら「急な反転」とみなす
+  SQUEEZE_REVERSAL_RETRACT_LERP: 0.3, // 急な反転を検出した時、伸び率だけをこの速さで0へ戻す（大きさの重みheavinessの影響を受けない、常に一定の軽快さ）
+  SQUEEZE_REVERSAL_RATIO_EPSILON: 0.04, // 伸び率がここまで縮んだら「中心に戻った」とみなし、方向を新しい向きへ切り替えて伸ばし直す
 };
 
 // 🆕 「もっと伸ばせるようにしたい」というフィードバックを受けて、1本指スクイーズの限界を底上げ
@@ -239,12 +251,17 @@ let pokeFired = false;
 let pokeStartTime = 0;
 // 🆕 実際の見た目・音に使う比率。stepSqueezeFollowが毎フレーム目標値へ近づける（追従の遅れ＝重み・粘り気）
 let squeezeVisualRatio = 0;
-// 🆕 1本指スクイーズの「見た目の伸び方向」。伸び率(squeezeVisualRatio)と同じように、指の生の方向
-// (oneFingerDx/Dy)へ毎フレーム少しずつ近づける（追従の遅れ）。以前は伸び率だけに重みを付けていて方向は
-// 指の位置に瞬時に追従していたため、急に逆方向へ引っ張ると、伸びの大きさは重そうなのに向きだけ一瞬で
-// 反転する、という違和感があった（まもすいからの指摘）。方向にも同じ重みを持たせることで、
-// 「大きく伸びている時ほど、向きを変えるのにも力と時間がかかる」という一貫した感触になる。
+// 🆕 1本指スクイーズの「見た目の伸び方向」。指の生の方向(oneFingerDx/Dy)へ毎フレーム少しずつ近づける
+// （追従の遅れ）ことで、方向にも瞬時ではない軽い追従感を持たせている。以前は伸び率とまったく同じ
+// heaviness込みの重い追従係数を使っていたが、「重みのせいでもちすけを暴れさせる楽しさが無くなった」
+// というまもすいの指摘を受け、方向はSQUEEZE_DIRECTION_FOLLOW_LERPという専用の軽い係数（heaviness補正なし）
+// で追従するよう分離した。急な正反対方向への反転だけは、これとは別にsqueezeReversalActiveで特別扱いする
+// （下記参照・2-1-b23）。
 let squeezeVisualDx = 0, squeezeVisualDy = 0;
+// 🆕 「急な反転」を検出して処理中かどうか。trueの間は方向(squeezeVisualDx/Dy)を凍結し、伸び率だけを
+// SQUEEZE_REVERSAL_RETRACT_LERPで0へ縮める。伸び率がSQUEEZE_REVERSAL_RATIO_EPSILON未満まで縮んだら、
+// その時点でほぼ見えなくなっている方向を新しい生の方向へ切り替えてfalseに戻す（2-1-b23参照）。
+let squeezeReversalActive = false;
 let squeezeFollowRafId = null;
 
 // 引っ張った方向・距離から、今の生の伸縮比率を記録し、追従ループの目標値を更新する（1本指ドラッグ中に毎回呼ばれる）
@@ -338,16 +355,38 @@ function stepSqueezeFollow() {
         mochiDeformWrap.style.transform = twoFingerSqueezeTransformFor(twoFingerAngleDeg, squeezeVisualRatio);
         updateStretchSound(squeezeVisualRatio);
     } else {
-        const target = easeSqueezeRatio(oneFingerRawRatio);
-        squeezeVisualRatio += (target - squeezeVisualRatio) * effectiveLerp;
-        // 🆕 方向にも伸び率と同じ「重み」を持たせる：生の指の方向(oneFingerDx/Dy)に瞬時に合わせず、
-        // 同じeffectiveLerpで毎フレーム少しずつ近づける。指の移動量がほぼ無い(dist≈0)瞬間は
-        // 方向そのものが定まらない（atan2の入力が(0,0)付近で不安定）ため、その間は直前の方向を
-        // 維持し、ノイズで方向が暴れるのを防ぐ。
         const rawDist = Math.sqrt(oneFingerDx * oneFingerDx + oneFingerDy * oneFingerDy);
-        if (rawDist > 0.5) {
-            squeezeVisualDx += (oneFingerDx - squeezeVisualDx) * effectiveLerp;
-            squeezeVisualDy += (oneFingerDy - squeezeVisualDy) * effectiveLerp;
+        const visualDirLen = Math.sqrt(squeezeVisualDx * squeezeVisualDx + squeezeVisualDy * squeezeVisualDy);
+        // 🆕 急な反転検出：今表示している伸び方向(squeezeVisualDx/Dy)と、今の生の指方向(oneFingerDx/Dy)の
+        // なす角がおよそ120度を超えていたら「急な反転」とみなし、いきなり向きだけ変えるのではなく、
+        // 一度もちすけの中心付近まで縮めてから新しい方向へ伸ばし直す（2-1-b23参照）。他の方向を経由して
+        // じわじわ持っていった場合はこの内積が毎フレーム緩やかにしか変わらず、閾値を割り込まないので発動しない。
+        if (!squeezeReversalActive && rawDist > 0.5 && visualDirLen > 0.5 && squeezeVisualRatio > CONFIG.SQUEEZE_REVERSAL_RATIO_EPSILON) {
+            const dot = (oneFingerDx * squeezeVisualDx + oneFingerDy * squeezeVisualDy) / (rawDist * visualDirLen);
+            if (dot < CONFIG.SQUEEZE_REVERSAL_DOT_THRESHOLD) squeezeReversalActive = true;
+        }
+
+        if (squeezeReversalActive) {
+            // 方向は凍結したまま、伸び率だけを常に一定の速さ（重みheavinessの影響を受けない）で0へ縮める
+            squeezeVisualRatio += (0 - squeezeVisualRatio) * CONFIG.SQUEEZE_REVERSAL_RETRACT_LERP;
+            if (squeezeVisualRatio < CONFIG.SQUEEZE_REVERSAL_RATIO_EPSILON) {
+                // 中心付近まで戻った＝見た目上ほぼ伸びていないので、ここで方向を新しい生の方向へ
+                // 切り替えても違和感が出ない。以後は通常通りの追従に戻る
+                squeezeReversalActive = false;
+                squeezeVisualDx = oneFingerDx;
+                squeezeVisualDy = oneFingerDy;
+            }
+        } else {
+            const target = easeSqueezeRatio(oneFingerRawRatio);
+            squeezeVisualRatio += (target - squeezeVisualRatio) * effectiveLerp;
+            // 🆕 方向の追従は、大きさ(effectiveLerp)とは別の専用係数SQUEEZE_DIRECTION_FOLLOW_LERPを使う。
+            // 「暴れさせる」操作感を大きさほど鈍らせないよう、伸びるほど遅くなるheaviness補正はかけていない
+            // （2-1-b23参照）。指の移動量がほぼ無い(dist≈0)瞬間は方向そのものが定まらない（atan2の入力が
+            // (0,0)付近で不安定）ため、その間は直前の方向を維持し、ノイズで方向が暴れるのを防ぐ。
+            if (rawDist > 0.5) {
+                squeezeVisualDx += (oneFingerDx - squeezeVisualDx) * CONFIG.SQUEEZE_DIRECTION_FOLLOW_LERP;
+                squeezeVisualDy += (oneFingerDy - squeezeVisualDy) * CONFIG.SQUEEZE_DIRECTION_FOLLOW_LERP;
+            }
         }
         mochiDeformWrap.style.transformOrigin = 'center center';
         mochiDeformWrap.style.transform = squeezeTransformFor(squeezeVisualDx, squeezeVisualDy, squeezeVisualRatio);
@@ -382,6 +421,7 @@ export function endSqueeze() {
     const finalDx = squeezeVisualDx, finalDy = squeezeVisualDy;
     squeezeVisualRatio = 0;
     squeezeVisualDx = 0; squeezeVisualDy = 0;
+    squeezeReversalActive = false; // 🆕 次にスクイーズを始めた時に反転検出の状態を持ち越さないようにする
     oneFingerRawRatio = 0; oneFingerDx = 0; oneFingerDy = 0;
     twoFingerRawRatio = 0; twoFingerAngleDeg = 0;
     return { ratio: finalRatio, dx: finalDx, dy: finalDy };

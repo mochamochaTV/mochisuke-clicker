@@ -4,22 +4,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-14-002';
+} from './data.js?v=2026-09-14-004';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-14-002';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-14-002';
+} from './main.js?v=2026-09-14-004';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-14-004';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-14-002';
-import { saveGame, score, setScore } from './state.js?v=2026-09-14-002';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-14-002';
+} from './progress.js?v=2026-09-14-004';
+import { saveGame, score, setScore } from './state.js?v=2026-09-14-004';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-14-004';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-14-002';
+} from './ui.js?v=2026-09-14-004';
 
         // ===================================================================
         // 調整用の数値をまとめた設定オブジェクト。既に名前付きでexportされている
@@ -563,9 +563,15 @@ import {
          */
         export function getKisekaeItemsByStar(star) {
             const pool = [];
-            ['hat', 'face', 'clothes', 'back', 'fullbody'].forEach(cat => {
+            // 🐛修正：devOnly（管理者限定・試作中）のアイテムを除外し忘れていた。スクイーズ衣装
+            // （fullbody_squeeze_slime）はガチャ等の正式な入手経路がまだ無いdevOnly:trueのアイテムだが、
+            // このフィルタ漏れのせいで、実際にはガチャで一般プレイヤーにも当たってしまう状態になっていた
+            // （2-6・4-12参照）。あわせて、fullbodyから分離した新カテゴリ'squeeze'もプール対象に追加しておく
+            // （今はdevOnlyなアイテムしか無いため実質は何も追加されないが、将来devOnly:trueを外して
+            // 正式に実装する時、ここへの追記を忘れずに済む）。
+            ['hat', 'face', 'clothes', 'back', 'fullbody', 'squeeze'].forEach(cat => {
                 KISEKAE_ITEMS[cat].forEach(item => {
-                    if (item.star === star && item.id !== 'clothes_mochisuke_tshirt') pool.push({ ...item, category: cat });
+                    if (item.star === star && item.id !== 'clothes_mochisuke_tshirt' && !item.devOnly) pool.push({ ...item, category: cat });
                 });
             });
             return pool;

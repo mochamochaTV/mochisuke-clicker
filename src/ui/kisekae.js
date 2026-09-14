@@ -1,17 +1,17 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-14-002';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-14-002';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-14-004';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-14-004';
         // 🧪 管理者限定・試作中：全身の「スクイーズ衣装」を装備/解除するたびに、スクイーズの音の素材を
         // 同期させるために使う（applyKisekaeToMainScreen参照）
-        import { setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-14-002';
-        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-14-002';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-14-002';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-14-002';
-        import { saveGame } from '../../state.js?v=2026-09-14-002';
-        import { closeModal, openModal } from './core.js?v=2026-09-14-002';
-        import { openTicketInventory } from './myroom.js?v=2026-09-14-002';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-14-002';
+        import { setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-14-004';
+        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-14-004';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-14-004';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-14-004';
+        import { saveGame } from '../../state.js?v=2026-09-14-004';
+        import { closeModal, openModal } from './core.js?v=2026-09-14-004';
+        import { openTicketInventory } from './myroom.js?v=2026-09-14-004';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-14-004';
 
         // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
         const CONFIG = {
@@ -88,20 +88,45 @@
             }, CONFIG.KISEKAE_ROOM_CLOSE_FADE_MS);
         }
 
-        // 🧪 管理者限定・試作中：着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。
-        // スクイーズ衣装（スライムもちすけ等）は、他の全身衣装（ロボもちすけ等）とまったく同じ
-        // 「全身」カテゴリの1着として実装されているため（KISEKAE_ITEMS.fullbody・2-1参照）、
-        // このボタンは「全身」カテゴリボタン（🤖）を押した時とまったく同じ一覧を開く、専用の近道
-        // という位置づけにしている。以前はここを「専用のタップ画面ができるまでの仮の準備中メッセージ」
-        // にしていたが、それだと管理者が試作中の衣装を試す入口として機能しなくなってしまうため、
-        // 実際に選べる一覧を開くように変更した。
+        // 🧪 試作中：着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。
+        // 以前はスクイーズ衣装（スライムもちすけ等）とロボもちすけ等を同じ「全身」カテゴリに
+        // まとめていたため、このボタンは「全身」カテゴリを開く近道でしかなかったが、まもすいから
+        // 「着せ替え部屋でスクイーズ衣装とロボもちすけは別枠にしてほしい」という要望を受け、
+        // KISEKAE_ITEMS側でfullbody（ロボもちすけ等）とsqueeze（スクイーズ衣装）を別のカテゴリに
+        // 分離した（2-1・2-6・4-12参照）。このボタンはそのうちの'squeeze'専用の入口になる
+        // （もう一方の'fullbody'は🤖の丸ボタンから開く、他の4カテゴリと同じ扱い）。
         /**
-         * スクイーズボタンのクリックハンドラ。「全身」カテゴリの一覧をそのまま開く。
+         * スクイーズボタンのクリックハンドラ。「スクイーズ」カテゴリの一覧を開く。
          * @returns {void}
          */
         export function onSqueezeModeButtonClick() {
             playAudioFile('audio/tap.mp3');
-            openKisekaeCategory('fullbody');
+            openKisekaeCategory('squeeze');
+        }
+
+        // 🆕 全身スロットに入るアイテムは、見た目上は「全身」「スクイーズ」という2つの別カテゴリに分かれて
+        // 一覧表示されるが、実際に装備する場所（previewKisekae.fullbody / equippedKisekae.fullbody）は
+        // 1つの「全身スロット」を共用している（着せ替え部屋のスクイーズ衣装とロボもちすけを別枠にしてほしい、
+        // というまもすいの要望を受けて、一覧のカテゴリだけを分けた・2-1/2-6/4-12参照）。どちらのカテゴリの
+        // アイテムかを気にせずidだけでアイテムデータを引けるよう、両方のカテゴリを検索するヘルパーに一本化する。
+        /**
+         * 全身スロット（fullbody・squeezeどちらのカテゴリか問わない）のアイテムを、idから探して返す。
+         * @param {string|null} id - 探すアイテムのID。
+         * @returns {Object|undefined} 見つかったアイテムデータ（見つからなければundefined）。
+         */
+        export function findFullbodySlotItem(id) {
+            return KISEKAE_ITEMS.fullbody.find(i => i.id === id) || KISEKAE_ITEMS.squeeze.find(i => i.id === id);
+        }
+        // 🆕 カテゴリ名(cat)が「全身スロットを使う側」（'fullbody'・'squeeze'）かどうかを判定する。
+        // このスロットは1つしか無いため、帽子/顔/背中の自動解除ルールや、試着中かどうかの判定を
+        // fullbody/squeeze共通の処理にまとめるために使う。
+        /**
+         * カテゴリが全身スロット（'fullbody' または 'squeeze'）を使う側かどうかを返す。
+         * @param {string} cat - カテゴリ名。
+         * @returns {boolean}
+         */
+        export function isFullbodySlotCategory(cat) {
+            return cat === 'fullbody' || cat === 'squeeze';
         }
 
         // 着せ替え部屋のもちすけと、通常のタップ画面のもちすけ、両方に今の装着状態を反映する
@@ -117,7 +142,7 @@
             if (fullbodyId) {
                 // 全身装備中は、帽子・顔パーツを隠し、服は visibility:hidden で完全に見えなくする
                 // （display:noneだと箱の高さの土台が無くなり全身画像も消えてしまうため、レイアウトのスペースだけ残す）
-                const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
+                const fbItem = findFullbodySlotItem(fullbodyId);
                 roomFullbody.src = fbItem.img;
                 roomFullbody.style.display = 'block';
                 roomClothes.style.opacity = '0';
@@ -316,7 +341,7 @@
             const mainFullbody = document.getElementById('mochisuke-fullbody');
             const mouthAnchor = document.getElementById('mochisuke-mouth-anchor');
             const fullbodyId = equippedKisekae.fullbody;
-            const fbItem = fullbodyId ? KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId) : null;
+            const fbItem = fullbodyId ? findFullbodySlotItem(fullbodyId) : null;
             // 🧪 管理者限定・試作中：装備中の全身衣装がスクイーズ素材を持っていれば（例：スライムもちすけ）
             // 物理演算側の音をそれに同期させ、持っていなければ（ロボもちすけ・未装備含む）通常素材に戻す。
             // 画像の表示自体はこの関数がこの後で担当するので、physics.js側は音だけを切り替える（2-1参照）。
@@ -376,7 +401,7 @@
         export function getEquippedSqueezeMaterialKey() {
             const fullbodyId = equippedKisekae.fullbody;
             if (!fullbodyId) return null;
-            const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
+            const fbItem = findFullbodySlotItem(fullbodyId);
             return (fbItem && fbItem.squeezeMaterial) || null;
         }
         // 🛋️ マイルームのもちすけにも、装備中の着せ替えを反映する
@@ -393,7 +418,7 @@
             const fullbodyId = equippedKisekae.fullbody;
 
             if (fullbodyId) {
-                const fbItem = KISEKAE_ITEMS.fullbody.find(i => i.id === fullbodyId);
+                const fbItem = findFullbodySlotItem(fullbodyId);
                 fullbodyEl.src = fbItem.img;
                 fullbodyEl.style.display = 'block';
                 clothesEl.style.opacity = '0'; // display:noneだと土台が潰れるため、opacityで見た目だけ消す
@@ -464,7 +489,7 @@
         // カテゴリを開いて、名前順・Zの字並びで左右にアイテムを並べる
         /**
          * 指定カテゴリの着せ替えアイテム一覧を開き、名前順で左右交互にアイテムセルを描画する。
-         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody'）。
+         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody' | 'squeeze'）。
          * @returns {void}
          */
         export function openKisekaeCategory(cat) {
@@ -490,10 +515,13 @@
             const rightList = document.getElementById('kisekae-item-list-right');
             leftList.innerHTML = ''; rightList.innerHTML = '';
 
+            // 🆕 'fullbody'/'squeeze'は同じ全身スロット(previewKisekae.fullbody)を共用しているため、
+            // 「今このカテゴリの何が装着中か」の判定も、そのスロットを見る（isFullbodySlotCategory参照）
+            const isFullbodySlot = isFullbodySlotCategory(cat);
             items.forEach((item, i) => {
                 const cell = document.createElement('div');
                 if (item.isRemoveButton) {
-                    const isEquipped = previewKisekae[cat] == null;
+                    const isEquipped = (isFullbodySlot ? previewKisekae.fullbody : previewKisekae[cat]) == null;
                     cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); cursor:pointer;`;
                     cell.innerHTML = `<div style="font-size:1.8rem; color:#e57373; font-weight:900;">✕</div>`;
                     cell.onclick = () => equipKisekaeItem(cat, null);
@@ -503,7 +531,7 @@
                 // 🧪 管理者限定・試作中：devOnlyアイテムは、開発者モードなら所持チェックを免除して選べるようにする
                 // （ガチャに入っていないので、通常の所持判定だけでは管理者も永遠に選べなくなってしまう）
                 const isOwned = owned.includes(item.id) || (item.devOnly && IS_DEV_MODE);
-                const isEquipped = previewKisekae[cat] === item.id;
+                const isEquipped = (isFullbodySlot ? previewKisekae.fullbody : previewKisekae[cat]) === item.id;
                 cell.style.cssText = `width:100%; box-sizing:border-box; aspect-ratio:1; border-radius:12px; background:rgba(255,255,255,0.92); border:3px solid ${isEquipped ? '#e91e63' : 'transparent'}; display:flex; align-items:center; justify-content:center; position:relative; flex-shrink:0; box-shadow:0 2px 5px rgba(0,0,0,0.15); ${isOwned ? 'cursor:pointer;' : ''}`;
                 const starStyle = item.star === CONFIG.KISEKAE_TOP_RARITY_STAR
                     ? 'background:linear-gradient(90deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#9d4edd); -webkit-background-clip:text; background-clip:text; color:transparent;'
@@ -521,8 +549,9 @@
                 (i % 2 === 0 ? leftList : rightList).appendChild(cell);
             });
 
-            ['hat', 'face', 'clothes', 'back', 'fullbody'].forEach(c => {
-                document.getElementById(`kisekae-cat-btn-${c}`).style.boxShadow = (c === cat) ? '0 0 0 3px #ffd700, 0 3px 8px rgba(0,0,0,0.25)' : '0 3px 8px rgba(0,0,0,0.25)';
+            ['hat', 'face', 'clothes', 'back', 'fullbody', 'squeeze'].forEach(c => {
+                const btn = document.getElementById(`kisekae-cat-btn-${c}`);
+                if (btn) btn.style.boxShadow = (c === cat) ? '0 0 0 3px #ffd700, 0 3px 8px rgba(0,0,0,0.25)' : '0 3px 8px rgba(0,0,0,0.25)';
             });
 
             if (IS_DEV_MODE) renderKisekaeAdjustPanel(cat);
@@ -544,21 +573,29 @@
         }
         /**
          * 指定カテゴリのアイテムを試着状態（プレビュー）に装着し、関連する自動解除ルールを適用して表示を更新する。
-         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody'）。
+         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody' | 'squeeze'）。
          * @param {string|null} id - 装着するアイテムID。外す場合は null。
          * @returns {void}
          */
         export function equipKisekaeItem(cat, id) {
-            if (cat === 'fullbody' && id) {
-                // 全身を装着すると、帽子・顔パーツ・背中（翼）は自動的に外れる（服は保持したまま、全身解除時に元へ戻る）
+            // 🆕 'fullbody'（全身）と'squeeze'（スクイーズ衣装）は、着せ替え部屋のカルーセル上は別カテゴリだが、
+            // 装備する場所は同じ1つの「全身スロット」を共用している。どちらの一覧から選んでも、
+            // previewKisekae.fullbodyという同じフィールドを書き換える（isFullbodySlotCategory参照）。
+            const isFullbodySlot = isFullbodySlotCategory(cat);
+            if (isFullbodySlot && id) {
+                // 全身スロットを装着すると、帽子・顔パーツ・背中（翼）は自動的に外れる（服は保持したまま、解除時に元へ戻る）
                 previewKisekae.hat = null;
                 previewKisekae.face = null;
                 previewKisekae.back = null;
             } else if ((cat === 'hat' || cat === 'face' || cat === 'back') && id && previewKisekae.fullbody) {
-                // 全身装着中に帽子・顔パーツ・背中を選んだら、全身を自動的に外す
+                // 全身スロット装着中に帽子・顔パーツ・背中を選んだら、全身スロットを自動的に外す
                 previewKisekae.fullbody = null;
             }
-            previewKisekae[cat] = id; // 「決定」を押すまでは、試着中の状態を更新するだけ
+            if (isFullbodySlot) {
+                previewKisekae.fullbody = id; // 「全身」「スクイーズ」どちらのタブから選んでも、書き込み先は同じ1つのスロット
+            } else {
+                previewKisekae[cat] = id; // 「決定」を押すまでは、試着中の状態を更新するだけ
+            }
             renderKisekaeMochisuke();
             openKisekaeCategory(cat);
             const item = id ? KISEKAE_ITEMS[cat].find(i => i.id === id) : null;
@@ -654,13 +691,13 @@
         export const KISEKAE_ADJUST_TOOL_ENABLED = false;
         /**
          * 位置調整パネルの内容（対象アイテムの選択肢・表示/非表示）をカテゴリに応じて描画する。
-         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody'）。
+         * @param {string} cat - カテゴリ名（'hat' | 'face' | 'clothes' | 'back' | 'fullbody' | 'squeeze'）。
          * @returns {void}
          */
         export function renderKisekaeAdjustPanel(cat) {
             const panel = document.getElementById('kisekae-adjust-panel');
             if (!KISEKAE_ADJUST_TOOL_ENABLED) { panel.style.display = 'none'; return; }
-            if (cat === 'clothes' || cat === 'fullbody') { panel.style.display = 'none'; return; } // 服・全身は調整不要
+            if (cat === 'clothes' || cat === 'fullbody' || cat === 'squeeze') { panel.style.display = 'none'; return; } // 服・全身スロットは調整不要
             const select = document.getElementById('kisekae-adjust-target');
             if (cat === 'back') {
                 const adjustableItems = KISEKAE_ITEMS.back.filter(i => i.locked);
