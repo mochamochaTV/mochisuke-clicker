@@ -352,12 +352,19 @@
             // 表示・非表示もここでDOM直接操作でまとめて済ませる（tap.js側のrefreshSqueezeAccumHud()でも
             // 同じ判定を毎回やり直すため、二重に安全になっている）
             const isSqueezeCostume = !!(fbItem && fbItem.squeezeMaterial);
-            setAccumulateModeActive(isSqueezeCostume);
+            // 🆕 まもすいの要望で、永続変形が蓄積する「専用モード」（触るたびに変形が戻りきらず、
+            // 「戻す」ボタンで精算する遊び方）はいったん無効化した。スライムもちすけも通常のもちすけと
+            // 同じく、離せば必ず元の形に「ぷるん」と戻る（＝下のfalseを固定で渡している）。
+            // 素材ごとの音・見た目の切り替え(setSqueezeMaterial呼び出し)自体はこれと独立しているので、
+            // スライム専用の音（ぴちゃ音・つつき音等）には影響しない。専用モードを再度使いたくなったら、
+            // 下のfalseをisSqueezeCostumeに戻すだけでよい（tap.js側のpointerdownの保険呼び出しも合わせて戻すこと）。
+            setAccumulateModeActive(false);
             const accumHudEl = document.getElementById('squeeze-accum-hud');
-            if (accumHudEl) accumHudEl.style.display = isSqueezeCostume ? 'flex' : 'none';
-            // 🆕 スクイーズ衣装装備中はスキル・必殺技のUIそのものが不要（まもすいの要望）。
-            // 実際の非表示はstyle.cssのbody.squeeze-costume-active側にまとめてあるので、ここではクラスの
-            // 付け外しだけを行う（tap.js側のpointerdownからも保険として同じ判定で同期される）
+            if (accumHudEl) accumHudEl.style.display = 'none'; // 専用モードを無効化したので、「戻す」ボタンごと常に非表示にする
+            // 🆕 スクイーズ衣装装備中はスキル・必殺技のUIそのものが不要（まもすいの要望）。こちらは上の
+            // 専用モードとは別の判定で、衣装を着ている間は常に適用する。実際の非表示はstyle.cssの
+            // body.squeeze-costume-active側にまとめてあるので、ここではクラスの付け外しだけを行う
+            // （tap.js側のpointerdownからも保険として同じ判定で同期される）
             document.body.classList.toggle('squeeze-costume-active', isSqueezeCostume);
 
             if (fullbodyId) {

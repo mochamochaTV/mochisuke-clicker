@@ -679,9 +679,10 @@ import {
             // 装備に関係なくこれまで通り動く（4-3a・2-1参照）。
             const squeezeCostumeMaterialKey = getEquippedSqueezeMaterialKey();
             const isSqueezeCostumeActive = !!squeezeCostumeMaterialKey;
-            // 🆕 専用モードの有効/無効を毎タップ同期しておく保険（主な同期はkisekae.js側の
-            // applyKisekaeToMainScreen()。値が変わらなければ即returnするので無害）
-            setAccumulateModeActive(isSqueezeCostumeActive);
+            // 🆕 専用モード（永続変形＋戻すボタン）はいったん無効化中（kisekae.jsのapplyKisekaeToMainScreen参照）。
+            // ここは値を同期する保険の呼び出しなので、無効化中はkisekae.js側と同じくfalseで固定しておく
+            // （将来また有効化する時は、kisekae.js側と一緒にisSqueezeCostumeActiveへ戻すこと）
+            setAccumulateModeActive(false);
             // 🆕 スキル/必殺技UIの表示・非表示も同様に、毎タップ同期しておく保険（主な同期はkisekae.js側）
             document.body.classList.toggle('squeeze-costume-active', isSqueezeCostumeActive);
 

@@ -624,6 +624,15 @@ function startSqueezeFollowLoop() {
  * @returns {{ratio: number, dx: number, dy: number}} 離した瞬間の最終的な伸縮比率(0〜1)と伸び方向
  */
 export function endSqueeze() {
+    // 🐛修正：指を早く離した時、armPokeImpact()で仕込んだPOKE_FALLBACK_DELAY_MS後のフォールバック
+    // タイマーがまだ発火していないと、そのタイマーだけが指を離した後も生き残ってしまい、tap.mp3や
+    // 弾けポン音とは別のタイミングで「引っ張らず押した時」の音（mochi_poke_still等）が単独で・
+    // 遅れて鳴ってしまい、まるで2つの音が二重に鳴っているように聞こえる不具合があった
+    // （まもすいの報告：タップした時にtap/pokeと poke_still が両方鳴る）。指を離す瞬間にまだ
+    // 発火していなければ、タイマーを待たずにここで確定させる（＝タップなら他の音とほぼ同時に、
+    // 短い長押しなら離した瞬間に鳴る。pokeArmedがfalseの時＝既に鳴った/そもそも対象外の時は何もしない）。
+    if (pokeArmed && !pokeFired) firePokeImpact(0, 0, true);
+
     // 🆕 専用モードの蓄積は1本指スクイーズのみ対象（2本指ストレッチは今まで通り常に完全に戻る）。
     // currentModeをnullにする前に判定しておく必要がある
     const wasOneFinger = currentMode === 'one';
