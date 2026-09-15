@@ -128,6 +128,7 @@ import {
             RIPPLE_PEAK_ALPHA: 0.6,                    // 波紋の開始時の不透明度
             RIPPLE_LINE_WIDTH: 4,                      // 波紋の線の太さ
             RIPPLE_MAX_RADIUS: 65,                     // 波紋が広がる最大半径
+            RIPPLE_DEFAULT_COLOR: '255, 152, 0',       // 波紋の既定色（従来通りのオレンジ）。'R, G, B'形式の文字列
             // 🆕 もちすけ以外（背景など）をタップした時用の、控えめな波紋。もちすけタップ時の主張の強い波紋とは
             // 差をつけて、あくまで「触れたことへの軽いフィードバック」に留める
             RIPPLE_LIGHT_ALPHA_MULT: 0.5,
@@ -1098,10 +1099,13 @@ import {
          */
         /**
          * @param {boolean} [light=false] - true時は、もちすけ以外をタップした時用の控えめな波紋にする
+         * @param {string} [color=CONFIG.RIPPLE_DEFAULT_COLOR] - 波紋の色。'R, G, B'形式の文字列（rgba()にそのまま埋め込む）。
+         *   🆕 スライムもちすけの水色の波紋（src/squeeze/physics.jsのtriggerSqueezeTouchSplash参照）等、
+         *   素材ごとに色を変えたい呼び出し元のために追加した。省略時は従来通りのオレンジ。
          */
-        export function createRippleEffect(x, y, light = false) {
+        export function createRippleEffect(x, y, light = false, color = CONFIG.RIPPLE_DEFAULT_COLOR) {
             const rect = getGameScreenRect();
-            rippleList.push({ x: x - rect.left, y: y - rect.top, start: performance.now(), light });
+            rippleList.push({ x: x - rect.left, y: y - rect.top, start: performance.now(), light, color });
         }
 
         /**
@@ -1281,7 +1285,7 @@ import {
                 const eased = 1 - Math.pow(1 - t, 2);
                 const peakAlpha = r.light ? CONFIG.RIPPLE_PEAK_ALPHA * CONFIG.RIPPLE_LIGHT_ALPHA_MULT : CONFIG.RIPPLE_PEAK_ALPHA;
                 const maxRadius = r.light ? CONFIG.RIPPLE_MAX_RADIUS * CONFIG.RIPPLE_LIGHT_RADIUS_MULT : CONFIG.RIPPLE_MAX_RADIUS;
-                ctx.strokeStyle = `rgba(255, 152, 0, ${(peakAlpha * (1 - t)).toFixed(3)})`;
+                ctx.strokeStyle = `rgba(${r.color || CONFIG.RIPPLE_DEFAULT_COLOR}, ${(peakAlpha * (1 - t)).toFixed(3)})`;
                 ctx.lineWidth = r.light ? CONFIG.RIPPLE_LINE_WIDTH * CONFIG.RIPPLE_LIGHT_LINE_WIDTH_MULT : CONFIG.RIPPLE_LINE_WIDTH;
                 ctx.beginPath();
                 ctx.arc(r.x, r.y, eased * maxRadius, 0, Math.PI * 2);

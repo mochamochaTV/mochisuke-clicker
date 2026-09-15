@@ -215,10 +215,13 @@
         export const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/mochi_release_pop.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3',
             // 🆕 通常のもちすけの「押した瞬間の強弱で音が変わる」つつき音（src/squeeze/materials.js の
             // default.pokeSoundFile）。全プレイヤーに聞こえる通常機能なので、他の効果音と同じ扱い。
-            'audio/mochisuke/mochi_poke.mp3',
+            // mochi_poke_still.mp3：引っ張らずに押した時専用の音（stillPokeSoundFile。2-1参照）。
+            'audio/mochisuke/mochi_poke.mp3', 'audio/mochisuke/mochi_poke_still.mp3',
             // 🧪 管理者限定・試作中：スライムもちすけ用（src/squeeze/materials.js参照）。通常プレイヤーは
             // 全身衣装一覧にこのアイテム自体が出てこないため、事前読み込みされていても再生されない。
-            'audio/mochisuke/slime_stretch.mp3', 'audio/mochisuke/slime_release_pop.mp3', 'audio/mochisuke/slime_poke.mp3'];
+            // 🆕 slime_splash.mp3：タップした瞬間に鳴る「ぴちゃ」という水っぽい音（splashSoundFile）。
+            // slime_poke_still.mp3：引っ張らずに押した時専用の音（stillPokeSoundFile）。
+            'audio/mochisuke/slime_stretch.mp3', 'audio/mochisuke/slime_release_pop.mp3', 'audio/mochisuke/slime_poke.mp3', 'audio/mochisuke/slime_splash.mp3', 'audio/mochisuke/slime_poke_still.mp3'];
         // 🎵 BGMも起動時に先読みしておく一覧。していないと、初めてその場所（ショップ等）に入った瞬間に
         // fetch＋デコードが走ってしまい、移動音とフェードが終わった後もBGMが少し遅れて始まってしまう
         export const BGM_FILES = ['audio/bgm/bgm.mp3', 'audio/bgm/bgm_shop.mp3', 'audio/bgm/bgm_minigame.mp3', 'audio/bgm/bgm_myroom.mp3', 'audio/bgm/bgm_warehouse.mp3', 'audio/bgm/hissatsu_bgm.mp3'];

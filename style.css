@@ -254,6 +254,12 @@
         body.ui-mode-3 #mochisuke-mouth-patch,
         body.ui-mode-3 #bunshin-container { display: none !important; }
 
+        /* 🧪 管理者限定・試作中：スクイーズ衣装（スライムもちすけ等）を装備中は、スキル・必殺技は
+           そもそも使わない別枠の遊び方になるため、そのUIごと非表示にする（まもすいの要望。
+           src/ui/kisekae.jsのapplyKisekaeToMainScreen()がbody.squeeze-costume-activeを切り替える）。 */
+        body.squeeze-costume-active .skill-side-container,
+        body.squeeze-costume-active #hissatsu-wrap { display: none !important; }
+
         /* 上部UI（デバッグバーを廃止したので、常にheader-containerが一番上＝常にセーフエリア分を確保する） */
         #header-container {
             width: 94%;

@@ -355,6 +355,10 @@
             setAccumulateModeActive(isSqueezeCostume);
             const accumHudEl = document.getElementById('squeeze-accum-hud');
             if (accumHudEl) accumHudEl.style.display = isSqueezeCostume ? 'flex' : 'none';
+            // 🆕 スクイーズ衣装装備中はスキル・必殺技のUIそのものが不要（まもすいの要望）。
+            // 実際の非表示はstyle.cssのbody.squeeze-costume-active側にまとめてあるので、ここではクラスの
+            // 付け外しだけを行う（tap.js側のpointerdownからも保険として同じ判定で同期される）
+            document.body.classList.toggle('squeeze-costume-active', isSqueezeCostume);
 
             if (fullbodyId) {
                 // 全身装備中は、帽子・顔パーツ・通常の口パーツを隠す（display:noneではなくvisibility:hiddenで消す理由はrenderKisekaeMochisukeと同様）

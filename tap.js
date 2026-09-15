@@ -16,8 +16,8 @@ import {
   SQUEEZE_MAX_DRAG, armPokeImpact, assignSqueezeGlow, endSqueeze, getAccumD,
   isAccumulateModeActive, releaseAllSqueezeGlows, releaseSqueezeWithOvershoot,
   releaseTwoFingerSqueezeWithOvershoot, resetSqueezeAccum, setAccumulateModeActive,
-  startStretchSound, stopStretchSound, triggerSqueezeReleaseBurst, updateOneFingerSqueezeTarget,
-  updateSqueezeGlow, updateTwoFingerSqueezeTarget
+  startStretchSound, stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
+  updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
 } from './src/squeeze/physics.js?v=2026-09-14-006';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
@@ -682,6 +682,8 @@ import {
             // 🆕 専用モードの有効/無効を毎タップ同期しておく保険（主な同期はkisekae.js側の
             // applyKisekaeToMainScreen()。値が変わらなければ即returnするので無害）
             setAccumulateModeActive(isSqueezeCostumeActive);
+            // 🆕 スキル/必殺技UIの表示・非表示も同様に、毎タップ同期しておく保険（主な同期はkisekae.js側）
+            document.body.classList.toggle('squeeze-costume-active', isSqueezeCostumeActive);
 
             if (!isSqueezeCostumeActive) {
                 playAudioFile('audio/tap.mp3');
@@ -707,6 +709,7 @@ import {
                 // 🫧 指ごとの座標をpointerIdで記録する（2本指ストレッチの判定に使う）
                 squeezePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
                 assignSqueezeGlow(e.pointerId, e.clientX, e.clientY); // 🆕 触れた場所に「光」を表示開始
+                triggerSqueezeTouchSplash(e.clientX, e.clientY); // 🆕 スライムもちすけ等、触れた瞬間の「ぴちゃ」音＋水色の波紋（素材にsplashSoundFileが無ければ何もしない）
 
                 if (squeezePointers.size === 2) {
                     // 🫧🫧 2本目の指が触れた瞬間：ここから「2本の指を逆方向に引っ張って両側から伸ばす」モードに切り替える。
@@ -853,7 +856,15 @@ import {
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
                 });
             } else {
-                // 引っ張りとして扱うほどの移動が無かった＝ただのタップ。従来通りの「もちっ」とした押し込みアニメーション
+                // 引っ張りとして扱うほどの移動が無かった＝ただのタップ・長押し。
+                // 🆕 以前はこの分岐だけスクイーズ系の音が一切鳴らなかったが、「長押しした時も離す時の音がほしい」
+                // という要望を受け、他の分岐と同じtriggerSqueezeReleaseBurstを、実際の（わずかな）移動量から
+                // 計算した比率で呼ぶようにした。比率がSQUEEZE_MIN_DRAG未満＝小さいので、ポン音はごく控えめな
+                // 音量になり、パーティクル・強振動は（意図通り）出ない
+                const tapReleaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
+                triggerSqueezeReleaseBurst(tapReleaseRatio, tapReleaseRatio, comboTierIndex);
+
+                // 従来通りの「もちっ」とした押し込みアニメーション
                 mochiDeformWrap.style.transformOrigin = '';
                 mochiDeformWrap.animate([
                     { transform: 'scale(1.25, 0.72)' },

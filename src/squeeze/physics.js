@@ -13,7 +13,8 @@
 // このファイルは一切関知しない）。将来グリッドワープ等を追加する時も、この
 // src/squeeze/ ディレクトリにまとめていく予定。
 import {
-  audioBuffers, createBurstParticle, getAudioContext, playAudioFilePitched, sfxVolumeMult, vibrate
+  audioBuffers, createBurstParticle, createRippleEffect, getAudioContext, playAudioFile,
+  playAudioFilePitched, sfxVolumeMult, vibrate
 } from '../../main.js?v=2026-09-14-006';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
@@ -31,10 +32,14 @@ const CONFIG = {
   SQUEEZE_OVERSHOOT_BASE_DURATION_MS: 420,
   SQUEEZE_OVERSHOOT_DURATION_RANGE_MS: 280,
   // --- 🆕 スクイーズ：離した瞬間の「弾ける」演出 ---
-  SQUEEZE_RELEASE_BURST_MIN_RATIO: 0.5, // これ以上伸ばして離した時だけ、パーティクル＋ポン音を出す（軽いタップでは出さない）
+  SQUEEZE_RELEASE_BURST_MIN_RATIO: 0.5, // これ以上伸ばして離した時だけ、パーティクル＋強振動を出す（軽いタップでは出さない）
   SQUEEZE_RELEASE_BURST_COUNT_BASE: 6,  // 弾けるパーティクルの最低数
   SQUEEZE_RELEASE_BURST_COUNT_RANGE: 8, // 伸び率に応じて上乗せされる最大数
-  SQUEEZE_RELEASE_POP_VOLUME: 0.55,
+  // 🆕 ポン音自体は「引っ張って離した」時なら常に鳴らし、引っ張った長さ(0〜1)に応じてMIN〜MAXの間で
+  // 音量を線形補間する（まもすいの要望：引っ張った長さに応じて音の大きさを変えたい）。
+  // パーティクル・強振動だけは、これまで通りSQUEEZE_RELEASE_BURST_MIN_RATIO以上の時に限定する。
+  SQUEEZE_RELEASE_POP_MIN_VOLUME: 0.18, // ほぼ引っ張らずに離した時（ただのタップ・長押し含む）の控えめな音量
+  SQUEEZE_RELEASE_POP_MAX_VOLUME: 0.55, // 目一杯引っ張って離した時の音量（旧SQUEEZE_RELEASE_POP_VOLUMEを引き継いだ値）
   SQUEEZE_RELEASE_POP_PITCH_BASE: 0.95,       // ポン音の基本ピッチ
   SQUEEZE_RELEASE_POP_PITCH_PER_TIER: 0.06,   // コンボtierが1段上がるごとに足すピッチ（見た目のコンボ演出と音を連動させる）
   SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO: 0.85, // かなり大きく伸ばして離した時だけ、軽いバイブで区切りを付ける
@@ -54,6 +59,14 @@ const CONFIG = {
   POKE_MAX_VOLUME: 0.7,  // 強く押した時の音量
   POKE_MIN_PITCH: 0.7,   // 強く押した時のピッチ（強いほど低く・重い音にする）
   POKE_MAX_PITCH: 1.15,  // 弱く押した時のピッチ（弱いほど高く・軽い音にする）
+  // 🐛修正：つつき音(firePokeImpact)は本来pointermove経由でしか鳴らないため、指を動かさずに
+  // 押すだけのタップ・長押しだと今まで一度も鳴らなかった（まもすいの指摘：slime_poke.mp3が
+  // 鳴らない時がある）。pointerdownからこの時間だけpointermoveが1回も来なければ「動かさずそっと
+  // 押した」とみなし、強度0（＝一番弱く高い音）でつつき音を鳴らす（armPokeImpact参照）。
+  POKE_FALLBACK_DELAY_MS: 90,
+  // --- 🆕 タップした瞬間の「ぴちゃ」という水っぽい音＋水色の波紋（materials.jsのsplashSoundFile） ---
+  SPLASH_VOLUME: 0.6,
+  SPLASH_RIPPLE_COLOR: '79, 195, 247', // このアプリの「水色」アクセント(#4fc3f7)と同じ色。squeeze-accum-hud等でも使用
   // --- 🆕 スクイーズ：伸びる「方向」の追従（2-1-b22で追加、2-1-b23で調整） ---
   // 最初は大きさ(SQUEEZE_FOLLOW_LERP)とまったく同じ追従係数・同じ「伸びるほど重くなる」heaviness補正を
   // 方向にもかけていたが、「重みのせいでもちすけを暴れさせる楽しさが無くなった」というまもすいからの
@@ -290,6 +303,7 @@ let twoFingerRawRatio = 0, twoFingerAngleDeg = 0;
 let pokeArmed = false;
 let pokeFired = false;
 let pokeStartTime = 0;
+let pokeFallbackTimer = null; // 🐛修正：動かさないタップ・長押し用のフォールバック発火タイマー（armPokeImpact/firePokeImpact参照）
 // 🆕 実際の見た目・音に使う比率。stepSqueezeFollowが毎フレーム目標値へ近づける（追従の遅れ＝重み・粘り気）
 let squeezeVisualRatio = 0;
 // 🆕 1本指スクイーズの「見た目の伸び方向」。指の生の方向(oneFingerDx/Dy)へ毎フレーム少しずつ近づける
@@ -456,26 +470,57 @@ export function armPokeImpact() {
     pokeArmed = true;
     pokeFired = false;
     pokeStartTime = performance.now();
+    // 🐛修正：指を動かさないタップ・長押しはpointermoveが1回も来ないため、これまでfirePokeImpactが
+    // 一切呼ばれず、つつき音が鳴らないことがあった。POKE_FALLBACK_DELAY_MS経ってもまだ
+    // pointermoveで鳴っていなければ、「引っ張らずに押した」とみなし、isStill=trueで鳴らす
+    // （🆕 まもすいの要望で、この「引っ張らず」のケースは通常のpokeSoundFileとは別の音にしている）。
+    clearTimeout(pokeFallbackTimer);
+    pokeFallbackTimer = setTimeout(() => {
+        if (pokeArmed && !pokeFired) firePokeImpact(0, 0, true);
+    }, CONFIG.POKE_FALLBACK_DELAY_MS);
 }
 
 /**
  * pointerdownから最初のpointermoveまでの移動量と経過時間から押し込み速度を推定し、
  * 0〜1の強度にマッピングして、強いほど低く・大きく、弱いほど高く・小さい音を1回だけ鳴らす。
- * @param {number} dx - pointerdown位置からのX移動量
- * @param {number} dy - pointerdown位置からのY移動量
+ * 🆕 引っ張らずに押しただけ（isStill=true。POKE_FALLBACK_DELAY_MS経過での自動発火）の時は、
+ * 強さを測れないpokeSoundFileの代わりに、専用のstillPokeSoundFileを鳴らす
+ * （まもすいの要望：「引っ張らず長押しした場合は別の効果音にしたい」）。
+ * @param {number} dx - pointerdown位置からのX移動量（isStillがtrueの時は常に0）
+ * @param {number} dy - pointerdown位置からのY移動量（isStillがtrueの時は常に0）
+ * @param {boolean} [isStill=false] - true時は、引っ張らずに押した（＝pointermoveが来なかった）ケースとして扱う
  * @returns {void}
  */
-function firePokeImpact(dx, dy) {
+function firePokeImpact(dx, dy, isStill = false) {
+    clearTimeout(pokeFallbackTimer); // 🐛修正：pointermove側が先に鳴らせた時は、待機中のフォールバックを止めて二重再生を防ぐ
     pokeArmed = false;
     pokeFired = true;
-    const pokeSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].pokeSoundFile;
-    if (!pokeSoundFile) return; // armPokeImpact()後に素材が切り替わった場合の保険
+    const material = SQUEEZE_MATERIALS[currentSqueezeMaterialKey];
+    const soundFile = isStill ? material.stillPokeSoundFile : material.pokeSoundFile;
+    if (!soundFile) return; // armPokeImpact()後に素材が切り替わった場合や、この音を持たない素材への保険
     const elapsedMs = Math.max(1, performance.now() - pokeStartTime);
-    const speed = Math.hypot(dx, dy) / elapsedMs; // px/ms。本物の圧力の代わりに使う疑似的な「押し込み速度」
+    const speed = Math.hypot(dx, dy) / elapsedMs; // px/ms。本物の圧力の代わりに使う疑似的な「押し込み速度」（isStillの時は常に0）
     const intensity = Math.min(1, speed / CONFIG.POKE_IMPACT_MAX_SPEED_PX_MS);
     const volume = CONFIG.POKE_MIN_VOLUME + intensity * (CONFIG.POKE_MAX_VOLUME - CONFIG.POKE_MIN_VOLUME);
     const pitch = CONFIG.POKE_MAX_PITCH - intensity * (CONFIG.POKE_MAX_PITCH - CONFIG.POKE_MIN_PITCH); // 強いほど低いピッチ
-    playAudioFilePitched(pokeSoundFile, volume * sfxVolumeMult, pitch);
+    playAudioFilePitched(soundFile, volume * sfxVolumeMult, pitch);
+}
+
+// 🆕 触れた瞬間に鳴る「ぴちゃ」という水っぽい音＋水色の波紋演出（現状はスライムもちすけ専用）。
+// pokeSoundFileと同じく、対応可否は素材ごとのデータ(materials.jsのsplashSoundFile)だけで決まるため、
+// この関数自体はどの素材で呼んでも安全（splashSoundFileがnullの素材では何もしない）。
+/**
+ * pointerdownの瞬間にtap.js側から呼ぶ。現在の素材にsplashSoundFileが設定されている時だけ、
+ * 「ぴちゃ」という水っぽい効果音と、その位置を中心にした水色の波紋を1回鳴らす／表示する。
+ * @param {number} clientX - 触れた位置のX座標（画面基準）
+ * @param {number} clientY - 触れた位置のY座標（画面基準）
+ * @returns {void}
+ */
+export function triggerSqueezeTouchSplash(clientX, clientY) {
+    const splashSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].splashSoundFile;
+    if (!splashSoundFile) return; // splashSoundFileを持たない素材（通常のもちすけ等）ではこの演出自体を出さない
+    playAudioFile(splashSoundFile, CONFIG.SPLASH_VOLUME * sfxVolumeMult);
+    createRippleEffect(clientX, clientY, false, CONFIG.SPLASH_RIPPLE_COLOR);
 }
 
 // 2本の指が離れていく方向・距離から、追従ループの目標値を更新する（2本指ドラッグ中に毎回呼ばれる）
@@ -694,30 +739,38 @@ export function releaseTwoFingerSqueezeWithOvershoot(angleDeg, ratio) {
     mochiDeformWrap.style.transform = 'scale(1, 1)';
 }
 
-// 🆕 スクイーズを一定以上伸ばして離した瞬間の「弾ける」演出。パーティクル＋ポン音（＋大きく伸ばした時だけ振動）。
-// gatingRatio（「弾けを出して良いか」の判定に使う、指の生の移動量ベースの比率）がしきい値未満なら
-// 何もしない、という判定をこの関数の内部に持たせることで、呼び出し側(tap.js)がコンボ内部のtierIndex
-// だけ渡せば済むようにしている（tap.jsのコンボロジックをこのファイルへimportさせないための設計）。
+// 🆕 スクイーズを離した瞬間の演出。ポン音は常に鳴らし、gatingRatio（「弾けを出して良いか」の判定に使う、
+// 指の生の移動量ベースの比率）が一定以上の時だけ、追加でパーティクル＋強振動を出す。この判定を
+// 関数の内部に持たせることで、呼び出し側(tap.js)がコンボ内部のtierIndexだけ渡せば済むようにしている
+// （tap.jsのコンボロジックをこのファイルへimportさせないための設計）。
 /**
- * 指を離した瞬間、伸ばしていた比率に応じて弾けるパーティクルとポン音を再生する。
+ * 指を離した瞬間、伸ばしていた比率に応じてポン音を再生し、一定以上伸ばしていた時だけ
+ * 弾けるパーティクル・強振動も追加する。
+ * 🆕 以前はgatingRatioがSQUEEZE_RELEASE_BURST_MIN_RATIO未満だと音も含めて何も鳴らなかったが、
+ * 「引っ張った長さに応じて音の大きさも変えたい」という要望を受け、ポン音自体は常に鳴らし、
+ * 引っ張った長さ(gatingRatio)に比例してMIN〜MAXの間で音量を変えるようにした（軽いタップほど
+ * 控えめに、大きく伸ばすほど大きく鳴る）。パーティクル・強振動は、演出が煩雑にならないよう
+ * 引き続き一定以上伸ばした時だけに限定している。
  * ポン音のピッチはその時点のコンボ段階に応じて少し上がっていき、コンボが盛り上がるほど
  * 弾ける音も華やかになる。
- * @param {number} gatingRatio - 「弾け演出を出して良いか」の判定に使う伸縮比率（指の生の移動量ベース）
+ * @param {number} gatingRatio - 「パーティクル・強振動を出して良いか」の判定と、ポン音の音量計算の両方に使う伸縮比率（指の生の移動量ベース。0〜1）
  * @param {number} visualRatio - 実際の見た目（パーティクル数）に使う伸縮比率（追従の遅れ込みの値）
  * @param {number} comboTierIndex - 現在のコンボ段階のインデックス（tap.js側で計算して渡す。見つからない場合は負数でも可）
  * @returns {void}
  */
 export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio, comboTierIndex) {
-    if (gatingRatio < CONFIG.SQUEEZE_RELEASE_BURST_MIN_RATIO) return;
+    const clampedRatio = Math.max(0, Math.min(1, gatingRatio));
+    const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
+    const volume = CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME + clampedRatio * (CONFIG.SQUEEZE_RELEASE_POP_MAX_VOLUME - CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME);
+    playAudioFilePitched(SQUEEZE_MATERIALS[currentSqueezeMaterialKey].releasePopSoundFile, volume * sfxVolumeMult, pitch);
+
+    if (gatingRatio < CONFIG.SQUEEZE_RELEASE_BURST_MIN_RATIO) return; // パーティクル・強振動はこれ以上伸ばした時だけ
 
     const rect = mochiBtnElement.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     const count = Math.round(CONFIG.SQUEEZE_RELEASE_BURST_COUNT_BASE + visualRatio * CONFIG.SQUEEZE_RELEASE_BURST_COUNT_RANGE);
     for (let i = 0; i < count; i++) createBurstParticle(cx, cy);
-
-    const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
-    playAudioFilePitched(SQUEEZE_MATERIALS[currentSqueezeMaterialKey].releasePopSoundFile, CONFIG.SQUEEZE_RELEASE_POP_VOLUME * sfxVolumeMult, pitch);
 
     if (visualRatio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
         vibrate(CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN);
