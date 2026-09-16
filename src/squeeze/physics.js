@@ -15,10 +15,10 @@
 import {
   audioBuffers, createBurstParticle, createRippleEffect, getAudioContext, playAudioFile,
   playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-17-012';
+} from '../../main.js?v=2026-09-17-013';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-012';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-013';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -719,6 +719,31 @@ export function releaseLongPressSquish() {
  * @param {number} maxTier - 現在の最大段階数（tap.js側のCONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOS.length + 1）
  * @returns {void}
  */
+/**
+ * 長押し反動アニメーション(playLongPressReboundAnimation)の再生時間(ms)を返す。
+ * 🆕 tap.js側が「反動アニメが終わってから呼吸アイドルを再開するまでの待ち時間」を計算する時に、
+ * ここの値を勝手に別の数値で重複管理してズレる（例：build-watermarkのバージョン文字列のように
+ * 更新し忘れる）事故を防ぐため、CONFIG.LONGPRESS_RELEASE_DURATION_MSをそのまま返すだけの
+ * 薄いgetterとして用意した（2-1参照）。
+ * @returns {number} 長押し反動アニメーションの再生時間(ms)
+ */
+export function getLongPressReleaseDurationMs() {
+    return CONFIG.LONGPRESS_RELEASE_DURATION_MS;
+}
+
+/**
+ * releaseSqueezeWithOvershoot/releaseTwoFingerSqueezeWithOvershoot（引っ張り/2本指ストレッチを
+ * 離した時の揺れ戻り）の再生時間(ms)を返す。両関数とも実際のduration計算式
+ * （CONFIG.SQUEEZE_OVERSHOOT_BASE_DURATION_MS + ratio×CONFIG.SQUEEZE_OVERSHOOT_DURATION_RANGE_MS）と
+ * 完全に同じ式をここでも使うことで、tap.js側が呼吸アイドル再開までの待ち時間を計算する時に
+ * 数値がズレないようにする（上のgetLongPressReleaseDurationMsと同じ狙い。2-1参照）。
+ * @param {number} ratio - 揺れ戻り開始時点の伸縮比率（releaseSqueezeWithOvershoot等に渡すのと同じ値）
+ * @returns {number} 揺れ戻りアニメーションの再生時間(ms)
+ */
+export function getSqueezeOvershootDurationMs(ratio) {
+    return CONFIG.SQUEEZE_OVERSHOOT_BASE_DURATION_MS + ratio * CONFIG.SQUEEZE_OVERSHOOT_DURATION_RANGE_MS;
+}
+
 export function playLongPressReboundAnimation(tier, maxTier) {
     const tierRatio = Math.max(0, Math.min(1, tier / maxTier));
     const scaleX = CONFIG.LONGPRESS_SQUISH_START_SCALE_X + (CONFIG.LONGPRESS_SQUISH_END_SCALE_X - CONFIG.LONGPRESS_SQUISH_START_SCALE_X) * tierRatio;
