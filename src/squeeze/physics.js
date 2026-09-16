@@ -59,14 +59,25 @@ const CONFIG = {
   POKE_MAX_VOLUME: 0.7,  // 強く押した時の音量
   POKE_MIN_PITCH: 0.7,   // 強く押した時のピッチ（強いほど低く・重い音にする）
   POKE_MAX_PITCH: 1.15,  // 弱く押した時のピッチ（弱いほど高く・軽い音にする）
-  // 🐛修正：つつき音(firePokeImpact)は本来pointermove経由でしか鳴らないため、指を動かさずに
-  // 押すだけのタップ・長押しだと今まで一度も鳴らなかった（まもすいの指摘：slime_poke.mp3が
-  // 鳴らない時がある）。pointerdownからこの時間だけpointermoveが1回も来なければ「動かさずそっと
-  // 押した」とみなし、強度0（＝一番弱く高い音）でつつき音を鳴らす（armPokeImpact参照）。
-  POKE_FALLBACK_DELAY_MS: 90,
+  // 🆕 つつき音(firePokeImpact)は「実際に指を動かして押し込んだ速さ」を表す演出なので、
+  // ドラッグ扱いになる前（tap.js側のSQUEEZE_MIN_DRAG未満）は鳴らさない。ただのタップ・長押しでは
+  // tap.mp3（またはsplashSoundFile）だけが鳴り、つつき音は本格的にドラッグが始まった時だけ鳴る
+  // （まもすいの要望：ただのタップの時は1音だけにしたい。2-1参照）。
   // --- 🆕 タップした瞬間の「ぴちゃ」という水っぽい音＋水色の波紋（materials.jsのsplashSoundFile） ---
   SPLASH_VOLUME: 0.6,
   SPLASH_RIPPLE_COLOR: '79, 195, 247', // このアプリの「水色」アクセント(#4fc3f7)と同じ色。squeeze-accum-hud等でも使用
+  // --- 🆕 長押し（引っ張らずに押し続ける）専用の「じわじわ潰れる」演出＋離した時の反動 ---
+  // ドラッグ用スクイーズ(squeezeTransformFor)とは別に、単純な軸に沿ったscale()の直線補間だけで
+  // 実装している。tap.js側の固定の初期押し込みポーズ(scale(1.25,0.72))から始まり、ドラッグが
+  // 始まらない限り、時間経過だけでじわじわ最終ポーズへ近づく（まもすいの要望：長押しでだんだん
+  // 潰れるようにしたい。最終的には今より潰す）。
+  LONGPRESS_SQUISH_START_SCALE_X: 1.25, // 開始スケール（tap.js側の初期押し込みポーズと同じ値にしておくこと）
+  LONGPRESS_SQUISH_START_SCALE_Y: 0.72,
+  LONGPRESS_SQUISH_END_SCALE_X: 1.42,   // 長押しを続けた末にたどり着く、最終的にさらに潰れたポーズ
+  LONGPRESS_SQUISH_END_SCALE_Y: 0.52,
+  LONGPRESS_SQUISH_DURATION_MS: 1200,   // 開始ポーズから最終ポーズまでかかる時間（ここを短くするほど速く潰れきる）
+  LONGPRESS_RELEASE_OVERSHOOT_RATIO: 0.5, // 長押しから離した時、反動でどれだけ逆方向(伸びる方向)へ弾むか。潰れの進み具合(0〜1)に比例する
+  LONGPRESS_RELEASE_DURATION_MS: 480,     // 反動アニメーションの長さ
   // --- 🆕 スクイーズ：伸びる「方向」の追従（2-1-b22で追加、2-1-b23で調整） ---
   // 最初は大きさ(SQUEEZE_FOLLOW_LERP)とまったく同じ追従係数・同じ「伸びるほど重くなる」heaviness補正を
   // 方向にもかけていたが、「重みのせいでもちすけを暴れさせる楽しさが無くなった」というまもすいからの
@@ -298,12 +309,12 @@ let currentMode = null;
 let oneFingerRawRatio = 0, oneFingerDx = 0, oneFingerDy = 0;
 let twoFingerRawRatio = 0, twoFingerAngleDeg = 0;
 // 🆕 押した瞬間の強弱で音が変わる「つつき」ギミック用の状態（全素材共通）。
-// armPokeImpact()でpointerdownの瞬間の時刻を記録し、その後最初に来たupdateOneFingerSqueezeTarget
-// （＝最初のpointermove）1回分だけで強度を判定して音を鳴らし、以降は何もしない（1タップにつき1回だけ）。
+// armPokeImpact()でpointerdownの瞬間の時刻を記録し、その後tap.js側で本格的なドラッグ
+// （SQUEEZE_MIN_DRAG以上の移動）と判定された最初のupdateOneFingerSqueezeTarget呼び出し1回分だけで
+// 強度を判定して音を鳴らし、以降は何もしない（1タップにつき1回だけ。ドラッグにならなければ鳴らない）。
 let pokeArmed = false;
 let pokeFired = false;
 let pokeStartTime = 0;
-let pokeFallbackTimer = null; // 🐛修正：動かさないタップ・長押し用のフォールバック発火タイマー（armPokeImpact/firePokeImpact参照）
 // 🆕 実際の見た目・音に使う比率。stepSqueezeFollowが毎フレーム目標値へ近づける（追従の遅れ＝重み・粘り気）
 let squeezeVisualRatio = 0;
 // 🆕 1本指スクイーズの「見た目の伸び方向」。指の生の方向(oneFingerDx/Dy)へ毎フレーム少しずつ近づける
@@ -456,13 +467,15 @@ export function updateOneFingerSqueezeTarget(dx, dy) {
     return oneFingerRawRatio;
 }
 
-// 🆕 pointerdownの瞬間に呼んでおく「腕付け」関数。実際の音判定・再生は、その後最初に来る
-// updateOneFingerSqueezeTarget側（＝最初のpointermove）で行う（pointerdown単体には移動量が無く
-// 「強さ」を測れないため）。今の素材にpokeSoundFileが設定されている時だけ有効（materials.js参照）。
-// 全素材・全プレイヤー共通のロジックで、管理者限定だった頃の名残（IS_DEV_MODE判定）は無い。
+// 🆕 pointerdownの瞬間に呼んでおく「腕付け」関数。実際の音判定・再生は、tap.js側で本格的な
+// ドラッグ（SQUEEZE_MIN_DRAG以上の移動）と判定された最初のupdateOneFingerSqueezeTarget呼び出しで
+// 行う（ドラッグにならなければ一生呼ばれず、つつき音も鳴らない＝ただのタップ・長押しはtap.mp3や
+// splashSoundFileだけになる。まもすいの要望：ただのタップの時は1音だけにしたい。2-1参照）。
+// 今の素材にpokeSoundFileが設定されている時だけ有効（materials.js参照）。
 /**
- * 押した瞬間の強弱で音を変えるギミックを「待機」状態にする。実際の判定・再生は次のpointermoveで
- * 行われる。現在の素材(materials.js)にpokeSoundFileが設定されている時のみ有効。
+ * 押した瞬間の強弱で音を変えるギミックを「待機」状態にする。実際の判定・再生は、本格的な
+ * ドラッグが始まった時に呼ばれる最初のupdateOneFingerSqueezeTargetで行われる。
+ * 現在の素材(materials.js)にpokeSoundFileが設定されている時のみ有効。
  * @returns {void}
  */
 export function armPokeImpact() {
@@ -470,40 +483,27 @@ export function armPokeImpact() {
     pokeArmed = true;
     pokeFired = false;
     pokeStartTime = performance.now();
-    // 🐛修正：指を動かさないタップ・長押しはpointermoveが1回も来ないため、これまでfirePokeImpactが
-    // 一切呼ばれず、つつき音が鳴らないことがあった。POKE_FALLBACK_DELAY_MS経ってもまだ
-    // pointermoveで鳴っていなければ、「引っ張らずに押した」とみなし、isStill=trueで鳴らす
-    // （🆕 まもすいの要望で、この「引っ張らず」のケースは通常のpokeSoundFileとは別の音にしている）。
-    clearTimeout(pokeFallbackTimer);
-    pokeFallbackTimer = setTimeout(() => {
-        if (pokeArmed && !pokeFired) firePokeImpact(0, 0, true);
-    }, CONFIG.POKE_FALLBACK_DELAY_MS);
 }
 
 /**
- * pointerdownから最初のpointermoveまでの移動量と経過時間から押し込み速度を推定し、
- * 0〜1の強度にマッピングして、強いほど低く・大きく、弱いほど高く・小さい音を1回だけ鳴らす。
- * 🆕 引っ張らずに押しただけ（isStill=true。POKE_FALLBACK_DELAY_MS経過での自動発火）の時は、
- * 強さを測れないpokeSoundFileの代わりに、専用のstillPokeSoundFileを鳴らす
- * （まもすいの要望：「引っ張らず長押しした場合は別の効果音にしたい」）。
- * @param {number} dx - pointerdown位置からのX移動量（isStillがtrueの時は常に0）
- * @param {number} dy - pointerdown位置からのY移動量（isStillがtrueの時は常に0）
- * @param {boolean} [isStill=false] - true時は、引っ張らずに押した（＝pointermoveが来なかった）ケースとして扱う
+ * pointerdownから、本格的なドラッグと判定された最初の移動までの移動量と経過時間から押し込み
+ * 速度を推定し、0〜1の強度にマッピングして、強いほど低く・大きく、弱いほど高く・小さい音を
+ * 1回だけ鳴らす。
+ * @param {number} dx - pointerdown位置からのX移動量
+ * @param {number} dy - pointerdown位置からのY移動量
  * @returns {void}
  */
-function firePokeImpact(dx, dy, isStill = false) {
-    clearTimeout(pokeFallbackTimer); // 🐛修正：pointermove側が先に鳴らせた時は、待機中のフォールバックを止めて二重再生を防ぐ
+function firePokeImpact(dx, dy) {
     pokeArmed = false;
     pokeFired = true;
-    const material = SQUEEZE_MATERIALS[currentSqueezeMaterialKey];
-    const soundFile = isStill ? material.stillPokeSoundFile : material.pokeSoundFile;
-    if (!soundFile) return; // armPokeImpact()後に素材が切り替わった場合や、この音を持たない素材への保険
+    const pokeSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].pokeSoundFile;
+    if (!pokeSoundFile) return; // armPokeImpact()後に素材が切り替わった場合の保険
     const elapsedMs = Math.max(1, performance.now() - pokeStartTime);
-    const speed = Math.hypot(dx, dy) / elapsedMs; // px/ms。本物の圧力の代わりに使う疑似的な「押し込み速度」（isStillの時は常に0）
+    const speed = Math.hypot(dx, dy) / elapsedMs; // px/ms。本物の圧力の代わりに使う疑似的な「押し込み速度」
     const intensity = Math.min(1, speed / CONFIG.POKE_IMPACT_MAX_SPEED_PX_MS);
     const volume = CONFIG.POKE_MIN_VOLUME + intensity * (CONFIG.POKE_MAX_VOLUME - CONFIG.POKE_MIN_VOLUME);
     const pitch = CONFIG.POKE_MAX_PITCH - intensity * (CONFIG.POKE_MAX_PITCH - CONFIG.POKE_MIN_PITCH); // 強いほど低いピッチ
-    playAudioFilePitched(soundFile, volume * sfxVolumeMult, pitch);
+    playAudioFilePitched(pokeSoundFile, volume * sfxVolumeMult, pitch);
 }
 
 // 🆕 触れた瞬間に鳴る「ぴちゃ」という水っぽい音＋水色の波紋演出（現状はスライムもちすけ専用）。
@@ -521,6 +521,86 @@ export function triggerSqueezeTouchSplash(clientX, clientY) {
     if (!splashSoundFile) return; // splashSoundFileを持たない素材（通常のもちすけ等）ではこの演出自体を出さない
     playAudioFile(splashSoundFile, CONFIG.SPLASH_VOLUME * sfxVolumeMult);
     createRippleEffect(clientX, clientY, false, CONFIG.SPLASH_RIPPLE_COLOR);
+}
+
+// --- 🆕 長押し（引っ張らずに押し続ける）専用の「じわじわ潰れる」演出＋離した時の反動 ---
+// ドラッグ用スクイーズ(squeezeTransformFor、指の方向に応じた非対称な変形)とは別に、こちらは
+// 単純に軸に沿ったscale()を直線補間するだけの、もっと素朴な実装にしている。tap.js側の固定の
+// 初期押し込みポーズ(scale(1.25,0.72)。CONFIG.LONGPRESS_SQUISH_START_SCALE_X/Yと同じ値)から始まり、
+// ドラッグ（tap.js側でSQUEEZE_MIN_DRAG以上の移動と判定される）が始まらない限り、時間経過だけで
+// じわじわ最終ポーズへ近づく。ドラッグが始まったらstopLongPressSquish()で即座に止め、以後は
+// stepSqueezeFollow側にmochiDeformWrap.style.transformの制御を譲る（同時に動かすと描画が競合するため）。
+let longPressSquishRafId = null;
+let longPressSquishStartTime = 0;
+let longPressSquishActive = false;
+let longPressSquishLastRatio = 0; // 離した瞬間の反動の大きさ計算に使う、直近の潰れ具合(0〜1)
+
+/**
+ * 長押し用の「じわじわ潰れる」演出を開始する。指を離すかドラッグが始まるまで、時間経過に応じて
+ * 徐々に最終ポーズ（CONFIG.LONGPRESS_SQUISH_END_SCALE_X/Y）へ近づき続ける。
+ * @returns {void}
+ */
+export function startLongPressSquish() {
+    longPressSquishActive = true;
+    longPressSquishStartTime = performance.now();
+    longPressSquishLastRatio = 0;
+    if (longPressSquishRafId === null) longPressSquishRafId = requestAnimationFrame(stepLongPressSquish);
+}
+
+/**
+ * 長押し用の潰れ演出の1フレーム分の更新。最終ポーズに到達したら、その見た目を維持したままループを止める。
+ * @returns {void}
+ */
+function stepLongPressSquish() {
+    if (!longPressSquishActive) { longPressSquishRafId = null; return; }
+    const t = Math.min(1, (performance.now() - longPressSquishStartTime) / CONFIG.LONGPRESS_SQUISH_DURATION_MS);
+    longPressSquishLastRatio = t;
+    const scaleX = CONFIG.LONGPRESS_SQUISH_START_SCALE_X + (CONFIG.LONGPRESS_SQUISH_END_SCALE_X - CONFIG.LONGPRESS_SQUISH_START_SCALE_X) * t;
+    const scaleY = CONFIG.LONGPRESS_SQUISH_START_SCALE_Y + (CONFIG.LONGPRESS_SQUISH_END_SCALE_Y - CONFIG.LONGPRESS_SQUISH_START_SCALE_Y) * t;
+    mochiDeformWrap.style.transform = `scale(${scaleX}, ${scaleY})`;
+    longPressSquishRafId = (t < 1) ? requestAnimationFrame(stepLongPressSquish) : null;
+}
+
+/**
+ * ドラッグ（SQUEEZE_MIN_DRAG以上の移動）に切り替わった時にtap.js側から呼ぶ。以後は
+ * stepSqueezeFollow側がmochiDeformWrap.style.transformを制御するため、じわじわ潰れ演出は
+ * ここで止める（transformには触れず、ループを止めるだけ）。
+ * @returns {void}
+ */
+export function stopLongPressSquish() {
+    longPressSquishActive = false;
+    if (longPressSquishRafId !== null) { cancelAnimationFrame(longPressSquishRafId); longPressSquishRafId = null; }
+}
+
+/**
+ * 指を離した時にtap.js側から呼ぶ。長押しで潰れが進んでいた分だけ、逆方向（伸びる方向）へ弾んで
+ * から元の形へ収まる反動アニメーションを再生する。ごく短いタップで潰れがほとんど進んでいなかった
+ * 場合（またはそもそも長押し演出が始まっていなかった場合）は何もせずfalseを返す。呼び出し側は
+ * その場合、代わりに従来通りの固定の押し込みアニメーションを再生する。
+ * @returns {boolean} 反動アニメーションを再生した場合true
+ */
+export function releaseLongPressSquish() {
+    const ratio = longPressSquishLastRatio;
+    longPressSquishActive = false;
+    if (longPressSquishRafId !== null) { cancelAnimationFrame(longPressSquishRafId); longPressSquishRafId = null; }
+    longPressSquishLastRatio = 0;
+    if (ratio <= 0) return false;
+
+    const scaleX = CONFIG.LONGPRESS_SQUISH_START_SCALE_X + (CONFIG.LONGPRESS_SQUISH_END_SCALE_X - CONFIG.LONGPRESS_SQUISH_START_SCALE_X) * ratio;
+    const scaleY = CONFIG.LONGPRESS_SQUISH_START_SCALE_Y + (CONFIG.LONGPRESS_SQUISH_END_SCALE_Y - CONFIG.LONGPRESS_SQUISH_START_SCALE_Y) * ratio;
+    const overshoot = ratio * CONFIG.LONGPRESS_RELEASE_OVERSHOOT_RATIO;
+    // 潰れた状態から、行き過ぎて逆方向（伸びる方向）へ弾んでから、通常の形に収まる「反動」モーション
+    // （releaseSqueezeWithOvershootと似た考え方だが、squeezeTransformForの伸縮曲線とは値の対応が
+    // 異なる（初期押し込みポーズが独自の固定値のため）ので、こちらは単純なscale()の直接指定にしている）
+    mochiDeformWrap.animate([
+        { transform: `scale(${scaleX}, ${scaleY})` },
+        { transform: `scale(${1 - overshoot * 0.65}, ${1 + overshoot * 0.65})`, offset: 0.35 },
+        { transform: `scale(${1 + overshoot * 0.28}, ${1 - overshoot * 0.28})`, offset: 0.62 },
+        { transform: `scale(${1 - overshoot * 0.1}, ${1 + overshoot * 0.1})`, offset: 0.82 },
+        { transform: 'scale(1, 1)' },
+    ], { duration: CONFIG.LONGPRESS_RELEASE_DURATION_MS, easing: 'ease-out' });
+    mochiDeformWrap.style.transform = 'scale(1, 1)';
+    return true;
 }
 
 // 2本の指が離れていく方向・距離から、追従ループの目標値を更新する（2本指ドラッグ中に毎回呼ばれる）
@@ -624,15 +704,6 @@ function startSqueezeFollowLoop() {
  * @returns {{ratio: number, dx: number, dy: number}} 離した瞬間の最終的な伸縮比率(0〜1)と伸び方向
  */
 export function endSqueeze() {
-    // 🐛修正：指を早く離した時、armPokeImpact()で仕込んだPOKE_FALLBACK_DELAY_MS後のフォールバック
-    // タイマーがまだ発火していないと、そのタイマーだけが指を離した後も生き残ってしまい、tap.mp3や
-    // 弾けポン音とは別のタイミングで「引っ張らず押した時」の音（mochi_poke_still等）が単独で・
-    // 遅れて鳴ってしまい、まるで2つの音が二重に鳴っているように聞こえる不具合があった
-    // （まもすいの報告：タップした時にtap/pokeと poke_still が両方鳴る）。指を離す瞬間にまだ
-    // 発火していなければ、タイマーを待たずにここで確定させる（＝タップなら他の音とほぼ同時に、
-    // 短い長押しなら離した瞬間に鳴る。pokeArmedがfalseの時＝既に鳴った/そもそも対象外の時は何もしない）。
-    if (pokeArmed && !pokeFired) firePokeImpact(0, 0, true);
-
     // 🆕 専用モードの蓄積は1本指スクイーズのみ対象（2本指ストレッチは今まで通り常に完全に戻る）。
     // currentModeをnullにする前に判定しておく必要がある
     const wasOneFinger = currentMode === 'one';

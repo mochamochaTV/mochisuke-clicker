@@ -14,9 +14,10 @@ import { isMinigameActive } from './minigames.js?v=2026-09-14-006';
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
   SQUEEZE_MAX_DRAG, armPokeImpact, assignSqueezeGlow, endSqueeze, getAccumD,
-  isAccumulateModeActive, releaseAllSqueezeGlows, releaseSqueezeWithOvershoot,
-  releaseTwoFingerSqueezeWithOvershoot, resetSqueezeAccum, setAccumulateModeActive,
-  startStretchSound, stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
+  isAccumulateModeActive, releaseAllSqueezeGlows, releaseLongPressSquish,
+  releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot, resetSqueezeAccum,
+  setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
+  stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
 } from './src/squeeze/physics.js?v=2026-09-14-006';
 import {
@@ -193,6 +194,11 @@ import {
         export let squeezeStartX = 0, squeezeStartY = 0, isDraggingSqueeze = false, isSqueezeSettling = false;
         export let squeezeLastDx = 0, squeezeLastDy = 0;
         export const SQUEEZE_MIN_DRAG = 9; // これ未満の移動は「タップ」として扱い、通常のもちっとアニメーションにする
+        // 🆕 このpress中に、一度でも本格的なドラッグ(SQUEEZE_MIN_DRAG以上の移動)へ切り替わったか。
+        // trueになるまでは、pointermoveが来てもスクイーズ本体(updateOneFingerSqueezeTarget)には反映せず、
+        // 代わりに「長押しでじわじわ潰れる」演出(physics.jsのstartLongPressSquish)だけを進める。
+        // こうすることで、実機のわずかな指のブレでスクイーズ・つつき音が誤発動するのを防いでいる
+        export let squeezeDragThresholdCrossed = false;
 
         // 🫧🫧 2本指ストレッチ機能：指2本でもちすけを逆方向に引っ張ると、中心を固定したまま両側へ伸びる。
         export let squeezePointers = new Map(); // pointerId -> {x, y}  現在もちすけに触れている指ごとの座標
@@ -715,6 +721,7 @@ import {
                 if (squeezePointers.size === 2) {
                     // 🫧🫧 2本目の指が触れた瞬間：ここから「2本の指を逆方向に引っ張って両側から伸ばす」モードに切り替える。
                     // 見た目（1本指の押し込みポーズ）は変えず、次のpointermoveから2本指用の計算に切り替わる。
+                    stopLongPressSquish(); // 🆕 1本目の指が始めていた「じわじわ潰れる」演出があれば、ここで止める（stepSqueezeFollowと衝突するため）
                     const pts = [...squeezePointers.values()];
                     twoFingerStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                     twoFingerStretchActive = true;
@@ -724,9 +731,11 @@ import {
                     clones.forEach(c => c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)');
                     squeezeStartX = e.clientX; squeezeStartY = e.clientY;
                     isDraggingSqueeze = true;
+                    squeezeDragThresholdCrossed = false; // 🆕 このpressではまだ本格的なドラッグに切り替わっていない
                     updateMouthPatchVisibility();
                     startStretchSound();
-                    armPokeImpact(); // 🆕 押した瞬間の強弱で音が変わる「つつき」ギミック。全素材・全プレイヤー共通（2-1参照）
+                    armPokeImpact(); // 🆕 押した瞬間の強弱で音が変わる「つつき」ギミック（本格的なドラッグが始まった時だけ鳴る。2-1参照）
+                    startLongPressSquish(); // 🆕 引っ張らずに押し続けた時用の「じわじわ潰れる」演出を開始
                 }
                 // 3本目以降の指は無視する（伸縮の計算が複雑になるだけなので、対象は指2本まで）
             }
@@ -865,16 +874,22 @@ import {
                 const tapReleaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
                 triggerSqueezeReleaseBurst(tapReleaseRatio, tapReleaseRatio, comboTierIndex);
 
-                // 従来通りの「もちっ」とした押し込みアニメーション
                 mochiDeformWrap.style.transformOrigin = '';
-                mochiDeformWrap.animate([
-                    { transform: 'scale(1.25, 0.72)' },
-                    { transform: 'scale(0.86, 1.14)', offset: 0.4 }, 
-                    { transform: 'scale(1.04, 0.96)', offset: 0.75 }, 
-                    { transform: 'scale(1, 1)' }
-                ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
-                mochiDeformWrap.style.transform = 'scale(1, 1)';
-                
+                // 🆕 長押しで「じわじわ潰れる」演出が進んでいた場合は、その潰れ具合に応じた反動
+                // （オーバーシュート）アニメーションで戻す。ごく短いタップで潰れがほとんど進んでいなかった
+                // 場合は何もしていないのでfalseが返り、従来通りの固定アニメーションを代わりに再生する
+                const didLongPressRebound = releaseLongPressSquish();
+                if (!didLongPressRebound) {
+                    // 従来通りの「もちっ」とした押し込みアニメーション
+                    mochiDeformWrap.animate([
+                        { transform: 'scale(1.25, 0.72)' },
+                        { transform: 'scale(0.86, 1.14)', offset: 0.4 },
+                        { transform: 'scale(1.04, 0.96)', offset: 0.75 },
+                        { transform: 'scale(1, 1)' }
+                    ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
+                    mochiDeformWrap.style.transform = 'scale(1, 1)';
+                }
+
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
@@ -930,6 +945,15 @@ import {
             if (!isDraggingSqueeze) return;
             squeezeLastDx = e.clientX - squeezeStartX;
             squeezeLastDy = e.clientY - squeezeStartY;
+            if (!squeezeDragThresholdCrossed) {
+                // 🆕 まだSQUEEZE_MIN_DRAG未満＝実機のわずかな指のブレの範囲とみなし、スクイーズ本体
+                // （伸縮・つつき音・光）にはまだ反映しない。この間は「じわじわ潰れる」演出
+                // （physics.jsのstartLongPressSquish）だけが独立して進んでいる
+                if (Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy) < SQUEEZE_MIN_DRAG) return;
+                // ここまで来た＝本格的なドラッグに切り替わった瞬間。以後このpress中はずっとスクイーズ側に任せる
+                squeezeDragThresholdCrossed = true;
+                stopLongPressSquish();
+            }
             const squeezeRatio = updateOneFingerSqueezeTarget(squeezeLastDx, squeezeLastDy);
             updateSqueezeGlow(e.pointerId, e.clientX, e.clientY, squeezeRatio); // 🆕 光も指の動きに追従させる
             if (isAccumulateModeActive()) refreshSqueezeAccumHud(); // 🆕 専用モード中は、ドラッグ中も「今離したら貯まる量」をライブでプレビューしたいが、
