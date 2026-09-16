@@ -871,15 +871,15 @@ import {
                 });
             } else {
                 // 引っ張りとして扱うほどの移動が無かった＝ただのタップ・長押し。
-                // 🆕 一時期はこの分岐でもtriggerSqueezeReleaseBurst（release_popの類）を鳴らしていたが、
-                // 「ただの軽いタップのときはslime_release_pop（等）を流さなくて良い」というまもすいの
-                // 要望を受けて削除した。ただのタップ・長押しの離し際は、無音か、下のreleaseLongPressSquish()
-                // による長押し反動演出（見た目のみ）だけになる（2-1参照）。
+                // 🆕 離した瞬間の音（releasePopSoundFile）を鳴らすかどうか・どれくらいの音量にするかは、
+                // 素材ごとのalwaysPlayReleasePop設定と、長押しでの縮み具合(ratio)に応じてphysics.js側の
+                // releaseLongPressSquish内部でまとめて判定・再生する（通常のもちすけは軽いタップでも
+                // 小さく鳴り、スライムもちすけは今まで通り軽いタップでは無音のまま。2-1参照）。
                 mochiDeformWrap.style.transformOrigin = '';
                 // 🆕 長押しで「じわじわ潰れる」演出が進んでいた場合は、その潰れ具合に応じた反動
                 // （オーバーシュート）アニメーションで戻す。ごく短いタップで潰れがほとんど進んでいなかった
-                // 場合は何もしていないのでfalseが返り、従来通りの固定アニメーションを代わりに再生する
-                const didLongPressRebound = releaseLongPressSquish();
+                // 場合は反動アニメーションこそ再生されずfalseが返るが、上記の離し際の音は変わらず鳴る
+                const didLongPressRebound = releaseLongPressSquish(comboTierIndex);
                 if (!didLongPressRebound) {
                     // 従来通りの「もちっ」とした押し込みアニメーション
                     mochiDeformWrap.animate([

@@ -216,13 +216,13 @@
             // 🆕 通常のもちすけの「本格的にドラッグした瞬間の強弱で音が変わる」つつき音（src/squeeze/materials.js の
             // default.pokeSoundFile）。全プレイヤーに聞こえる通常機能なので、他の効果音と同じ扱い。
             'audio/mochisuke/mochi_poke.mp3',
-            // 🆕 引っ張らずに長押ししている間だけループする「じわじわ潰れる」専用音（default.stillPokeSoundFile）。
-            // 最大まで潰れたら自動的に止まる（src/squeeze/physics.jsのstartLongPressSquishSound等参照）。
-            'audio/mochisuke/mochi_poke_still.mp3',
+            // 🆕 引っ張らずに長押ししている間だけループする「じわじわ潰れる」専用音（default.longPressLoopSoundFile）。
+            // 最大まで潰れたら自動的に止まる（src/squeeze/physics.jsのstartLongPressLoopSound等参照）。
+            'audio/mochisuke/mochi_squish_loop.mp3',
             // 🧪 管理者限定・試作中：スライムもちすけ用（src/squeeze/materials.js参照）。通常プレイヤーは
             // 全身衣装一覧にこのアイテム自体が出てこないため、事前読み込みされていても再生されない。
             // 🆕 slime_splash.mp3：タップした瞬間に鳴る「ぴちゃ」という水っぽい音（splashSoundFile）。
-            // 🆕 slime_poke_still.mp3：長押し中だけループする専用音（stillPokeSoundFile。default側と同じ役割）。
+            // 🆕 slime_poke_still.mp3：長押し中だけループする専用音（longPressLoopSoundFile。default側と同じ役割）。
             'audio/mochisuke/slime_stretch.mp3', 'audio/mochisuke/slime_release_pop.mp3', 'audio/mochisuke/slime_poke.mp3', 'audio/mochisuke/slime_splash.mp3', 'audio/mochisuke/slime_poke_still.mp3'];
         // 🎵 BGMも起動時に先読みしておく一覧。していないと、初めてその場所（ショップ等）に入った瞬間に
         // fetch＋デコードが走ってしまい、移動音とフェードが終わった後もBGMが少し遅れて始まってしまう

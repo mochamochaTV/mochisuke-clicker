@@ -83,10 +83,10 @@ const CONFIG = {
   LONGPRESS_SQUISH_DURATION_MS: 1200,   // 開始ポーズから最終ポーズまでかかる時間（ここを短くするほど速く潰れきる）
   LONGPRESS_RELEASE_OVERSHOOT_RATIO: 0.5, // 長押しから離した時、反動でどれだけ逆方向(伸びる方向)へ弾むか。潰れの進み具合(0〜1)に比例する
   LONGPRESS_RELEASE_DURATION_MS: 480,     // 反動アニメーションの長さ
-  // 🆕 長押し中だけループする専用音（materials.jsのstillPokeSoundFile）の最大音量。
+  // 🆕 長押し中だけループする専用音（materials.jsのlongPressLoopSoundFile）の最大音量。
   // 潰れの進み具合(0〜1)に比例して0からこの値まで音量を上げていき、最大まで潰れきったら
   // （t>=1）ぴたりと止める（まもすいの要望：もちすけが最大まで縮まったらその効果音は止まる。2-1参照）。
-  LONGPRESS_SQUISH_SOUND_MAX_GAIN: 0.4,
+  LONGPRESS_LOOP_SOUND_MAX_GAIN: 0.4,
   // --- 🆕 スクイーズ：伸びる「方向」の追従（2-1-b22で追加、2-1-b23で調整） ---
   // 最初は大きさ(SQUEEZE_FOLLOW_LERP)とまったく同じ追従係数・同じ「伸びるほど重くなる」heaviness補正を
   // 方向にもかけていたが、「重みのせいでもちすけを暴れさせる楽しさが無くなった」というまもすいからの
@@ -544,42 +544,42 @@ let longPressSquishStartTime = 0;
 let longPressSquishActive = false;
 let longPressSquishLastRatio = 0; // 離した瞬間の反動の大きさ計算に使う、直近の潰れ具合(0〜1)
 
-// 🆕 長押し中だけループする専用音（materials.jsのstillPokeSoundFile）用の状態。
+// 🆕 長押し中だけループする専用音（materials.jsのlongPressLoopSoundFile）用の状態。
 // startStretchSound/updateStretchSound/stopStretchSoundと全く同じWeb Audio APIのバッファ＋ゲイン方式。
-let longPressSquishSoundSource = null, longPressSquishSoundGain = null;
+let longPressLoopSoundSource = null, longPressLoopSoundGain = null;
 
 /**
  * 長押し用の「じわじわ潰れる」ループ音を音量0の状態で再生開始する。現在の素材に
- * stillPokeSoundFileが設定されていない場合は何もしない（＝この演出音自体を鳴らさない素材もOK）。
+ * longPressLoopSoundFileが設定されていない場合は何もしない（＝この演出音自体を鳴らさない素材もOK）。
  * @returns {void}
  */
-function startLongPressSquishSound() {
-    if (longPressSquishSoundSource) return;
-    const stillPokeSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].stillPokeSoundFile;
-    if (!stillPokeSoundFile) return;
+function startLongPressLoopSound() {
+    if (longPressLoopSoundSource) return;
+    const longPressLoopSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].longPressLoopSoundFile;
+    if (!longPressLoopSoundFile) return;
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-    const buffer = audioBuffers[stillPokeSoundFile];
+    const buffer = audioBuffers[longPressLoopSoundFile];
     if (!buffer) return;
-    longPressSquishSoundSource = ctx.createBufferSource();
-    longPressSquishSoundSource.buffer = buffer;
-    longPressSquishSoundSource.loop = true;
-    longPressSquishSoundGain = ctx.createGain();
-    longPressSquishSoundGain.gain.value = 0;
-    longPressSquishSoundSource.connect(longPressSquishSoundGain).connect(ctx.destination);
-    longPressSquishSoundSource.start(0);
+    longPressLoopSoundSource = ctx.createBufferSource();
+    longPressLoopSoundSource.buffer = buffer;
+    longPressLoopSoundSource.loop = true;
+    longPressLoopSoundGain = ctx.createGain();
+    longPressLoopSoundGain.gain.value = 0;
+    longPressLoopSoundSource.connect(longPressLoopSoundGain).connect(ctx.destination);
+    longPressLoopSoundSource.start(0);
 }
 
 /**
  * 潰れの進み具合(0〜1)に比例して、長押しループ音の音量を更新する。t=1（最大まで潰れきった）に
  * 到達したら、まもすいの要望（もちすけが最大まで縮まったらその効果音は止まる）通り、
- * ここでは鳴らし続けず、呼び出し元(stepLongPressSquish)側でstopLongPressSquishSound()を呼んで止める。
+ * ここでは鳴らし続けず、呼び出し元(stepLongPressSquish)側でstopLongPressLoopSound()を呼んで止める。
  * @param {number} t - 0〜1の潰れの進み具合
  * @returns {void}
  */
-function updateLongPressSquishSound(t) {
-    if (!longPressSquishSoundGain) return;
-    longPressSquishSoundGain.gain.value = t * CONFIG.LONGPRESS_SQUISH_SOUND_MAX_GAIN * sfxVolumeMult;
+function updateLongPressLoopSound(t) {
+    if (!longPressLoopSoundGain) return;
+    longPressLoopSoundGain.gain.value = t * CONFIG.LONGPRESS_LOOP_SOUND_MAX_GAIN * sfxVolumeMult;
 }
 
 /**
@@ -588,11 +588,11 @@ function updateLongPressSquishSound(t) {
  * いずれからも呼ばれる。
  * @returns {void}
  */
-function stopLongPressSquishSound() {
-    if (!longPressSquishSoundSource) return;
-    try { longPressSquishSoundSource.stop(); } catch (e) {}
-    longPressSquishSoundSource = null;
-    longPressSquishSoundGain = null;
+function stopLongPressLoopSound() {
+    if (!longPressLoopSoundSource) return;
+    try { longPressLoopSoundSource.stop(); } catch (e) {}
+    longPressLoopSoundSource = null;
+    longPressLoopSoundGain = null;
 }
 
 /**
@@ -604,7 +604,7 @@ export function startLongPressSquish() {
     longPressSquishActive = true;
     longPressSquishStartTime = performance.now();
     longPressSquishLastRatio = 0;
-    startLongPressSquishSound(); // 🆕 見た目と同時に、長押し専用のループ音も鳴らし始める
+    startLongPressLoopSound(); // 🆕 見た目と同時に、長押し専用のループ音も鳴らし始める
     if (longPressSquishRafId === null) longPressSquishRafId = requestAnimationFrame(stepLongPressSquish);
 }
 
@@ -622,10 +622,10 @@ function stepLongPressSquish() {
     if (t >= 1) {
         // 🆕 最大まで潰れきった＝もう変化が無いので、まもすいの要望通りループ音をここで止める
         // （見た目のrAFループ自体は今まで通りここで停止し、以後は静止したポーズを維持する）
-        stopLongPressSquishSound();
+        stopLongPressLoopSound();
         longPressSquishRafId = null;
     } else {
-        updateLongPressSquishSound(t);
+        updateLongPressLoopSound(t);
         longPressSquishRafId = requestAnimationFrame(stepLongPressSquish);
     }
 }
@@ -640,22 +640,40 @@ function stepLongPressSquish() {
 export function stopLongPressSquish() {
     longPressSquishActive = false;
     if (longPressSquishRafId !== null) { cancelAnimationFrame(longPressSquishRafId); longPressSquishRafId = null; }
-    stopLongPressSquishSound();
+    stopLongPressLoopSound();
 }
 
 /**
  * 指を離した時にtap.js側から呼ぶ。長押しで潰れが進んでいた分だけ、逆方向（伸びる方向）へ弾んで
  * から元の形へ収まる反動アニメーションを再生する。ごく短いタップで潰れがほとんど進んでいなかった
- * 場合（またはそもそも長押し演出が始まっていなかった場合）は何もせずfalseを返す。呼び出し側は
- * その場合、代わりに従来通りの固定の押し込みアニメーションを再生する。
- * @returns {boolean} 反動アニメーションを再生した場合true
+ * 場合（またはそもそも長押し演出が始まっていなかった場合）は反動アニメーションこそ再生しないが、
+ * releasePopSoundFileの再生判定はここでまとめて行う（下記参照）。
+ *
+ * 🆕 離した瞬間の音：素材のreleasePopSoundFileを、縮み具合(ratio, 0〜1)に応じてMIN〜MAXの音量で
+ * 鳴らす。alwaysPlayReleasePopがtrueの素材（通常のもちすけ）は、ratio===0（＝ただ触れてすぐ離した
+ * 軽いタップ）でもMIN_VOLUMEでごく小さく鳴らす。falseの素材（スライムもちすけ）は、実際に長押しで
+ * 縮んでいた時（ratio>0）だけ鳴らし、軽いタップでは今まで通り無音のままにする
+ * （まもすいの要望：通常もちすけは軽いタップでも小さく音がほしいが、スライムもちすけの軽いタップは
+ * 無音のままでよい。2-1参照）。
+ * @param {number} [comboTierIndex=0] - ポン音のピッチ計算に使うコンボ段階（tap.js側で計算して渡す。
+ *   triggerSqueezeReleaseBurstと同じ考え方。省略時は0＝ピッチ補正なし）
+ * @returns {boolean} 反動アニメーションを再生した場合true（呼び出し側はfalseの場合、代わりに
+ *   従来通りの固定の押し込みアニメーションを再生する）
  */
-export function releaseLongPressSquish() {
+export function releaseLongPressSquish(comboTierIndex = 0) {
     const ratio = longPressSquishLastRatio;
     longPressSquishActive = false;
     if (longPressSquishRafId !== null) { cancelAnimationFrame(longPressSquishRafId); longPressSquishRafId = null; }
-    stopLongPressSquishSound(); // 🆕 途中で離した場合（t<1でまだループ音が鳴っている場合）はここで止める
+    stopLongPressLoopSound(); // 🆕 途中で離した場合（t<1でまだループ音が鳴っている場合）はここで止める
     longPressSquishLastRatio = 0;
+
+    const material = SQUEEZE_MATERIALS[currentSqueezeMaterialKey];
+    if (material.releasePopSoundFile && (ratio > 0 || material.alwaysPlayReleasePop)) {
+        const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
+        const volume = CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME + ratio * (CONFIG.SQUEEZE_RELEASE_POP_MAX_VOLUME - CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME);
+        playAudioFilePitched(material.releasePopSoundFile, volume * sfxVolumeMult, pitch);
+    }
+
     if (ratio <= 0) return false;
 
     const scaleX = CONFIG.LONGPRESS_SQUISH_START_SCALE_X + (CONFIG.LONGPRESS_SQUISH_END_SCALE_X - CONFIG.LONGPRESS_SQUISH_START_SCALE_X) * ratio;
