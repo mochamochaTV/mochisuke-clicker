@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-17-009';
+} from './data.js?v=2026-09-17-010';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-17-009';
-import { isMinigameActive } from './minigames.js?v=2026-09-17-009';
+} from './main.js?v=2026-09-17-010';
+import { isMinigameActive } from './minigames.js?v=2026-09-17-010';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -20,22 +20,22 @@ import {
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-17-009';
+} from './src/squeeze/physics.js?v=2026-09-17-010';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-17-009';
+} from './progress.js?v=2026-09-17-010';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-17-009';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-009';
+} from './shop.js?v=2026-09-17-010';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-010';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-17-009';
+} from './ui.js?v=2026-09-17-010';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -739,14 +739,21 @@ import {
          * @returns {void}
          */
         function grantSqueezeReleaseMochiPop(tier, comboTierIndex = 0) {
-            const rect = mochiBtnElement.getBoundingClientRect();
-            const cx = rect.left + rect.width / 2;
-            const cy = rect.top + rect.height / 2;
             const perPop = getTapPower(); // 1回のポンで獲得するもち量（tierをかけず、ポンの回数で段階を表現する）
             // 🆕 反動アニメーション(playLongPressReboundAnimation)の.animate()呼び出しと、この関数の処理が
-            // 絶対に同じ同期実行の中で衝突しないよう、1個目のポンも含めて必ずsetTimeoutで次のタスクに回す
+            // 絶対に同じ同期実行の中で衝突しないよう、1個目のポンも含めて必ずsetTimeoutで次のタスクに回す。
+            // 🆕 まもすいの続報（updateDisplay()を遅らせてもまだフリーズする）を受けて追加で特定：
+            // mochiBtnElement.getBoundingClientRect()はブラウザに強制的にレイアウト計算を即座にやらせる
+            // （forced synchronous layout / レイアウトスラッシング）呼び出しで、これが以前はこの関数の
+            // 先頭、つまりplayLongPressReboundAnimation()の.animate()呼び出しと同じ同期実行の中に残って
+            // いた。実機ではこれだけでもメインスレッドが詰まり、アニメーションのクロックだけ進んでしまう
+            // 原因になり得るため、rect計測そのものもsetTimeoutの中（＝.animate()呼び出しとは別のタスク）に
+            // 完全に追い出した（2-1参照）
             for (let i = 0; i < tier; i++) {
                 setTimeout(() => {
+                    const rect = mochiBtnElement.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
                     createParticle(cx, cy);
                     createFloatingText(cx, cy, `+${formatMochi(perPop)} もち`);
                     setScore(score + perPop);

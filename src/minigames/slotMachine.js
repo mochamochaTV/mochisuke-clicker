@@ -19,11 +19,11 @@
 import {
   IS_DEV_MODE, getAudioContext, loadAudioBuffer, playAudioFile, playAudioFilePitched,
   screenFlash, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-17-009';
-import { gachaCoins, setGachaCoins, trackMissionEvent } from '../../progress.js?v=2026-09-17-009';
-import { saveGame } from '../../state.js?v=2026-09-17-009';
-import { updateDisplay } from '../../ui.js?v=2026-09-17-009';
-import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-009';
+} from '../../main.js?v=2026-09-17-010';
+import { gachaCoins, setGachaCoins, trackMissionEvent } from '../../progress.js?v=2026-09-17-010';
+import { saveGame } from '../../state.js?v=2026-09-17-010';
+import { updateDisplay } from '../../ui.js?v=2026-09-17-010';
+import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-010';
 
         const CONFIG = {
             SLOT_STRIP_LANDING_MARGIN: 2,          // リールが止まる位置を、帯の最後から何周ぶん手前にするか

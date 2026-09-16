@@ -1,15 +1,15 @@
         // ui.js を機能ごとに分割したファイルの1つ（常時表示UI（マップ・スコア表示・おすすめアクション・おみやげ・スプレー演出・updateDisplay））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { SPRAY_ITEMS, dialogueData, stages } from '../../data.js?v=2026-09-17-009';
-        import { createFloatingText, createParticle, formatMochi, lazyLoadImage, pickRandom, playAudioFile, screenFlash, screenShake, vibrate } from '../../main.js?v=2026-09-17-009';
-        import { hasNewlyUnlockedMinigame } from '../../minigames.js?v=2026-09-17-009';
-        import { canPrestige, collectedStamps, currentStageIndex, currentStageProgress, isPendingStampMoment, selectedStageIndex, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent, triggerAreaTransition } from '../../progress.js?v=2026-09-17-009';
-        import { activeSprayId, getOmiyagePrice, purchasedItems, sprayBuffActiveUntil } from '../../shop.js?v=2026-09-17-009';
-        import { saveGame, score } from '../../state.js?v=2026-09-17-009';
-        import { FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, feedPlaysUsedToday, feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isFever, isScreamActive, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel, skills, startFeedBuffIndicator } from '../../tap.js?v=2026-09-17-009';
-        import { closeModal, isTutorialActive, openModal, showMochiComment } from './core.js?v=2026-09-17-009';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-17-009';
-        import { diaryPageIndex } from './ranking.js?v=2026-09-17-009';
+        import { SPRAY_ITEMS, dialogueData, stages } from '../../data.js?v=2026-09-17-010';
+        import { createFloatingText, createParticle, formatMochi, lazyLoadImage, pickRandom, playAudioFile, screenFlash, screenShake, vibrate } from '../../main.js?v=2026-09-17-010';
+        import { hasNewlyUnlockedMinigame } from '../../minigames.js?v=2026-09-17-010';
+        import { canPrestige, collectedStamps, currentStageIndex, currentStageProgress, isPendingStampMoment, selectedStageIndex, setSelectedStageIndex, setStampDebugInterval, setStampDebugMode, stageArrivalTime, stampDebugInterval, stampDebugMode, trackMissionEvent, triggerAreaTransition } from '../../progress.js?v=2026-09-17-010';
+        import { activeSprayId, getOmiyagePrice, purchasedItems, sprayBuffActiveUntil } from '../../shop.js?v=2026-09-17-010';
+        import { saveGame, score } from '../../state.js?v=2026-09-17-010';
+        import { FEED_BUFF_DURATION_MS, FEED_DAILY_LIMIT, feedPlaysUsedToday, feedTeaseTimer, feverTimeLeft, getMps, getTapPower, isFever, isScreamActive, mochiBtnElement, placeFeedIconNearMochisuke, resetFeedCountIfNewDay, revertScreamFace, setFeedBuffActiveUntil, setFeedPlaysUsedToday, setFeedTeaseLevel, skills, startFeedBuffIndicator } from '../../tap.js?v=2026-09-17-010';
+        import { closeModal, isTutorialActive, openModal, showMochiComment } from './core.js?v=2026-09-17-010';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-17-010';
+        import { diaryPageIndex } from './ranking.js?v=2026-09-17-010';
 
         // チューニング用の数値をまとめた設定オブジェクト（演出の強さやタイミングを調整する時はここを触る）
         const CONFIG = {

@@ -15,10 +15,10 @@
 import {
   audioBuffers, createBurstParticle, createRippleEffect, getAudioContext, playAudioFile,
   playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-17-009';
+} from '../../main.js?v=2026-09-17-010';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-009';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-010';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -959,6 +959,15 @@ export function releaseTwoFingerSqueezeWithOvershoot(angleDeg, ratio) {
  * ポン音はtap.js側のgrantSqueezeReleaseMochiPop（もちぽんぽん報酬）がもちを1個出すたびに
  * playSqueezeReleasePopSound()を呼ぶ方式に一本化した。そのためこの関数はもう音を鳴らさず、
  * パーティクル・強振動の演出だけを担当する（SQUEEZE_RELEASE_BURST_MIN_RATIO以上伸ばした時限定なのは変わらず）。
+ * 🆕 呼び出し元(tap.js releaseMochiSucre)は、この関数の直前にreleaseSqueezeWithOvershoot/
+ * releaseTwoFingerSqueezeWithOvershoot（mochiDeformWrap.animate()による反動アニメーション）を同期的に
+ * 呼んでいる。この関数の中のmochiBtnElement.getBoundingClientRect()は、ブラウザに強制的にレイアウト
+ * 計算を即座にやらせる（forced synchronous layout）呼び出しで、これが.animate()呼び出しと同じ同期実行の
+ * 中で走ると、実機のような非力な端末ではメインスレッドが詰まり、反動アニメーションのクロックだけ
+ * 進んでしまい「反動が起きなかったように見える」フリーズの原因になり得る（まもすいの報告により、
+ * 長押し版のgrantSqueezeReleaseMochiPopで判明した現象と全く同じ原因。2-1参照）。そのため、
+ * getBoundingClientRect()を含む処理全体をsetTimeoutで次のタスクに追い出し、.animate()呼び出しとは
+ * 絶対に同じ同期実行の中で衝突しないようにした。
  * @param {number} gatingRatio - 「パーティクル・強振動を出して良いか」の判定に使う伸縮比率（指の生の移動量ベース。0〜1）
  * @param {number} visualRatio - 実際の見た目（パーティクル数・強振動の閾値判定）に使う伸縮比率（追従の遅れ込みの値）
  * @returns {void}
@@ -966,15 +975,17 @@ export function releaseTwoFingerSqueezeWithOvershoot(angleDeg, ratio) {
 export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio) {
     if (gatingRatio < CONFIG.SQUEEZE_RELEASE_BURST_MIN_RATIO) return; // パーティクル・強振動はこれ以上伸ばした時だけ
 
-    const rect = mochiBtnElement.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const count = Math.round(CONFIG.SQUEEZE_RELEASE_BURST_COUNT_BASE + visualRatio * CONFIG.SQUEEZE_RELEASE_BURST_COUNT_RANGE);
-    for (let i = 0; i < count; i++) createBurstParticle(cx, cy);
+    setTimeout(() => {
+        const rect = mochiBtnElement.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const count = Math.round(CONFIG.SQUEEZE_RELEASE_BURST_COUNT_BASE + visualRatio * CONFIG.SQUEEZE_RELEASE_BURST_COUNT_RANGE);
+        for (let i = 0; i < count; i++) createBurstParticle(cx, cy);
 
-    if (visualRatio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
-        vibrate(CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN);
-    }
+        if (visualRatio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
+            vibrate(CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN);
+        }
+    }, 0);
 }
 
 /**
