@@ -3,38 +3,39 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-16-007';
+} from './data.js?v=2026-09-17-008';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-16-007';
-import { isMinigameActive } from './minigames.js?v=2026-09-16-007';
+} from './main.js?v=2026-09-17-008';
+import { isMinigameActive } from './minigames.js?v=2026-09-17-008';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
   SQUEEZE_MAX_DRAG, armPokeImpact, assignSqueezeGlow, endSqueeze, getAccumD,
-  isAccumulateModeActive, playSqueezeReleasePopSound, releaseAllSqueezeGlows, releaseLongPressSquish,
+  isAccumulateModeActive, playLongPressReboundAnimation, playSqueezeReleasePopSound,
+  releaseAllSqueezeGlows, releaseLongPressSquish,
   releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot, resetSqueezeAccum,
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-16-007';
+} from './src/squeeze/physics.js?v=2026-09-17-008';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-16-007';
+} from './progress.js?v=2026-09-17-008';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-16-007';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-16-007';
+} from './shop.js?v=2026-09-17-008';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-008';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-16-007';
+} from './ui.js?v=2026-09-17-008';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -678,6 +679,17 @@ import {
         }
 
         /**
+         * 「もちぽんぽん」ボーナスの現在の最大段階数を返す（CONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOSの
+         * 要素数+1）。段階の閾値配列を増減させるだけで自動的に追従するので、physics.js側の
+         * playLongPressReboundAnimation（反動アニメーションを同じ段階数で5段階スナップさせる）に
+         * 段階の「母数」を伝える時などに使う（2-1参照）。
+         * @returns {number} 現在の最大段階数（現在は5）
+         */
+        function getSqueezeReleaseMochiMaxTier() {
+            return CONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOS.length + 1;
+        }
+
+        /**
          * 長押し/引っ張りを離した時、伸縮・潰れ比率(0〜1)から「もちぽんぽん」ボーナスの個数(1〜最大段階数)を
          * 決める。通常もちすけ・スライムもちすけ共通のロジック（2-1参照）。呼び出し側で「ただの軽い
          * タップではない」ことを確認済みである前提のため、ここでは常に最低1個を返す。
@@ -705,6 +717,15 @@ import {
          * tier個の「もちポン」をCONFIG.SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MSずつ時間差で発生させ、
          * それぞれのタイミングでパーティクル・「+1 もち」フローティングテキスト・スコア加算・
          * releasePopSoundFile（playSqueezeReleasePopSound）を1セットずつ鳴らす（例えば5つ出るなら5回鳴る）。
+         * 🆕 まもすいから「離した瞬間の反動・効果音が消えたように感じる」との指摘を受け、2点調整した。
+         * (1) 1個目のポン（i===0）は、以前のようにsetTimeoutで遅延させず即座に実行する。反動アニメーション
+         *     （呼び出し側がplayLongPressReboundAnimationで同時に再生する）と体感上ぴったり重なるようにするため。
+         *     2個目以降は従来通りSQUEEZE_RELEASE_MOCHI_POP_STAGGER_MSずつ時間差で「ぽん、ぽん」と出す。
+         * (2) updateDisplay()（スコア表示・進捗バー等をまとめて再描画する、そこそこ重い処理）は、以前は
+         *     ポンの回数ぶん(最大5回)連続で呼んでいたが、実機のような非力な端末では反動アニメーション
+         *     （Web Animations API）の再生中にメインスレッドが詰まり、アニメーションがカクつく/コマ落ちして
+         *     見える原因になり得るため、最後のポンの時だけまとめて1回呼ぶように変更した（スコア自体は
+         *     setScoreで毎回正しく加算されるので、表示のタイミングだけを間引く形。2-1参照）。
          * @param {number} tier - 1〜最大段階数（現在1〜5）。computeSqueezeReleaseMochiTierの戻り値を渡す想定
          * @param {number} [comboTierIndex=0] - ポン音のピッチ計算に使うコンボ段階（playSqueezeReleasePopSoundにそのまま渡す）
          * @returns {void}
@@ -714,12 +735,23 @@ import {
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
             const perPop = getTapPower(); // 1回のポンで獲得するもち量（tierをかけず、ポンの回数で段階を表現する）
+            const runPop = () => {
+                createParticle(cx, cy);
+                createFloatingText(cx, cy, `+${formatMochi(perPop)} もち`);
+                setScore(score + perPop);
+            };
             for (let i = 0; i < tier; i++) {
+                const isLastPop = i === tier - 1;
+                if (i === 0) {
+                    // 🆕 1個目だけは反動アニメーションと体感を合わせるため即座に実行する
+                    runPop();
+                    playSqueezeReleasePopSound(comboTierIndex);
+                    if (isLastPop) updateDisplay();
+                    continue;
+                }
                 setTimeout(() => {
-                    createParticle(cx, cy);
-                    createFloatingText(cx, cy, `+${formatMochi(perPop)} もち`);
-                    setScore(score + perPop);
-                    updateDisplay();
+                    runPop();
+                    if (isLastPop) updateDisplay(); // 🆕 重いupdateDisplay()は最後のポンの時だけまとめて呼ぶ
                     playSqueezeReleasePopSound(comboTierIndex);
                 }, i * CONFIG.SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MS);
             }
@@ -951,11 +983,6 @@ import {
                 });
             } else {
                 // 引っ張りとして扱うほどの移動が無かった＝ただのタップ・長押し。
-                // 🆕 離した瞬間の音（releasePopSoundFile）は、以前はここでreleaseLongPressSquishが
-                // 自動再生していたが、現在は下の「もちぽんぽん」ボーナスが実際にもちを出す時に
-                // playSqueezeReleasePopSound()でまとめて鳴らす方式にしたため、ここでは鳴らさない
-                // （didLongPressReboundがfalse＝ただの軽いタップの時はボーナス自体が出ないので、
-                // 通常もちすけ・スライムもちすけともに軽いタップは無音のまま。2-1参照）。
                 mochiDeformWrap.style.transformOrigin = '';
                 // 🆕 長押しで「じわじわ潰れる」演出が進んでいた場合は、その潰れ具合に応じた反動
                 // （オーバーシュート）アニメーションで戻す。ごく短いタップで潰れがほとんど進んでいなかった
@@ -963,7 +990,7 @@ import {
                 // ratioは（しきい値による切り捨てなしの）生の潰れ具合で、下のもちぽんぽん報酬の段階計算に使う
                 const { rebounded: didLongPressRebound, ratio: longPressRatio } = releaseLongPressSquish();
                 if (!didLongPressRebound) {
-                    // 従来通りの「もちっ」とした押し込みアニメーション
+                    // 従来通りの「もちっ」とした押し込みアニメーション（ごく短いタップ用の固定の弱い反動）
                     mochiDeformWrap.animate([
                         { transform: 'scale(1.25, 0.72)' },
                         { transform: 'scale(0.86, 1.14)', offset: 0.4 },
@@ -971,14 +998,18 @@ import {
                         { transform: 'scale(1, 1)' }
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     mochiDeformWrap.style.transform = 'scale(1, 1)';
-                }
-                // 🆕 「もちぽんぽん」ボーナス（通常もちすけ・スライムもちすけ共通。2-1参照）。
-                // didLongPressReboundがtrueの時＝releaseLongPressSquish内部で「本当に長押しと呼べる域まで
-                // 進んでいた」と判定された時だけボーナスを出す。ただの軽いタップ（rebounded:false）は対象外
-                // にしないと、executeSingleTapで既に生産している通常タップすべてに無条件でボーナスが
-                // 乗ってしまうため（CONFIG.SQUEEZE_RELEASE_MOCHI_TIER2/3_RATIOのコメント参照）
-                if (didLongPressRebound) {
-                    grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(longPressRatio), comboTierIndex);
+                } else {
+                    // 🆕 「もちぽんぽん」ボーナス（通常もちすけ・スライムもちすけ共通。2-1参照）。
+                    // didLongPressReboundがtrueの時＝releaseLongPressSquish内部で「本当に長押しと呼べる域まで
+                    // 進んでいた」と判定された時だけボーナスを出す。ただの軽いタップ（rebounded:false）は対象外
+                    // にしないと、executeSingleTapで既に生産している通常タップすべてに無条件でボーナスが
+                    // 乗ってしまうため（CONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOSのコメント参照）
+                    // 🆕 反動アニメーションともちぽんぽん報酬の段階を完全に一致させるため、tierを
+                    // ここで1回だけ計算し、両方に同じ値を渡す（まもすいの要望：反動アニメも
+                    // もちと同じ5段階にしてほしい。2-1参照）
+                    const tier = computeSqueezeReleaseMochiTier(longPressRatio);
+                    playLongPressReboundAnimation(tier, getSqueezeReleaseMochiMaxTier());
+                    grantSqueezeReleaseMochiPop(tier, comboTierIndex);
                 }
 
                 clones.forEach(c => {

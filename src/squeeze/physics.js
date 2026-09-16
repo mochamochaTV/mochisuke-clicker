@@ -15,10 +15,10 @@
 import {
   audioBuffers, createBurstParticle, createRippleEffect, getAudioContext, playAudioFile,
   playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-16-007';
+} from '../../main.js?v=2026-09-17-008';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-16-007';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-008';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -668,17 +668,16 @@ export function stopLongPressSquish() {
 }
 
 /**
- * 指を離した時にtap.js側から呼ぶ。長押しで潰れが進んでいた分だけ、逆方向（伸びる方向）へ弾んで
- * から元の形へ収まる反動アニメーションを再生する。ごく短いタップで潰れがほとんど進んでいなかった
- * 場合（またはそもそも長押し演出が始まっていなかった場合）は反動アニメーションを再生しない
- * （LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS未満はrebounded:falseを返す。上のCONFIGコメント参照）。
+ * 指を離した時にtap.js側から呼ぶ。「本当に長押しと呼べる域まで潰れが進んでいたか」だけを判定して
+ * 返す（LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS未満はrebounded:falseになる。上のCONFIGコメント参照）。
  *
- * 🆕 以前はここでreleasePopSoundFileも鳴らしていたが、「もちが出る時にひとつずつmochi_release_popを
- * 鳴らそう」という要望を受け、ポン音はtap.js側のgrantSqueezeReleaseMochiPop（もちぽんぽん報酬）が
- * もちを1個出すたびにplaySqueezeReleasePopSound()を呼ぶ方式に一本化した。このためこの関数は音を
- * 鳴らさず、反動アニメーションの判定・再生だけを行う（通常もちすけ・スライムもちすけ共通のルール。2-1参照）。
- * @returns {{rebounded: boolean, ratio: number}} rebounded: 反動アニメーションを再生した場合true
- *   （呼び出し側はfalseの場合、代わりに従来通りの固定の押し込みアニメーションを再生する）。
+ * 🆕 以前はここで反動アニメーション自体も（生のratioに比例した連続的な強さで）再生していたが、
+ * 「もちぽんぽん報酬と同じ5段階の反動にしてほしい」というまもすいの要望を受け、アニメーション自体は
+ * 呼び出し側（tap.js）がこの戻り値のratioからtierを計算した後、playLongPressReboundAnimation(tier, maxTier)
+ * を呼んで再生する形に分離した。この関数自体はもう見た目に触れず、状態のクリーンアップと
+ * 「反動・もちぽんぽん報酬の対象にして良いか」の判定だけを行う（通常もちすけ・スライムもちすけ共通のルール。2-1参照）。
+ * @returns {{rebounded: boolean, ratio: number}} rebounded: trueなら反動アニメーション・もちぽんぽん
+ *   報酬の対象（呼び出し側はfalseの場合、代わりに従来通りの固定の押し込みアニメーションを再生する）。
  *   ratio: 離した瞬間の潰れ具合(0〜1、しきい値による0扱いなし)。呼び出し側（tap.js）がスクイーズ
  *   衣装の「離した時のもち報酬」段階を計算する時に使う（2-1参照）
  */
@@ -691,21 +690,31 @@ export function releaseLongPressSquish() {
 
     // 🆕 「本当に長押しと呼べる域まで進んでいたか」は、生のratioではなくLONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS
     // 未満を切り捨てたものだけで判定する（上のCONFIG.LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTSのコメント参照）。
-    // 🆕 ここではもう音は鳴らさない（以前はここでreleasePopSoundFileを鳴らしていたが、「もちが出る時に
-    // ひとつずつmochi_release_popを鳴らそう」という要望を受け、ポン音はtap.js側のgrantSqueezeReleaseMochiPopが
-    // もちを1個出すたびにplaySqueezeReleasePopSound()を呼ぶ方式に一本化した。2-1参照）。
-    // この関数はもう「反動アニメを出して良いか（＝もちぽんぽん報酬の対象にして良いか）」の判定と、
-    // 反動アニメ自体の実行だけを担当する
     const isGenuineLongPress = ratio >= CONFIG.LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS;
+    return { rebounded: isGenuineLongPress, ratio };
+}
 
-    if (!isGenuineLongPress) return { rebounded: false, ratio };
-
-    const scaleX = CONFIG.LONGPRESS_SQUISH_START_SCALE_X + (CONFIG.LONGPRESS_SQUISH_END_SCALE_X - CONFIG.LONGPRESS_SQUISH_START_SCALE_X) * ratio;
-    const scaleY = CONFIG.LONGPRESS_SQUISH_START_SCALE_Y + (CONFIG.LONGPRESS_SQUISH_END_SCALE_Y - CONFIG.LONGPRESS_SQUISH_START_SCALE_Y) * ratio;
-    const overshoot = ratio * CONFIG.LONGPRESS_RELEASE_OVERSHOOT_RATIO;
-    // 潰れた状態から、行き過ぎて逆方向（伸びる方向）へ弾んでから、通常の形に収まる「反動」モーション
-    // （releaseSqueezeWithOvershootと似た考え方だが、squeezeTransformForの伸縮曲線とは値の対応が
-    // 異なる（初期押し込みポーズが独自の固定値のため）ので、こちらは単純なscale()の直接指定にしている）
+/**
+ * releaseLongPressSquishがrebounded:trueを返した時にtap.js側から呼ぶ、長押しの反動アニメーション本体。
+ * 潰れた状態から、行き過ぎて逆方向（伸びる方向）へ弾んでから、通常の形に収まる「反動」モーション
+ * （releaseSqueezeWithOvershootと似た考え方だが、squeezeTransformForの伸縮曲線とは値の対応が異なる
+ * （初期押し込みポーズが独自の固定値のため）ので、こちらは単純なscale()の直接指定にしている）。
+ * 🆕 以前は生のratio(0〜1)をそのまま使い、潰れ具合に比例して連続的に強さが変わっていたが、
+ * 「もちぽんぽん報酬（1〜5段階）と同じ5段階の反動にしてほしい」というまもすいの要望を受け、
+ * tap.js側が計算済みのtier（もちぽんぽん報酬と全く同じcomputeSqueezeReleaseMochiTierの結果）を
+ * そのまま受け取り、tier/maxTierを実効的な潰れ具合として使うことで、5段階のいずれかにスナップされた
+ * 強さの反動になるようにした。段階の閾値自体はtap.js側のCONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOSが
+ * 唯一の管理場所のままなので、こちら側はmaxTierを渡してもらうだけで常に段階数の変更に追従できる
+ * （2-1参照。もちぽんぽん報酬側の実装はtap.js側のgrantSqueezeReleaseMochiPop参照）。
+ * @param {number} tier - 1〜maxTierの段階（tap.js側のcomputeSqueezeReleaseMochiTierの戻り値をそのまま渡す）
+ * @param {number} maxTier - 現在の最大段階数（tap.js側のCONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOS.length + 1）
+ * @returns {void}
+ */
+export function playLongPressReboundAnimation(tier, maxTier) {
+    const tierRatio = Math.max(0, Math.min(1, tier / maxTier));
+    const scaleX = CONFIG.LONGPRESS_SQUISH_START_SCALE_X + (CONFIG.LONGPRESS_SQUISH_END_SCALE_X - CONFIG.LONGPRESS_SQUISH_START_SCALE_X) * tierRatio;
+    const scaleY = CONFIG.LONGPRESS_SQUISH_START_SCALE_Y + (CONFIG.LONGPRESS_SQUISH_END_SCALE_Y - CONFIG.LONGPRESS_SQUISH_START_SCALE_Y) * tierRatio;
+    const overshoot = tierRatio * CONFIG.LONGPRESS_RELEASE_OVERSHOOT_RATIO;
     mochiDeformWrap.animate([
         { transform: `scale(${scaleX}, ${scaleY})` },
         { transform: `scale(${1 - overshoot * 0.65}, ${1 + overshoot * 0.65})`, offset: 0.35 },
@@ -714,7 +723,6 @@ export function releaseLongPressSquish() {
         { transform: 'scale(1, 1)' },
     ], { duration: CONFIG.LONGPRESS_RELEASE_DURATION_MS, easing: 'ease-out' });
     mochiDeformWrap.style.transform = 'scale(1, 1)';
-    return { rebounded: true, ratio };
 }
 
 // 2本の指が離れていく方向・距離から、追従ループの目標値を更新する（2本指ドラッグ中に毎回呼ばれる）
