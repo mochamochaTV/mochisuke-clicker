@@ -6,10 +6,10 @@
  * （ロジック・数値は一切変更していない。コードの再配置のみ）。
  */
 
-import { stages } from '../../data.js?v=2026-09-14-006';
-import { pickRandom, playAudioFile, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-14-006';
-import { currentStageIndex } from '../../progress.js?v=2026-09-14-006';
-import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './core.js?v=2026-09-14-006';
+import { stages } from '../../data.js?v=2026-09-16-007';
+import { pickRandom, playAudioFile, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-16-007';
+import { currentStageIndex } from '../../progress.js?v=2026-09-16-007';
+import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './core.js?v=2026-09-16-007';
 
         const CONFIG = {
             QUIZ_QUESTION_COUNT: 3,             // 1プレイあたりの出題数

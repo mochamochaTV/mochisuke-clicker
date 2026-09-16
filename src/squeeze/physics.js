@@ -15,10 +15,10 @@
 import {
   audioBuffers, createBurstParticle, createRippleEffect, getAudioContext, playAudioFile,
   playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-14-006';
+} from '../../main.js?v=2026-09-16-007';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-14-006';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-16-007';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -35,13 +35,19 @@ const CONFIG = {
   SQUEEZE_RELEASE_BURST_MIN_RATIO: 0.5, // これ以上伸ばして離した時だけ、パーティクル＋強振動を出す（軽いタップでは出さない）
   SQUEEZE_RELEASE_BURST_COUNT_BASE: 6,  // 弾けるパーティクルの最低数
   SQUEEZE_RELEASE_BURST_COUNT_RANGE: 8, // 伸び率に応じて上乗せされる最大数
-  // 🆕 ポン音自体は「引っ張って離した」時なら常に鳴らし、引っ張った長さ(0〜1)に応じてMIN〜MAXの間で
-  // 音量を線形補間する（まもすいの要望：引っ張った長さに応じて音の大きさを変えたい）。
-  // パーティクル・強振動だけは、これまで通りSQUEEZE_RELEASE_BURST_MIN_RATIO以上の時に限定する。
-  SQUEEZE_RELEASE_POP_MIN_VOLUME: 0.18, // ほぼ引っ張らずに離した時（ただのタップ・長押し含む）の控えめな音量
-  SQUEEZE_RELEASE_POP_MAX_VOLUME: 0.55, // 目一杯引っ張って離した時の音量（旧SQUEEZE_RELEASE_POP_VOLUMEを引き継いだ値）
+  // 🆕 以前はここ（triggerSqueezeReleaseBurst）でreleasePopSoundFileを引っ張った長さに応じた音量で
+  // 鳴らしていたが、「もちが出る時にひとつずつmochi_release_popを鳴らそう（３つ出るなら３回）」という
+  // まもすいの要望を受けて、ポン音はtap.js側のgrantSqueezeReleaseMochiPop（もちぽんぽん報酬）が
+  // もちを1個出すたびにplaySqueezeReleasePopSound()を呼ぶ方式に一本化した。このためこの関数
+  // (triggerSqueezeReleaseBurst)自体はもう音を鳴らさず、パーティクル＋強振動の演出だけを担当する
+  // （SQUEEZE_RELEASE_BURST_MIN_RATIO以上伸ばした時限定なのは変わらず）。ポン音自体のピッチ計算には
+  // 下のSQUEEZE_RELEASE_POP_PITCH_BASE/PITCH_PER_TIERを引き続き使う（playSqueezeReleasePopSound参照）。
   SQUEEZE_RELEASE_POP_PITCH_BASE: 0.95,       // ポン音の基本ピッチ
   SQUEEZE_RELEASE_POP_PITCH_PER_TIER: 0.06,   // コンボtierが1段上がるごとに足すピッチ（見た目のコンボ演出と音を連動させる）
+  // 🆕 もちぽんぽん報酬（tap.js側のgrantSqueezeReleaseMochiPop）で、もちが1個出るたびに鳴らすポン音の
+  // 音量。以前のように引っ張った長さで音量を連続的に変えるのではなく、「同じ音量のポンが1〜3回鳴る」
+  // というシンプルな設計にしたので、固定値1つで十分（playSqueezeReleasePopSound参照）
+  SQUEEZE_RELEASE_MOCHI_POP_SOUND_VOLUME: 0.5,
   SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO: 0.85, // かなり大きく伸ばして離した時だけ、軽いバイブで区切りを付ける
   SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN: [12, 25, 12],
   // --- 🆕 スクイーズ：指が触れている場所が優しく光る演出 ---
@@ -86,16 +92,20 @@ const CONFIG = {
   // 一緒に見比べて調整すると、潰れ量と反動のバランスが取りやすい。
   LONGPRESS_SQUISH_END_SCALE_X: 1.55,
   LONGPRESS_SQUISH_END_SCALE_Y: 0.40,
-  LONGPRESS_SQUISH_DURATION_MS: 1200,   // 開始ポーズから最終ポーズまでかかる時間（ここを短くするほど速く潰れきる）
+  // 🆕「私がその長さ決めたい」＝どれだけ潰れるか(大きさ)ではなく、潰れきるまでにかかる"時間"を
+  // 自分で調整したい、というまもすいの要望はこの数値のこと。開始ポーズ(LONGPRESS_SQUISH_START_SCALE_X/Y)
+  // から最終ポーズ(LONGPRESS_SQUISH_END_SCALE_X/Y)まで、ここで指定したミリ秒をかけて直線的に潰れていく。
+  // 短くするほどすぐに潰れきり、長くするほどじわじわゆっくり潰れる。ここだけを書き換えれば良く、
+  // 他の見た目・音のロジックには影響しない（長押し音のループもこの時間に合わせて自動的に追従する）。
+  LONGPRESS_SQUISH_DURATION_MS: 1200,
   LONGPRESS_RELEASE_OVERSHOOT_RATIO: 0.5, // 長押しから離した時、反動でどれだけ逆方向(伸びる方向)へ弾むか。潰れの進み具合(0〜1)に比例する
   LONGPRESS_RELEASE_DURATION_MS: 480,     // 反動アニメーションの長さ
   // 🆕 longPressSquishLastRatio（時間経過にそのまま比例する潰れ具合、0〜1）は、rAFが1回でも回れば
   // ほんの数十msの軽いタップでもわずかに0より大きくなってしまう。これをそのまま「長押しした」と
-  // 判定してしまうと、alwaysPlayReleasePopがfalseの素材（スライムもちすけ）でも、ただの軽いタップの
-  // たびにreleasePopSoundFileが鳴ってしまう不具合になる（まもすいの指摘：「軽いタップの時は
-  // そのまま」と言ったのに鳴ってしまっている、の原因）。この値未満の間は「まだ長押しと呼べる域に
-  // 達していない」とみなし、releaseLongPressSquish内で音・反動アニメ両方の発生判定を0扱いにする
-  // （音量自体の計算には影響しない、あくまで「鳴らす/鳴らさない」の閾値。2-1参照）。
+  // 判定してしまうと、ただの軽いタップのたびに反動アニメ・もちぽんぽん報酬が発生してしまう
+  // （まもすいの指摘：「軽いタップの時はそのまま」と言ったのに鳴ってしまっている、の原因）。
+  // この値未満の間はreleaseLongPressSquishがrebounded:falseを返し、tap.js側は反動アニメも
+  // もちぽんぽん報酬も出さない（通常もちすけ・スライムもちすけ共通のルール。2-1参照）。
   LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS: 0.15,
   // 🆕 長押し中だけループする専用音（materials.jsのlongPressLoopSoundFile）の最大音量。
   // 潰れの進み具合(0〜1)に比例して0からこの値まで音量を上げていき、最大まで潰れきったら
@@ -660,23 +670,19 @@ export function stopLongPressSquish() {
 /**
  * 指を離した時にtap.js側から呼ぶ。長押しで潰れが進んでいた分だけ、逆方向（伸びる方向）へ弾んで
  * から元の形へ収まる反動アニメーションを再生する。ごく短いタップで潰れがほとんど進んでいなかった
- * 場合（またはそもそも長押し演出が始まっていなかった場合）は反動アニメーションこそ再生しないが、
- * releasePopSoundFileの再生判定はここでまとめて行う（下記参照）。
+ * 場合（またはそもそも長押し演出が始まっていなかった場合）は反動アニメーションを再生しない
+ * （LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS未満はrebounded:falseを返す。上のCONFIGコメント参照）。
  *
- * 🆕 離した瞬間の音：素材のreleasePopSoundFileを、縮み具合(ratio, 0〜1)に応じてMIN〜MAXの音量で
- * 鳴らす。alwaysPlayReleasePopがtrueの素材（通常のもちすけ）は、ratio===0（＝ただ触れてすぐ離した
- * 軽いタップ）でもMIN_VOLUMEでごく小さく鳴らす。falseの素材（スライムもちすけ）は、実際に長押しで
- * 縮んでいた時（ratio>0）だけ鳴らし、軽いタップでは今まで通り無音のままにする
- * （まもすいの要望：通常もちすけは軽いタップでも小さく音がほしいが、スライムもちすけの軽いタップは
- * 無音のままでよい。2-1参照）。
- * @param {number} [comboTierIndex=0] - ポン音のピッチ計算に使うコンボ段階（tap.js側で計算して渡す。
- *   triggerSqueezeReleaseBurstと同じ考え方。省略時は0＝ピッチ補正なし）
+ * 🆕 以前はここでreleasePopSoundFileも鳴らしていたが、「もちが出る時にひとつずつmochi_release_popを
+ * 鳴らそう」という要望を受け、ポン音はtap.js側のgrantSqueezeReleaseMochiPop（もちぽんぽん報酬）が
+ * もちを1個出すたびにplaySqueezeReleasePopSound()を呼ぶ方式に一本化した。このためこの関数は音を
+ * 鳴らさず、反動アニメーションの判定・再生だけを行う（通常もちすけ・スライムもちすけ共通のルール。2-1参照）。
  * @returns {{rebounded: boolean, ratio: number}} rebounded: 反動アニメーションを再生した場合true
  *   （呼び出し側はfalseの場合、代わりに従来通りの固定の押し込みアニメーションを再生する）。
  *   ratio: 離した瞬間の潰れ具合(0〜1、しきい値による0扱いなし)。呼び出し側（tap.js）がスクイーズ
  *   衣装の「離した時のもち報酬」段階を計算する時に使う（2-1参照）
  */
-export function releaseLongPressSquish(comboTierIndex = 0) {
+export function releaseLongPressSquish() {
     const ratio = longPressSquishLastRatio;
     longPressSquishActive = false;
     if (longPressSquishRafId !== null) { cancelAnimationFrame(longPressSquishRafId); longPressSquishRafId = null; }
@@ -685,15 +691,12 @@ export function releaseLongPressSquish(comboTierIndex = 0) {
 
     // 🆕 「本当に長押しと呼べる域まで進んでいたか」は、生のratioではなくLONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS
     // 未満を切り捨てたものだけで判定する（上のCONFIG.LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTSのコメント参照）。
-    // 音量自体の計算には生のratioを使うので、閾値をまたいだ瞬間に音量が飛ぶことはない
+    // 🆕 ここではもう音は鳴らさない（以前はここでreleasePopSoundFileを鳴らしていたが、「もちが出る時に
+    // ひとつずつmochi_release_popを鳴らそう」という要望を受け、ポン音はtap.js側のgrantSqueezeReleaseMochiPopが
+    // もちを1個出すたびにplaySqueezeReleasePopSound()を呼ぶ方式に一本化した。2-1参照）。
+    // この関数はもう「反動アニメを出して良いか（＝もちぽんぽん報酬の対象にして良いか）」の判定と、
+    // 反動アニメ自体の実行だけを担当する
     const isGenuineLongPress = ratio >= CONFIG.LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS;
-
-    const material = SQUEEZE_MATERIALS[currentSqueezeMaterialKey];
-    if (material.releasePopSoundFile && (isGenuineLongPress || material.alwaysPlayReleasePop)) {
-        const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
-        const volume = CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME + ratio * (CONFIG.SQUEEZE_RELEASE_POP_MAX_VOLUME - CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME);
-        playAudioFilePitched(material.releasePopSoundFile, volume * sfxVolumeMult, pitch);
-    }
 
     if (!isGenuineLongPress) return { rebounded: false, ratio };
 
@@ -942,26 +945,17 @@ export function releaseTwoFingerSqueezeWithOvershoot(angleDeg, ratio) {
 // 関数の内部に持たせることで、呼び出し側(tap.js)がコンボ内部のtierIndexだけ渡せば済むようにしている
 // （tap.jsのコンボロジックをこのファイルへimportさせないための設計）。
 /**
- * 指を離した瞬間、伸ばしていた比率に応じてポン音を再生し、一定以上伸ばしていた時だけ
- * 弾けるパーティクル・強振動も追加する。
- * 🆕 以前はgatingRatioがSQUEEZE_RELEASE_BURST_MIN_RATIO未満だと音も含めて何も鳴らなかったが、
- * 「引っ張った長さに応じて音の大きさも変えたい」という要望を受け、ポン音自体は常に鳴らし、
- * 引っ張った長さ(gatingRatio)に比例してMIN〜MAXの間で音量を変えるようにした（軽いタップほど
- * 控えめに、大きく伸ばすほど大きく鳴る）。パーティクル・強振動は、演出が煩雑にならないよう
- * 引き続き一定以上伸ばした時だけに限定している。
- * ポン音のピッチはその時点のコンボ段階に応じて少し上がっていき、コンボが盛り上がるほど
- * 弾ける音も華やかになる。
- * @param {number} gatingRatio - 「パーティクル・強振動を出して良いか」の判定と、ポン音の音量計算の両方に使う伸縮比率（指の生の移動量ベース。0〜1）
- * @param {number} visualRatio - 実際の見た目（パーティクル数）に使う伸縮比率（追従の遅れ込みの値）
- * @param {number} comboTierIndex - 現在のコンボ段階のインデックス（tap.js側で計算して渡す。見つからない場合は負数でも可）
+ * 指を離した瞬間、一定以上伸ばしていた時だけ弾けるパーティクル・強振動を追加する。
+ * 🆕 以前はここでreleasePopSoundFileも鳴らしていた（引っ張った長さに応じて音量を変える方式）が、
+ * 「もちが出る時にひとつずつmochi_release_popを鳴らそう（３つ出るなら３回）」という要望を受けて、
+ * ポン音はtap.js側のgrantSqueezeReleaseMochiPop（もちぽんぽん報酬）がもちを1個出すたびに
+ * playSqueezeReleasePopSound()を呼ぶ方式に一本化した。そのためこの関数はもう音を鳴らさず、
+ * パーティクル・強振動の演出だけを担当する（SQUEEZE_RELEASE_BURST_MIN_RATIO以上伸ばした時限定なのは変わらず）。
+ * @param {number} gatingRatio - 「パーティクル・強振動を出して良いか」の判定に使う伸縮比率（指の生の移動量ベース。0〜1）
+ * @param {number} visualRatio - 実際の見た目（パーティクル数・強振動の閾値判定）に使う伸縮比率（追従の遅れ込みの値）
  * @returns {void}
  */
-export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio, comboTierIndex) {
-    const clampedRatio = Math.max(0, Math.min(1, gatingRatio));
-    const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
-    const volume = CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME + clampedRatio * (CONFIG.SQUEEZE_RELEASE_POP_MAX_VOLUME - CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME);
-    playAudioFilePitched(SQUEEZE_MATERIALS[currentSqueezeMaterialKey].releasePopSoundFile, volume * sfxVolumeMult, pitch);
-
+export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio) {
     if (gatingRatio < CONFIG.SQUEEZE_RELEASE_BURST_MIN_RATIO) return; // パーティクル・強振動はこれ以上伸ばした時だけ
 
     const rect = mochiBtnElement.getBoundingClientRect();
@@ -973,4 +967,20 @@ export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio, comboTierIn
     if (visualRatio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
         vibrate(CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN);
     }
+}
+
+/**
+ * 🆕 もちぽんぽん報酬（tap.js側のgrantSqueezeReleaseMochiPop）で、もちが1個出るたびに鳴らす
+ * 「弾け」音。releaseLongPressSquish/triggerSqueezeReleaseBurstとは切り離し、もちがtier個出る場合は
+ * tap.js側がこの関数をtier回、少し間隔を空けて呼ぶ想定（2-1参照。まもすいの要望：もちが出る時も
+ * ひとつずつmochi_release_popを鳴らそう＝３つ出るなら３回鳴らす）。通常もちすけ・スライムもちすけ
+ * 共通で、その時点のcurrentSqueezeMaterialKeyのreleasePopSoundFileを使う。
+ * @param {number} [comboTierIndex=0] - ポン音のピッチ計算に使うコンボ段階（見つからない場合は省略可）
+ * @returns {void}
+ */
+export function playSqueezeReleasePopSound(comboTierIndex = 0) {
+    const releasePopSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].releasePopSoundFile;
+    if (!releasePopSoundFile) return;
+    const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
+    playAudioFilePitched(releasePopSoundFile, CONFIG.SQUEEZE_RELEASE_MOCHI_POP_SOUND_VOLUME * sfxVolumeMult, pitch);
 }
