@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-17-014';
+} from './data.js?v=2026-09-17-015';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-17-014';
-import { isMinigameActive } from './minigames.js?v=2026-09-17-014';
+} from './main.js?v=2026-09-17-015';
+import { isMinigameActive } from './minigames.js?v=2026-09-17-015';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -21,22 +21,22 @@ import {
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-17-014';
+} from './src/squeeze/physics.js?v=2026-09-17-015';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-17-014';
+} from './progress.js?v=2026-09-17-015';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-17-014';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-014';
+} from './shop.js?v=2026-09-17-015';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-015';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-17-014';
+} from './ui.js?v=2026-09-17-015';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -129,10 +129,10 @@ import {
           // tap.js自身（releaseMochiSucreなど）が直接使うものだけ
           SQUEEZE_TRANSFORM_ORIGIN_RESET_MS: 720,
           // 🆕 まもすいの指摘（普通のタップで離した時、ちょっとぷるんと動くだけですぐ止まって見える＝
-          // 反動アニメが弱い）を受けて240→340msに伸ばし、下の揺れ戻りの振り幅（オーバーシュート）も
-          // 少し深くした。長押し反動(LONGPRESS_RELEASE_DURATION_MS=480ms)ほど大きくはしないが、
-          // 「一瞬動いてすぐフリーズしたように見える」ことがない程度にははっきり見えるようにする狙い（2-1参照）
-          TAP_RELEASE_ANIM_DURATION_MS: 340, // 通常タップ後の「もちっ」アニメーション時間
+          // 反動アニメが弱い）を受けて240→340msに伸ばした。さらに「もっともちもちに」という要望を受け、
+          // 340→400msへ再調整（下のキーフレームが2段階の揺れ戻りから3段階の減衰振動に増えたため、
+          // その分の間を確保。2-1参照）
+          TAP_RELEASE_ANIM_DURATION_MS: 400, // 通常タップ後の「もちっ」アニメーション時間
           // 🆕【重要・経緯】まもすいの度重なる「タップの反動アニメの最後がフリーズして見える」報告の
           // 真因は、実は呼吸アイドル再開を固定1200ms待たせていたことだった（反動アニメが終わってから
           // 呼吸が戻るまでの差分だけ、もちすけが完全に静止する「死んだ間」ができていた）。
@@ -995,8 +995,9 @@ import {
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
-                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.82, 1.18)', offset: 0.4 },
-                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.05, 0.95)', offset: 0.75 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.78, 1.22)', offset: 0.28 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.10, 0.90)', offset: 0.52 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.96, 1.04)', offset: 0.76 },
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)' }
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
@@ -1022,8 +1023,9 @@ import {
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
-                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.82, 1.18)', offset: 0.4 },
-                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.05, 0.95)', offset: 0.75 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.78, 1.22)', offset: 0.28 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.10, 0.90)', offset: 0.52 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.96, 1.04)', offset: 0.76 },
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)' }
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
@@ -1037,11 +1039,16 @@ import {
                 // ratioは（しきい値による切り捨てなしの）生の潰れ具合で、下のもちぽんぽん報酬の段階計算に使う
                 const { rebounded: didLongPressRebound, ratio: longPressRatio } = releaseLongPressSquish();
                 if (!didLongPressRebound) {
-                    // 従来通りの「もちっ」とした押し込みアニメーション（ごく短いタップ用の固定の弱い反動）
+                    // 🆕「もっと反動をもちもちに」という要望を受けて、揺れ戻りを2段階→3段階の減衰振動に
+                    // 増やした（0.20→0.10→0.04ぶんの振れ幅で、だんだん小さく収まっていく）。
+                    // ばねや実際のもちのような弾性体は、1往復で止まらず何度か揺れながら収まる方が
+                    // 「もちもち」に見えるため、長押し反動(playLongPressReboundAnimation。あちらは
+                    // 元から3段階の減衰振動)と同じ考え方に揃えた（2-1参照）
                     mochiDeformWrap.animate([
                         { transform: 'scale(1.25, 0.72)' },
-                        { transform: 'scale(0.82, 1.18)', offset: 0.4 },
-                        { transform: 'scale(1.05, 0.95)', offset: 0.75 },
+                        { transform: 'scale(0.78, 1.22)', offset: 0.28 },
+                        { transform: 'scale(1.10, 0.90)', offset: 0.52 },
+                        { transform: 'scale(0.96, 1.04)', offset: 0.76 },
                         { transform: 'scale(1, 1)' }
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     mochiDeformWrap.style.transform = 'scale(1, 1)';
@@ -1064,8 +1071,9 @@ import {
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
-                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.82, 1.18)', offset: 0.4 }, 
-                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.05, 0.95)', offset: 0.75 }, 
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.78, 1.22)', offset: 0.28 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.10, 0.90)', offset: 0.52 },
+                        { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(0.96, 1.04)', offset: 0.76 },
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)' }
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
