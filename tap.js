@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-17-010';
+} from './data.js?v=2026-09-17-011';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-17-010';
-import { isMinigameActive } from './minigames.js?v=2026-09-17-010';
+} from './main.js?v=2026-09-17-011';
+import { isMinigameActive } from './minigames.js?v=2026-09-17-011';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -20,22 +20,22 @@ import {
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-17-010';
+} from './src/squeeze/physics.js?v=2026-09-17-011';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-17-010';
+} from './progress.js?v=2026-09-17-011';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-17-010';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-010';
+} from './shop.js?v=2026-09-17-011';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-011';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-17-010';
+} from './ui.js?v=2026-09-17-011';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -879,7 +879,20 @@ import {
                 }
             }
             refreshSqueezeAccumHud(); // 🆕 衣装を変えた直後、タップ済みかどうかに関わらずHUDの状態を合わせておく
-            updateDisplay();
+            // 🆕 まもすいの指摘（タップしたこと自体で反動アニメも呼吸アニメも止まって見える）の原因を特定：
+            // ここのupdateDisplay()は「押した瞬間」に毎タップ必ず同期実行されており、スコア表示の
+            // innerHTML書き換え(renderScoreDigits)やおすすめハイライトのquerySelectorAllなど、
+            // それなりに重いDOM操作をまとめて行っていた。しかもこの直前の行(mochiBreatheWrapEl.classList.remove
+            // ('breathe-idle'))で呼吸アニメを止めた直後、かつこの押し込みポーズ(scale(1.25, 0.72))を
+            // ブラウザがまだ1度も描画していないタイミングで発生するため、非力な端末では「呼吸が止まった
+            // 瞬間から次に絵が動くまで」がここの重い処理の分だけ丸ごと止まって見え、そのすぐ後（同じ指の
+            // 素早いタップなら直後のpointerup）で反動アニメがWeb Animations APIの.animate()を呼んでも、
+            // 既にメインスレッドが詰まっていたぶんクロックだけ進んで反動が飛ばされたように見えていた。
+            // もちぽんぽん報酬側(grantSqueezeReleaseMochiPop)は既に同種の問題を修正済みだったが、
+            // ここ＝「離す前・押した瞬間」のupdateDisplay()は毎タップ無条件に走るぶん影響範囲が
+            // もっと広く、今回の「タップしたこと自体が原因」という指摘の本丸だったと考えられる。
+            // 表示専用の処理なので、次のタスクへ回しても体感の遅延は無い（2-1参照）
+            setTimeout(updateDisplay, 0);
         });
 
         // 必殺技（もちもちビッグバン）発動中の「画面のどこを触っても連打」をゲームスクリーン全体で検知。
@@ -902,7 +915,7 @@ import {
                 for (let i = 0; i < 5; i++) {
                     executeSingleTap(e.clientX, e.clientY);
                 }
-                updateDisplay();
+                setTimeout(updateDisplay, 0); // 🆕 上のmochisuke-btn側pointerdownと同じ理由で、押した瞬間の重いupdateDisplay()は次のタスクへ回す
             } else {
                 // 🆕 通常時：背景タップへの軽いフィードバックとして、控えめな波紋だけ出す
                 createRippleEffect(e.clientX, e.clientY, true);

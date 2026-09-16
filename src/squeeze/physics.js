@@ -15,10 +15,10 @@
 import {
   audioBuffers, createBurstParticle, createRippleEffect, getAudioContext, playAudioFile,
   playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-17-010';
+} from '../../main.js?v=2026-09-17-011';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-010';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-011';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -221,8 +221,17 @@ export function assignSqueezeGlow(pointerId, clientX, clientY) {
         squeezeDentLayerEl.appendChild(dentEl);
     }
     squeezeGlowPointerMap.set(pointerId, { el, dentEl, fadeTimer: null });
-    updateSqueezeGlow(pointerId, clientX, clientY, 0);
-    requestAnimationFrame(() => { el.classList.add('is-active'); if (dentEl) dentEl.classList.add('is-active'); });
+    // 🆕 まもすいの指摘（タップしたこと自体で反動アニメも呼吸アニメも一瞬止まって見える）の調査で発見：
+    // ここのupdateSqueezeGlow()はmochiBtnElement.getBoundingClientRect()を呼ぶため、以前は
+    // pointerdownの同期処理の中（＝呼吸アイドルのクラスを外した直後、押し込みポーズを描く前）で
+    // 毎タップ強制的にレイアウト計算を発生させてしまっていた（=forced synchronous layout。
+    // grantSqueezeReleaseMochiPop/triggerSqueezeReleaseBurstで見つけたのと同じ問題のクラス）。
+    // 光の初期位置合わせは1フレーム遅れても見た目に違いが出ないので、元々is-active付与に使っていた
+    // 次のrequestAnimationFrameに統合し、pointerdownの同期処理からレイアウト計測を追い出した（2-1参照）
+    requestAnimationFrame(() => {
+        updateSqueezeGlow(pointerId, clientX, clientY, 0);
+        el.classList.add('is-active'); if (dentEl) dentEl.classList.add('is-active');
+    });
 }
 
 /**
