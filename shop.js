@@ -4,22 +4,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-17-013';
+} from './data.js?v=2026-09-17-014';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-17-013';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-17-013';
+} from './main.js?v=2026-09-17-014';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-17-014';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-17-013';
-import { saveGame, score, setScore } from './state.js?v=2026-09-17-013';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-17-013';
+} from './progress.js?v=2026-09-17-014';
+import { saveGame, score, setScore } from './state.js?v=2026-09-17-014';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-17-014';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-17-013';
+} from './ui.js?v=2026-09-17-014';
 
         // ===================================================================
         // 調整用の数値をまとめた設定オブジェクト。既に名前付きでexportされている

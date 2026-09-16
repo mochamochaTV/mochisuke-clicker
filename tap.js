@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-17-013';
+} from './data.js?v=2026-09-17-014';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-17-013';
-import { isMinigameActive } from './minigames.js?v=2026-09-17-013';
+} from './main.js?v=2026-09-17-014';
+import { isMinigameActive } from './minigames.js?v=2026-09-17-014';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -21,22 +21,22 @@ import {
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-17-013';
+} from './src/squeeze/physics.js?v=2026-09-17-014';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-17-013';
+} from './progress.js?v=2026-09-17-014';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-17-013';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-013';
+} from './shop.js?v=2026-09-17-014';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-014';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-17-013';
+} from './ui.js?v=2026-09-17-014';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -133,17 +133,17 @@ import {
           // 少し深くした。長押し反動(LONGPRESS_RELEASE_DURATION_MS=480ms)ほど大きくはしないが、
           // 「一瞬動いてすぐフリーズしたように見える」ことがない程度にははっきり見えるようにする狙い（2-1参照）
           TAP_RELEASE_ANIM_DURATION_MS: 340, // 通常タップ後の「もちっ」アニメーション時間
-          // 🆕【重要】まもすいの度重なる「タップの反動アニメの最後がフリーズして見える」報告の真因が
-          // ここだった。以前はここが固定1200msで、離した時にどの反動アニメが再生されたかに関わらず
-          // 一律この時間だけ呼吸アイドルを止めたままにしていた。ところが普通のタップの反動アニメは
-          // TAP_RELEASE_ANIM_DURATION_MS=340msで終わってしまうため、反動が終わってから呼吸が再開する
-          // 1200msまでの差分＝860msもの間、もちすけが完全に静止したまま何もアニメーションしない
-          // 「死んだ間」が毎回できていた。反動アニメ自体をいくら強く・長くしても、その後にこの静止区間が
-          // 残る限り「動いたと思ったらすぐ固まる」ように見えてしまい、これまでの調整では直らなかった。
-          // 今はreleaseMochiSucre側で「実際に再生した反動アニメの再生時間＋この余白」を都度計算して
-          // 呼吸再開までの待ち時間にしているため、この定数は「反動アニメが無い（必殺技中など）場合の
-          // 最低限の間・および反動アニメ終了後に足す余白」の意味に変えた（2-1参照）
-          BREATHE_RESUME_BUFFER_MS: 90,
+          // 🆕【重要・経緯】まもすいの度重なる「タップの反動アニメの最後がフリーズして見える」報告の
+          // 真因は、実は呼吸アイドル再開を固定1200ms待たせていたことだった（反動アニメが終わってから
+          // 呼吸が戻るまでの差分だけ、もちすけが完全に静止する「死んだ間」ができていた）。
+          // → さらに「そもそも待つ必要があるのか」という指摘を受けて確認したところ、呼吸
+          // (mochisuke-breathe-wrap)は反動アニメがかかるmochisuke-deform-wrapの親要素で、振れ幅も
+          // scale(1.03,0.97)とごく小さいため反動と重ねて再生しても見た目が壊れないことが分かった。
+          // そのため呼吸の再開自体は「離した瞬間」に即座に行うよう変更済み（releaseMochiSucre参照）。
+          // この定数は、反動アニメのtransformに追従しない口パーツ(mochisuke-mouth-patch)――反動が
+          // 動いている間に表示すると顔から浮いて見える――を再表示するまでの待ち時間にだけ使っている
+          // （実際に再生した反動アニメの再生時間＋この余白、が待ち時間。2-1参照）
+          MOUTH_PATCH_REVEAL_BUFFER_MS: 90,
 
           // --- 🆕 スクイーズ「専用モード」：蓄積した変形量に応じた「戻す」報酬 ---
           // 蓄積量(d値。src/squeeze/physics.jsのSQUEEZE_ACCUM_MAX_D参照)そのものに単価をかけるのではなく、
@@ -969,12 +969,12 @@ import {
             const comboTierIndex = [0, CONFIG.COMBO_TIER_50, CONFIG.COMBO_TIER_100, CONFIG.COMBO_TIER_500, CONFIG.COMBO_TIER_1000].indexOf(getCheerTier(comboCount));
 
             const clones = bunshinCloneEls;
-            // 🆕 このリリースで実際に再生する反動アニメの再生時間(ms)。呼吸アイドル再開のタイマー
-            // （このシリンダー最下部のbreatheTimer）が「反動アニメがまだ途中なのに呼吸を再開してしまう」
-            // 「反動アニメがとっくに終わっているのに無駄に長く静止させ続ける」の両方を避けられるよう、
-            // 各分岐で実際に呼んだ.animate()と同じ再生時間をここに記録する（分岐に対応する.animate()を
-            // 呼ばない場合＝必殺技中や専用モードは0のままにしておき、後述のBREATHE_RESUME_BUFFER_MSだけの
-            // 短い間を置いてすぐ呼吸を再開する）
+            // 🆕 このリリースで実際に再生する反動アニメの再生時間(ms)。呼吸アイドルの再開はこの下で
+            // 離した瞬間に即座に行う（呼吸は反動と衝突しないため、待つ理由が無いとまもすいの指摘で判明）。
+            // 一方、反動アニメのtransformに追従しない口パーツ(mochisuke-mouth-patch)の表示だけは、
+            // 反動アニメの見た目が収まるまで待つ必要があるため、その待ち時間を計算するのにこの変数を使う
+            // （分岐に対応する.animate()を呼ばない場合＝必殺技中や専用モードは0のままにしておき、
+            // 後述のMOUTH_PATCH_REVEAL_BUFFER_MSだけの短い間だけ置く）
             let releaseAnimDurationMs = 0;
 
             if (skills.hissatsu.activeTimer > 0) {
@@ -1078,19 +1078,24 @@ import {
             twoFingerLastRatio = 0; twoFingerLastAngleDeg = 0; // 🆕 追従ループ側の状態はendSqueeze()が既にリセット済み
             refreshSqueezeAccumHud(); // 🆕 今回の一本指スクイーズで蓄積が増えていれば、「戻す」ボタンのプレビューに反映する
 
-            // 🆕 以前はここが常に固定1200ms待ちだったため、反動アニメがTAP_RELEASE_ANIM_DURATION_MS=340ms
-            // ほどで終わる普通のタップでは、反動が終わってから呼吸再開まで860msも完全に静止する
-            // 「死んだ間」ができ、それが「反動アニメの最後がフリーズして見える」の正体だった。
-            // 今は実際に再生した反動アニメの再生時間(releaseAnimDurationMs。反動アニメを再生しない
-            // 必殺技中・専用モード中は0のまま)にBREATHE_RESUME_BUFFER_MSだけ足した時間で呼吸を
-            // 再開するので、どの反動アニメでも「終わった直後」にもちすけが動き出す（2-1参照）
+            // 🆕【まもすいの指摘で判明】そもそも呼吸再開を反動アニメの終了まで待たせる必要自体が無かった。
+            // mochisuke-breathe-wrap（呼吸のscale）はmochisuke-deform-wrap（反動・スクイーズのscale）の
+            // 親要素で、breathe自体の振れ幅はscale(1.03, 0.97)というごく小さいもの（style.css参照）。
+            // 親子は別要素なので反動アニメとは合成されるだけで衝突せず、振れ幅も反動よりずっと小さいので
+            // 反動の途中に呼吸が重なっても見た目が壊れることは無い。前回の修正（固定1200ms→反動アニメの
+            // 実際の再生時間+90ms）はまだ「待つこと自体は必要」という前提のままで、待ち時間を短くした
+            // だけだった。実際には待つ理由が最初から無かったので、離した瞬間に即座に呼吸を戻す。
+            if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
+                mochiBreatheWrapEl.classList.add('breathe-idle');
+            }
+            // 🆕 一方、口パーツ(mochisuke-mouth-patch)は反動アニメのtransformに追従しない別要素のため、
+            // 反動アニメがまだ動いている間に表示すると、伸縮した顔から口だけ浮いて見えてしまう。
+            // こちらだけは今まで通り、実際に再生した反動アニメの再生時間(releaseAnimDurationMs)ぶん
+            // 待ってから表示に戻す（2-1参照）
             breatheTimer = setTimeout(() => {
-                if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
-                    mochiBreatheWrapEl.classList.add('breathe-idle');
-                }
                 isSqueezeSettling = false;
                 updateMouthPatchVisibility();
-            }, releaseAnimDurationMs + CONFIG.BREATHE_RESUME_BUFFER_MS);
+            }, releaseAnimDurationMs + CONFIG.MOUTH_PATCH_REVEAL_BUFFER_MS);
         }
 
         mochiBtnElement.addEventListener('pointerup', releaseMochiSucre);
