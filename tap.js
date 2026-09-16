@@ -140,19 +140,23 @@ import {
           // 方に合わせてほしい」というまもすいの指摘を受け、素材を問わず同じロジックで動くよう統一した
           // （2-1参照。スライムもちすけ自体は引き続き管理者限定・試作中の非公開コンテンツ）。
           // 通常のタップ生産（executeSingleTap）に加えて、しっかり長押ししたり引っ張ったりして
-          // 離した時だけ、その時の伸縮・潰れ比率(0〜1)に応じて1〜3段階の「もち」が獲得できるようにした
+          // 離した時だけ、その時の伸縮・潰れ比率(0〜1)に応じて段階的に「もち」が獲得できるようにした
           // （まもすいの要望：長押し/引っ張りの長さによって段階別にもちが出るようにしたい。2-1参照）。
           // 🆕 「＋3もち」と一度にまとめて出すのではなく、段階の数だけ「＋1もち」を少し時間差で
           // ぽんぽんと個別に出す方式にした（まもすいの要望：話したときに別々に出てほしい、＋1もちを
           // 3回出す方が気持ち良い）。もちが1個出るたびにplaySqueezeReleasePopSound()でreleasePopSoundFile
-          // も1回ずつ鳴らす（3つ出るなら3回鳴る）。実際の演出はgrantSqueezeReleaseMochiPop参照
+          // も1回ずつ鳴らす（例えば5個出るなら5回鳴る）。実際の演出はgrantSqueezeReleaseMochiPop参照
           // 🆕 ただの軽いタップ（ドラッグにも長押しにもならなかった場合）はこのボーナスの対象外にしている。
           // 通常のタップは既にexecuteSingleTapで毎回もちを生産しているため、ここでも無条件に
           // 最低1個を出してしまうと、すべてのタップに無条件でボーナスが乗ることになってしまうため
           // （呼び出し側のtap.js releaseMochiSucre参照：一本指/二本指ドラッグは元々のブランチの
           // 移動量しきい値で、長押しはreleaseLongPressSquishのrebounded判定でそれぞれガードしている）。
-          SQUEEZE_RELEASE_MOCHI_TIER2_RATIO: 0.35, // これ以上でもち2個
-          SQUEEZE_RELEASE_MOCHI_TIER3_RATIO: 0.7,  // これ以上でもち3個（最大）
+          // 🆕 以前は段階ごとにSQUEEZE_RELEASE_MOCHI_TIER2_RATIO/TIER3_RATIOという個別の定数を持っていたが、
+          // 「最大3個→5個に増やそう」のような変更のたびに定数を追加するのは保守性が低いため、配列1本に
+          // まとめた（computeSqueezeReleaseMochiTier参照）。配列のn番目の値は「(n+2)段階目に到達するために
+          // 必要な比率」を表す（1段階目は常に閾値なしで出る）。最大段階数をさらに増やしたい時は、この配列に
+          // 0〜1の間の値を1つ足すだけでよい（値は昇順で並べること）
+          SQUEEZE_RELEASE_MOCHI_TIER_RATIOS: [0.2, 0.4, 0.6, 0.8], // これで2〜5段階目の閾値（5段階が最大）
           SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MS: 140, // 「ぽん、ぽん、ぽん」に見えるよう、1個ずつ出すタイミングをずらす間隔
 
           // --- 給餌（おみやげ）まわり ---
@@ -674,29 +678,34 @@ import {
         }
 
         /**
-         * 長押し/引っ張りを離した時、伸縮・潰れ比率(0〜1)から「もちぽんぽん」ボーナスの個数(1〜3)を
+         * 長押し/引っ張りを離した時、伸縮・潰れ比率(0〜1)から「もちぽんぽん」ボーナスの個数(1〜最大段階数)を
          * 決める。通常もちすけ・スライムもちすけ共通のロジック（2-1参照）。呼び出し側で「ただの軽い
-         * タップではない」ことを確認済みである前提のため、ここでは常に最低1個を返す
-         * （CONFIG.SQUEEZE_RELEASE_MOCHI_TIER2/3_RATIO参照）。
+         * タップではない」ことを確認済みである前提のため、ここでは常に最低1個を返す。
+         * 🆕 段階数はCONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOSの要素数+1で決まる（現在5段階が最大）。
+         * ratioが配列の閾値を超えるたびに1段階ずつ上がっていく単純な仕組みなので、最大段階数を
+         * 増やしたい時はCONFIG側の配列に値を1つ足すだけでよく、ここのロジックには手を入れなくてよい
+         * （CONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOSのコメント参照）。
          * @param {number} ratio - 0〜1の伸縮・潰れ比率
-         * @returns {number} 1〜3の段階
+         * @returns {number} 1〜最大段階数（現在1〜5）の段階
          */
         function computeSqueezeReleaseMochiTier(ratio) {
-            if (ratio >= CONFIG.SQUEEZE_RELEASE_MOCHI_TIER3_RATIO) return 3;
-            if (ratio >= CONFIG.SQUEEZE_RELEASE_MOCHI_TIER2_RATIO) return 2;
-            return 1;
+            let tier = 1;
+            for (const threshold of CONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOS) {
+                if (ratio >= threshold) tier++;
+            }
+            return tier;
         }
 
         /**
          * 長押し/引っ張りをしっかり離した時の「もちぽんぽん」ボーナスを実行する
-         * （通常もちすけ・スライムもちすけ共通。呼び出し側のCONFIG.SQUEEZE_RELEASE_MOCHI_TIER2/3_RATIO
+         * （通常もちすけ・スライムもちすけ共通。呼び出し側のCONFIG.SQUEEZE_RELEASE_MOCHI_TIER_RATIOS
          * コメント参照）。
          * 🆕 以前は tier個ぶんのもち報酬を「+3 もち」のように一度にまとめて表示・加算していたが、
          * 「話したときに別々に出てほしい、＋1もちを3回出す方が気持ち良い」というまもすいの要望を受け、
          * tier個の「もちポン」をCONFIG.SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MSずつ時間差で発生させ、
          * それぞれのタイミングでパーティクル・「+1 もち」フローティングテキスト・スコア加算・
-         * releasePopSoundFile（playSqueezeReleasePopSound）を1セットずつ鳴らす（3つ出るなら3回鳴る）。
-         * @param {number} tier - 1〜3。computeSqueezeReleaseMochiTierの戻り値を渡す想定
+         * releasePopSoundFile（playSqueezeReleasePopSound）を1セットずつ鳴らす（例えば5つ出るなら5回鳴る）。
+         * @param {number} tier - 1〜最大段階数（現在1〜5）。computeSqueezeReleaseMochiTierの戻り値を渡す想定
          * @param {number} [comboTierIndex=0] - ポン音のピッチ計算に使うコンボ段階（playSqueezeReleasePopSoundにそのまま渡す）
          * @returns {void}
          */

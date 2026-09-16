@@ -97,7 +97,7 @@ const CONFIG = {
   // から最終ポーズ(LONGPRESS_SQUISH_END_SCALE_X/Y)まで、ここで指定したミリ秒をかけて直線的に潰れていく。
   // 短くするほどすぐに潰れきり、長くするほどじわじわゆっくり潰れる。ここだけを書き換えれば良く、
   // 他の見た目・音のロジックには影響しない（長押し音のループもこの時間に合わせて自動的に追従する）。
-  LONGPRESS_SQUISH_DURATION_MS: 1200,
+  LONGPRESS_SQUISH_DURATION_MS: 1400, // 🆕 実機での確認を経てまもすいが1200→1400msに調整
   LONGPRESS_RELEASE_OVERSHOOT_RATIO: 0.5, // 長押しから離した時、反動でどれだけ逆方向(伸びる方向)へ弾むか。潰れの進み具合(0〜1)に比例する
   LONGPRESS_RELEASE_DURATION_MS: 480,     // 反動アニメーションの長さ
   // 🆕 longPressSquishLastRatio（時間経過にそのまま比例する潰れ具合、0〜1）は、rAFが1回でも回れば
