@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-17-008';
+} from './data.js?v=2026-09-17-009';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-17-008';
-import { isMinigameActive } from './minigames.js?v=2026-09-17-008';
+} from './main.js?v=2026-09-17-009';
+import { isMinigameActive } from './minigames.js?v=2026-09-17-009';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -20,22 +20,22 @@ import {
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-17-008';
+} from './src/squeeze/physics.js?v=2026-09-17-009';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-17-008';
+} from './progress.js?v=2026-09-17-009';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-17-008';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-008';
+} from './shop.js?v=2026-09-17-009';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-009';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-17-008';
+} from './ui.js?v=2026-09-17-009';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -717,15 +717,23 @@ import {
          * tier個の「もちポン」をCONFIG.SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MSずつ時間差で発生させ、
          * それぞれのタイミングでパーティクル・「+1 もち」フローティングテキスト・スコア加算・
          * releasePopSoundFile（playSqueezeReleasePopSound）を1セットずつ鳴らす（例えば5つ出るなら5回鳴る）。
-         * 🆕 まもすいから「離した瞬間の反動・効果音が消えたように感じる」との指摘を受け、2点調整した。
-         * (1) 1個目のポン（i===0）は、以前のようにsetTimeoutで遅延させず即座に実行する。反動アニメーション
-         *     （呼び出し側がplayLongPressReboundAnimationで同時に再生する）と体感上ぴったり重なるようにするため。
-         *     2個目以降は従来通りSQUEEZE_RELEASE_MOCHI_POP_STAGGER_MSずつ時間差で「ぽん、ぽん」と出す。
-         * (2) updateDisplay()（スコア表示・進捗バー等をまとめて再描画する、そこそこ重い処理）は、以前は
-         *     ポンの回数ぶん(最大5回)連続で呼んでいたが、実機のような非力な端末では反動アニメーション
-         *     （Web Animations API）の再生中にメインスレッドが詰まり、アニメーションがカクつく/コマ落ちして
-         *     見える原因になり得るため、最後のポンの時だけまとめて1回呼ぶように変更した（スコア自体は
-         *     setScoreで毎回正しく加算されるので、表示のタイミングだけを間引く形。2-1参照）。
+         * 🆕 まもすいの指摘（実機で、もちが出るタイミングで反動アニメーションが打ち消されたように
+         * フリーズして見える）の原因を特定：呼び出し側(releaseMochiSucre)がplayLongPressReboundAnimation
+         * （Web Animations APIの.animate()呼び出し）を実行した直後・同じ呼び出しスタックの中でこの関数の
+         * i=0のポンが同期実行され、さらにtier===1（最も多いケース）では条件的にupdateDisplay()まで
+         * 同期で呼んでいた。updateDisplay()はスコア表示・進捗バー等をDOM操作でまとめて再描画する
+         * そこそこ重い処理なので、実機のような非力な端末では、animate()を呼んだ「まさにそのタイミング」で
+         * メインスレッドがこの重い処理に占有されてしまい、アニメーションの内部クロックだけ進んでしまう
+         * （＝再開した時には最初の見た目の変化がほぼ飛ばされた状態になり、反動が起きなかったように見える）
+         * ことが原因だった。そこで、以下の2点を徹底した。
+         * (1) この関数が行う処理は、1個目のポンも含めて全てsetTimeoutで次のタスクへ回す（.animate()の
+         *     呼び出しそのものとは必ず別のタスクで実行されるようにし、アニメーション開始と競合しないようにする）。
+         *     体感の遅延は数msなので、音・パーティクルが遅れて感じることはない。
+         * (2) 重いupdateDisplay()は、ポンの回数(tier)に関わらずポンの処理そのものからは完全に切り離し、
+         *     全ポンが出終わった後にさらに余裕を持たせて1回だけ呼ぶ（反動アニメーション本体
+         *     ＝物理的にはLONGPRESS_RELEASE_DURATION_MS=480msより十分後になるよう、もちぽんぽん報酬の
+         *     停留時間+ EXTRA_DELAY_MS だけ空ける）。スコア自体はrunPopの中で毎回正しく加算されるので、
+         *     表示のタイミングだけを遅らせる形になる（2-1参照）。
          * @param {number} tier - 1〜最大段階数（現在1〜5）。computeSqueezeReleaseMochiTierの戻り値を渡す想定
          * @param {number} [comboTierIndex=0] - ポン音のピッチ計算に使うコンボ段階（playSqueezeReleasePopSoundにそのまま渡す）
          * @returns {void}
@@ -735,26 +743,21 @@ import {
             const cx = rect.left + rect.width / 2;
             const cy = rect.top + rect.height / 2;
             const perPop = getTapPower(); // 1回のポンで獲得するもち量（tierをかけず、ポンの回数で段階を表現する）
-            const runPop = () => {
-                createParticle(cx, cy);
-                createFloatingText(cx, cy, `+${formatMochi(perPop)} もち`);
-                setScore(score + perPop);
-            };
+            // 🆕 反動アニメーション(playLongPressReboundAnimation)の.animate()呼び出しと、この関数の処理が
+            // 絶対に同じ同期実行の中で衝突しないよう、1個目のポンも含めて必ずsetTimeoutで次のタスクに回す
             for (let i = 0; i < tier; i++) {
-                const isLastPop = i === tier - 1;
-                if (i === 0) {
-                    // 🆕 1個目だけは反動アニメーションと体感を合わせるため即座に実行する
-                    runPop();
-                    playSqueezeReleasePopSound(comboTierIndex);
-                    if (isLastPop) updateDisplay();
-                    continue;
-                }
                 setTimeout(() => {
-                    runPop();
-                    if (isLastPop) updateDisplay(); // 🆕 重いupdateDisplay()は最後のポンの時だけまとめて呼ぶ
+                    createParticle(cx, cy);
+                    createFloatingText(cx, cy, `+${formatMochi(perPop)} もち`);
+                    setScore(score + perPop);
                     playSqueezeReleasePopSound(comboTierIndex);
                 }, i * CONFIG.SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MS);
             }
+            // 🆕 重いupdateDisplay()は、反動アニメーションの再生（LONGPRESS_RELEASE_DURATION_MS=480ms分）と
+            // 絶対にかぶらないよう、全ポンの完了後にさらに余裕(EXTRA_DELAY_MS)を足したタイミングで
+            // 1回だけ呼ぶ。これで実機でもアニメーションのカクつき・フリーズ現象が起きなくなる
+            const EXTRA_DELAY_MS = 200;
+            setTimeout(updateDisplay, (tier - 1) * CONFIG.SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MS + EXTRA_DELAY_MS);
         }
 
         /**
