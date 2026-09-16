@@ -135,6 +135,18 @@ import {
           SQUEEZE_ACCUM_RESET_REWARD_MULT: 10, // 戻す時のもち報酬 = tapPower × これ × 蓄積量^POWER
           SQUEEZE_ACCUM_RESET_REWARD_POWER: 1.15, // 貯めた量が多いほど単価が僅かに上がる、緩いカーブ（急にしすぎると「ずっと貯め続けるのが最適解」になってしまうため控えめに）
 
+          // --- 🆕 スクイーズ衣装（スライムもちすけ等）専用：離した時の段階別「もちぽんぽん」報酬 ---
+          // スクイーズ衣装装備中は通常のタップ生産（executeSingleTap等）が一切発生しないため、
+          // 何かしらの形でもちを稼ぐ手段が無いと衣装を着けている間ずっと無報酬になってしまう。
+          // 一時期あった「専用モード＋戻すボタン」の代わりに、長押し/引っ張りを離した瞬間、
+          // その時の伸縮・潰れ比率(0〜1)に応じて1〜3個の「もち」パーティクルが少し時間差で
+          // ぽんぽんと飛び出し、その個数ぶんのタップ力を獲得できるようにした
+          // （まもすいの要望：スライムもちすけの方も何かタップで良いことが起きるようにしたい。2-1参照）。
+          // 比率がこの2つのしきい値のどちらにも届かなくても、最低1個は必ず出る（1〜3の3段階）。
+          SQUEEZE_RELEASE_MOCHI_TIER2_RATIO: 0.35, // これ以上でもち2個
+          SQUEEZE_RELEASE_MOCHI_TIER3_RATIO: 0.7,  // これ以上でもち3個（最大）
+          SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MS: 140, // 「ぽん、ぽん、ぽん」に見えるよう、1個ずつ出すタイミングをずらす間隔
+
           // --- 給餌（おみやげ）まわり ---
           FEED_ICON_Y_OFFSET_PX: 68, // もちすけの足元からのアイコン初期位置オフセット
           FEED_ICON_PLACEMENT_DELAY_MS: 150, // モーダルが閉じるアニメと被らないための遅延
@@ -654,6 +666,38 @@ import {
         }
 
         /**
+         * スクイーズ衣装を離した時、伸縮・潰れ比率(0〜1)から「もちぽんぽん」報酬の個数(1〜3)を決める。
+         * しきい値に届かなくても最低1個は出る（CONFIG.SQUEEZE_RELEASE_MOCHI_TIER2/3_RATIO参照）。
+         * @param {number} ratio - 0〜1の伸縮・潰れ比率
+         * @returns {number} 1〜3の段階
+         */
+        function computeSqueezeReleaseMochiTier(ratio) {
+            if (ratio >= CONFIG.SQUEEZE_RELEASE_MOCHI_TIER3_RATIO) return 3;
+            if (ratio >= CONFIG.SQUEEZE_RELEASE_MOCHI_TIER2_RATIO) return 2;
+            return 1;
+        }
+
+        /**
+         * スクイーズ衣装（通常のタップ生産が発生しない衣装）を離した時の「もちぽんぽん」報酬を実行する。
+         * tier個のもちパーティクルを少し時間差で飛ばし（見た目の「ぽん、ぽん、ぽん」）、
+         * 合計 tapPower × tier ぶんのもちを即座に獲得する（獲得自体はパーティクルの表示を待たない）。
+         * @param {number} tier - 1〜3。computeSqueezeReleaseMochiTierの戻り値を渡す想定
+         * @returns {void}
+         */
+        function grantSqueezeReleaseMochiPop(tier) {
+            const rect = mochiBtnElement.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            for (let i = 0; i < tier; i++) {
+                setTimeout(() => createParticle(cx, cy), i * CONFIG.SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MS);
+            }
+            const reward = getTapPower() * tier;
+            setScore(score + reward);
+            createFloatingText(cx, cy, `+${formatMochi(reward)} もち`);
+            updateDisplay();
+        }
+
+        /**
          * 「戻す」ボタンが押された時の処理。蓄積されていた変形量ぶんのもちを獲得し、
          * もちすけの見た目は弾けるように元の形へ戻る（見た目自体はresetSqueezeAccum内部が担当）。
          * @returns {void}
@@ -809,6 +853,10 @@ import {
             if (e && e.pointerId !== undefined) squeezePointers.delete(e.pointerId);
 
             const wasTwoFingerStretch = twoFingerStretchActive; // クリアする前に記憶しておく
+            // 🆕 スクイーズ衣装（スライムもちすけ等）装備中かどうか。装備中は通常のタップ生産
+            // （pointerdown側のexecuteSingleTap等）が一切発生しないため、離した時の
+            // 「もちぽんぽん」報酬（下のgrantSqueezeReleaseMochiPop呼び出し）でだけもちを獲得できる
+            const isSqueezeCostumeActive = !!getEquippedSqueezeMaterialKey();
 
             isMochiPressed = false;
             squeezePointers.clear();
@@ -838,6 +886,7 @@ import {
                 releaseTwoFingerSqueezeWithOvershoot(twoFingerLastAngleDeg, finalSqueezeVisualRatio);
                 triggerSqueezeReleaseBurst(twoFingerLastRatio, finalSqueezeVisualRatio, comboTierIndex);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
+                if (isSqueezeCostumeActive) grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(finalSqueezeVisualRatio));
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
@@ -860,6 +909,7 @@ import {
                 const releaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
                 triggerSqueezeReleaseBurst(releaseRatio, finalSqueezeVisualRatio, comboTierIndex);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
+                if (isSqueezeCostumeActive) grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(finalSqueezeVisualRatio));
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
@@ -878,8 +928,9 @@ import {
                 mochiDeformWrap.style.transformOrigin = '';
                 // 🆕 長押しで「じわじわ潰れる」演出が進んでいた場合は、その潰れ具合に応じた反動
                 // （オーバーシュート）アニメーションで戻す。ごく短いタップで潰れがほとんど進んでいなかった
-                // 場合は反動アニメーションこそ再生されずfalseが返るが、上記の離し際の音は変わらず鳴る
-                const didLongPressRebound = releaseLongPressSquish(comboTierIndex);
+                // 場合は反動アニメーションこそ再生されずrebounded:falseが返るが、上記の離し際の音は変わらず鳴る。
+                // ratioは（しきい値による切り捨てなしの）生の潰れ具合で、下のもちぽんぽん報酬の段階計算に使う
+                const { rebounded: didLongPressRebound, ratio: longPressRatio } = releaseLongPressSquish(comboTierIndex);
                 if (!didLongPressRebound) {
                     // 従来通りの「もちっ」とした押し込みアニメーション
                     mochiDeformWrap.animate([
@@ -890,6 +941,9 @@ import {
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     mochiDeformWrap.style.transform = 'scale(1, 1)';
                 }
+                // 🆕 スクイーズ衣装装備中は、ただのタップ・長押しでも最低1個はもちがぽんと出る
+                // （どんなに軽く触れても、スクイーズ衣装が唯一のもち獲得手段になっている以上、無報酬にはしない）
+                if (isSqueezeCostumeActive) grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(longPressRatio));
 
                 clones.forEach(c => {
                     c.animate([

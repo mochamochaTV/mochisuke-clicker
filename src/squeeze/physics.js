@@ -78,11 +78,25 @@ const CONFIG = {
   // 潰れるようにしたい。最終的には今より潰す）。
   LONGPRESS_SQUISH_START_SCALE_X: 1.25, // 開始スケール（tap.js側の初期押し込みポーズと同じ値にしておくこと）
   LONGPRESS_SQUISH_START_SCALE_Y: 0.72,
-  LONGPRESS_SQUISH_END_SCALE_X: 1.42,   // 長押しを続けた末にたどり着く、最終的にさらに潰れたポーズ
-  LONGPRESS_SQUISH_END_SCALE_Y: 0.52,
+  // 🆕 長押しを続けた末にたどり着く、最終的な潰れポーズ。「もう少し潰したい」というまもすいの
+  // 要望を受けて1.42/0.52から強めた。この2つの数値がそのまま「最大どれだけ潰れるか」を決めるので、
+  // 感触を自分で調整したい時はここを直接書き換えるだけでよい（他のロジックには一切影響しない）。
+  // 目安：X（横方向の伸び）を大きく・Y（縦方向のつぶれ）を小さくするほど、ぺしゃんこな見た目になる。
+  // ちょうど良い見た目になったら、下のLONGPRESS_RELEASE_OVERSHOOT_RATIO（離した時の反動の大きさ）も
+  // 一緒に見比べて調整すると、潰れ量と反動のバランスが取りやすい。
+  LONGPRESS_SQUISH_END_SCALE_X: 1.55,
+  LONGPRESS_SQUISH_END_SCALE_Y: 0.40,
   LONGPRESS_SQUISH_DURATION_MS: 1200,   // 開始ポーズから最終ポーズまでかかる時間（ここを短くするほど速く潰れきる）
   LONGPRESS_RELEASE_OVERSHOOT_RATIO: 0.5, // 長押しから離した時、反動でどれだけ逆方向(伸びる方向)へ弾むか。潰れの進み具合(0〜1)に比例する
   LONGPRESS_RELEASE_DURATION_MS: 480,     // 反動アニメーションの長さ
+  // 🆕 longPressSquishLastRatio（時間経過にそのまま比例する潰れ具合、0〜1）は、rAFが1回でも回れば
+  // ほんの数十msの軽いタップでもわずかに0より大きくなってしまう。これをそのまま「長押しした」と
+  // 判定してしまうと、alwaysPlayReleasePopがfalseの素材（スライムもちすけ）でも、ただの軽いタップの
+  // たびにreleasePopSoundFileが鳴ってしまう不具合になる（まもすいの指摘：「軽いタップの時は
+  // そのまま」と言ったのに鳴ってしまっている、の原因）。この値未満の間は「まだ長押しと呼べる域に
+  // 達していない」とみなし、releaseLongPressSquish内で音・反動アニメ両方の発生判定を0扱いにする
+  // （音量自体の計算には影響しない、あくまで「鳴らす/鳴らさない」の閾値。2-1参照）。
+  LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS: 0.15,
   // 🆕 長押し中だけループする専用音（materials.jsのlongPressLoopSoundFile）の最大音量。
   // 潰れの進み具合(0〜1)に比例して0からこの値まで音量を上げていき、最大まで潰れきったら
   // （t>=1）ぴたりと止める（まもすいの要望：もちすけが最大まで縮まったらその効果音は止まる。2-1参照）。
@@ -657,8 +671,10 @@ export function stopLongPressSquish() {
  * 無音のままでよい。2-1参照）。
  * @param {number} [comboTierIndex=0] - ポン音のピッチ計算に使うコンボ段階（tap.js側で計算して渡す。
  *   triggerSqueezeReleaseBurstと同じ考え方。省略時は0＝ピッチ補正なし）
- * @returns {boolean} 反動アニメーションを再生した場合true（呼び出し側はfalseの場合、代わりに
- *   従来通りの固定の押し込みアニメーションを再生する）
+ * @returns {{rebounded: boolean, ratio: number}} rebounded: 反動アニメーションを再生した場合true
+ *   （呼び出し側はfalseの場合、代わりに従来通りの固定の押し込みアニメーションを再生する）。
+ *   ratio: 離した瞬間の潰れ具合(0〜1、しきい値による0扱いなし)。呼び出し側（tap.js）がスクイーズ
+ *   衣装の「離した時のもち報酬」段階を計算する時に使う（2-1参照）
  */
 export function releaseLongPressSquish(comboTierIndex = 0) {
     const ratio = longPressSquishLastRatio;
@@ -667,14 +683,19 @@ export function releaseLongPressSquish(comboTierIndex = 0) {
     stopLongPressLoopSound(); // 🆕 途中で離した場合（t<1でまだループ音が鳴っている場合）はここで止める
     longPressSquishLastRatio = 0;
 
+    // 🆕 「本当に長押しと呼べる域まで進んでいたか」は、生のratioではなくLONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS
+    // 未満を切り捨てたものだけで判定する（上のCONFIG.LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTSのコメント参照）。
+    // 音量自体の計算には生のratioを使うので、閾値をまたいだ瞬間に音量が飛ぶことはない
+    const isGenuineLongPress = ratio >= CONFIG.LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS;
+
     const material = SQUEEZE_MATERIALS[currentSqueezeMaterialKey];
-    if (material.releasePopSoundFile && (ratio > 0 || material.alwaysPlayReleasePop)) {
+    if (material.releasePopSoundFile && (isGenuineLongPress || material.alwaysPlayReleasePop)) {
         const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
         const volume = CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME + ratio * (CONFIG.SQUEEZE_RELEASE_POP_MAX_VOLUME - CONFIG.SQUEEZE_RELEASE_POP_MIN_VOLUME);
         playAudioFilePitched(material.releasePopSoundFile, volume * sfxVolumeMult, pitch);
     }
 
-    if (ratio <= 0) return false;
+    if (!isGenuineLongPress) return { rebounded: false, ratio };
 
     const scaleX = CONFIG.LONGPRESS_SQUISH_START_SCALE_X + (CONFIG.LONGPRESS_SQUISH_END_SCALE_X - CONFIG.LONGPRESS_SQUISH_START_SCALE_X) * ratio;
     const scaleY = CONFIG.LONGPRESS_SQUISH_START_SCALE_Y + (CONFIG.LONGPRESS_SQUISH_END_SCALE_Y - CONFIG.LONGPRESS_SQUISH_START_SCALE_Y) * ratio;
@@ -690,7 +711,7 @@ export function releaseLongPressSquish(comboTierIndex = 0) {
         { transform: 'scale(1, 1)' },
     ], { duration: CONFIG.LONGPRESS_RELEASE_DURATION_MS, easing: 'ease-out' });
     mochiDeformWrap.style.transform = 'scale(1, 1)';
-    return true;
+    return { rebounded: true, ratio };
 }
 
 // 2本の指が離れていく方向・距離から、追従ループの目標値を更新する（2本指ドラッグ中に毎回呼ばれる）
