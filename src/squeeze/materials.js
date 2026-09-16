@@ -19,6 +19,15 @@
 //                        だけにしたいという要望を受けて、2-1参照）
 //   splashSoundFile    : 触れた瞬間に鳴る「ぴちゃ」という水っぽい音＋水色の波紋演出。nullなら、
 //                        この素材ではこの演出自体が発動しない（2-1参照。今のところスライムもちすけ専用）
+//   stillPokeSoundFile : 🆕 引っ張らずに長押ししている間だけループ再生する「じわじわ潰れる」専用の音
+//                        （src/squeeze/physics.jsのstartLongPressSquishSound等参照）。もちすけが最大まで
+//                        潰れきったら自動的に止まる。nullなら、この素材ではこのループ音自体を鳴らさない
+//                        （＝長押し中は無音のまま、見た目の潰れ演出だけが進む）。
+//                        ⚠️ このファイル名は元々「タップした瞬間に1回だけ鳴らす」設計だった名残りだが、
+//                        現在はループ再生（AudioBufferSourceNode.loop=true）で使い回している。もし
+//                        まだ短い1回きりの「ポヨン」的な音のままなら、じわじわ潰れる長押しの間ずっと
+//                        ループさせると不自然に聞こえるため、実際には「グググ…」のような伸ばせる/
+//                        ループ向きの音素材に差し替えることをおすすめする（2-1参照。まもすいの要望）。
 //
 // 🆕 pokeSoundFileはもともと「スライムもちすけ専用・管理者限定」の試作ギミックだったが、
 // 「スクイーズにかぎらず通常のタップ・長押しでも、押す強さで音が変わってほしい」という要望を受け、
@@ -31,6 +40,7 @@ export const SQUEEZE_MATERIALS = {
     releasePopSoundFile: 'audio/mochisuke/mochi_release_pop.mp3',
     pokeSoundFile: 'audio/mochisuke/mochi_poke.mp3',
     splashSoundFile: null, // 通常のもちすけは水っぽくないので、この演出自体を出さない
+    stillPokeSoundFile: 'audio/mochisuke/mochi_poke_still.mp3',
   },
   slime: {
     label: 'スライムもちすけ',
@@ -38,6 +48,7 @@ export const SQUEEZE_MATERIALS = {
     releasePopSoundFile: 'audio/mochisuke/slime_release_pop.mp3',
     pokeSoundFile: 'audio/mochisuke/slime_poke.mp3',
     splashSoundFile: 'audio/mochisuke/slime_splash.mp3',
+    stillPokeSoundFile: 'audio/mochisuke/slime_poke_still.mp3',
   },
 };
 

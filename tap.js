@@ -725,6 +725,10 @@ import {
                     const pts = [...squeezePointers.values()];
                     twoFingerStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
                     twoFingerStretchActive = true;
+                    // 🆕 1本指スクイーズと同じ「つつき」ギミックを2本指ストレッチでも鳴らすため、ここでも
+                    // 腕付けしておく（以前はここが無かったため、2本指で引っ張ってもpokeSoundFileが
+                    // 一度も鳴らなかった。まもすいの指摘・2-1参照）
+                    armPokeImpact();
                 } else if (squeezePointers.size === 1) {
                     // 1本目の指：従来通り「引っ張った方向にだけ伸ばす」スクイーズを開始
                     mochiDeformWrap.style.transform = 'scale(1.25, 0.72)';
@@ -867,13 +871,10 @@ import {
                 });
             } else {
                 // 引っ張りとして扱うほどの移動が無かった＝ただのタップ・長押し。
-                // 🆕 以前はこの分岐だけスクイーズ系の音が一切鳴らなかったが、「長押しした時も離す時の音がほしい」
-                // という要望を受け、他の分岐と同じtriggerSqueezeReleaseBurstを、実際の（わずかな）移動量から
-                // 計算した比率で呼ぶようにした。比率がSQUEEZE_MIN_DRAG未満＝小さいので、ポン音はごく控えめな
-                // 音量になり、パーティクル・強振動は（意図通り）出ない
-                const tapReleaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
-                triggerSqueezeReleaseBurst(tapReleaseRatio, tapReleaseRatio, comboTierIndex);
-
+                // 🆕 一時期はこの分岐でもtriggerSqueezeReleaseBurst（release_popの類）を鳴らしていたが、
+                // 「ただの軽いタップのときはslime_release_pop（等）を流さなくて良い」というまもすいの
+                // 要望を受けて削除した。ただのタップ・長押しの離し際は、無音か、下のreleaseLongPressSquish()
+                // による長押し反動演出（見た目のみ）だけになる（2-1参照）。
                 mochiDeformWrap.style.transformOrigin = '';
                 // 🆕 長押しで「じわじわ潰れる」演出が進んでいた場合は、その潰れ具合に応じた反動
                 // （オーバーシュート）アニメーションで戻す。ごく短いタップで潰れがほとんど進んでいなかった
@@ -935,7 +936,8 @@ import {
                 const growth = Math.max(0, dist - twoFingerStartDist); // 2点が離れた分だけを「伸び」として扱う
                 twoFingerLastRatio = Math.min(growth, TWO_FINGER_MAX_STRETCH_DIST) / TWO_FINGER_MAX_STRETCH_DIST;
                 twoFingerLastAngleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
-                updateTwoFingerSqueezeTarget(twoFingerLastAngleDeg, twoFingerLastRatio);
+                // 🆕 growth（生のpx値）も渡すことで、physics.js側が「つつき」ギミックの発火判定に使えるようにする
+                updateTwoFingerSqueezeTarget(twoFingerLastAngleDeg, twoFingerLastRatio, growth);
                 // 🆕 2本指それぞれの「光」を、その指の現在位置・共通の伸縮比率で更新する
                 const [id0, id1] = [...squeezePointers.keys()];
                 updateSqueezeGlow(id0, pts[0].x, pts[0].y, twoFingerLastRatio);

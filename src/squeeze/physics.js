@@ -63,6 +63,11 @@ const CONFIG = {
   // ドラッグ扱いになる前（tap.js側のSQUEEZE_MIN_DRAG未満）は鳴らさない。ただのタップ・長押しでは
   // tap.mp3（またはsplashSoundFile）だけが鳴り、つつき音は本格的にドラッグが始まった時だけ鳴る
   // （まもすいの要望：ただのタップの時は1音だけにしたい。2-1参照）。
+  // 🆕 2本指ストレッチも同じ考え方：2点間の距離がこれだけ開いて初めて「本格的なドラッグ」とみなし、
+  // つつき音を1回だけ鳴らす（tap.js側のSQUEEZE_MIN_DRAGと役割は同じだが、1本指と2本指で座標の
+  // 取り方が全く別物なので、値だけ揃えた専用の定数を別途持たせている。まもすいの指摘：2本指で
+  // 引っ張った時にslime_pokeが鳴っていなかった不具合の修正。2-1参照）。
+  TWO_FINGER_POKE_MIN_GROWTH_PX: 9,
   // --- 🆕 タップした瞬間の「ぴちゃ」という水っぽい音＋水色の波紋（materials.jsのsplashSoundFile） ---
   SPLASH_VOLUME: 0.6,
   SPLASH_RIPPLE_COLOR: '79, 195, 247', // このアプリの「水色」アクセント(#4fc3f7)と同じ色。squeeze-accum-hud等でも使用
@@ -78,6 +83,10 @@ const CONFIG = {
   LONGPRESS_SQUISH_DURATION_MS: 1200,   // 開始ポーズから最終ポーズまでかかる時間（ここを短くするほど速く潰れきる）
   LONGPRESS_RELEASE_OVERSHOOT_RATIO: 0.5, // 長押しから離した時、反動でどれだけ逆方向(伸びる方向)へ弾むか。潰れの進み具合(0〜1)に比例する
   LONGPRESS_RELEASE_DURATION_MS: 480,     // 反動アニメーションの長さ
+  // 🆕 長押し中だけループする専用音（materials.jsのstillPokeSoundFile）の最大音量。
+  // 潰れの進み具合(0〜1)に比例して0からこの値まで音量を上げていき、最大まで潰れきったら
+  // （t>=1）ぴたりと止める（まもすいの要望：もちすけが最大まで縮まったらその効果音は止まる。2-1参照）。
+  LONGPRESS_SQUISH_SOUND_MAX_GAIN: 0.4,
   // --- 🆕 スクイーズ：伸びる「方向」の追従（2-1-b22で追加、2-1-b23で調整） ---
   // 最初は大きさ(SQUEEZE_FOLLOW_LERP)とまったく同じ追従係数・同じ「伸びるほど重くなる」heaviness補正を
   // 方向にもかけていたが、「重みのせいでもちすけを暴れさせる楽しさが無くなった」というまもすいからの
@@ -535,6 +544,57 @@ let longPressSquishStartTime = 0;
 let longPressSquishActive = false;
 let longPressSquishLastRatio = 0; // 離した瞬間の反動の大きさ計算に使う、直近の潰れ具合(0〜1)
 
+// 🆕 長押し中だけループする専用音（materials.jsのstillPokeSoundFile）用の状態。
+// startStretchSound/updateStretchSound/stopStretchSoundと全く同じWeb Audio APIのバッファ＋ゲイン方式。
+let longPressSquishSoundSource = null, longPressSquishSoundGain = null;
+
+/**
+ * 長押し用の「じわじわ潰れる」ループ音を音量0の状態で再生開始する。現在の素材に
+ * stillPokeSoundFileが設定されていない場合は何もしない（＝この演出音自体を鳴らさない素材もOK）。
+ * @returns {void}
+ */
+function startLongPressSquishSound() {
+    if (longPressSquishSoundSource) return;
+    const stillPokeSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].stillPokeSoundFile;
+    if (!stillPokeSoundFile) return;
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    const buffer = audioBuffers[stillPokeSoundFile];
+    if (!buffer) return;
+    longPressSquishSoundSource = ctx.createBufferSource();
+    longPressSquishSoundSource.buffer = buffer;
+    longPressSquishSoundSource.loop = true;
+    longPressSquishSoundGain = ctx.createGain();
+    longPressSquishSoundGain.gain.value = 0;
+    longPressSquishSoundSource.connect(longPressSquishSoundGain).connect(ctx.destination);
+    longPressSquishSoundSource.start(0);
+}
+
+/**
+ * 潰れの進み具合(0〜1)に比例して、長押しループ音の音量を更新する。t=1（最大まで潰れきった）に
+ * 到達したら、まもすいの要望（もちすけが最大まで縮まったらその効果音は止まる）通り、
+ * ここでは鳴らし続けず、呼び出し元(stepLongPressSquish)側でstopLongPressSquishSound()を呼んで止める。
+ * @param {number} t - 0〜1の潰れの進み具合
+ * @returns {void}
+ */
+function updateLongPressSquishSound(t) {
+    if (!longPressSquishSoundGain) return;
+    longPressSquishSoundGain.gain.value = t * CONFIG.LONGPRESS_SQUISH_SOUND_MAX_GAIN * sfxVolumeMult;
+}
+
+/**
+ * 長押しループ音を停止し、参照をクリアする。最大まで潰れきった時（stepLongPressSquish）・
+ * ドラッグに切り替わった時（stopLongPressSquish）・指を離した時（releaseLongPressSquish）の
+ * いずれからも呼ばれる。
+ * @returns {void}
+ */
+function stopLongPressSquishSound() {
+    if (!longPressSquishSoundSource) return;
+    try { longPressSquishSoundSource.stop(); } catch (e) {}
+    longPressSquishSoundSource = null;
+    longPressSquishSoundGain = null;
+}
+
 /**
  * 長押し用の「じわじわ潰れる」演出を開始する。指を離すかドラッグが始まるまで、時間経過に応じて
  * 徐々に最終ポーズ（CONFIG.LONGPRESS_SQUISH_END_SCALE_X/Y）へ近づき続ける。
@@ -544,6 +604,7 @@ export function startLongPressSquish() {
     longPressSquishActive = true;
     longPressSquishStartTime = performance.now();
     longPressSquishLastRatio = 0;
+    startLongPressSquishSound(); // 🆕 見た目と同時に、長押し専用のループ音も鳴らし始める
     if (longPressSquishRafId === null) longPressSquishRafId = requestAnimationFrame(stepLongPressSquish);
 }
 
@@ -558,18 +619,28 @@ function stepLongPressSquish() {
     const scaleX = CONFIG.LONGPRESS_SQUISH_START_SCALE_X + (CONFIG.LONGPRESS_SQUISH_END_SCALE_X - CONFIG.LONGPRESS_SQUISH_START_SCALE_X) * t;
     const scaleY = CONFIG.LONGPRESS_SQUISH_START_SCALE_Y + (CONFIG.LONGPRESS_SQUISH_END_SCALE_Y - CONFIG.LONGPRESS_SQUISH_START_SCALE_Y) * t;
     mochiDeformWrap.style.transform = `scale(${scaleX}, ${scaleY})`;
-    longPressSquishRafId = (t < 1) ? requestAnimationFrame(stepLongPressSquish) : null;
+    if (t >= 1) {
+        // 🆕 最大まで潰れきった＝もう変化が無いので、まもすいの要望通りループ音をここで止める
+        // （見た目のrAFループ自体は今まで通りここで停止し、以後は静止したポーズを維持する）
+        stopLongPressSquishSound();
+        longPressSquishRafId = null;
+    } else {
+        updateLongPressSquishSound(t);
+        longPressSquishRafId = requestAnimationFrame(stepLongPressSquish);
+    }
 }
 
 /**
  * ドラッグ（SQUEEZE_MIN_DRAG以上の移動）に切り替わった時にtap.js側から呼ぶ。以後は
  * stepSqueezeFollow側がmochiDeformWrap.style.transformを制御するため、じわじわ潰れ演出は
- * ここで止める（transformには触れず、ループを止めるだけ）。
+ * ここで止める（transformには触れず、ループを止めるだけ）。あわせて長押し専用のループ音も止める
+ * （本格的なドラッグに切り替わった以上、これ以降はfirePokeImpact等の通常の音に処理を譲るため）。
  * @returns {void}
  */
 export function stopLongPressSquish() {
     longPressSquishActive = false;
     if (longPressSquishRafId !== null) { cancelAnimationFrame(longPressSquishRafId); longPressSquishRafId = null; }
+    stopLongPressSquishSound();
 }
 
 /**
@@ -583,6 +654,7 @@ export function releaseLongPressSquish() {
     const ratio = longPressSquishLastRatio;
     longPressSquishActive = false;
     if (longPressSquishRafId !== null) { cancelAnimationFrame(longPressSquishRafId); longPressSquishRafId = null; }
+    stopLongPressSquishSound(); // 🆕 途中で離した場合（t<1でまだループ音が鳴っている場合）はここで止める
     longPressSquishLastRatio = 0;
     if (ratio <= 0) return false;
 
@@ -606,11 +678,18 @@ export function releaseLongPressSquish() {
 // 2本の指が離れていく方向・距離から、追従ループの目標値を更新する（2本指ドラッグ中に毎回呼ばれる）
 /**
  * 2本指ストレッチの目標（生の伸縮比率・軸の角度）を更新し、追従ループを開始する。
+ * 🆕 rawGrowthPx（2点間の距離が触れた瞬間からどれだけ開いたか、生のpx値）がTWO_FINGER_POKE_MIN_GROWTH_PX
+ * 以上になった最初の1回だけ、1本指スクイーズと同じ「つつき」ギミックを発火させる（まもすいの指摘：
+ * 2本指で引っ張った時にslime_pokeが鳴っていなかった不具合の修正。2-1参照）。1本指版
+ * (updateOneFingerSqueezeTarget)と違い、速度計算に使うdx/dyの代わりにrawGrowthPxをそのまま渡す
+ * （2本指の「強さ」は方向を持たない、両指が開く速さそのものなので、Math.hypot(dx,0)と等価になる）。
  * @param {number} angleDeg - 2点を結ぶ軸の角度（度）
  * @param {number} ratio - 0〜1の生の伸縮比率
+ * @param {number} [rawGrowthPx=0] - 触れた瞬間からの2点間距離の伸び（px、生の値）
  * @returns {void}
  */
-export function updateTwoFingerSqueezeTarget(angleDeg, ratio) {
+export function updateTwoFingerSqueezeTarget(angleDeg, ratio, rawGrowthPx = 0) {
+    if (pokeArmed && !pokeFired && rawGrowthPx >= CONFIG.TWO_FINGER_POKE_MIN_GROWTH_PX) firePokeImpact(rawGrowthPx, 0);
     twoFingerRawRatio = ratio;
     twoFingerAngleDeg = angleDeg;
     currentMode = 'two';
