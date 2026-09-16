@@ -135,14 +135,19 @@ import {
           SQUEEZE_ACCUM_RESET_REWARD_MULT: 10, // 戻す時のもち報酬 = tapPower × これ × 蓄積量^POWER
           SQUEEZE_ACCUM_RESET_REWARD_POWER: 1.15, // 貯めた量が多いほど単価が僅かに上がる、緩いカーブ（急にしすぎると「ずっと貯め続けるのが最適解」になってしまうため控えめに）
 
-          // --- 🆕 スクイーズ衣装（スライムもちすけ等）専用：離した時の段階別「もちぽんぽん」報酬 ---
-          // スクイーズ衣装装備中は通常のタップ生産（executeSingleTap等）が一切発生しないため、
-          // 何かしらの形でもちを稼ぐ手段が無いと衣装を着けている間ずっと無報酬になってしまう。
-          // 一時期あった「専用モード＋戻すボタン」の代わりに、長押し/引っ張りを離した瞬間、
-          // その時の伸縮・潰れ比率(0〜1)に応じて1〜3個の「もち」パーティクルが少し時間差で
-          // ぽんぽんと飛び出し、その個数ぶんのタップ力を獲得できるようにした
-          // （まもすいの要望：スライムもちすけの方も何かタップで良いことが起きるようにしたい。2-1参照）。
-          // 比率がこの2つのしきい値のどちらにも届かなくても、最低1個は必ず出る（1〜3の3段階）。
+          // --- 🆕 通常のもちすけ専用：長押し/引っ張りを離した時の段階別「もちぽんぽん」ボーナス ---
+          // ⚠️ スクイーズ衣装（スライムもちすけ等）は対象外（まもすいの指示：これは通常もちすけの話。
+          // スライムもちすけはそもそも管理者限定・試作中の非公開コンテンツで、通常プレイヤーの目には
+          // 触れないため、経済バランスは考えなくてよい）。
+          // 通常のタップ生産（executeSingleTap）に加えて、しっかり長押ししたり引っ張ったりして
+          // 離した時だけ、その時の伸縮・潰れ比率(0〜1)に応じて1〜3個の「もち」パーティクルが
+          // 少し時間差でぽんぽんと飛び出し、その個数ぶんのタップ力を追加で獲得できるようにした
+          // （まもすいの要望：長押し/引っ張りの長さによって段階別にもちが出るようにしたい。2-1参照）。
+          // 🆕 ただの軽いタップ（ドラッグにも長押しにもならなかった場合）はこのボーナスの対象外にしている。
+          // 通常のタップは既にexecuteSingleTapで毎回もちを生産しているため、ここでも無条件に
+          // 最低1個を出してしまうと、すべてのタップに無条件でボーナスが乗ることになってしまうため
+          // （呼び出し側のtap.js releaseMochiSucre参照：一本指/二本指ドラッグは元々のブランチの
+          // 移動量しきい値で、長押しはreleaseLongPressSquishのrebounded判定でそれぞれガードしている）。
           SQUEEZE_RELEASE_MOCHI_TIER2_RATIO: 0.35, // これ以上でもち2個
           SQUEEZE_RELEASE_MOCHI_TIER3_RATIO: 0.7,  // これ以上でもち3個（最大）
           SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MS: 140, // 「ぽん、ぽん、ぽん」に見えるよう、1個ずつ出すタイミングをずらす間隔
@@ -666,8 +671,9 @@ import {
         }
 
         /**
-         * スクイーズ衣装を離した時、伸縮・潰れ比率(0〜1)から「もちぽんぽん」報酬の個数(1〜3)を決める。
-         * しきい値に届かなくても最低1個は出る（CONFIG.SQUEEZE_RELEASE_MOCHI_TIER2/3_RATIO参照）。
+         * 通常のもちすけが長押し/引っ張りを離した時、伸縮・潰れ比率(0〜1)から「もちぽんぽん」
+         * ボーナスの個数(1〜3)を決める。呼び出し側で「ただの軽いタップではない」ことを
+         * 確認済みである前提のため、ここでは常に最低1個を返す（CONFIG.SQUEEZE_RELEASE_MOCHI_TIER2/3_RATIO参照）。
          * @param {number} ratio - 0〜1の伸縮・潰れ比率
          * @returns {number} 1〜3の段階
          */
@@ -678,8 +684,9 @@ import {
         }
 
         /**
-         * スクイーズ衣装（通常のタップ生産が発生しない衣装）を離した時の「もちぽんぽん」報酬を実行する。
-         * tier個のもちパーティクルを少し時間差で飛ばし（見た目の「ぽん、ぽん、ぽん」）、
+         * 通常のもちすけが長押し/引っ張りをしっかり離した時の「もちぽんぽん」ボーナスを実行する
+         * （スクイーズ衣装装備中は対象外。呼び出し側のCONFIG.SQUEEZE_RELEASE_MOCHI_TIER2/3_RATIO
+         * コメント参照）。tier個のもちパーティクルを少し時間差で飛ばし（見た目の「ぽん、ぽん、ぽん」）、
          * 合計 tapPower × tier ぶんのもちを即座に獲得する（獲得自体はパーティクルの表示を待たない）。
          * @param {number} tier - 1〜3。computeSqueezeReleaseMochiTierの戻り値を渡す想定
          * @returns {void}
@@ -853,9 +860,9 @@ import {
             if (e && e.pointerId !== undefined) squeezePointers.delete(e.pointerId);
 
             const wasTwoFingerStretch = twoFingerStretchActive; // クリアする前に記憶しておく
-            // 🆕 スクイーズ衣装（スライムもちすけ等）装備中かどうか。装備中は通常のタップ生産
-            // （pointerdown側のexecuteSingleTap等）が一切発生しないため、離した時の
-            // 「もちぽんぽん」報酬（下のgrantSqueezeReleaseMochiPop呼び出し）でだけもちを獲得できる
+            // 🆕 スクイーズ衣装（スライムもちすけ等）装備中かどうか。下の「もちぽんぽん」ボーナス
+            // （grantSqueezeReleaseMochiPop）は通常のもちすけ限定の機能なので、装備中は対象外にする
+            // 判定に使う（まもすいの指示：これは通常もちすけの話。2-1参照）
             const isSqueezeCostumeActive = !!getEquippedSqueezeMaterialKey();
 
             isMochiPressed = false;
@@ -886,7 +893,10 @@ import {
                 releaseTwoFingerSqueezeWithOvershoot(twoFingerLastAngleDeg, finalSqueezeVisualRatio);
                 triggerSqueezeReleaseBurst(twoFingerLastRatio, finalSqueezeVisualRatio, comboTierIndex);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
-                if (isSqueezeCostumeActive) grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(finalSqueezeVisualRatio));
+                // 🆕 通常のもちすけ限定の「もちぽんぽん」ボーナス（スクイーズ衣装は対象外。2-1参照）。
+                // このブランチに来ている時点で既にTWO_FINGER_MIN_STRETCH_RATIO以上伸ばしているので、
+                // ただの軽いタップとの混同は起きない
+                if (!isSqueezeCostumeActive) grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(finalSqueezeVisualRatio));
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
@@ -909,7 +919,10 @@ import {
                 const releaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
                 triggerSqueezeReleaseBurst(releaseRatio, finalSqueezeVisualRatio, comboTierIndex);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
-                if (isSqueezeCostumeActive) grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(finalSqueezeVisualRatio));
+                // 🆕 通常のもちすけ限定の「もちぽんぽん」ボーナス（スクイーズ衣装は対象外。2-1参照）。
+                // このブランチに来ている時点で既にSQUEEZE_MIN_DRAG以上引っ張っているので、
+                // ただの軽いタップとの混同は起きない
+                if (!isSqueezeCostumeActive) grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(finalSqueezeVisualRatio));
                 clones.forEach(c => {
                     c.animate([
                         { transform: 'translate(-50%, -50%) translateX(var(--tx)) scale(1.25, 0.72)' },
@@ -941,9 +954,14 @@ import {
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     mochiDeformWrap.style.transform = 'scale(1, 1)';
                 }
-                // 🆕 スクイーズ衣装装備中は、ただのタップ・長押しでも最低1個はもちがぽんと出る
-                // （どんなに軽く触れても、スクイーズ衣装が唯一のもち獲得手段になっている以上、無報酬にはしない）
-                if (isSqueezeCostumeActive) grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(longPressRatio));
+                // 🆕 通常のもちすけ限定の「もちぽんぽん」ボーナス（スクイーズ衣装は対象外。2-1参照）。
+                // didLongPressReboundがtrueの時＝releaseLongPressSquish内部で「本当に長押しと呼べる域まで
+                // 進んでいた」と判定された時だけボーナスを出す。ただの軽いタップ（rebounded:false）は対象外
+                // にしないと、executeSingleTapで既に生産している通常タップすべてに無条件でボーナスが
+                // 乗ってしまうため（CONFIG.SQUEEZE_RELEASE_MOCHI_TIER2/3_RATIOのコメント参照）
+                if (!isSqueezeCostumeActive && didLongPressRebound) {
+                    grantSqueezeReleaseMochiPop(computeSqueezeReleaseMochiTier(longPressRatio));
+                }
 
                 clones.forEach(c => {
                     c.animate([
