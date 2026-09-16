@@ -1,17 +1,17 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-17-011';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-17-011';
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-17-012';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-17-012';
         // 🧪 管理者限定・試作中：全身の「スクイーズ衣装」を装備/解除するたびに、スクイーズの音の素材を
         // 同期させるために使う（applyKisekaeToMainScreen参照）
-        import { setAccumulateModeActive, setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-17-011';
-        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-17-011';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-17-011';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-17-011';
-        import { saveGame } from '../../state.js?v=2026-09-17-011';
-        import { closeModal, openModal } from './core.js?v=2026-09-17-011';
-        import { openTicketInventory } from './myroom.js?v=2026-09-17-011';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-17-011';
+        import { setAccumulateModeActive, setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-17-012';
+        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-17-012';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-17-012';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-17-012';
+        import { saveGame } from '../../state.js?v=2026-09-17-012';
+        import { closeModal, openModal } from './core.js?v=2026-09-17-012';
+        import { openTicketInventory } from './myroom.js?v=2026-09-17-012';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-17-012';
 
         // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
         const CONFIG = {
