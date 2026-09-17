@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MOCHI_ICON_ADJUST_TOOL_ENABLED,
   MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-17-019';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-019';
+} from './data.js?v=2026-09-17-020';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-020';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-17-019';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-019';
+} from './progress.js?v=2026-09-17-020';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-020';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-17-019';
+} from './state.js?v=2026-09-17-020';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-17-019';
+} from './tap.js?v=2026-09-17-020';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, applyMochiIconAdjust, checkIncomingGiftsOnLaunch,
   checkShowTutorial, getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders,
   isTutorialActive, showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay, updateMochiIconAdjustReadout
-} from './ui.js?v=2026-09-17-019';
+} from './ui.js?v=2026-09-17-020';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。

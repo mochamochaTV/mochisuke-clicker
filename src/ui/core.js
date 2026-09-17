@@ -1,12 +1,12 @@
         // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, MOCHI_ICON_OFFSET, MOCHI_ICON_SIZE, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, setMOCHI_ICON_SIZE, stages } from '../../data.js?v=2026-09-17-019';
-        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-17-019';
-        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-17-019';
-        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-17-019';
-        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-17-019';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-17-019';
-        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-17-019';
+        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, MOCHI_ICON_BASE_SIZE_PX, MOCHI_ICON_OFFSET, MOCHI_ICON_SIZE, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, setMOCHI_ICON_SIZE, stages } from '../../data.js?v=2026-09-17-020';
+        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-17-020';
+        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-17-020';
+        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-17-020';
+        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-17-020';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-17-020';
+        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-17-020';
 
         // 🔧 このファイル内でロジックに使う「調整可能な」数値をまとめたもの（CSS文字列内の値や、配列添字などの構造的な数値は対象外）
         const CONFIG = {
@@ -518,7 +518,10 @@
          * @returns {void}
          */
         export function applyMochiIconAdjust() {
-            document.documentElement.style.setProperty('--mochi-count-icon-size', MOCHI_ICON_SIZE + 'px');
+            // 🆕【まもすいの指摘で修正】width/heightではなくtransform:scaleで見た目だけを拡大縮小することで、
+            // 所持もち数の枠（.score-row）の大きさ自体はMOCHI_ICON_BASE_SIZE_PX（アプデ前と同じ24px）のまま
+            // 変わらないようにしている（style.cssの.mochi-count-icon-wrap参照）
+            document.documentElement.style.setProperty('--mochi-count-icon-scale', MOCHI_ICON_SIZE / MOCHI_ICON_BASE_SIZE_PX);
             document.documentElement.style.setProperty('--mochi-count-icon-dx', MOCHI_ICON_OFFSET.dx + 'px');
             document.documentElement.style.setProperty('--mochi-count-icon-dy', MOCHI_ICON_OFFSET.dy + 'px');
         }
@@ -577,6 +580,10 @@
         export function updateMochiIconAdjustReadout() {
             document.getElementById('mochi-icon-adjust-readout').textContent =
                 `大きさ:${MOCHI_ICON_SIZE}px; dx:${Math.round(MOCHI_ICON_OFFSET.dx)}px; dy:${Math.round(MOCHI_ICON_OFFSET.dy)}px;`;
+            // 🐛修正：+/-ボタン以外（パネル表示時など）でもここを通るケースがあるため、
+            // 大きさの単独readout（mochi-icon-size-readout）もここで一緒に同期しておく
+            const sizeReadout = document.getElementById('mochi-icon-size-readout');
+            if (sizeReadout) sizeReadout.textContent = MOCHI_ICON_SIZE + 'px';
         }
         /**
          * 所持もち数アイコンの現在の調整値をテキストにまとめ、クリップボードにコピーする（開発者用調整ツール）。

@@ -7,11 +7,11 @@
  * （ロジック・数値は一切変更していない。コードの再配置のみ）。
  */
 
-import { stages } from '../../data.js?v=2026-09-17-019';
-import { playAudioFile, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-17-019';
-import { currentStageIndex } from '../../progress.js?v=2026-09-17-019';
-import { saveGame } from '../../state.js?v=2026-09-17-019';
-import { consumeMinigamePlay, endMinigameToTiles, grantMinigameReward, minigameBests, showMinigameResult } from './core.js?v=2026-09-17-019';
+import { stages } from '../../data.js?v=2026-09-17-020';
+import { playAudioFile, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-17-020';
+import { currentStageIndex } from '../../progress.js?v=2026-09-17-020';
+import { saveGame } from '../../state.js?v=2026-09-17-020';
+import { consumeMinigamePlay, endMinigameToTiles, grantMinigameReward, minigameBests, showMinigameResult } from './core.js?v=2026-09-17-020';
 
         const CONFIG = {
             CONCENTRATION_PAIR_COUNT: 6,             // 使うペアの数（カード総数はこの2倍）

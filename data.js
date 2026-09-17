@@ -516,11 +516,18 @@
         // 🆕 所持もち数アイコン（#mochi-count-icon）の大きさ・位置（管理者が実機で調整）
         // 座標が確定したら、CORNER_BTN_ADJUST_TOOL_ENABLEDと同じくfalseに戻してパネルを隠す想定
         export const MOCHI_ICON_ADJUST_TOOL_ENABLED = true;
-        export let MOCHI_ICON_SIZE = 24; // アイコンの一辺の大きさ(px)
+        // 🆕【まもすいの指摘で修正】このアイコンはwidth/heightで大きくすると、そのぶん.score-row（所持もち数の枠）が
+        // 広がってしまう。そのためMOCHI_ICON_SIZEは「見た目上の目標サイズ(px)」として扱い、実際に反映する時は
+        // MOCHI_ICON_BASE_SIZE_PX（枠として確保されている本来の大きさ＝アプデ前と同じ24px、これは変えない）との
+        // 比率をtransform:scaleに変換する（applyMochiIconAdjust@src/ui/core.js参照）。これにより見た目だけ
+        // 拡大縮小され、枠の大きさ自体はアイコンの大きさに関わらず常にアプデ前のまま変わらない。
+        export const MOCHI_ICON_BASE_SIZE_PX = 24;
+        export let MOCHI_ICON_SIZE = 40; // アイコンの見た目上の目標サイズ(px)。まもすいが実機調整で40pxが良いと判断した値
+
         export let MOCHI_ICON_OFFSET = { dx: 0, dy: 0 }; // 通常位置からのズラし量(px)
         /**
          * MOCHI_ICON_SIZEを更新する（開発者用調整ツール）。
-         * @param {number} v - 新しいサイズ(px)
+         * @param {number} v - 新しい見た目上の目標サイズ(px)
          * @returns {void}
          */
         export function setMOCHI_ICON_SIZE(v) { MOCHI_ICON_SIZE = v; }
