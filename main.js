@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MOCHI_ICON_ADJUST_TOOL_ENABLED,
   MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-17-021';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-021';
+} from './data.js?v=2026-09-17-022';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-022';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-17-021';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-021';
+} from './progress.js?v=2026-09-17-022';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-022';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-17-021';
+} from './state.js?v=2026-09-17-022';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-17-021';
+} from './tap.js?v=2026-09-17-022';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, applyMochiIconAdjust, checkIncomingGiftsOnLaunch,
   checkShowTutorial, getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders,
   isTutorialActive, showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay, updateMochiIconAdjustReadout
-} from './ui.js?v=2026-09-17-021';
+} from './ui.js?v=2026-09-17-022';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -115,11 +115,14 @@ import {
             // （加算は今まで通り即時。2-1参照）
             // 🐛パフォーマンス修正：吸い込み演出は「fall→pause→home」の分だけ、以前(画面外に落ちたら即消滅)より
             // 1粒あたりの生存時間・描画され続ける時間が伸びる。連打・フィーバー中はPARTICLE_MAX_COUNT(50)近くまで
-            // 粒が滞留しやすくなり、まもすいの報告通り体感のラグにつながっていた。時間を短縮しつつ、
-            // 同時に「吸い込み中」になれる粒数にも上限を設け、それを超えた分は演出をスキップして
-            // 従来通りそのまま画面外へ落として片付ける（見た目の混雑緩和と負荷軽減を両立させる）。
+            // 粒が滞留しやすくなり、まもすいの報告通り体感のラグにつながっていた。そこで同時に「吸い込み中」に
+            // なれる粒数に上限（PARTICLE_SUCK_MAX_CONCURRENT）を設け、それを超えた分は演出をスキップして
+            // 従来通りそのまま画面外へ落として片付けるようにした（ラグ対策の本体はこちら）。
+            // 🆕【まもすいの指摘で再調整】上記の上限があるおかげで1粒あたりの時間を削らなくても最悪ケースは
+            // 頭打ちになるため、「吸い込むスピードが速すぎる」の指摘を受けてHOMING_DURATIONは
+            // 元の見た目（26フレーム）に近い24フレームまで戻した（PAUSEは変更なし）。
             PARTICLE_SUCK_PAUSE_FRAMES: 10,            // 下部で静止する時間（フレーム数。60fps換算で約0.17秒）
-            PARTICLE_SUCK_HOMING_DURATION_FRAMES: 16,  // 静止後、所持もち数表示まで吸い込まれる所要フレーム数
+            PARTICLE_SUCK_HOMING_DURATION_FRAMES: 24,  // 静止後、所持もち数表示まで吸い込まれる所要フレーム数
             PARTICLE_SUCK_MAX_CONCURRENT: 14,          // 同時に「pause」「home」状態でいられる粒の最大数
             PARTICLE_SUCK_NAV_MENU_OFFSET: 10,         // 静止位置を下部ナビボタンの上端から少し浮かせる余白(px)
             MOCHI_COUNT_ICON_BOUNCE_DEBOUNCE_MS: 140,  // 連打・フィーバー中に何個も同時到着した時、跳ねる強制リフローを間引く間隔
