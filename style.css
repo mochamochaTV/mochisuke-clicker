@@ -289,17 +289,24 @@
             border-bottom: 1px dashed rgba(233, 204, 167, 0.6);
             padding-bottom: 2px;
         }
-        .score-row img {
-            width: 24px;
-            height: 24px;
-            vertical-align: middle;
-        }
         #score-text { display: inline-block; }
         .digit-pop { display: inline-block; animation: digitPop 0.22s ease-out; }
         /* 🆕 もち吸い込み演出：所持もち数の左の🍡絵文字を、実際のもちパーティクル画像（mochi_particle.webp）に
            差し替えたアイコン。吸い込まれてきたパーティクルがここへ着地する狙い所であり、着地の瞬間に
-           .mochi-count-icon-bounceクラスが付いて「ぴょん」と跳ねる（main.jsのtriggerMochiCountIconBounce参照） */
-        .mochi-count-icon { display: inline-block; }
+           .mochi-count-icon-bounceクラスが付いて「ぴょん」と跳ねる（main.jsのtriggerMochiCountIconBounce参照）。
+           大きさ・位置は開発者用調整ツール（src/ui/core.jsのadjustMochiIconSize等）でCSS変数を書き換えて
+           実機で微調整できるようにしてある。位置調整は.mochi-count-icon-wrap側のtranslateで行い、
+           .mochi-count-icon側のtransform（着地時のbounceアニメ）と競合しないよう要素を分けている。 */
+        .mochi-count-icon-wrap {
+            display: inline-block;
+            transform: translate(var(--mochi-count-icon-dx, 0px), var(--mochi-count-icon-dy, 0px));
+        }
+        .mochi-count-icon {
+            display: inline-block;
+            width: var(--mochi-count-icon-size, 24px);
+            height: var(--mochi-count-icon-size, 24px);
+            vertical-align: middle;
+        }
         .mochi-count-icon-bounce { animation: mochiCountIconBounce 0.4s ease-out; }
         @keyframes mochiCountIconBounce {
             0% { transform: scale(1, 1); }

@@ -1,30 +1,30 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
 import {
-  BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData,
-  stages
-} from './data.js?v=2026-09-17-018';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-018';
+  BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MOCHI_ICON_ADJUST_TOOL_ENABLED,
+  MYROOM_ITEMS, SFX_FILES, dialogueData, stages
+} from './data.js?v=2026-09-17-019';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-019';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-17-018';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-018';
+} from './progress.js?v=2026-09-17-019';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-019';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-17-018';
+} from './state.js?v=2026-09-17-019';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-17-018';
+} from './tap.js?v=2026-09-17-019';
 import {
-  applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
-  getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
-  showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
-  startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-17-018';
+  applyCornerBtnPositions, applyKisekaeToMainScreen, applyMochiIconAdjust, checkIncomingGiftsOnLaunch,
+  checkShowTutorial, getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders,
+  isTutorialActive, showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
+  startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay, updateMochiIconAdjustReadout
+} from './ui.js?v=2026-09-17-019';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -342,7 +342,25 @@ import {
         // タイミング（初回描画時・リサイズ時・端末回転時）でまとめて計算し直す方式にしている
         // （gameScreenRectのキャッシュと同じ考え方）。
         export let suckPauseY = null;      // 下部で「ふわっと止まる」高さ（下部ナビボタンの上端付近）
-        export let suckTargetPoint = null; // 吸い込まれる先＝所持もち数表示の中心座標 {x, y}
+        /**
+         * 🆕【まもすいの指摘で修正】吸い込まれる先＝所持もち数アイコン(#mochi-count-icon)の中心座標を
+         * その場で計算して返す（#game-screen基準の相対座標）。以前はsuckTargetPointとしてresize時に
+         * キャッシュしていたが、開発者用調整ツール（大きさ・位置のドラッグ調整）でアイコンの見た目上の
+         * 位置がリサイズを経ずに変わるケースに追従できず「吸い込まれる位置がずれる」原因になっていた。
+         * この座標は1粒がpause→homeへ遷移する瞬間にしか呼ばれない（毎フレーム毎パーティクルではない）ため、
+         * 都度getBoundingClientRectを呼んでも負荷は問題にならない。
+         * @returns {{x: number, y: number}|null} 見つからなければnull
+         */
+        export function getMochiCountIconTargetPoint() {
+            const iconEl = document.getElementById('mochi-count-icon');
+            if (!iconEl) return null;
+            const rect = getGameScreenRect();
+            const iconRect = iconEl.getBoundingClientRect();
+            return {
+                x: (iconRect.left + iconRect.width / 2) - rect.left,
+                y: (iconRect.top + iconRect.height / 2) - rect.top,
+            };
+        }
         export let rainCanvas = null; export let rainCtx = null;
         // 🌧️ もちの雨（自動増加(mps)がある時、もちすけの後ろにうっすら降ってくる。収入が少ない時はほとんど降らない）
         export let mochiRainList = [];
@@ -773,21 +791,12 @@ import {
             if (bunshinCloneRects.length > 0) refreshBunshinCloneRects();
             if (rainCanvas) { rainCanvas.width = rect.width; rainCanvas.height = rect.height; }
 
-            // 🆕 もち吸い込み演出用の座標も、リサイズ・回転のタイミングでまとめて計算し直す
+            // 🆕 もち吸い込み演出用：下部の静止ラインは、ナビボタン行の位置が変わる頻度が低い
+            // （リサイズ・回転くらい）ため、これまで通りここでキャッシュし直す方式のままにしている
             const navMenuEl = document.querySelector('.nav-menu');
             if (navMenuEl) {
                 const navRect = navMenuEl.getBoundingClientRect();
                 suckPauseY = (navRect.top - rect.top) - CONFIG.PARTICLE_SUCK_NAV_MENU_OFFSET;
-            }
-            // 🆕【まもすいの指摘で修正】吸い込み先は数字部分(#score-text)ではなく、実際にもち粒が
-            // 着地して見える所持もち数アイコン(#mochi-count-icon、旧🍡絵文字の位置)そのものを狙う
-            const scoreEl = document.getElementById('mochi-count-icon');
-            if (scoreEl) {
-                const scoreRect = scoreEl.getBoundingClientRect();
-                suckTargetPoint = {
-                    x: (scoreRect.left + scoreRect.width / 2) - rect.left,
-                    y: (scoreRect.top + scoreRect.height / 2) - rect.top,
-                };
             }
 
             if (!canvas) return;
@@ -873,6 +882,17 @@ import {
         }
 
         /**
+         * 開発者モードかつ所持もち数アイコン調整ツールが有効な場合にだけ、調整パネルを表示する。
+         * @returns {void}
+         */
+        function showMochiIconAdjustPanelIfEnabled() {
+            if (IS_DEV_MODE && MOCHI_ICON_ADJUST_TOOL_ENABLED) {
+                const panel = document.getElementById('mochi-icon-adjust-panel');
+                if (panel) { panel.style.display = 'block'; updateMochiIconAdjustReadout(); }
+            }
+        }
+
+        /**
          * ギフト・部屋招待・訪問スタンプの監視開始と、オンライン状態のハートビート送信を、
          * Firebase接続が整うのを少し待ってから順にスケジュールする。
          * @returns {void}
@@ -933,6 +953,8 @@ import {
             checkAndRotateMissions(); // 日付・週が変わっていたら、デイリー/ウィークリーミッションを選び直す
             applyCornerBtnPositions();
             showCornerBtnAdjustPanelIfEnabled();
+            applyMochiIconAdjust();
+            showMochiIconAdjustPanelIfEnabled();
             scheduleBackgroundWatchers();
             grantDevModeItemsIfNeeded();
             checkForCloudRestoreOnLoad();
@@ -1275,11 +1297,15 @@ import {
                 } else if (p.suckPhase === 'pause') {
                     p.pauseFrames--;
                     if (p.pauseFrames <= 0) {
-                        if (suckTargetPoint) {
+                        // 🆕 ここでその都度アイコンの現在位置を取得する（1粒がpause→homeへ遷移する瞬間のみ、
+                        // 毎フレームではない）ことで、開発者用調整ツールでアイコンをドラッグ中でも
+                        // 常に「今アイコンがある場所」へ正しく吸い込まれる
+                        const targetPoint = getMochiCountIconTargetPoint();
+                        if (targetPoint) {
                             p.suckPhase = 'home';
                             p.homeT = 0;
                             p.homeStartX = p.x; p.homeStartY = p.y;
-                            p.targetX = suckTargetPoint.x; p.targetY = suckTargetPoint.y;
+                            p.targetX = targetPoint.x; p.targetY = targetPoint.y;
                         } else {
                             // 吸い込み先の座標が取れていない異常系は、従来通り重力で画面外へ落として片付ける
                             p.suckPhase = 'fall';

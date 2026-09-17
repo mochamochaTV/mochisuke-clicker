@@ -512,6 +512,18 @@
         // 🗺️⚙️🖼️🍴 タップ画面4隅ボタンの位置・大きさ（管理者が調整）
         // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
         export const CORNER_BTN_ADJUST_TOOL_ENABLED = false;
+
+        // 🆕 所持もち数アイコン（#mochi-count-icon）の大きさ・位置（管理者が実機で調整）
+        // 座標が確定したら、CORNER_BTN_ADJUST_TOOL_ENABLEDと同じくfalseに戻してパネルを隠す想定
+        export const MOCHI_ICON_ADJUST_TOOL_ENABLED = true;
+        export let MOCHI_ICON_SIZE = 24; // アイコンの一辺の大きさ(px)
+        export let MOCHI_ICON_OFFSET = { dx: 0, dy: 0 }; // 通常位置からのズラし量(px)
+        /**
+         * MOCHI_ICON_SIZEを更新する（開発者用調整ツール）。
+         * @param {number} v - 新しいサイズ(px)
+         * @returns {void}
+         */
+        export function setMOCHI_ICON_SIZE(v) { MOCHI_ICON_SIZE = v; }
         export let CORNER_BTN_SIZE = 50; // 共通の大きさ(px)
         export const CORNER_BTN_OFFSETS = {
             'map-toggle-btn':  { vert: 1,  horiz: 12 },  // top: calc(8px+safe-area+vert)px; left: horizpx;

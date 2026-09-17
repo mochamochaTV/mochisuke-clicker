@@ -81,13 +81,13 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
     <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-09-17-018">
+    <link rel="stylesheet" href="style.css?v=2026-09-17-019">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
          匿名認証で「自分の記録」だけを更新できるようにしているので、他人のスコアを
          書き換えられる心配はありません（Firestoreのセキュリティルールで保護しています）。 -->
-    <script type="module" src="src/engine/firebase.js?v=2026-09-17-018"></script>
+    <script type="module" src="src/engine/firebase.js?v=2026-09-17-019"></script>
 </head>
 <body>
 
@@ -120,12 +120,27 @@
             <button onclick="copyCornerBtnCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
             <textarea id="corner-btn-copy-textarea" readonly style="display:none; width:100%; height:100px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
         </div>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-17-018</div>
+        <!-- 🆕 開発者用：所持もち数アイコン（吸い込み演出の着地点）の大きさ・位置を実機で調整するパネル。
+             4隅ボタン調整パネルと同じ考え方で、data.jsのMOCHI_ICON_ADJUST_TOOL_ENABLEDで表示ON/OFFする -->
+        <div id="mochi-icon-adjust-panel" style="display:none; position:fixed; top:calc(110px + env(safe-area-inset-top, 0px)); left:50%; transform:translateX(-50%); z-index:9999; background:rgba(255,255,255,0.95); border-radius:8px; padding:8px; width:200px; font-size:0.6rem;">
+            <div style="font-size:0.6rem; font-weight:900; margin-bottom:4px;">所持もち数アイコンの調整</div>
+            <div style="display:flex; align-items:center; gap:6px; justify-content:center; margin-bottom:6px;">
+                <span>大きさ:</span>
+                <button onclick="adjustMochiIconSize(-2)" style="background:#e91e63; color:#fff; border:none; border-radius:5px; width:20px; height:20px; font-weight:900;">−</button>
+                <span id="mochi-icon-size-readout">24px</span>
+                <button onclick="adjustMochiIconSize(2)" style="background:#4caf50; color:#fff; border:none; border-radius:5px; width:20px; height:20px; font-weight:900;">＋</button>
+            </div>
+            <button onclick="toggleMochiIconAdjustMode()" id="mochi-icon-adjust-toggle-btn" style="background:#e91e63; color:#fff; border:none; padding:3px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">位置調整ON/OFF（アイコンをドラッグ）</button>
+            <div id="mochi-icon-adjust-readout" style="font-size:0.52rem; color:#555; margin-top:4px;"></div>
+            <button onclick="copyMochiIconCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
+            <textarea id="mochi-icon-copy-textarea" readonly style="display:none; width:100%; height:60px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
+        </div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-17-019</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
-                <img id="mochi-count-icon" class="mochi-count-icon" src="ui_images/mochisuke/mochi_particle.webp" alt="もち"> <span id="score-text">0 もち</span>
+                <span class="mochi-count-icon-wrap"><img id="mochi-count-icon" class="mochi-count-icon" src="ui_images/mochisuke/mochi_particle.webp" alt="もち"></span> <span id="score-text">0 もち</span>
             </div>
             <div class="info-row">
                 <div class="header-box location-display">
@@ -1035,13 +1050,13 @@
 
     <!-- type="module"は実行順が「このタグの並び順」で保証される（defer相当）。
          各ファイルの依存関係はファイル先頭のimport文を参照（詳細はJS側のコメント参照） -->
-    <script type="module" src="data.js?v=2026-09-17-018"></script>
-    <script type="module" src="state.js?v=2026-09-17-018"></script>
-    <script type="module" src="tap.js?v=2026-09-17-018"></script>
-    <script type="module" src="shop.js?v=2026-09-17-018"></script>
-    <script type="module" src="progress.js?v=2026-09-17-018"></script>
-    <script type="module" src="minigames.js?v=2026-09-17-018"></script>
-    <script type="module" src="ui.js?v=2026-09-17-018"></script>
-    <script type="module" src="main.js?v=2026-09-17-018"></script>
+    <script type="module" src="data.js?v=2026-09-17-019"></script>
+    <script type="module" src="state.js?v=2026-09-17-019"></script>
+    <script type="module" src="tap.js?v=2026-09-17-019"></script>
+    <script type="module" src="shop.js?v=2026-09-17-019"></script>
+    <script type="module" src="progress.js?v=2026-09-17-019"></script>
+    <script type="module" src="minigames.js?v=2026-09-17-019"></script>
+    <script type="module" src="ui.js?v=2026-09-17-019"></script>
+    <script type="module" src="main.js?v=2026-09-17-019"></script>
 </body>
 </html>

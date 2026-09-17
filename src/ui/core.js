@@ -1,12 +1,12 @@
         // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, stages } from '../../data.js?v=2026-09-17-018';
-        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-17-018';
-        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-17-018';
-        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-17-018';
-        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-17-018';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-17-018';
-        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-17-018';
+        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, MOCHI_ICON_OFFSET, MOCHI_ICON_SIZE, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, setMOCHI_ICON_SIZE, stages } from '../../data.js?v=2026-09-17-019';
+        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-17-019';
+        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-17-019';
+        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-17-019';
+        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-17-019';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-17-019';
+        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-17-019';
 
         // 🔧 このファイル内でロジックに使う「調整可能な」数値をまとめたもの（CSS文字列内の値や、配列添字などの構造的な数値は対象外）
         const CONFIG = {
@@ -506,6 +506,91 @@
             textarea.select();
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
+
+        // 🆕 開発者用：所持もち数アイコン（#mochi-count-icon）の大きさ・位置の調整ツール。
+        // 4隅ボタンの調整ツール（上記）と同じ考え方だが、対象が1個だけで、かつ通常のflowに乗っている
+        // インライン要素（position:fixedの4隅ボタンとは違う）なので、位置調整は.mochi-count-icon-wrap側の
+        // transform:translateで見た目だけをズラす方式にしている（レイアウト自体は動かさない）。
+        export let mochiIconAdjustMode = false;
+        export let mochiIconDragState = null;
+        /**
+         * #mochi-count-icon（所持もち数アイコン）の大きさ・位置調整を、CSS変数としてDOMに反映する（開発者用調整ツール）。
+         * @returns {void}
+         */
+        export function applyMochiIconAdjust() {
+            document.documentElement.style.setProperty('--mochi-count-icon-size', MOCHI_ICON_SIZE + 'px');
+            document.documentElement.style.setProperty('--mochi-count-icon-dx', MOCHI_ICON_OFFSET.dx + 'px');
+            document.documentElement.style.setProperty('--mochi-count-icon-dy', MOCHI_ICON_OFFSET.dy + 'px');
+        }
+        /**
+         * 所持もち数アイコンの大きさを増減させる（開発者用調整ツール）。
+         * @param {number} delta - サイズの変化量（px）
+         * @returns {void}
+         */
+        export function adjustMochiIconSize(delta) {
+            setMOCHI_ICON_SIZE(Math.max(CONFIG.CORNER_BTN_MIN_SIZE_PX, MOCHI_ICON_SIZE + delta));
+            document.getElementById('mochi-icon-size-readout').textContent = MOCHI_ICON_SIZE + 'px';
+            applyMochiIconAdjust();
+        }
+        /**
+         * 所持もち数アイコンの位置調整モードのON/OFFを切り替える（開発者用調整ツール）。
+         * @returns {void}
+         */
+        export function toggleMochiIconAdjustMode() {
+            mochiIconAdjustMode = !mochiIconAdjustMode;
+            const btn = document.getElementById('mochi-icon-adjust-toggle-btn');
+            btn.style.background = mochiIconAdjustMode ? '#4caf50' : '#e91e63';
+            if (mochiIconAdjustMode) setupMochiIconDrag();
+            updateMochiIconAdjustReadout();
+        }
+        /**
+         * 所持もち数アイコンのドラッグによる位置調整を、一度だけセットアップする（開発者用調整ツール）。
+         * @returns {void}
+         */
+        export function setupMochiIconDrag() {
+            const wrap = document.querySelector('.mochi-count-icon-wrap');
+            if (!wrap || wrap.dataset.mochiIconDragSetup) return;
+            wrap.dataset.mochiIconDragSetup = '1';
+            wrap.addEventListener('pointerdown', (e) => {
+                if (!mochiIconAdjustMode) return;
+                e.preventDefault();
+                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
+                mochiIconDragState = { startX: e.clientX, startY: e.clientY };
+            });
+            document.body.addEventListener('pointermove', (e) => {
+                if (!mochiIconDragState || !mochiIconAdjustMode) return;
+                const dx = e.clientX - mochiIconDragState.startX;
+                const dy = e.clientY - mochiIconDragState.startY;
+                MOCHI_ICON_OFFSET.dx += dx;
+                MOCHI_ICON_OFFSET.dy += dy;
+                mochiIconDragState.startX = e.clientX; mochiIconDragState.startY = e.clientY;
+                applyMochiIconAdjust();
+                updateMochiIconAdjustReadout();
+            });
+            document.body.addEventListener('pointerup', () => { mochiIconDragState = null; });
+            document.body.addEventListener('pointercancel', () => { mochiIconDragState = null; });
+        }
+        /**
+         * 所持もち数アイコンの現在のサイズ・位置調整値を、readout表示欄に反映する（開発者用調整ツール）。
+         * @returns {void}
+         */
+        export function updateMochiIconAdjustReadout() {
+            document.getElementById('mochi-icon-adjust-readout').textContent =
+                `大きさ:${MOCHI_ICON_SIZE}px; dx:${Math.round(MOCHI_ICON_OFFSET.dx)}px; dy:${Math.round(MOCHI_ICON_OFFSET.dy)}px;`;
+        }
+        /**
+         * 所持もち数アイコンの現在の調整値をテキストにまとめ、クリップボードにコピーする（開発者用調整ツール）。
+         * @returns {void}
+         */
+        export function copyMochiIconCoords() {
+            const text = `所持もち数アイコン: 大きさ:${MOCHI_ICON_SIZE}px; dx:${Math.round(MOCHI_ICON_OFFSET.dx)}px; dy:${Math.round(MOCHI_ICON_OFFSET.dy)}px;`;
+            const textarea = document.getElementById('mochi-icon-copy-textarea');
+            textarea.value = text;
+            textarea.style.display = 'block';
+            textarea.select();
+            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
+        }
+
         /**
          * 設定（メニュー）ボタンのタップを処理する。初回のみヒントを表示してからメニューモーダルを開く。
          * @returns {void}
@@ -894,6 +979,9 @@
         window.toggleCornerBtnAdjustMode = toggleCornerBtnAdjustMode;
         window.onCornerBtnAdjustTargetChange = onCornerBtnAdjustTargetChange;
         window.copyCornerBtnCoords = copyCornerBtnCoords;
+        window.adjustMochiIconSize = adjustMochiIconSize;
+        window.toggleMochiIconAdjustMode = toggleMochiIconAdjustMode;
+        window.copyMochiIconCoords = copyMochiIconCoords;
         window.onMenuButtonTap = onMenuButtonTap;
         window.onUiButtonTap = onUiButtonTap;
         window.onFeedButtonTap = onFeedButtonTap;
