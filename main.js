@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData,
   stages
-} from './data.js?v=2026-09-17-015';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-015';
+} from './data.js?v=2026-09-17-017';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-017';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-17-015';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-015';
+} from './progress.js?v=2026-09-17-017';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-017';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-17-015';
+} from './state.js?v=2026-09-17-017';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-17-015';
+} from './tap.js?v=2026-09-17-017';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-17-015';
+} from './ui.js?v=2026-09-17-017';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -107,6 +107,15 @@ import {
             PARTICLE_DRAW_SIZE: 42,                    // 通常パーティクルの描画サイズ(px)
             PARTICLE_DRAW_OFFSET: 21,                  // 描画サイズの半分（中心合わせ用オフセット）
             PARTICLE_OFFSCREEN_MARGIN: 50,             // 画面外に出たと判定するまでの余白
+
+            // 🆕 もち吸い込み演出：createParticle由来のもちが画面下（下部ナビボタンの高さ）まで
+            // 重力で落ちたら、そこで「ふわっと」一瞬止まり、その後に所持もち数の表示へ吸い込まれて消える。
+            // まもすいの要望「重力で一番下までいってから、ふわっと止まって、所持もち数に吸い込まれる感じ」を
+            // 反映。あくまで見た目だけの演出で、実際の所持もち数の加算タイミングには一切影響しない
+            // （加算は今まで通り即時。2-1参照）
+            PARTICLE_SUCK_PAUSE_FRAMES: 18,            // 下部で静止する時間（フレーム数。60fps換算で約0.3秒）
+            PARTICLE_SUCK_HOMING_DURATION_FRAMES: 26,  // 静止後、所持もち数表示まで吸い込まれる所要フレーム数
+            PARTICLE_SUCK_NAV_MENU_OFFSET: 10,         // 静止位置を下部ナビボタンの上端から少し浮かせる余白(px)
             SPARKLE_FADE_IN_END: 0.15,                 // フェードイン完了とみなす経過割合
             SPARKLE_FADE_OUT_START: 0.8,               // フェードアウト開始とみなす経過割合
             SPARKLE_FADE_OUT_DURATION: 0.2,            // フェードアウトの割合幅
@@ -327,6 +336,12 @@ import {
 
         export let isBgmInitialized = false;
         export let canvas = null; export let ctx = null; export let particleList = [];
+        // 🆕 もち吸い込み演出用のキャッシュ座標（#game-screen基準の相対座標）。
+        // 毎フレーム・毎パーティクルでgetBoundingClientRectを呼ぶと重いので、resizeParticleCanvas()の
+        // タイミング（初回描画時・リサイズ時・端末回転時）でまとめて計算し直す方式にしている
+        // （gameScreenRectのキャッシュと同じ考え方）。
+        export let suckPauseY = null;      // 下部で「ふわっと止まる」高さ（下部ナビボタンの上端付近）
+        export let suckTargetPoint = null; // 吸い込まれる先＝所持もち数表示の中心座標 {x, y}
         export let rainCanvas = null; export let rainCtx = null;
         // 🌧️ もちの雨（自動増加(mps)がある時、もちすけの後ろにうっすら降ってくる。収入が少ない時はほとんど降らない）
         export let mochiRainList = [];
@@ -756,6 +771,22 @@ import {
             setGameScreenRect(rect); // タップ演出（リップル/文字/パーティクル）で使い回すキャッシュ
             if (bunshinCloneRects.length > 0) refreshBunshinCloneRects();
             if (rainCanvas) { rainCanvas.width = rect.width; rainCanvas.height = rect.height; }
+
+            // 🆕 もち吸い込み演出用の座標も、リサイズ・回転のタイミングでまとめて計算し直す
+            const navMenuEl = document.querySelector('.nav-menu');
+            if (navMenuEl) {
+                const navRect = navMenuEl.getBoundingClientRect();
+                suckPauseY = (navRect.top - rect.top) - CONFIG.PARTICLE_SUCK_NAV_MENU_OFFSET;
+            }
+            const scoreEl = document.getElementById('score-text');
+            if (scoreEl) {
+                const scoreRect = scoreEl.getBoundingClientRect();
+                suckTargetPoint = {
+                    x: (scoreRect.left + scoreRect.width / 2) - rect.left,
+                    y: (scoreRect.top + scoreRect.height / 2) - rect.top,
+                };
+            }
+
             if (!canvas) return;
             canvas.width = rect.width; canvas.height = rect.height;
         }
@@ -1142,7 +1173,8 @@ import {
                 vx: (Math.random() - 0.5) * CONFIG.PARTICLE_VX_RANGE,
                 vy: -(Math.random() * CONFIG.PARTICLE_VY_RANDOM_RANGE + CONFIG.PARTICLE_VY_BASE),
                 gravity: CONFIG.PARTICLE_GRAVITY,
-                isGold: isGold
+                isGold: isGold,
+                suckPhase: 'fall' // 🆕 'fall'(重力落下) → 'pause'(下部でふわっと静止) → 'home'(所持もち数へ吸い込み)
             });
         }
 
@@ -1206,11 +1238,44 @@ import {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let i = particleList.length - 1; i >= 0; i--) {
                 const p = particleList[i];
-                p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
+
+                // 🆕 もち吸い込み演出のフェーズ遷移・位置更新。
+                //   'fall' （通常の重力落下）→ 静止ラインに達したら'pause'（ふわっと静止）
+                //   → 既定フレーム数経過で'home'（所持もち数表示へイーズインで吸い込まれる）。
+                // 'pause'/'home'中は重力を止めて専用の動きに切り替えるため、通常の重力更新は
+                // それ以外（従来通りのfall、およびsuckPhaseを持たない弾けるパーティクル）の時だけ行う。
+                if (p.suckPhase === 'home') {
+                    p.homeT += 1 / CONFIG.PARTICLE_SUCK_HOMING_DURATION_FRAMES;
+                    const t = Math.min(1, p.homeT);
+                    const eased = t * t; // 吸い込まれていく「加速感」を出すイーズイン
+                    p.x = p.homeStartX + (p.targetX - p.homeStartX) * eased;
+                    p.y = p.homeStartY + (p.targetY - p.homeStartY) * eased;
+                } else if (p.suckPhase === 'pause') {
+                    p.pauseFrames--;
+                    if (p.pauseFrames <= 0) {
+                        if (suckTargetPoint) {
+                            p.suckPhase = 'home';
+                            p.homeT = 0;
+                            p.homeStartX = p.x; p.homeStartY = p.y;
+                            p.targetX = suckTargetPoint.x; p.targetY = suckTargetPoint.y;
+                        } else {
+                            // 吸い込み先の座標が取れていない異常系は、従来通り重力で画面外へ落として片付ける
+                            p.suckPhase = 'fall';
+                        }
+                    }
+                } else {
+                    p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
+                    if (p.suckPhase === 'fall' && suckPauseY !== null && p.y >= suckPauseY) {
+                        p.suckPhase = 'pause';
+                        p.pauseFrames = CONFIG.PARTICLE_SUCK_PAUSE_FRAMES;
+                        p.y = suckPauseY; p.vx = 0; p.vy = 0; // 静止ラインでピタッと止める
+                    }
+                }
 
                 // 🆕 きなこ・粉っぽい「弾けるパーティクル」（createBurstParticle）は、スコア用の
                 // drawImage系パーティクルと見た目も寿命の管理方法も違うため、ここで先に分岐して処理してしまう
-                // （画像を使わないので、下のdrawImageの例外処理には一切乗せる必要が無い）。
+                // （画像を使わないので、下のdrawImageの例外処理には一切乗せる必要が無い。suckPhaseを
+                // 持たないため、上の分岐では常にelse側＝通常の重力更新のみが適用される＝従来通り）。
                 if (p.kind === 'burst') {
                     p.life++;
                     if (p.life >= p.maxLife) { particleList.splice(i, 1); continue; }
@@ -1230,7 +1295,23 @@ import {
                 // （パーティクル・波紋・浮き文字）が出なくなる事故につながる。該当パーティクルだけ諦めて
                 // リストから外し、ループ自体は必ず継続させる。
                 try {
-                    if (p.isGold) {
+                    if (p.suckPhase === 'home') {
+                        // 🆕 吸い込まれていくほど小さく・薄くなっていく（所持もち数へ溶け込むイメージ）
+                        const t = Math.min(1, p.homeT);
+                        const scale = 1 - t * 0.7;
+                        const baseSize = p.isGold ? CONFIG.GOLD_PARTICLE_DRAW_SIZE : CONFIG.PARTICLE_DRAW_SIZE;
+                        const size = baseSize * scale;
+                        const offset = size / 2;
+                        ctx.save();
+                        ctx.globalAlpha = Math.max(0, 1 - t);
+                        if (p.isGold) {
+                            ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
+                            ctx.shadowBlur = CONFIG.GOLD_PARTICLE_SHADOW_BLUR * scale;
+                        }
+                        ctx.drawImage(p.isGold ? (goldParticleImg || particleImg) : particleImg, p.x - offset, p.y - offset, size, size);
+                        ctx.shadowBlur = 0;
+                        ctx.restore();
+                    } else if (p.isGold) {
                         // 金色みと輝きを強化（事前に焼き込んだ金色画像＋canvasネイティブのshadowで表現。
                         // ctx.filterはモバイルブラウザで無視されることがあるため使わない）
                         ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
@@ -1246,7 +1327,11 @@ import {
                     continue;
                 }
 
-                if (p.y > canvas.height + CONFIG.PARTICLE_OFFSCREEN_MARGIN) { particleList.splice(i, 1); }
+                if (p.suckPhase === 'home') {
+                    if (p.homeT >= 1) { particleList.splice(i, 1); }
+                } else if (p.y > canvas.height + CONFIG.PARTICLE_OFFSCREEN_MARGIN) {
+                    particleList.splice(i, 1);
+                }
             }
 
             // ✨ 環境パーティクル（ゆっくり漂う光の粒。フェードイン→フェードアウト）

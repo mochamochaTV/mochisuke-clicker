@@ -12,9 +12,18 @@
 // 各素材が持てるプロパティ：
 //   label                 : 開発者ツール等での表示名
 //   stretchSoundFile      : 伸ばしている間ループする音
-//   releasePopSoundFile   : 離した瞬間に鳴る「弾け」音。音量は縮み/伸び具合(0〜1)に応じて
-//                           MIN〜MAXの間で変化する（下のalwaysPlayReleasePop・
-//                           src/squeeze/physics.jsのreleaseLongPressSquish参照）
+//   releasePopSoundFile   : 離した瞬間の「弾け」音。🆕 長押し・引っ張りで「もちぽんぽん」報酬が出る
+//                           時は、tap.js側のgrantSqueezeReleaseMochiPopが、もちが1個出るたびに
+//                           physics.jsのplaySqueezeReleasePopSound()を呼んで鳴らす（通常もちすけ・
+//                           スライムもちすけ共通）。
+//   playReleasePopOnPlainTap: 🆕 ただの軽いタップ（報酬が出ないほど短い、rebounded:falseの離し方）でも
+//                           releasePopSoundFileを1回鳴らすかどうか。まもすいの指摘で判明：以前は
+//                           離す度に無条件で1回鳴っていたのが、もちぽんぽん報酬の実装時に「報酬が
+//                           出た時だけ」に絞られてしまい、通常もちすけの普通のタップで離す音が
+//                           消えていた。通常もちすけはtrueにして音を復活させ、スライムもちすけは
+//                           元々「タップの時は離す音いらない」という設計だったのでfalseのままにする
+//                           （2-1参照。長押し・引っ張りの場合は両素材ともgrantSqueezeReleaseMochiPop
+//                           経由でこれまで通り鳴る）
 //   pokeSoundFile         : 指を動かして（本格的にドラッグして）押した瞬間の強弱で変化する「ポヨン」音。
 //                           nullなら、この素材ではこのギミック自体が発動しない（＝もちすけ本体は今まで通り無音のまま）。
 //                           🆕 ドラッグにならない、ただのタップ・長押しでは鳴らない（tap.mp3やsplashSoundFile
@@ -25,11 +34,6 @@
 //                           （src/squeeze/physics.jsのstartLongPressLoopSound等参照）。もちすけが最大まで
 //                           潰れきったら自動的に止まる。nullなら、この素材ではこのループ音自体を鳴らさない
 //                           （＝長押し中は無音のまま、見た目の潰れ演出だけが進む）。
-//   alwaysPlayReleasePop  : 🆕 trueの素材は、縮み量がほぼ0（＝ただ触れてすぐ離した軽いタップ）でも
-//                           releasePopSoundFileをMIN_VOLUMEでごく小さく鳴らす。falseの素材は、実際に
-//                           長押しで少しでも縮んでいた時（ratio>0）だけ鳴らし、軽いタップでは無音のままにする
-//                           （まもすいの要望：通常もちすけは軽いタップでも小さく音がほしいが、スライム
-//                           もちすけの軽いタップは今まで通り無音のままでよい。2-1参照）。
 //
 // 🆕 pokeSoundFileはもともと「スライムもちすけ専用・管理者限定」の試作ギミックだったが、
 // 「スクイーズにかぎらず通常のタップ・長押しでも、押す強さで音が変わってほしい」という要望を受け、
@@ -40,19 +44,19 @@ export const SQUEEZE_MATERIALS = {
     label: 'もちすけ（通常）',
     stretchSoundFile: 'audio/mochisuke/mochi_stretch.mp3',
     releasePopSoundFile: 'audio/mochisuke/mochi_release_pop.mp3',
+    playReleasePopOnPlainTap: true, // 🆕 通常もちすけは、ただの軽いタップで離す時もこの音を1回鳴らす
     pokeSoundFile: 'audio/mochisuke/mochi_poke.mp3',
     splashSoundFile: null, // 通常のもちすけは水っぽくないので、この演出自体を出さない
     longPressLoopSoundFile: 'audio/mochisuke/mochi_squish_loop.mp3', // 🆕 まもすいが新規に用意した、長押し専用のループ音源
-    alwaysPlayReleasePop: true, // 軽いタップでも小さくmochi_release_popを鳴らす
   },
   slime: {
     label: 'スライムもちすけ',
     stretchSoundFile: 'audio/mochisuke/slime_stretch.mp3',
     releasePopSoundFile: 'audio/mochisuke/slime_release_pop.mp3',
+    playReleasePopOnPlainTap: false, // 🆕 スライムもちすけは、ただのタップで離す時はこの音を鳴らさない（まもすいの元々の設計）
     pokeSoundFile: 'audio/mochisuke/slime_poke.mp3',
     splashSoundFile: 'audio/mochisuke/slime_splash.mp3',
     longPressLoopSoundFile: 'audio/mochisuke/slime_poke_still.mp3', // 既存のslime_poke_stillをそのままループ音として使い回す
-    alwaysPlayReleasePop: false, // 軽いタップの時は今まで通り無音のまま（長押しで縮んでいた時だけ鳴る）
   },
 };
 

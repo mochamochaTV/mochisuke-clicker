@@ -3,40 +3,41 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-17-015';
+} from './data.js?v=2026-09-17-017';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-17-015';
-import { isMinigameActive } from './minigames.js?v=2026-09-17-015';
+} from './main.js?v=2026-09-17-017';
+import { isMinigameActive } from './minigames.js?v=2026-09-17-017';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
   SQUEEZE_MAX_DRAG, armPokeImpact, assignSqueezeGlow, endSqueeze, getAccumD,
   getLongPressReleaseDurationMs, getSqueezeOvershootDurationMs,
-  isAccumulateModeActive, playLongPressReboundAnimation, playSqueezeReleasePopSound,
+  isAccumulateModeActive, playLongPressReboundAnimation, playPlainTapReleaseSoundIfEnabled,
+  playSqueezeReleasePopSound,
   releaseAllSqueezeGlows, releaseLongPressSquish,
   releaseSqueezeWithOvershoot, releaseTwoFingerSqueezeWithOvershoot, resetSqueezeAccum,
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-17-015';
+} from './src/squeeze/physics.js?v=2026-09-17-017';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-17-015';
+} from './progress.js?v=2026-09-17-017';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-17-015';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-015';
+} from './shop.js?v=2026-09-17-017';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-17-017';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-17-015';
+} from './ui.js?v=2026-09-17-017';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -1053,6 +1054,11 @@ import {
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     mochiDeformWrap.style.transform = 'scale(1, 1)';
                     releaseAnimDurationMs = CONFIG.TAP_RELEASE_ANIM_DURATION_MS;
+                    // 🆕【まもすいの指摘で復活】ただの軽いタップで離す時の「弾け」音。もちぽんぽん報酬の
+                    // 実装時に「報酬が出た時だけ」に絞られてしまい、通常もちすけの普通のタップで離す音が
+                    // 消えていた。素材ごとのmaterials.js設定（playReleasePopOnPlainTap）に従い、通常もちすけ
+                    // だけ鳴らす（スライムもちすけは元々の設計通りタップでは鳴らさない。2-1参照）
+                    playPlainTapReleaseSoundIfEnabled(comboTierIndex);
                 } else {
                     // 🆕 「もちぽんぽん」ボーナス（通常もちすけ・スライムもちすけ共通。2-1参照）。
                     // didLongPressReboundがtrueの時＝releaseLongPressSquish内部で「本当に長押しと呼べる域まで

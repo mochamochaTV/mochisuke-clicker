@@ -15,10 +15,10 @@
 import {
   audioBuffers, createBurstParticle, createRippleEffect, getAudioContext, playAudioFile,
   playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-17-015';
+} from '../../main.js?v=2026-09-17-017';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-015';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-17-017';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
@@ -1036,4 +1036,21 @@ export function playSqueezeReleasePopSound(comboTierIndex = 0) {
     if (!releasePopSoundFile) return;
     const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
     playAudioFilePitched(releasePopSoundFile, CONFIG.SQUEEZE_RELEASE_MOCHI_POP_SOUND_VOLUME * sfxVolumeMult, pitch);
+}
+
+/**
+ * 🆕【まもすいの指摘で復活】もちぽんぽん報酬が出ないほど短い、ただの軽いタップ（releaseLongPressSquish
+ * がrebounded:falseを返すケース）で離した時にtap.js側から呼ぶ。以前はreleasePopSoundFileが離す度に
+ * 無条件で1回鳴っていたが、もちぽんぽん報酬の実装時に「報酬が出た時だけ」playSqueezeReleasePopSound
+ * を呼ぶ方式へ絞り込んでしまい、通常もちすけの普通のタップで離す音が消えていた。この関数は素材ごとの
+ * materials.jsのplayReleasePopOnPlainTapフラグを見て、trueの素材（通常もちすけ）だけ
+ * playSqueezeReleasePopSoundを1回呼ぶ。falseの素材（スライムもちすけ。まもすいの元々の設計で
+ * 「タップの時は離す音いらない」）では何もしない。長押し・引っ張りで報酬が出る場合は、今まで通り
+ * grantSqueezeReleaseMochiPop側がplaySqueezeReleasePopSoundを直接呼ぶので、この関数の対象外（2-1参照）。
+ * @param {number} [comboTierIndex=0] - ポン音のピッチ計算に使うコンボ段階（playSqueezeReleasePopSoundにそのまま渡す）
+ * @returns {void}
+ */
+export function playPlainTapReleaseSoundIfEnabled(comboTierIndex = 0) {
+    if (!SQUEEZE_MATERIALS[currentSqueezeMaterialKey].playReleasePopOnPlainTap) return;
+    playSqueezeReleasePopSound(comboTierIndex);
 }
