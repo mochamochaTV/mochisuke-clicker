@@ -296,6 +296,18 @@
         }
         #score-text { display: inline-block; }
         .digit-pop { display: inline-block; animation: digitPop 0.22s ease-out; }
+        /* 🆕 もち吸い込み演出：所持もち数の左の🍡絵文字を、実際のもちパーティクル画像（mochi_particle.webp）に
+           差し替えたアイコン。吸い込まれてきたパーティクルがここへ着地する狙い所であり、着地の瞬間に
+           .mochi-count-icon-bounceクラスが付いて「ぴょん」と跳ねる（main.jsのtriggerMochiCountIconBounce参照） */
+        .mochi-count-icon { display: inline-block; }
+        .mochi-count-icon-bounce { animation: mochiCountIconBounce 0.4s ease-out; }
+        @keyframes mochiCountIconBounce {
+            0% { transform: scale(1, 1); }
+            30% { transform: scale(1.35, 0.7); }
+            55% { transform: scale(0.8, 1.25); }
+            78% { transform: scale(1.08, 0.94); }
+            100% { transform: scale(1, 1); }
+        }
 
         /* 🃏 ご当地神経衰弱：本物のカードめくり風3D回転アニメーション */
         .concentration-card-outer { aspect-ratio: 5 / 7; perspective: 700px; cursor: pointer; }

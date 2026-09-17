@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData,
   stages
-} from './data.js?v=2026-09-17-017';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-017';
+} from './data.js?v=2026-09-17-018';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-018';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-17-017';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-017';
+} from './progress.js?v=2026-09-17-018';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-018';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-17-017';
+} from './state.js?v=2026-09-17-018';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-17-017';
+} from './tap.js?v=2026-09-17-018';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, checkIncomingGiftsOnLaunch, checkShowTutorial,
   getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders, isTutorialActive,
   showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay
-} from './ui.js?v=2026-09-17-017';
+} from './ui.js?v=2026-09-17-018';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -116,6 +116,7 @@ import {
             PARTICLE_SUCK_PAUSE_FRAMES: 18,            // 下部で静止する時間（フレーム数。60fps換算で約0.3秒）
             PARTICLE_SUCK_HOMING_DURATION_FRAMES: 26,  // 静止後、所持もち数表示まで吸い込まれる所要フレーム数
             PARTICLE_SUCK_NAV_MENU_OFFSET: 10,         // 静止位置を下部ナビボタンの上端から少し浮かせる余白(px)
+            MOCHI_COUNT_ICON_BOUNCE_DEBOUNCE_MS: 90,   // 連打・フィーバー中に何個も同時到着した時、跳ねる強制リフローを間引く間隔
             SPARKLE_FADE_IN_END: 0.15,                 // フェードイン完了とみなす経過割合
             SPARKLE_FADE_OUT_START: 0.8,               // フェードアウト開始とみなす経過割合
             SPARKLE_FADE_OUT_DURATION: 0.2,            // フェードアウトの割合幅
@@ -778,7 +779,9 @@ import {
                 const navRect = navMenuEl.getBoundingClientRect();
                 suckPauseY = (navRect.top - rect.top) - CONFIG.PARTICLE_SUCK_NAV_MENU_OFFSET;
             }
-            const scoreEl = document.getElementById('score-text');
+            // 🆕【まもすいの指摘で修正】吸い込み先は数字部分(#score-text)ではなく、実際にもち粒が
+            // 着地して見える所持もち数アイコン(#mochi-count-icon、旧🍡絵文字の位置)そのものを狙う
+            const scoreEl = document.getElementById('mochi-count-icon');
             if (scoreEl) {
                 const scoreRect = scoreEl.getBoundingClientRect();
                 suckTargetPoint = {
@@ -996,6 +999,25 @@ import {
             if (navigator.vibrate) {
                 try { navigator.vibrate(pattern); } catch (e) {}
             }
+        }
+
+        // 🆕 もち吸い込み演出：所持もち数アイコンの「ぴょん」バウンス
+        export let lastMochiCountIconBounceTime = 0;
+        /**
+         * 吸い込まれてきたもちパーティクルが所持もち数アイコン(#mochi-count-icon)に到達した瞬間、
+         * アイコンへmochi-count-icon-bounceクラスを付け直して短く跳ねさせる。screenShake()と同じ考え方で、
+         * 連打・フィーバー中に複数のもちがほぼ同時に到着してもリフローが乱発しないよう間引く。
+         * @returns {void}
+         */
+        export function triggerMochiCountIconBounce() {
+            const el = document.getElementById('mochi-count-icon');
+            if (!el) return;
+            const now = performance.now();
+            if (now - lastMochiCountIconBounceTime < CONFIG.MOCHI_COUNT_ICON_BOUNCE_DEBOUNCE_MS) return;
+            lastMochiCountIconBounceTime = now;
+            el.classList.remove('mochi-count-icon-bounce');
+            void el.offsetWidth;
+            el.classList.add('mochi-count-icon-bounce');
         }
 
         // 🎬 画面シェイク（iPhoneで振動が効かない分、視覚的な「叩いた感」を強化する）
@@ -1294,24 +1316,11 @@ import {
                 // このrequestAnimationFrameループ全体がその場で止まり、以後タップしても一切の演出
                 // （パーティクル・波紋・浮き文字）が出なくなる事故につながる。該当パーティクルだけ諦めて
                 // リストから外し、ループ自体は必ず継続させる。
+                // 🆕【まもすいの指摘で修正】吸い込まれる最中(suckPhase==='home')も、フェードアウトや
+                // 縮小はせず、fall中と全く同じ見た目（等倍・不透明）のまま所持もち数アイコンまで飛ばす。
+                // 見た目が小さく・薄くなっていくと「到達する前に消えた」ように見えてしまうため。
                 try {
-                    if (p.suckPhase === 'home') {
-                        // 🆕 吸い込まれていくほど小さく・薄くなっていく（所持もち数へ溶け込むイメージ）
-                        const t = Math.min(1, p.homeT);
-                        const scale = 1 - t * 0.7;
-                        const baseSize = p.isGold ? CONFIG.GOLD_PARTICLE_DRAW_SIZE : CONFIG.PARTICLE_DRAW_SIZE;
-                        const size = baseSize * scale;
-                        const offset = size / 2;
-                        ctx.save();
-                        ctx.globalAlpha = Math.max(0, 1 - t);
-                        if (p.isGold) {
-                            ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
-                            ctx.shadowBlur = CONFIG.GOLD_PARTICLE_SHADOW_BLUR * scale;
-                        }
-                        ctx.drawImage(p.isGold ? (goldParticleImg || particleImg) : particleImg, p.x - offset, p.y - offset, size, size);
-                        ctx.shadowBlur = 0;
-                        ctx.restore();
-                    } else if (p.isGold) {
+                    if (p.isGold) {
                         // 金色みと輝きを強化（事前に焼き込んだ金色画像＋canvasネイティブのshadowで表現。
                         // ctx.filterはモバイルブラウザで無視されることがあるため使わない）
                         ctx.shadowColor = 'rgba(255, 215, 0, 0.9)';
@@ -1328,7 +1337,11 @@ import {
                 }
 
                 if (p.suckPhase === 'home') {
-                    if (p.homeT >= 1) { particleList.splice(i, 1); }
+                    // 🆕 所持もち数アイコンに到達した瞬間：もちが消えると同時にアイコンを「ぴょん」と跳ねさせる
+                    if (p.homeT >= 1) {
+                        triggerMochiCountIconBounce();
+                        particleList.splice(i, 1);
+                    }
                 } else if (p.y > canvas.height + CONFIG.PARTICLE_OFFSCREEN_MARGIN) {
                     particleList.splice(i, 1);
                 }
