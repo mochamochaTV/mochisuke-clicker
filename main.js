@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MOCHI_ICON_ADJUST_TOOL_ENABLED,
   MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-17-020';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-020';
+} from './data.js?v=2026-09-17-021';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-17-021';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-17-020';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-020';
+} from './progress.js?v=2026-09-17-021';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-17-021';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-17-020';
+} from './state.js?v=2026-09-17-021';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-17-020';
+} from './tap.js?v=2026-09-17-021';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, applyMochiIconAdjust, checkIncomingGiftsOnLaunch,
   checkShowTutorial, getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders,
   isTutorialActive, showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay, updateMochiIconAdjustReadout
-} from './ui.js?v=2026-09-17-020';
+} from './ui.js?v=2026-09-17-021';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -113,10 +113,16 @@ import {
             // まもすいの要望「重力で一番下までいってから、ふわっと止まって、所持もち数に吸い込まれる感じ」を
             // 反映。あくまで見た目だけの演出で、実際の所持もち数の加算タイミングには一切影響しない
             // （加算は今まで通り即時。2-1参照）
-            PARTICLE_SUCK_PAUSE_FRAMES: 18,            // 下部で静止する時間（フレーム数。60fps換算で約0.3秒）
-            PARTICLE_SUCK_HOMING_DURATION_FRAMES: 26,  // 静止後、所持もち数表示まで吸い込まれる所要フレーム数
+            // 🐛パフォーマンス修正：吸い込み演出は「fall→pause→home」の分だけ、以前(画面外に落ちたら即消滅)より
+            // 1粒あたりの生存時間・描画され続ける時間が伸びる。連打・フィーバー中はPARTICLE_MAX_COUNT(50)近くまで
+            // 粒が滞留しやすくなり、まもすいの報告通り体感のラグにつながっていた。時間を短縮しつつ、
+            // 同時に「吸い込み中」になれる粒数にも上限を設け、それを超えた分は演出をスキップして
+            // 従来通りそのまま画面外へ落として片付ける（見た目の混雑緩和と負荷軽減を両立させる）。
+            PARTICLE_SUCK_PAUSE_FRAMES: 10,            // 下部で静止する時間（フレーム数。60fps換算で約0.17秒）
+            PARTICLE_SUCK_HOMING_DURATION_FRAMES: 16,  // 静止後、所持もち数表示まで吸い込まれる所要フレーム数
+            PARTICLE_SUCK_MAX_CONCURRENT: 14,          // 同時に「pause」「home」状態でいられる粒の最大数
             PARTICLE_SUCK_NAV_MENU_OFFSET: 10,         // 静止位置を下部ナビボタンの上端から少し浮かせる余白(px)
-            MOCHI_COUNT_ICON_BOUNCE_DEBOUNCE_MS: 90,   // 連打・フィーバー中に何個も同時到着した時、跳ねる強制リフローを間引く間隔
+            MOCHI_COUNT_ICON_BOUNCE_DEBOUNCE_MS: 140,  // 連打・フィーバー中に何個も同時到着した時、跳ねる強制リフローを間引く間隔
             SPARKLE_FADE_IN_END: 0.15,                 // フェードイン完了とみなす経過割合
             SPARKLE_FADE_OUT_START: 0.8,               // フェードアウト開始とみなす経過割合
             SPARKLE_FADE_OUT_DURATION: 0.2,            // フェードアウトの割合幅
@@ -342,6 +348,10 @@ import {
         // タイミング（初回描画時・リサイズ時・端末回転時）でまとめて計算し直す方式にしている
         // （gameScreenRectのキャッシュと同じ考え方）。
         export let suckPauseY = null;      // 下部で「ふわっと止まる」高さ（下部ナビボタンの上端付近）
+        // 🐛パフォーマンス修正：現在「pause」または「home」状態にある粒の数。PARTICLE_SUCK_MAX_CONCURRENTと
+        // 比較して、超過分は吸い込み演出をスキップさせるためのカウンタ（粒ごとにparticleListを毎フレーム
+        // 数え直すのではなく、pause開始時に+1、pause/homeから抜ける時に-1する軽量な方式にしている）
+        export let suckingParticleCount = 0;
         /**
          * 🆕【まもすいの指摘で修正】吸い込まれる先＝所持もち数アイコン(#mochi-count-icon)の中心座標を
          * その場で計算して返す（#game-screen基準の相対座標）。以前はsuckTargetPointとしてresize時に
@@ -1309,14 +1319,20 @@ import {
                         } else {
                             // 吸い込み先の座標が取れていない異常系は、従来通り重力で画面外へ落として片付ける
                             p.suckPhase = 'fall';
+                            suckingParticleCount--; // 🐛パフォーマンス修正：「吸い込み中」の集計から抜けるのでカウンタも戻す
                         }
                     }
                 } else {
                     p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
-                    if (p.suckPhase === 'fall' && suckPauseY !== null && p.y >= suckPauseY) {
+                    // 🐛パフォーマンス修正：同時に「pause」「home」でいられる粒数に上限を設け、
+                    // 超過分は演出をスキップしてこれまで通りそのまま画面外へ落とす（連打・フィーバー中の
+                    // 滞留粒数を頭打ちにして、まもすいの報告にあったラグを軽減する）
+                    if (p.suckPhase === 'fall' && suckPauseY !== null && p.y >= suckPauseY
+                        && suckingParticleCount < CONFIG.PARTICLE_SUCK_MAX_CONCURRENT) {
                         p.suckPhase = 'pause';
                         p.pauseFrames = CONFIG.PARTICLE_SUCK_PAUSE_FRAMES;
                         p.y = suckPauseY; p.vx = 0; p.vy = 0; // 静止ラインでピタッと止める
+                        suckingParticleCount++;
                     }
                 }
 
@@ -1358,6 +1374,9 @@ import {
                     }
                 } catch (e) {
                     ctx.shadowBlur = 0;
+                    // 🐛パフォーマンス修正：pause/home中だった粒がここで取り除かれる場合も、
+                    // 吸い込み中カウンタが戻らないと上限に達したまま解放されなくなってしまう
+                    if (p.suckPhase === 'pause' || p.suckPhase === 'home') suckingParticleCount--;
                     particleList.splice(i, 1);
                     continue;
                 }
@@ -1366,6 +1385,7 @@ import {
                     // 🆕 所持もち数アイコンに到達した瞬間：もちが消えると同時にアイコンを「ぴょん」と跳ねさせる
                     if (p.homeT >= 1) {
                         triggerMochiCountIconBounce();
+                        suckingParticleCount--; // 🐛パフォーマンス修正：吸い込み完了で「吸い込み中」から抜ける
                         particleList.splice(i, 1);
                     }
                 } else if (p.y > canvas.height + CONFIG.PARTICLE_OFFSCREEN_MARGIN) {

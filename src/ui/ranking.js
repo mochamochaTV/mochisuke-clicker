@@ -1,16 +1,16 @@
         // ui.js を機能ごとに分割したファイルの1つ（ランキング・日記帳）。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-17-020';
-        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-17-020';
-        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-17-020';
-        import { purchasedItems } from '../../shop.js?v=2026-09-17-020';
-        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-17-020';
-        import { closeModal, openModal } from './core.js?v=2026-09-17-020';
-        import { setupChatInputEnterKey } from './chat.js?v=2026-09-17-020';
+        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-17-021';
+        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-17-021';
+        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-17-021';
+        import { purchasedItems } from '../../shop.js?v=2026-09-17-021';
+        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-17-021';
+        import { closeModal, openModal } from './core.js?v=2026-09-17-021';
+        import { setupChatInputEnterKey } from './chat.js?v=2026-09-17-021';
         // 🆕 全身スロット（fullbody/squeeze共用）のアイテムを、カテゴリを問わずidだけで引くための
         // 共有ヘルパー（2-6・4-12参照）。KISEKAE_ITEMS.fullbodyだけを見ていると、スクイーズ衣装を
         // 着けたまま訪問した相手のプレビューが表示できなくなる。
-        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-17-020';
+        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-17-021';
 
 
         const CONFIG = {

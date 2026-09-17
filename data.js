@@ -514,8 +514,9 @@
         export const CORNER_BTN_ADJUST_TOOL_ENABLED = false;
 
         // 🆕 所持もち数アイコン（#mochi-count-icon）の大きさ・位置（管理者が実機で調整）
-        // 座標が確定したら、CORNER_BTN_ADJUST_TOOL_ENABLEDと同じくfalseに戻してパネルを隠す想定
-        export const MOCHI_ICON_ADJUST_TOOL_ENABLED = true;
+        // 🚧 大きさ・位置(40px)が確定したので、CORNER_BTN_ADJUST_TOOL_ENABLEDと同じくfalseに戻してパネルを非表示にした。
+        // また調整したくなったら true に戻すだけでOK
+        export const MOCHI_ICON_ADJUST_TOOL_ENABLED = false;
         // 🆕【まもすいの指摘で修正】このアイコンはwidth/heightで大きくすると、そのぶん.score-row（所持もち数の枠）が
         // 広がってしまう。そのためMOCHI_ICON_SIZEは「見た目上の目標サイズ(px)」として扱い、実際に反映する時は
         // MOCHI_ICON_BASE_SIZE_PX（枠として確保されている本来の大きさ＝アプデ前と同じ24px、これは変えない）との
