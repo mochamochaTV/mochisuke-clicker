@@ -276,19 +276,26 @@ import {
          * @returns {number} 整数に切り捨てたタップ力
          */
         export function getTapPower() {
+            // progress.js: getPrestigeStartingBonus() は転生ショップで買った「開始ボーナス」の値を返す関数
             let power = 1 + getPrestigeStartingBonus();
+            // data.js: stages は都道府県ごとのステージ定義（tapBonus/mpsBonus等を持つ）の配列
             stages.forEach((stage, idx) => {
+                // shop.js: purchasedItems はその都道府県の強化を何Lv買っているかを保持するオブジェクト
                 const lv = purchasedItems[idx] || 0;
                 if (lv > 0) {
                     let bonus = stage.tapBonus * lv;
+                    // progress.js: getPrefTrophy(idx) はその県のタップ数から金/銀/銅トロフィーを判定する関数
                     if (getPrefTrophy(idx) === 'gold') bonus *= CONFIG.GOLD_TROPHY_BONUS_MULT; // 🥇金トロフィー：その県の効果+10%
                     power += bonus;
                 }
             });
+            // data.js: clothesData は（きせかえ部屋より前からある）旧衣装システムの服データ配列
+            // shop.js: equippedClotheId は現在装備中の旧衣装のID
             const activeClothe = clothesData.find(c => c.id === equippedClotheId);
             if (activeClothe) power += activeClothe.tapBonus;
             // コンボのボーナスはここではなく、executeSingleTap側の加算方式(bonusPercent)で一括管理する
             if (isFever) power *= CONFIG.FEVER_TAP_MULTIPLIER;
+            // progress.js: getPrestigeBonusMultiplier() は転生回数に応じた倍率ボーナスを返す関数
             power *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
             if (Date.now() < feedBuffActiveUntil) power *= CONFIG.FEED_BUFF_MULTIPLIER; // もちすけにお土産をあげた効果（一時的）
 
@@ -317,6 +324,8 @@ import {
             mps *= CONFIG.MPS_GLOBAL_BOOST_MULT; // 🔧 自動増加の恩恵を全体的に強化（プレイヤーからの要望を受けて底上げ）
             mps *= getPrestigeBonusMultiplier(); // 転生ボーナス（控えめ・線形）
             if (Date.now() < feedBuffActiveUntil) mps *= CONFIG.FEED_BUFF_MULTIPLIER; // もちすけにお土産をあげた効果（一時的）
+            // shop.js: sprayBuffActiveUntil はスプレーバフが有効な期限のタイムスタンプ、activeSprayId は使用中のスプレーのID
+            // data.js: SPRAY_ITEMS はスプレーアイテムの定義配列（mpsMultiplierなどを持つ）
             if (Date.now() < sprayBuffActiveUntil && activeSprayId) {
                 const sprayItem = SPRAY_ITEMS.find(i => i.id === activeSprayId);
                 if (sprayItem) mps *= sprayItem.mpsMultiplier; // ✨ スプレーの自動増加バフ（1日）
@@ -355,6 +364,7 @@ import {
          * @returns {void}
          */
         export function updateCheerBalloon(count) {
+            // ui.js: isTutorialActive はチュートリアル中かどうかのフラグ（チュートリアル中はセリフを出さない）
             if (count <= 0 || isTutorialActive) return;
             const tier = getCheerTier(count);
             const now = Date.now();
@@ -363,9 +373,14 @@ import {
                 lastCheerTier = tier;
                 lastCheerChangeTime = now;
                 const balloon = document.getElementById('mochi-balloon');
+                // ui.js: balloonAutoHideTimer は吹き出しを自動で隠すsetTimeoutのID（前回の分をキャンセルする）
                 clearTimeout(balloonAutoHideTimer);
+                // main.js: pickRandom() は配列からランダムに1つ選ぶ関数
+                // data.js: cheerLines はコンボ段階(tier)ごとの応援セリフ配列をまとめたオブジェクト
                 balloon.innerText = pickRandom(cheerLines[tier]);
                 balloon.classList.add('balloon-show');
+                // ui.js: setBalloonAutoHideTimer() はballoonAutoHideTimer変数を書き換えるsetter
+                // （importした束縛には直接代入できないため。ESモジュールの仕様）
                 setBalloonAutoHideTimer(setTimeout(() => { balloon.classList.remove('balloon-show'); }, CONFIG.BALLOON_AUTO_HIDE_MS));
             }
         }
@@ -433,7 +448,9 @@ import {
                 comboEl.classList.add('combo-milestone-pop');
 
                 if (bigMilestone === CONFIG.COMBO_TIER_1000) {
+                    // main.js: screenShake()/screenFlash() は画面全体を揺らす/一瞬色を点滅させる演出関数
                     screenShake('big'); screenFlash('#ffd700', CONFIG.COMBO_FLASH_ALPHA_1000);
+                    // main.js: createParticle() は指定座標にパーティクル（弾けるエフェクト）を1個生成する関数
                     for (let i = 0; i < CONFIG.COMBO_1000_PARTICLE_COUNT; i++) createParticle(window.innerWidth / 2 + (Math.random() - 0.5) * CONFIG.COMBO_1000_PARTICLE_SPREAD_X, window.innerHeight / 2 + (Math.random() - 0.5) * CONFIG.COMBO_1000_PARTICLE_SPREAD_Y, true);
                     if (!hasComboTitle1000) {
                         hasComboTitle1000 = true;
@@ -466,10 +483,13 @@ import {
                 lastCheerTier = -1;
                 comboEl.classList.remove('combo-bounce', 'combo-tier-50', 'combo-tier-100', 'combo-tier-500', 'combo-tier-1000');
                 if (finishedCombo >= CONFIG.COMBO_END_COMMENT_MIN && !isTutorialActive) {
+                    // ui.js: showMochiComment() はもちすけのセリフ吹き出しを表示する関数
+                    // data.js: comboEndLines はコンボ終了時に喋るセリフの配列
                     showMochiComment(pickRandom(comboEndLines));
                     // 通常のセリフと同様、しばらく経ってもタップされなければ自然に引っ込める
                     const myEndCommentId = ++comboEndCommentId;
                     setTimeout(() => {
+                        // ui.js: hideMochiComment() はもちすけのセリフ吹き出しを非表示にする関数
                         if (myEndCommentId === comboEndCommentId) hideMochiComment();
                     }, CONFIG.BALLOON_AUTO_HIDE_MS);
                 }
@@ -491,12 +511,15 @@ import {
             mochiDeformWrap.classList.add('mochi-scream'); // 拡大・シェイクは、帽子・顔パーツも道連れの入れ物にかける
             mochiBtnElement.src = 'ui_images/mochisuke/image_scream.webp';
             // 🤖 ロボもちすけ装備中は、叫ぶ間だけロボを隠して、下の素の叫び顔を見せる
+            // progress.js: equippedKisekae は現在着せ替え部屋で装備しているアイテムのID群を持つオブジェクト
             if (typeof equippedKisekae !== 'undefined' && equippedKisekae.fullbody) {
                 mochiBtnElement.style.opacity = '1';
                 const fbEl = document.getElementById('mochisuke-fullbody');
                 if (fbEl) fbEl.style.display = 'none';
             }
+            // ui.js: flyOffKisekaeOverlays() は装備中の帽子・顔パーツを画面外へ吹き飛ばす演出関数
             flyOffKisekaeOverlays(); // 🎩💨 叫びの勢いで、帽子・顔パーツが吹っ飛ぶ
+            // ui.js: updateMouthPatchVisibility() は口パーツ(mochisuke-mouth-patch)の表示/非表示を状況に応じて切り替える関数
             updateMouthPatchVisibility();
 
             clearTimeout(screamRevertTimeout);
@@ -518,6 +541,7 @@ import {
                 const fbEl = document.getElementById('mochisuke-fullbody');
                 if (fbEl) fbEl.style.display = 'block';
             }
+            // ui.js: flyBackKisekaeOverlays() は吹き飛ばした帽子・顔パーツを元の位置へ戻す演出関数
             flyBackKisekaeOverlays(); // 🎩 通常に戻ったら、飛んでいった帽子・顔パーツをまた着け直す
             if (!isMochiPressed) mochiBreatheWrapEl.classList.add('breathe-idle');
             updateMouthPatchVisibility();
@@ -530,7 +554,9 @@ import {
          * @returns {void}
          */
         export function triggerAwakeningScream() {
+            // main.js: playAudioFile() は指定した音声ファイルを再生する関数
             playAudioFile('audio/mochisuke/mochi_scream.mp3');
+            // main.js: vibrate() は指定パターンで端末をバイブレーションさせる関数
             vibrate(CONFIG.SCREAM_VIBRATE_PATTERN);
             screenShake('big');
             screenFlash('#ffd700', CONFIG.AWAKENING_FLASH_ALPHA);
@@ -596,6 +622,7 @@ import {
 
             // 🌟 覚醒判定：1/100の確率で、このタップだけもちが10倍になる
             let isAwakening = false;
+            // ui.js: isTutorialActive はチュートリアル中かどうかのフラグ（チュートリアル中は覚醒を抽選しない）
             if (!isTutorialActive && Math.random() < CONFIG.AWAKENING_CHANCE) {
                 isAwakening = true;
                 power *= CONFIG.AWAKENING_MULTIPLIER;
@@ -606,6 +633,7 @@ import {
 
             // スキル1：もちもちクリック発動時は弾ける量をさらに追加
             let pCount = skills.skill1.activeTimer > 0 ? CONFIG.SKILL1_PARTICLE_COUNT : 1;
+            // main.js: createParticle() は指定座標にパーティクル（弾けるエフェクト）を1個生成する関数
             for (let i = 0; i < pCount; i++) {
                 createParticle(clientX, clientY, isGoldParticle);
             }
@@ -622,6 +650,10 @@ import {
             }
 
             // スコア・進捗加算
+            // progress.js: selectedStageIndex/currentStageIndex は「今表示中の県」「実際に攻略が進んでいる県」のインデックス
+            // state.js: score/setScore はもちの所持数と、それを書き換えるsetter（importした束縛には直接代入できないため）
+            // progress.js: currentStageProgress/setCurrentStageProgress は現在の県での進み具合と、そのsetter
+            // progress.js: checkStageProgress() は進み具合がステージ距離を超えたら次の県へ進める判定関数
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
                 setScore(score + (power)); setCurrentStageProgress(currentStageProgress + (power)); checkStageProgress();
             } else {
@@ -631,6 +663,8 @@ import {
             // 新SE視覚演出（音を先に鳴らしてから見た目の処理をする＝DOM生成が音の発火を遅らせないようにする）
             if (isAwakening) {
                 triggerAwakeningScream();
+                // main.js: createFloatingText() は指定座標にふわっと浮かぶテキスト演出を出す関数
+                // main.js: formatMochi() はもちの数値を「1.2万」のような読みやすい表記に整形する関数
                 createFloatingText(clientX, clientY, `😱覚醒！×10 +${formatMochi(power)}`, "#ff1744", "2rem");
             } else if (isCrit) {
                 playAudioFile('audio/critical.mp3');
@@ -685,9 +719,11 @@ import {
          */
         function refreshSqueezeAccumHud() {
             if (!squeezeAccumHudEl) return;
+            // src/squeeze/physics.js: isAccumulateModeActive() はスクイーズ「専用モード」が有効かどうかを返す関数
             const active = isAccumulateModeActive();
             squeezeAccumHudEl.style.display = active ? 'flex' : 'none';
             if (!active) return;
+            // src/squeeze/physics.js: getAccumD() は専用モードで蓄積されている変形量(d値)を返す関数
             const d = getAccumD();
             const reward = computeSqueezeAccumReward(d);
             squeezeAccumPreviewEl.textContent = `ためた変形：+${formatMochi(reward)} もち`;
@@ -773,6 +809,7 @@ import {
                     createParticle(cx, cy);
                     createFloatingText(cx, cy, `+${formatMochi(perPop)} もち`);
                     setScore(score + perPop);
+                    // src/squeeze/physics.js: playSqueezeReleasePopSound() はコンボ段階に応じてピッチを変えつつ「ぽん」という効果音を鳴らす関数
                     playSqueezeReleasePopSound(comboTierIndex);
                 }, i * CONFIG.SQUEEZE_RELEASE_MOCHI_POP_STAGGER_MS);
             }
@@ -795,38 +832,48 @@ import {
             setScore(score + reward);
             const rect = mochiBtnElement.getBoundingClientRect();
             createFloatingText(rect.left + rect.width / 2, rect.top + rect.height / 2, `💧+${formatMochi(reward)} もち`, "#0288d1", "1.5rem");
+            // src/squeeze/physics.js: resetSqueezeAccum() は蓄積量(d値)を0に戻し、もちすけが弾けて戻る見た目の処理を行う関数
             resetSqueezeAccum();
             refreshSqueezeAccumHud();
+            // state.js: saveGame() は現在の状態をlocalStorageへ保存する関数
             saveGame();
+            // ui.js: updateDisplay() はスコア表示・進捗バー等の画面全体を再描画する関数
             updateDisplay();
         }
         window.onSqueezeResetButtonClick = onSqueezeResetButtonClick; // HTMLのonclick=""から呼ぶための橋渡し
 
         // メインのもちすけタップ処理
         mochiBtnElement.addEventListener('pointerdown', (e) => {
+            // minigames.js: isMinigameActive はミニゲーム中かどうかのフラグ（ミニゲーム中はタップを無効化する）
             if (isMinigameActive) return;
             e.preventDefault();
             try { mochiBtnElement.setPointerCapture(e.pointerId); } catch (err) {}
+            // main.js: initAndPlayBGM() は初回操作をきっかけにAudioContextを解錠し、BGMを再生開始する関数
             initAndPlayBGM();
 
             // 🧪 管理者限定・試作中：スクイーズ衣装（スライムもちすけ等）を装備中は「別枠」として扱い、
             // 通常のタップ生産（もち・コンボ・ミッションカウント・必殺技ゲージ・会心/黄金抽選・タップ音や
             // パーティクル）を一切発生させない。素材ごとの伸び・つつき演出は、この下のスクイーズ分岐が
             // 装備に関係なくこれまで通り動く（4-3a・2-1参照）。
+            // ui.js: getEquippedSqueezeMaterialKey() は現在装備しているスクイーズ衣装の素材キーを返す関数（未装備ならfalsy）
             const squeezeCostumeMaterialKey = getEquippedSqueezeMaterialKey();
             const isSqueezeCostumeActive = !!squeezeCostumeMaterialKey;
             // 🆕 専用モード（永続変形＋戻すボタン）はいったん無効化中（kisekae.jsのapplyKisekaeToMainScreen参照）。
             // ここは値を同期する保険の呼び出しなので、無効化中はkisekae.js側と同じくfalseで固定しておく
             // （将来また有効化する時は、kisekae.js側と一緒にisSqueezeCostumeActiveへ戻すこと）
+            // src/squeeze/physics.js: setAccumulateModeActive() は専用モードのon/offフラグを書き換えるsetter
             setAccumulateModeActive(false);
             // 🆕 スキル/必殺技UIの表示・非表示も同様に、毎タップ同期しておく保険（主な同期はkisekae.js側）
             document.body.classList.toggle('squeeze-costume-active', isSqueezeCostumeActive);
 
             if (!isSqueezeCostumeActive) {
                 playAudioFile('audio/tap.mp3');
+                // state.js: totalTapsCount/setTotalTapsCount は累計タップ数と、それを書き換えるsetter
                 setTotalTapsCount(totalTapsCount + 1);
+                // progress.js: trackMissionEvent() はミッション（デイリー/ウィークリー等）の達成カウンターを加算する関数
                 trackMissionEvent('totalTaps', 1); trackMissionEvent('tapsToday', 1); trackMissionEvent('tapsThisWeek', 1);
                 chargeHissatsuByTap();
+                // progress.js: prefTaps は都道府県ごとの累計タップ数を保持する配列
                 prefTaps[selectedStageIndex] = (prefTaps[selectedStageIndex] || 0) + 1;
             }
 
@@ -845,12 +892,15 @@ import {
             } else {
                 // 🫧 指ごとの座標をpointerIdで記録する（2本指ストレッチの判定に使う）
                 squeezePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                // src/squeeze/physics.js: assignSqueezeGlow() は触れた指ごとに「光る」演出を割り当てて表示開始する関数
                 assignSqueezeGlow(e.pointerId, e.clientX, e.clientY); // 🆕 触れた場所に「光」を表示開始
+                // src/squeeze/physics.js: triggerSqueezeTouchSplash() は素材設定に応じた「触れた瞬間」の音＋波紋演出を出す関数
                 triggerSqueezeTouchSplash(e.clientX, e.clientY); // 🆕 スライムもちすけ等、触れた瞬間の「ぴちゃ」音＋水色の波紋（素材にsplashSoundFileが無ければ何もしない）
 
                 if (squeezePointers.size === 2) {
                     // 🫧🫧 2本目の指が触れた瞬間：ここから「2本の指を逆方向に引っ張って両側から伸ばす」モードに切り替える。
                     // 見た目（1本指の押し込みポーズ）は変えず、次のpointermoveから2本指用の計算に切り替わる。
+                    // src/squeeze/physics.js: stopLongPressSquish() は「じわじわ潰れる」演出を停止する関数
                     stopLongPressSquish(); // 🆕 1本目の指が始めていた「じわじわ潰れる」演出があれば、ここで止める（stepSqueezeFollowと衝突するため）
                     const pts = [...squeezePointers.values()];
                     twoFingerStartDist = Math.hypot(pts[1].x - pts[0].x, pts[1].y - pts[0].y);
@@ -858,6 +908,7 @@ import {
                     // 🆕 1本指スクイーズと同じ「つつき」ギミックを2本指ストレッチでも鳴らすため、ここでも
                     // 腕付けしておく（以前はここが無かったため、2本指で引っ張ってもpokeSoundFileが
                     // 一度も鳴らなかった。まもすいの指摘・2-1参照）
+                    // src/squeeze/physics.js: armPokeImpact() は次に一定以上押し込んだ時に「つつき」音を鳴らす準備をする関数
                     armPokeImpact();
                 } else if (squeezePointers.size === 1) {
                     // 1本目の指：従来通り「引っ張った方向にだけ伸ばす」スクイーズを開始
@@ -867,18 +918,22 @@ import {
                     isDraggingSqueeze = true;
                     squeezeDragThresholdCrossed = false; // 🆕 このpressではまだ本格的なドラッグに切り替わっていない
                     updateMouthPatchVisibility();
+                    // src/squeeze/physics.js: startStretchSound() は引っ張っている間ずっと鳴る「伸び」音を開始する関数
                     startStretchSound();
                     armPokeImpact(); // 🆕 押した瞬間の強弱で音が変わる「つつき」ギミック（本格的なドラッグが始まった時だけ鳴る。2-1参照）
+                    // src/squeeze/physics.js: startLongPressSquish() は「じわじわ潰れる」長押し演出を開始する関数
                     startLongPressSquish(); // 🆕 引っ張らずに押し続けた時用の「じわじわ潰れる」演出を開始
                 }
                 // 3本目以降の指は無視する（伸縮の計算が複雑になるだけなので、対象は指2本まで）
             }
 
+            // main.js: createRippleEffect() はタップ位置に波紋エフェクトを出す関数
             createRippleEffect(e.clientX, e.clientY);
 
             // 長押し検知：一定時間押しっぱなしにすると「つぶれる〜」的なセリフを言う
             clearTimeout(mochiLongPressTimer);
             mochiLongPressTimer = setTimeout(() => {
+                // data.js: dialogueData はもちすけの各種セリフ集をカテゴリ別にまとめたオブジェクト
                 if (!isTutorialActive) showMochiComment(pickRandom(dialogueData.longPressComments));
             }, MOCHI_LONGPRESS_MS);
 
@@ -957,13 +1012,17 @@ import {
             squeezePointers.clear();
             twoFingerStretchActive = false;
             clearTimeout(mochiLongPressTimer);
+            // src/squeeze/physics.js: stopStretchSound() は引っ張り中の「伸び」音を止める関数
             stopStretchSound();
+            // src/squeeze/physics.js: releaseAllSqueezeGlows() は表示中の「光」演出をすべてフェードアウトさせる関数
             releaseAllSqueezeGlows(); // 🆕 押していた指がすべて離れたので、光もまとめてフェードアウト
             // 🆕 追従ループを止めて、その時点で実際に描画されていた最終的な伸縮比率・伸び方向を受け取る
             // （指の生の移動量ではなく、追従の遅れ込みの値。揺れ戻り・弾け演出の見た目のジャンプを、
             // 大きさだけでなく向きについても防ぐ。以前はここでratioの数値だけを受け取り、揺れ戻りの
             // 向きには生のsqueezeLastDx/Dyを使っていたため、急に逆方向へ引っ張って離した直後だけ
             // 向きが一瞬で反転して見える違和感があった＝まもすいからの指摘）
+            // src/squeeze/physics.js: endSqueeze() は追従ループを止め、その時点で実際に描画されていた
+            // 最終的な伸縮比率(ratio)と伸び方向(dx/dy)を返す関数
             const { ratio: finalSqueezeVisualRatio, dx: finalSqueezeVisualDx, dy: finalSqueezeVisualDy } = endSqueeze();
             // 🆕 弾け演出のポン音ピッチに使うコンボ段階（コンボ内部ロジックはtap.js側で持ったまま、
             // 数値だけをsrc/squeeze/physics.jsのtriggerSqueezeReleaseBurstに渡す）
@@ -985,8 +1044,12 @@ import {
                 // 🫧🫧 2本指ストレッチ：一定以上伸ばされていた時だけ、中心固定で大きく「ぷるん」と揺れ戻る
                 // 🆕 「伸ばして良いか」の判定は指の生の移動量(twoFingerLastRatio)のまま、揺れ戻りの見た目は
                 // 実際に描画されていたfinalSqueezeVisualRatio（追従の遅れ込み）を使うことでジャンプを防ぐ
+                // src/squeeze/physics.js: releaseTwoFingerSqueezeWithOvershoot() は2本指ストレッチを離した時の
+                // 中心固定・行き過ぎ(オーバーシュート)込みの揺れ戻りアニメーションを実行する関数
                 releaseTwoFingerSqueezeWithOvershoot(twoFingerLastAngleDeg, finalSqueezeVisualRatio);
+                // src/squeeze/physics.js: getSqueezeOvershootDurationMs() は伸縮比率からオーバーシュートアニメの再生時間(ms)を返す関数
                 releaseAnimDurationMs = getSqueezeOvershootDurationMs(finalSqueezeVisualRatio);
+                // src/squeeze/physics.js: triggerSqueezeReleaseBurst() は離した時の弾け演出（パーティクル等）を出す関数
                 triggerSqueezeReleaseBurst(twoFingerLastRatio, finalSqueezeVisualRatio);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
                 // 🆕 「もちぽんぽん」ボーナス（通常もちすけ・スライムもちすけ共通。2-1参照）。
@@ -1003,6 +1066,7 @@ import {
                     ], { duration: CONFIG.TAP_RELEASE_ANIM_DURATION_MS, easing: 'ease-out' });
                     c.style.transform = 'translate(-50%, -50%) translateX(var(--tx)) scale(1, 1)';
                 });
+            // src/squeeze/physics.js: isAccumulateModeActive()（上で説明した専用モード判定と同じ関数）
             } else if (isAccumulateModeActive() && isDraggingSqueeze) {
                 // 🆕 専用モード：離しても中心に戻さない。見た目の収束（離した瞬間から新しい永続量へ
                 // 「もにゅっ」と収まっていく処理）は、endSqueeze()の時点でsrc/squeeze/physics.js側の
@@ -1012,8 +1076,10 @@ import {
                 // 🫧 スクイーズ：一定以上引っ張られていた時だけ、伸ばして/つぶしていた分だけ大きく「ぷるん」と揺れ戻る
                 // 🆕 「伸ばして良いか」の判定は指の生の移動量(squeezeLastDx/Dy)のまま、揺れ戻りの見た目（大きさ・向き
                 // 両方）は実際に描画されていたfinalSqueezeVisualRatio/Dx/Dy（追従の遅れ込み）を使うことでジャンプを防ぐ
+                // src/squeeze/physics.js: releaseSqueezeWithOvershoot() は1本指スクイーズを離した時のオーバーシュート込みの揺れ戻りアニメーションを実行する関数
                 releaseSqueezeWithOvershoot(finalSqueezeVisualDx, finalSqueezeVisualDy, finalSqueezeVisualRatio);
                 releaseAnimDurationMs = getSqueezeOvershootDurationMs(finalSqueezeVisualRatio);
+                // src/squeeze/physics.js: SQUEEZE_MAX_DRAG は伸縮が頭打ちになる移動量(px)の定数
                 const releaseRatio = Math.min(Math.sqrt(squeezeLastDx * squeezeLastDx + squeezeLastDy * squeezeLastDy), SQUEEZE_MAX_DRAG) / SQUEEZE_MAX_DRAG;
                 triggerSqueezeReleaseBurst(releaseRatio, finalSqueezeVisualRatio);
                 setTimeout(() => { mochiDeformWrap.style.transformOrigin = ''; }, CONFIG.SQUEEZE_TRANSFORM_ORIGIN_RESET_MS);
@@ -1038,6 +1104,8 @@ import {
                 // （オーバーシュート）アニメーションで戻す。ごく短いタップで潰れがほとんど進んでいなかった
                 // 場合は反動アニメーションこそ再生されずrebounded:falseが返る。
                 // ratioは（しきい値による切り捨てなしの）生の潰れ具合で、下のもちぽんぽん報酬の段階計算に使う
+                // src/squeeze/physics.js: releaseLongPressSquish() は「じわじわ潰れる」演出を終わらせ、
+                // 反動アニメを再生したか(rebounded)とその時の潰れ具合(ratio)を返す関数
                 const { rebounded: didLongPressRebound, ratio: longPressRatio } = releaseLongPressSquish();
                 if (!didLongPressRebound) {
                     // 🆕「もっと反動をもちもちに」という要望を受けて、揺れ戻りを2段階→3段階の減衰振動に
@@ -1058,6 +1126,8 @@ import {
                     // 実装時に「報酬が出た時だけ」に絞られてしまい、通常もちすけの普通のタップで離す音が
                     // 消えていた。素材ごとのmaterials.js設定（playReleasePopOnPlainTap）に従い、通常もちすけ
                     // だけ鳴らす（スライムもちすけは元々の設計通りタップでは鳴らさない。2-1参照）
+                    // src/squeeze/physics.js: playPlainTapReleaseSoundIfEnabled() は素材設定(playReleasePopOnPlainTap)が
+                    // 有効な場合だけ、ただのタップで離した時の「弾け」音を鳴らす関数
                     playPlainTapReleaseSoundIfEnabled(comboTierIndex);
                 } else {
                     // 🆕 「もちぽんぽん」ボーナス（通常もちすけ・スライムもちすけ共通。2-1参照）。
@@ -1069,7 +1139,10 @@ import {
                     // ここで1回だけ計算し、両方に同じ値を渡す（まもすいの要望：反動アニメも
                     // もちと同じ5段階にしてほしい。2-1参照）
                     const tier = computeSqueezeReleaseMochiTier(longPressRatio);
+                    // src/squeeze/physics.js: playLongPressReboundAnimation() は段階数(tier)に応じた
+                    // 減衰振動の反動アニメーションを再生する関数
                     playLongPressReboundAnimation(tier, getSqueezeReleaseMochiMaxTier());
+                    // src/squeeze/physics.js: getLongPressReleaseDurationMs() は長押し反動アニメの再生時間(ms)を返す関数
                     releaseAnimDurationMs = getLongPressReleaseDurationMs();
                     grantSqueezeReleaseMochiPop(tier, comboTierIndex);
                 }
@@ -1132,8 +1205,10 @@ import {
                 twoFingerLastRatio = Math.min(growth, TWO_FINGER_MAX_STRETCH_DIST) / TWO_FINGER_MAX_STRETCH_DIST;
                 twoFingerLastAngleDeg = Math.atan2(dy, dx) * (180 / Math.PI);
                 // 🆕 growth（生のpx値）も渡すことで、physics.js側が「つつき」ギミックの発火判定に使えるようにする
+                // src/squeeze/physics.js: updateTwoFingerSqueezeTarget() は2本指ストレッチの目標の伸縮量を更新する関数
                 updateTwoFingerSqueezeTarget(twoFingerLastAngleDeg, twoFingerLastRatio, growth);
                 // 🆕 2本指それぞれの「光」を、その指の現在位置・共通の伸縮比率で更新する
+                // src/squeeze/physics.js: updateSqueezeGlow() は指定した指の「光」演出の位置・強さを更新する関数
                 const [id0, id1] = [...squeezePointers.keys()];
                 updateSqueezeGlow(id0, pts[0].x, pts[0].y, twoFingerLastRatio);
                 updateSqueezeGlow(id1, pts[1].x, pts[1].y, twoFingerLastRatio);
@@ -1151,6 +1226,7 @@ import {
                 squeezeDragThresholdCrossed = true;
                 stopLongPressSquish();
             }
+            // src/squeeze/physics.js: updateOneFingerSqueezeTarget() は1本指スクイーズの目標の伸縮量を更新し、比率(ratio)を返す関数
             const squeezeRatio = updateOneFingerSqueezeTarget(squeezeLastDx, squeezeLastDy);
             updateSqueezeGlow(e.pointerId, e.clientX, e.clientY, squeezeRatio); // 🆕 光も指の動きに追従させる
             if (isAccumulateModeActive()) refreshSqueezeAccumHud(); // 🆕 専用モード中は、ドラッグ中も「今離したら貯まる量」をライブでプレビューしたいが、
@@ -1176,6 +1252,7 @@ import {
          * @returns {number} 実際のクールタイム（秒、必殺技のみ必要タップ数）
          */
         export function getSkillCalculatedCd(key, s) {
+            // progress.js: getPrestigeCdReductionSec() は転生ショップで買った「クールタイム恒久短縮」の秒数を返す関数
             const reduce = getPrestigeCdReductionSec();
             if (key === 'skill1') return Math.max(CONFIG.SKILL1_MIN_CD, s.cd - (s.lv - 1) - reduce);
             if (key === 'skill2') return Math.max(CONFIG.SKILL2_MIN_CD, s.cd - (s.lv - 1) - reduce);
@@ -1197,6 +1274,7 @@ import {
                 return;
             }
             if (s.currentCd > 0 || s.activeTimer > 0) return;
+            // progress.js: trackMissionEvent()（上のpointerdownハンドラと同じ関数）でスキル使用のミッション達成度を加算する
             trackMissionEvent('skillUsedToday', 1); trackMissionEvent('skillUsedThisWeek', 1); trackMissionEvent('skillUsedTotal', 1);
 
             playAudioFile('audio/skill_tap.mp3');
@@ -1255,6 +1333,7 @@ import {
             
             if (key === 'hissatsu') {
                 // 必殺技専用BGMの再生（通常BGMから切り替え）
+                // main.js: playBgmLoop() は指定したBGMファイルをループ再生に切り替える関数
                 playBgmLoop('audio/bgm/hissatsu_bgm.mp3');
 
                 // 親方化して巨大に固定
@@ -1276,6 +1355,7 @@ import {
             if (key === 'skill3') { document.getElementById('bunshin-container').innerHTML = ''; bunshinCloneRects = []; bunshinCloneEls = []; }
             if (key === 'hissatsu') {
                 // 必殺技BGMを終了し通常BGMを再開
+                // main.js: isBgmInitialized はBGMの初期化（初回解錠）が済んでいるかどうかのフラグ
                 if (isBgmInitialized) playBgmLoop('audio/bgm/bgm.mp3');
 
                 mochiDeformWrap.style.transform = 'scale(1)';
@@ -1296,10 +1376,13 @@ import {
          * @returns {string} 画像パス
          */
         export function getMochisukeBaseImg() {
+            // data.js: KISEKAE_ITEMS は着せ替え部屋の全アイテム定義（カテゴリごとの配列）を持つオブジェクト
+            // progress.js: equippedKisekae は現在装備中の着せ替えアイテムID群
             const clothesItem = (typeof KISEKAE_ITEMS !== 'undefined' && typeof equippedKisekae !== 'undefined')
                 ? KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes)
                 : null;
             if (clothesItem) return clothesItem.img;
+            // data.js: clothesData / shop.js: equippedClotheId（旧衣装システム。getTapPower参照）
             const target = clothesData.find(c => c.id === equippedClotheId);
             return (target && target.img) ? target.img : 'ui_images/mochisuke/image_0.webp';
         }
@@ -1456,6 +1539,7 @@ import {
             s.lv += 1;
             playAudioFile('audio/levelup.mp3');
             showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
+            // shop.js: renderShopList()/updateShopTabHighlight() はショップ一覧の再描画とタブのハイライト（購入可能かどうかの目印）更新を行う関数
             saveGame(); renderShopList(); updateSkillUI(); updateDisplay(); updateShopTabHighlight();
         }
         window.buySkillLevel = buySkillLevel; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
@@ -1465,6 +1549,7 @@ import {
          * @returns {void}
          */
         export function resetFeedCountIfNewDay() {
+            // ui.js: getLocalDateString() は端末のローカル日時から"YYYY-MM-DD"形式の日付文字列を作る関数
             const today = getLocalDateString(new Date());
             if (feedLastResetDate !== today) {
                 feedLastResetDate = today;
@@ -1502,6 +1587,7 @@ import {
          */
         export function scheduleFeedTeaseEscalation() {
             clearTimeout(feedTeaseTimer);
+            // data.js: FEED_TEASE_MAX_LEVEL は「じらし」段階の最大値（これ以上は時間経過で増えない）
             if (feedTeaseLevel >= FEED_TEASE_MAX_LEVEL) return; // 最大まで達したら、時間経過では増やさない（外した時だけ増える）
             feedTeaseTimer = setTimeout(() => {
                 feedTeaseLevel++;
@@ -1528,6 +1614,7 @@ import {
                 spawnScreamKanaBurst();
                 showMochiComment('あ\u3099'.repeat(CONFIG.TEASE_LIMIT_KANA_REPEAT) + '！！');
             } else {
+                // data.js: feedTeaseComments はじらし段階(feedTeaseLevel)ごとの機嫌が悪くなるセリフ配列
                 showMochiComment(feedTeaseComments[feedTeaseLevel]);
             }
         }
@@ -1559,6 +1646,7 @@ import {
          */
         export function placeFeedIconNearMochisuke(idx) {
             const stage = stages[idx];
+            // ui.js: closeModal() は指定IDのモーダルを閉じる関数
             closeModal('omiyage-feed-confirm-modal');
             closeModal('warehouse-modal'); // もちすけが見える画面まで戻す
 
@@ -1640,6 +1728,7 @@ import {
 
             if (isOverMochi) {
                 icon.remove();
+                // ui.js: feedMochisuke() はおみやげ(idx番目の県)をもちすけに与え、給餌バフ・演出・保存を行う関数
                 feedMochisuke(idx);
             } else {
                 // もちすけの上じゃなければ、足元にすとんと戻って、またやり直せるようにする
@@ -1682,6 +1771,7 @@ import {
          * @returns {void}
          */
         export function startFeverSpawningLoop() {
+            // main.js: spawnGoldMochi() は画面に黄金もち（タップするとフィーバーが始まるアイテム）を出現させる関数
             setInterval(() => { if (!isTutorialActive && !isFever && !document.getElementById('fever-pop') && Math.random() < CONFIG.FEVER_SPAWN_CHANCE) spawnGoldMochi(); }, CONFIG.FEVER_SPAWN_CHECK_INTERVAL_MS);
         }
 
@@ -1720,6 +1810,8 @@ import {
             let mps = getMps();
             if (mps > 0) {
                 let gain = mps / 10; setScore(score + (gain));
+                // このメインループでもexecuteSingleTapと同じ組み合わせ（progress.js/state.jsの各値、上記参照）で
+                // 自動増加(mps)ぶんの進捗を加算する
                 if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) { setCurrentStageProgress(currentStageProgress + (gain)); checkStageProgress(); }
                 if (!document.body.classList.contains('modal-open')) updateDisplay();
             }

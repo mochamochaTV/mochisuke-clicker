@@ -172,6 +172,7 @@ const mochiDeformWrap = document.getElementById('mochisuke-deform-wrap'); // タ
 // kisekae.jsのapplyKisekaeToMainScreen()が一元的に担当している。もしここで画像にも触ってしまうと、
 // タップのたびに再描画されるapplyKisekaeToMainScreen()の結果と競合し、タップした瞬間に画像だけ
 // 通常のもちすけへ戻ってしまう、という不具合を過去に起こした（経緯は2-1参照）。
+// materials.js: DEFAULT_SQUEEZE_MATERIAL_KEY は素材未指定時に使うフォールバックのキー（'default'）
 let currentSqueezeMaterialKey = DEFAULT_SQUEEZE_MATERIAL_KEY;
 
 /**
@@ -182,6 +183,7 @@ let currentSqueezeMaterialKey = DEFAULT_SQUEEZE_MATERIAL_KEY;
  * @returns {void}
  */
 export function setSqueezeMaterial(key) {
+    // materials.js: SQUEEZE_MATERIALS は素材ごと（'default'/'slime'）の音・調整値をまとめたオブジェクト
     const material = SQUEEZE_MATERIALS[key];
     if (!material) {
         console.warn(`[squeeze] 未知の素材キー: ${key}`);
@@ -521,6 +523,7 @@ export function updateOneFingerSqueezeTarget(dx, dy) {
  * @returns {void}
  */
 export function armPokeImpact() {
+    // materials.js: SQUEEZE_MATERIALS[key].pokeSoundFile は今の素材につつき音が設定されているかどうか（nullならこのギミック自体を無効にする）
     if (!SQUEEZE_MATERIALS[currentSqueezeMaterialKey].pokeSoundFile) return;
     pokeArmed = true;
     pokeFired = false;
@@ -538,6 +541,7 @@ export function armPokeImpact() {
 function firePokeImpact(dx, dy) {
     pokeArmed = false;
     pokeFired = true;
+    // materials.js: SQUEEZE_MATERIALS（前述と同じオブジェクト）から、今の素材のpokeSoundFileを取り出す
     const pokeSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].pokeSoundFile;
     if (!pokeSoundFile) return; // armPokeImpact()後に素材が切り替わった場合の保険
     const elapsedMs = Math.max(1, performance.now() - pokeStartTime);
@@ -545,6 +549,8 @@ function firePokeImpact(dx, dy) {
     const intensity = Math.min(1, speed / CONFIG.POKE_IMPACT_MAX_SPEED_PX_MS);
     const volume = CONFIG.POKE_MIN_VOLUME + intensity * (CONFIG.POKE_MAX_VOLUME - CONFIG.POKE_MIN_VOLUME);
     const pitch = CONFIG.POKE_MAX_PITCH - intensity * (CONFIG.POKE_MAX_PITCH - CONFIG.POKE_MIN_PITCH); // 強いほど低いピッチ
+    // main.js: playAudioFilePitched はピッチ（音の高さ）を指定して効果音を再生する関数、
+    // sfxVolumeMult は設定画面で調整できる効果音全体の音量倍率（掛け合わせて最終的な音量にする）
     playAudioFilePitched(pokeSoundFile, volume * sfxVolumeMult, pitch);
 }
 
@@ -559,9 +565,12 @@ function firePokeImpact(dx, dy) {
  * @returns {void}
  */
 export function triggerSqueezeTouchSplash(clientX, clientY) {
+    // materials.js: SQUEEZE_MATERIALS（前述と同じ）から、今の素材のsplashSoundFileを取り出す
     const splashSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].splashSoundFile;
     if (!splashSoundFile) return; // splashSoundFileを持たない素材（通常のもちすけ等）ではこの演出自体を出さない
+    // main.js: playAudioFile は効果音ファイルを再生する関数、sfxVolumeMult は効果音全体の音量倍率（前述と同じ）
     playAudioFile(splashSoundFile, CONFIG.SPLASH_VOLUME * sfxVolumeMult);
+    // main.js: createRippleEffect は指定座標に波紋エフェクトを表示する関数
     createRippleEffect(clientX, clientY, false, CONFIG.SPLASH_RIPPLE_COLOR);
 }
 
@@ -588,10 +597,13 @@ let longPressLoopSoundSource = null, longPressLoopSoundGain = null;
  */
 function startLongPressLoopSound() {
     if (longPressLoopSoundSource) return;
+    // materials.js: SQUEEZE_MATERIALS（前述と同じ）から、今の素材のlongPressLoopSoundFileを取り出す
     const longPressLoopSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].longPressLoopSoundFile;
     if (!longPressLoopSoundFile) return;
+    // main.js: getAudioContext はWeb Audio APIのAudioContext（音声再生用のコンテキスト）を取得する関数
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    // main.js: audioBuffers は音声ファイルパスをキーに、読み込み済みの音声データ（AudioBuffer）を保持するオブジェクト
     const buffer = audioBuffers[longPressLoopSoundFile];
     if (!buffer) return;
     longPressLoopSoundSource = ctx.createBufferSource();
@@ -612,6 +624,7 @@ function startLongPressLoopSound() {
  */
 function updateLongPressLoopSound(t) {
     if (!longPressLoopSoundGain) return;
+    // main.js: sfxVolumeMult（前述と同じ）効果音全体の音量倍率
     longPressLoopSoundGain.gain.value = t * CONFIG.LONGPRESS_LOOP_SOUND_MAX_GAIN * sfxVolumeMult;
 }
 
@@ -904,8 +917,10 @@ let stretchSoundSource = null, stretchSoundGain = null;
  */
 export function startStretchSound() {
     if (stretchSoundSource) return;
+    // main.js: getAudioContext（前述と同じ）でAudioContextを取得する
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    // main.js: audioBuffers（前述と同じ）から、materials.js: SQUEEZE_MATERIALS の今の素材のstretchSoundFileに対応する音声データを取り出す
     const buffer = audioBuffers[SQUEEZE_MATERIALS[currentSqueezeMaterialKey].stretchSoundFile];
     if (!buffer) return;
     stretchSoundPitchOffset = (Math.random() * 2 - 1) * CONFIG.STRETCH_SOUND_PITCH_VARIANCE;
@@ -926,6 +941,7 @@ function updateStretchSound(ratio) {
     if (!stretchSoundSource) return;
     // 伸びるほど音が高くなる基本カーブに、触れた瞬間だけ決めたstretchSoundPitchOffsetを常時上乗せする
     stretchSoundSource.playbackRate.value = CONFIG.STRETCH_SOUND_BASE_PITCH + ratio * CONFIG.STRETCH_SOUND_PITCH_RANGE + stretchSoundPitchOffset;
+    // main.js: sfxVolumeMult（前述と同じ）効果音全体の音量倍率
     stretchSoundGain.gain.value = ratio * CONFIG.STRETCH_SOUND_MAX_GAIN * sfxVolumeMult; // 伸びるほど音が大きくなる
 }
 /**
@@ -1014,9 +1030,11 @@ export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio) {
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
         const count = Math.round(CONFIG.SQUEEZE_RELEASE_BURST_COUNT_BASE + visualRatio * CONFIG.SQUEEZE_RELEASE_BURST_COUNT_RANGE);
+        // main.js: createBurstParticle は指定座標にパーティクル（弾けるエフェクト）を1つ生成する関数
         for (let i = 0; i < count; i++) createBurstParticle(cx, cy);
 
         if (visualRatio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
+            // main.js: vibrate は端末をバイブレーションさせる関数（パターン配列を渡す）
             vibrate(CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN);
         }
     }, 0);
@@ -1032,9 +1050,11 @@ export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio) {
  * @returns {void}
  */
 export function playSqueezeReleasePopSound(comboTierIndex = 0) {
+    // materials.js: SQUEEZE_MATERIALS（前述と同じ）から、今の素材のreleasePopSoundFileを取り出す
     const releasePopSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].releasePopSoundFile;
     if (!releasePopSoundFile) return;
     const pitch = CONFIG.SQUEEZE_RELEASE_POP_PITCH_BASE + Math.max(0, comboTierIndex) * CONFIG.SQUEEZE_RELEASE_POP_PITCH_PER_TIER;
+    // main.js: playAudioFilePitched・sfxVolumeMult（前述と同じ）でピッチ・音量を指定して再生する
     playAudioFilePitched(releasePopSoundFile, CONFIG.SQUEEZE_RELEASE_MOCHI_POP_SOUND_VOLUME * sfxVolumeMult, pitch);
 }
 
@@ -1051,6 +1071,7 @@ export function playSqueezeReleasePopSound(comboTierIndex = 0) {
  * @returns {void}
  */
 export function playPlainTapReleaseSoundIfEnabled(comboTierIndex = 0) {
+    // materials.js: SQUEEZE_MATERIALS（前述と同じ）から、今の素材のplayReleasePopOnPlainTapフラグを取り出す
     if (!SQUEEZE_MATERIALS[currentSqueezeMaterialKey].playReleasePopOnPlainTap) return;
     playSqueezeReleasePopSound(comboTierIndex);
 }

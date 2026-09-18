@@ -33,6 +33,7 @@ import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './
          * @returns {void}
          */
         export function startQuizGame(container) {
+            // progress.js: currentStageIndex は現在プレイ中のステージ（県）のインデックス（訪問済み県数の判定に使う）
             if (currentStageIndex + 1 < CONFIG.QUIZ_MIN_STAGES_REQUIRED) {
                 container.innerHTML = `<div style="text-align:center; padding:20px;">
                     <p style="margin-bottom:14px;">もう少し旅を進めてから挑戦してね！</p>
@@ -52,7 +53,9 @@ import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './
          */
         export function generateQuizQuestion() {
             const pool = [];
+            // data.js: stages は全都道府県のステージ定義配列
             for (let i = 0; i <= currentStageIndex; i++) pool.push(stages[i]);
+            // main.js: pickRandom() は配列からランダムに1件選ぶ共通ユーティリティ
             const correctStage = pickRandom(pool);
             const isNameToItem = Math.random() < CONFIG.QUIZ_NAME_TO_ITEM_PROBABILITY; // true: 県名→名産品を当てる／false: 名産品→県名を当てる
             const others = pool.filter(s => s !== correctStage).sort(() => Math.random() - 0.5);
@@ -117,6 +120,7 @@ import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './
             const btn = document.getElementById(`quiz-choice-${choiceIdx}`);
             if (isCorrect) {
                 quizState.correct++;
+                // main.js: playAudioFile() は効果音再生、vibrate() は端末バイブ、spawnModalParticleBurst() はパーティクル演出を出す共通関数
                 playAudioFile('audio/critical.mp3');
                 vibrate(CONFIG.QUIZ_CORRECT_VIBRATE_MS);
                 if (btn) {
@@ -139,10 +143,14 @@ import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './
                 if (quizState.qIndex < quizState.questions.length) {
                     renderQuizQuestion(document.getElementById('minigame-play-view'), quizState);
                 } else {
+                    // core.js: consumeMinigamePlay() は本日のプレイ回数を1消化して保存する共通処理
                     consumeMinigamePlay('quiz');
                     const mult = QUIZ_REWARD_BY_CORRECT[quizState.correct] ?? 0;
+                    // core.js: grantMinigameReward() は渡した倍率からミニゲームコインを計算して付与する共通処理
                     const reward = grantMinigameReward(mult);
+                    // main.js: screenFlash() は画面全体を一瞬光らせる演出用の共通関数
                     if (quizState.correct === CONFIG.QUIZ_QUESTION_COUNT) screenFlash('#ffd700', CONFIG.QUIZ_PERFECT_FLASH_OPACITY);
+                    // core.js: showMinigameResult() はプレイ画面を共通の結果画面に差し替える処理
                     showMinigameResult(`🗾 ご当地クイズ結果`, `${quizState.correct} / ${CONFIG.QUIZ_QUESTION_COUNT}問 正解！`, reward);
                     window.__quizState = null;
                 }

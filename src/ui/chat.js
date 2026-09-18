@@ -124,6 +124,7 @@
             return new Promise((resolve) => {
                 birthdateGateResolver = resolve;
                 populateBirthdateGateSelects();
+                // ./core.js: openModal はモーダルウィンドウを開く共通関数
                 openModal('birthdate-gate-modal');
             });
         }
@@ -138,7 +139,10 @@
             const d = parseInt(document.getElementById('birthdate-gate-day').value, 10);
             if (!y || !m || !d) { alert('生年月日を選んでください'); return; }
             const eligible = calcAgeFromBirthdate(y, m, d) >= CONFIG.CHAT_ELIGIBLE_AGE_THRESHOLD;
+            // src/engine/firebase.js: window.setMyChatEligibility は判定結果（13歳以上かどうか）をFirestoreに保存する関数（importではなくwindow経由なのは、
+            // firebase.jsがtype="module"で読み込まれる一方、このファイルはモジュールではないため）
             if (window.setMyChatEligibility) await window.setMyChatEligibility(eligible);
+            // ./core.js: closeModal はモーダルウィンドウを閉じる共通関数
             closeModal('birthdate-gate-modal');
             const resolver = birthdateGateResolver;
             birthdateGateResolver = null;
@@ -151,6 +155,9 @@
          * @returns {Promise<void>}
          */
         export async function ensureChatEligibilityAnswered() {
+            // src/engine/firebase.js: window.getMyChatEligibility は自分のchatEligible（13歳以上かどうか）をFirestoreから取得する関数、
+            // window.isRankingReady() はFirebaseへの接続準備が完了したかを返す関数（どちらもwindow経由なのは、firebase.jsが
+            // 別途type="module"で読み込まれ、このファイルからは直接importできないため）
             if (!window.getMyChatEligibility || !window.isRankingReady || !window.isRankingReady()) return;
             const known = await window.getMyChatEligibility();
             if (known === null) await openBirthdateGateModal();
@@ -164,6 +171,7 @@
          * @returns {Promise<void>}
          */
         export async function openHostWaitingRoom(guestUid, guestName) {
+            // src/engine/firebase.js: window.startRoomHostSession はゲストを待つ部屋セッションをFirestore上に作成する関数
             if (!window.startRoomHostSession) { alert('通信環境を確認して、もう一度試してください'); return; }
             const roomId = await window.startRoomHostSession(guestUid);
             if (!roomId) { alert('招待の開始に失敗しました。時間を置いて試してください'); return; }
@@ -172,10 +180,15 @@
             setActiveChatIsHost(true);
             setMyAvatarPrefix('visit-myroom-mochisuke'); // ホストの自分＝部屋の主＝主役スロット
             setOtherAvatarPrefix('visit-myroom-myself');  // ゲストが来たら訪問者スロットに表示される
+            // ./social.js: setVisitingUid は「いいね」機能の対象uidを更新する関数
             setVisitingUid(null); // 自分の部屋なので「いいね」対象ではない
 
             document.getElementById('visit-myroom-name-label').textContent = `🏠 ${guestName}さんを招待中…`;
+            // ./social.js: renderVisitMyroomLayout は部屋データからマイルームの見た目を描画する関数、
+            // applyVisitOutfit は指定したアバターに着せ替えを反映する関数
+            // ../../progress.js: equippedMyroom は自分が今マイルームに配置しているアイテム情報
             renderVisitMyroomLayout(equippedMyroom); // 自分の部屋なのでローカルデータをそのまま使う（通信不要）
+            // ../../progress.js: equippedKisekae は自分が今着ている着せ替え衣装の情報
             applyVisitOutfit(equippedKisekae, 'visit-myroom-mochisuke');
             const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
             myselfWrap.style.display = 'none';
@@ -185,8 +198,10 @@
             setChatUiVisible(false);
             document.getElementById('visit-waiting-indicator').style.display = 'block';
 
+            // ./core.js: openModal はモーダルウィンドウを開く共通関数
             openModal('visit-myroom-modal');
             document.getElementById('visit-myroom-action-btn').style.display = 'flex'; // 🎭 一人で待っている間から使える
+            // ./social.js: startVisitMochisukeWalk はもちすけ（キャラ）をランダムな位置へ歩かせる演出を開始する関数
             startVisitMochisukeWalk('visit-myroom-mochisuke-breathe-wrap', 'visitHost');
             startRoomSessionWatch(roomId, guestName);
         }
@@ -199,6 +214,8 @@
          * @returns {Promise<void>}
          */
         export async function joinFriendRoomAndChat(hostUid, hostNameFallback) {
+            // src/engine/firebase.js: window.fetchMyroomData は指定uidの人のマイルームデータを取得する関数、
+            // window.joinRoomHostSession はゲスト側として実際に部屋セッションへ参加する関数（どちらもwindow経由）
             if (!window.fetchMyroomData || !window.joinRoomHostSession) return;
             const data = await window.fetchMyroomData(hostUid);
             if (!data || !data.myroom) { alert('🏠 まだお部屋が公開されていません'); return; }
@@ -210,6 +227,7 @@
             setActiveChatIsHost(false);
             setMyAvatarPrefix('visit-myroom-myself');     // ゲストの自分＝訪問者スロット
             setOtherAvatarPrefix('visit-myroom-mochisuke'); // 部屋の主(ホスト)＝主役スロット
+            // ./social.js: setVisitingUid（「いいね」対象uidを更新する関数）にホストのuidをセットする
             setVisitingUid(hostUid); // 既存の「いいね」機能もそのまま使えるようにする
 
             const hostName = data.name || hostNameFallback || '名無しさん';
@@ -219,6 +237,7 @@
             const myselfWrap = document.getElementById('visit-myroom-myself-breathe-wrap');
             myselfWrap.style.display = 'block';
             myselfWrap.dataset.shown = '1';
+            // ../../progress.js: equippedKisekae（自分が今着ている着せ替え衣装の情報）を、./social.js: applyVisitOutfit で反映する
             applyVisitOutfit(equippedKisekae, 'visit-myroom-myself');
 
             setVisitActionButtonsForHosting(false);
@@ -253,6 +272,8 @@
             // 🐛修正：本当のsessionStartedAtがFirestoreから届くまでの一瞬、フィルタが0のままだと
             // 過去の全履歴が一瞬だけ見えてしまう。届くまではInfinityにして「何も出さない」側に倒す
             activeChatSessionStartedAt = Infinity;
+            // src/engine/firebase.js: window.listenRoomSession は部屋セッションの状態をリアルタイム監視する関数。
+            // 戻り値が監視解除用の関数になっており、それをunsubRoomSessionに保持しておく
             unsubRoomSession = window.listenRoomSession(roomId, (data) => {
                 if (!activeChatRoomId || roomId !== activeChatRoomId) return; // 既に退室済みなら無視
                 if (!data || data.endedAt) {
@@ -276,19 +297,27 @@
                 // 🚶 相手側が選んだ歩行の目的地が届いたら、自分の画面でも同じ場所へ同じ速さで歩かせる
                 // （自分でランダムに歩かせるのではなく、相手の選択をそのまま再生することで動きを揃える）
                 const otherWalk = activeChatIsHost ? data.guestWalk : data.hostWalk;
+                // ./social.js: lastAppliedOtherWalkTs/setLastAppliedOtherWalkTs は相手発の歩行イベントの二重再生防止用タイムスタンプとそのセッター、
+                // applyVisitWalkTarget は指定したアバターを指定位置へ歩かせる関数
                 if (otherWalk && typeof otherWalk.ts === 'number' && otherWalk.ts !== lastAppliedOtherWalkTs && otherAvatarPrefix) {
                     setLastAppliedOtherWalkTs(otherWalk.ts);
                     applyVisitWalkTarget(otherAvatarPrefix + '-breathe-wrap', otherWalk.leftPct, otherWalk.bottomPct);
                 }
                 // 🎭 相手が起こした叫ぶ/ごはん/タップの演出イベントが届いたら、自分の画面でも同じ演出を再生する
+                // ./social.js: lastAppliedRoomActionTs/setLastAppliedRoomActionTs は相手発の演出イベントの二重再生防止用タイムスタンプとそのセッター、
+                // applyRemoteRoomAction は相手から届いた演出イベントを自分の画面でも再生する関数
                 if (data.roomAction && typeof data.roomAction.ts === 'number' && data.roomAction.ts !== lastAppliedRoomActionTs) {
                     setLastAppliedRoomActionTs(data.roomAction.ts);
+                    // src/engine/firebase.js: window.getMyUid は自分のuidを返す関数
                     const myUid = window.getMyUid && window.getMyUid();
                     if (data.roomAction.byUid !== myUid) applyRemoteRoomAction(data.roomAction);
                 }
             });
+            // src/engine/firebase.js: window.listenRoomChatMessages はチャットメッセージをリアルタイム監視する関数。
+            // 新着が来るたびにrenderChatMessagesへ全件が渡される。戻り値は監視解除用の関数
             unsubRoomMessages = window.listenRoomChatMessages(roomId, renderChatMessages);
             roomHeartbeatTimer = setInterval(() => {
+                // src/engine/firebase.js: window.sendRoomSessionHeartbeat はセッション中の生存確認として自分の在室時刻を更新する関数
                 if (activeChatRoomId) window.sendRoomSessionHeartbeat(activeChatRoomId, activeChatIsHost);
             }, CONFIG.ROOM_HEARTBEAT_INTERVAL_MS);
         }
@@ -324,7 +353,9 @@
             document.getElementById('visit-waiting-indicator').style.display = 'none';
             document.getElementById('visit-myroom-name-label').textContent = `🏠 ${guestName}さんと一緒にお部屋タイム`;
             // 🎂 チャットの表示可否はstartRoomSessionWatch()の監視コールバック側(chatEnabled)に任せる
+            // ../../main.js: playAudioFile は指定した音声ファイルを再生する共通関数
             playAudioFile('audio/levelup.mp3');
+            // src/engine/firebase.js: window.fetchMyroomData（指定uidの人のマイルームデータを取得する関数）で相手の最新の着せ替えを取り直す
             if (activeChatOtherUid && window.fetchMyroomData) {
                 const data = await window.fetchMyroomData(activeChatOtherUid);
                 applyVisitOutfit(data && data.outfit, 'visit-myroom-myself');
@@ -346,6 +377,7 @@
             stopRoomSessionWatch();
             if (document.getElementById('visit-myroom-modal').style.display === 'flex' || document.getElementById('visit-myroom-modal').classList.contains('modal-open')) {
                 alert(`${otherName || 'お相手'}さんが部屋を後にしました`);
+                // ./social.js: closeVisitMyroom は訪問中の部屋モーダルを閉じ、後片付けをする関数
                 closeVisitMyroom();
             }
         }
@@ -443,6 +475,7 @@
                 const last = msgs[msgs.length - 1];
                 if (last.id !== lastRenderedChatMsgId) {
                     lastRenderedChatMsgId = last.id;
+                    // src/engine/firebase.js: window.getMyUid は自分のuidを返す関数（発言者が自分か相手かを判定するために使う）
                     const myUid = window.getMyUid && window.getMyUid();
                     const mine = last.fromUid === myUid;
                     showChatBubble(mine ? myAvatarPrefix : otherAvatarPrefix, last.text || '');
@@ -463,6 +496,7 @@
                 el.innerHTML = '<div style="text-align:center; color:#aaa; padding:20px 0;">まだメッセージがありません</div>';
                 return;
             }
+            // ../../main.js: escapeHtml はHTML特殊文字をエスケープしてから表示する共通関数（メッセージ内容をそのままinnerHTMLに差し込まないため）
             el.innerHTML = chatMessageHistory.map(m =>
                 `<div style="margin-bottom:8px;"><b>${escapeHtml(m.fromName || '???')}</b>：${escapeHtml(m.text || '')}</div>`
             ).join('');
@@ -493,6 +527,7 @@
             // 🐛修正：以前は送信結果を確認せず即座に入力欄を空にしていたため、送信に失敗しても
             // 見た目上は「送れたように」見えてしまっていた（実際には届いていなかった）。
             // 結果を確認し、失敗時は入力内容を残したまま理由を知らせる
+            // src/engine/firebase.js: window.sendRoomChatMessage はチャットメッセージを送信する関数（{success, code}のような結果を返す）
             const res = await window.sendRoomChatMessage(activeChatRoomId, text.slice(0, CHAT_MAX_LEN));
             if (res && res.success) {
                 input.value = '';

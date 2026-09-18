@@ -100,14 +100,17 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
          * @returns {void}
          */
         export function playSlotSpinLoopSound() {
+            // main.js: getAudioContext は共通のWeb Audio APIコンテキスト（AudioContext）を返す関数
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+            // main.js: loadAudioBuffer は音声ファイルを読み込んでAudioBufferにする関数（一度読み込んだものはキャッシュされる）
             loadAudioBuffer('audio/slot/spin_loop.mp3').then((buffer) => {
                 if (!buffer || !slotIsSpinning) return; // 読み込み中に止まっていたら鳴らさない
                 const source = ctx.createBufferSource();
                 source.buffer = buffer;
                 source.loop = true;
                 const gain = ctx.createGain();
+                // main.js: sfxVolumeMult は設定画面のSE音量スライダーに応じた倍率（0〜1）
                 gain.gain.value = 0.5 * sfxVolumeMult;
                 source.connect(gain).connect(ctx.destination);
                 source.start(0);
@@ -532,6 +535,8 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
          * @returns {void}
          */
         export function startSlotGame(container) {
+            // main.js: IS_DEV_MODE は開発者モードかどうかのフラグ。trueの間、下のHTML内でコイン所持数を「∞」表示にしたり、位置調整ツールを出したりしている
+            // src/minigames/core.js: minigameCoins は全ミニゲーム共通で使う、今持っているミニゲームコインの枚数（下のHTML内で所持数として表示）
             slotIsSpinning = false; slotStoppedCount = 0; slotNextSpinFree = false; // slotPlaysRemainingは、離脱しても引き継がれるようリセットしない
             container.style.background = 'transparent'; // 機体イラストの後ろに白い箱が見えないよう、この画面だけ背景を消す
             container.innerHTML = `
@@ -667,6 +672,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
                 ],
                 { duration: CONFIG.SLOT_COIN_INSERT_ANIM_MS, easing: 'ease-in', fill: 'forwards' }
             );
+            // main.js: playAudioFile は指定した音声ファイルを1回再生する関数
             playAudioFile('audio/slot/coin_insert.mp3');
         }
 
@@ -682,8 +688,11 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
                 document.getElementById('slot-result-text').innerText = `コインが足りません（あと${SLOT_COIN_COST - minigameCoins}枚）`;
                 return;
             }
+            // src/minigames/core.js: setMinigameCoins はminigameCoinsの値を書き換えるセッター関数（importした変数には直接代入できないため経由する）
             if (!IS_DEV_MODE) setMinigameCoins(minigameCoins - SLOT_COIN_COST);
             slotPlaysRemaining += SLOT_PLAYS_PER_COIN; // 残りがあっても、さらに継ぎ足せる（何度でも連続投入できる）
+            // state.js: saveGame はセーブデータをlocalStorage（＋クラウド）に保存する関数
+            // ui.js: updateDisplay は画面全体の表示（所持数など）を最新の状態に描き直す関数
             saveGame(); updateDisplay();
             document.getElementById('slot-coin-value').innerText = IS_DEV_MODE ? '∞' : minigameCoins;
             updateSlotPlaysRemainingDisplay();
@@ -708,6 +717,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
             slotStoppedCount = 0;
             slotStoppedReels = [];
             slotTotalPulls++; slotPullsSinceJackpot++; // 総回転数・前回マーモットからの回転数は、リプレイぶんも含めて数える
+            // progress.js: trackMissionEvent はミッション進捗用のカウンターを1つ加算する関数（第1引数がミッションの種類、第2引数が加算量）
             trackMissionEvent('minigamesToday', 1); trackMissionEvent('minigamesPlayedTotal', 1); trackMissionEvent('gachaSpinsTotal', 1); trackMissionEvent('minigamesThisWeek', 1);
             updateSlotPullsSinceJackpotDisplay();
             if (!slotNextSpinFree) {
@@ -718,6 +728,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
             lever.classList.remove('slot-invite-glow');
             updateSlotPlaysRemainingDisplay();
             updateSlotBonusZoneDisplay();
+            // state.js: saveGame / ui.js: updateDisplay（insertSlotCoinと同じ2つの関数）で保存＆表示更新
             saveGame(); updateDisplay();
             document.getElementById('slot-result-text').innerText = '';
             document.getElementById('slot-payout-popup').style.display = 'none';
@@ -739,6 +750,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
                 { duration: 550, easing: 'ease-in-out' }
             );
             lever.style.pointerEvents = 'none';
+            // main.js: playAudioFile は音声を1回再生する関数、vibrate は端末を振動させる関数（配列は振動パターン[ms]）
             playAudioFile('audio/gacha/crank.mp3');
             vibrate([15]);
 
@@ -796,6 +808,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
             strip.style.transition = 'transform 220ms cubic-bezier(0.2, 0.8, 0.4, 1)';
             strip.style.transform = `translateY(${targetY}px)`;
 
+            // main.js: playAudioFile / vibrate（pullSlotLeverと同じ2つの関数）でリール停止の効果音とバイブを鳴らす
             playAudioFile('audio/tap.mp3');
             vibrate([CONFIG.SLOT_REEL_STOP_VIBRATE_MS]);
 
@@ -846,6 +859,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
          * @returns {void}
          */
         export function triggerSlotReachEffect(symbol, matchingLines) {
+            // main.js: playAudioFile / vibrate でリーチ演出の効果音とバイブを鳴らす
             playAudioFile('audio/slot/reach.mp3');
             vibrate([20, 30, 20]);
             document.getElementById('slot-result-text').style.color = '#ff3d00';
@@ -879,6 +893,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
             cutin.src = 'ui_images/mochisuke/image_scream.webp';
             cutin.style.cssText = 'position:absolute; top:30%; left:50%; width:70%; transform:translate(-50%,-50%); z-index:500; pointer-events:none; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5)); animation: slotCutinSlide 900ms ease-in-out;';
             stage.appendChild(cutin);
+            // main.js: playAudioFile でカットイン専用の効果音を鳴らす
             playAudioFile('audio/gacha/crank.mp3');
             setTimeout(() => cutin.remove(), CONFIG.SLOT_CUTIN_DURATION_MS);
         }
@@ -917,6 +932,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
                         ],
                         { duration: CONFIG.SLOT_PAYOUT_COIN_FALL_DURATION_MS + Math.random() * CONFIG.SLOT_PAYOUT_COIN_FALL_DURATION_VARIANCE_MS, easing: 'ease-in' }
                     ).finished.then(() => coin.remove());
+                    // main.js: playAudioFilePitched は再生ピッチ（速さ・音高）を指定できる効果音再生関数
                     // 当たりが大きいほど、ピッチを少し上げて景気良く聞こえるようにする
                     playAudioFilePitched('audio/tap.mp3', 0.6, pitchRate + (Math.random() - 0.5) * CONFIG.SLOT_PAYOUT_COIN_PITCH_JITTER);
                 }, i * CONFIG.SLOT_PAYOUT_COIN_STAGGER_MS);
@@ -1001,6 +1017,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
                 slotNextSpinFree = true;
                 resultText.style.color = '#4caf50';
                 resultText.innerText = `🍡 リプレイ！(${replayLines.length}ライン) コイン消費なしでもう一度！`;
+                // main.js: playAudioFile / vibrate でリプレイの効果音とバイブを鳴らす
                 playAudioFile('audio/slot/replay.mp3');
                 vibrate([15, 15, 15]);
                 document.getElementById('slot-lever').classList.add('slot-invite-glow'); // コイン投入を飛ばして、直接レバーへ誘導
@@ -1009,7 +1026,9 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
 
             // 複数ライン揃った場合は、それぞれの配当を合計する
             const totalPayout = payoutLines.reduce((sum, l) => sum + SLOT_COIN_COST * l[0].payout, 0);
+            // src/minigames/core.js: setMinigameCoins / minigameCoins で、今の所持枚数に今回の払い出し(totalPayout)を加算する
             setMinigameCoins(minigameCoins + totalPayout);
+            // state.js: saveGame / ui.js: updateDisplay で保存＆表示更新
             saveGame(); updateDisplay();
             document.getElementById('slot-coin-value').innerText = IS_DEV_MODE ? '∞' : minigameCoins;
             resultText.style.color = '#e91e63';
@@ -1036,21 +1055,26 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
             if (bestSymbol.isJackpot) {
                 // 🐹 マーモット：最上位の大当たり演出。コインだけでは物足りないので、ガチャコインも一緒に付与する
                 const bonusGachaCoins = CONFIG.SLOT_JACKPOT_BONUS_GACHA_COINS;
+                // progress.js: setGachaCoins / gachaCoins で、今のガチャコイン所持数におまけ分(bonusGachaCoins)を加算する
                 setGachaCoins(gachaCoins + (bonusGachaCoins));
                 slotJackpotCount++;
+                // progress.js: trackMissionEvent でミッション進捗（今週のジャックポット回数）を加算する
                 trackMissionEvent('jackpotsThisWeek', 1);
                 slotShortestJackpotPulls = (slotShortestJackpotPulls == null) ? slotPullsSinceJackpot : Math.min(slotShortestJackpotPulls, slotPullsSinceJackpot);
                 slotLongestJackpotPulls = (slotLongestJackpotPulls == null) ? slotPullsSinceJackpot : Math.max(slotLongestJackpotPulls, slotPullsSinceJackpot);
                 slotPullsSinceJackpot = 0;
                 updateSlotPullsSinceJackpotDisplay();
+                // state.js: saveGame（マーモット的中の記録もまとめて保存する）
                 saveGame();
                 resultText.innerHTML = `<span style="font-size:1.3rem;">🎉✨ ${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 大当たり！！ ✨🎉</span><br>マーモット揃い！${lineWord} +${totalPayout}枚！！<br>🎰 ガチャコイン+${bonusGachaCoins}枚もおまけ！`;
+                // main.js: playAudioFile / screenFlash（画面を一瞬色でフラッシュさせる関数）/ vibrate で大当たり演出を盛り上げる
                 playAudioFile('audio/mochisuke/japan_clear.mp3');
                 screenFlash('#ff6ec7', CONFIG.SLOT_JACKPOT_FLASH_OPACITY);
                 vibrate([40, 50, 40, 50, 40, 50, 80]);
                 setTimeout(() => showSlotMarmotCelebration(totalPayout, bonusGachaCoins), CONFIG.SLOT_MARMOT_CELEBRATION_DELAY_MS);
             } else {
                 resultText.innerText = `${bestSymbol.icon}${bestSymbol.icon}${bestSymbol.icon} 揃った！${lineWord} +${totalPayout}枚！`;
+                // main.js: playAudioFile / screenFlash / vibrate（マーモット以外の通常当たり演出）
                 playAudioFile(bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_HIGH_PAYOUT ? 'audio/slot/win_seven.mp3' : bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_LOW_PAYOUT ? 'audio/slot/win_bar.mp3' : 'audio/slot/win_small.mp3');
                 screenFlash('#ffd700', bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_MID_PAYOUT ? CONFIG.SLOT_WIN_FLASH_OPACITY_HIGH : CONFIG.SLOT_WIN_FLASH_OPACITY_NORMAL);
                 vibrate(bestSymbol.payout >= CONFIG.SLOT_WIN_TIER_MID_PAYOUT ? [30, 40, 30, 40, 50] : [20, 30, 20]);
@@ -1087,6 +1111,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-17-022';
                 overlay.querySelectorAll('*').forEach(el => el.style.opacity = '0');
                 setTimeout(() => overlay.remove(), CONFIG.SLOT_MARMOT_OVERLAY_FADE_MS);
                 slotBonusZoneSpinsLeft = SLOT_BONUS_ZONE_SPINS;
+                // state.js: saveGame（特化ゾーン突入の状態を保存する）
                 saveGame();
                 updateSlotBonusZoneDisplay();
             });

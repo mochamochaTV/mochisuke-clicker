@@ -1,5 +1,5 @@
         export const stages = [
-            { name: "鹿児島", pinX: 17.1, pinY: 76.5, distance: 500, item: "スイートポテト", itemImg: "omiyage_images/kyushu_okinawa/kagoshima_item.webp", price: 12, diary: "旅の始まりは鹿児島から！桜島がとっても雄大で、パワーをもらった気分やで。ここから日本中をもちでいっぱいにしに行くで！", bg: "bg_images/kyushu_okinawa/kagoshima.webp", diaryImg: "diary_images/kyushu_okinawa/kagoshima_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "鹿児島", pinX: 17.1, pinY: 76.5, distance: 500, item: "スイートポテト", itemImg: "omiyage_images/kyushu_okinawa/kagoshima_item.webp", price: 12, diary: "旅の始まりは鹿児島からや！桜島がとっても雄大で、パワーをもらったで！ここから一緒に日本中をもちでいっぱいにしに行くんや！", bg: "bg_images/kyushu_okinawa/kagoshima.webp", diaryImg: "diary_images/kyushu_okinawa/kagoshima_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "宮崎", pinX: 21.0, pinY: 73.3, distance: 900, item: "完熟マンゴー", itemImg: "omiyage_images/kyushu_okinawa/miyazaki_item.webp", price: 25, diary: "宮崎にやってきたで！ヤシの木が並んで南国気分満点やなあ。お日様を浴びたマンゴーは甘くて最高や！", bg: "bg_images/kyushu_okinawa/miyazaki.webp", diaryImg: "diary_images/kyushu_okinawa/miyazaki_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
             { name: "大分", pinX: 21.5, pinY: 69.4, distance: 1600, item: "ジャズ羊羹", itemImg: "omiyage_images/kyushu_okinawa/oita_item.webp", price: 50, diary: "大分といえば温泉やで！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだわ。", bg: "bg_images/kyushu_okinawa/oita.webp", diaryImg: "diary_images/kyushu_okinawa/oita_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
             { name: "熊本", pinX: 16.2, pinY: 71.8, distance: 3000, item: "陣太鼓", itemImg: "omiyage_images/kyushu_okinawa/kumamoto_item.webp", price: 100, diary: "熊本城を見に行ったで！石垣がすごく高くて圧倒されちゃったわ。からし蓮根はツーンと大人の味や！", bg: "bg_images/kyushu_okinawa/kumamoto.webp", diaryImg: "diary_images/kyushu_okinawa/kumamoto_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
@@ -59,9 +59,10 @@
         //            例: "img: 'ui_images/costume/ninja.webp'" のように書くと、その画像に着せ替わります。
         //            画像を用意しない場合はこの行を省略すれば、filterで色味だけ変える従来方式になります。
         // filter   : imgを指定しない場合の色味加工（CSSのfilter）。imgがある場合は無視されます。
-        // tapBonus : 装備中、タップ力に加算される値
-        // mpsBonus : 装備中、自動増加(もち/秒)に加算される値
+        // tapBonus : タップ力に加算される値
+        // mpsBonus : 自動増加(もち/秒)に加算される値
         // ===================================================================
+
         export const clothesData = [
             { id: "normal", name: "いつもの姿", price: 0, desc: "標準のもちすけスタイル", filter: "drop-shadow(0 10px 10px rgba(0,0,0,0.15))", tapBonus: 0, mpsBonus: 0 },
         ];
@@ -83,17 +84,17 @@
                 morning: [ // 5:00〜10:59
                     "おはよう！今日も一日頑張ろうな！",
                     "おはよう！朝ごはんもう食べたか？",
-                    "んー、よう寝たわ！おはようさん！",
+                    "んー、よく寝れたわ！おはようやで！",
                     "おなかすいたなあ…朝ごはん食べようや！"
                 ],
                 noon: [ // 11:00〜16:59
-                    "こんちゃ！お昼ごはん何食べた？",
+                    "こんちゃ！お昼ごはん何食べたか？",
                     "今日もええ天気やな！",
                     "お昼はもち食べてひと休みするで！",
                     "眠くなってきたわ…お昼寝したいなあ"
                 ],
                 evening: [ // 17:00〜21:59
-                    "こんばんは！今日も一日お疲れさん！",
+                    "こんばんはやで！今日も一日お疲れさまや！",
                     "そろそろ夕ごはんの時間ちゃう？",
                     "今日もいっぱいもち集めたで！"
                 ],
@@ -113,11 +114,13 @@
             },
 
             idleComments: [
-                "画面をタップして もち集めような！",
-                "もちすけと一緒に日本を旅しような！",
+                "タップして もち集めような！",
+                "一緒に日本を旅しような！",
                 "次はどこ行こうか？",
                 "スキルも育てると効率アップするで！",
+                "こまめにショップでおみやげ買うと良いで！",
                 "もちもち？",
+                "もちもちするんや！",
                 "おーい！",
                 "旅を続けるで！",
                 "寝てしまいそうや…"
@@ -212,6 +215,7 @@
             { text: 'ここから、ワイにお土産をあげられるで！', highlight: 'feed-toggle-btn', duration: 4500 },
             { text: 'さあ、日本一周の旅に出発や！応援してるで！', highlight: null, duration: 3500 },
         ];
+
         export const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/mochi_release_pop.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3',
             // 🆕 通常のもちすけの「本格的にドラッグした瞬間の強弱で音が変わる」つつき音（src/squeeze/materials.js の
             // default.pokeSoundFile）。全プレイヤーに聞こえる通常機能なので、他の効果音と同じ扱い。
@@ -224,9 +228,11 @@
             // 🆕 slime_splash.mp3：タップした瞬間に鳴る「ぴちゃ」という水っぽい音（splashSoundFile）。
             // 🆕 slime_poke_still.mp3：長押し中だけループする専用音（longPressLoopSoundFile。default側と同じ役割）。
             'audio/mochisuke/slime_stretch.mp3', 'audio/mochisuke/slime_release_pop.mp3', 'audio/mochisuke/slime_poke.mp3', 'audio/mochisuke/slime_splash.mp3', 'audio/mochisuke/slime_poke_still.mp3'];
+        
         // 🎵 BGMも起動時に先読みしておく一覧。していないと、初めてその場所（ショップ等）に入った瞬間に
         // fetch＋デコードが走ってしまい、移動音とフェードが終わった後もBGMが少し遅れて始まってしまう
         export const BGM_FILES = ['audio/bgm/bgm.mp3', 'audio/bgm/bgm_shop.mp3', 'audio/bgm/bgm_minigame.mp3', 'audio/bgm/bgm_myroom.mp3', 'audio/bgm/bgm_warehouse.mp3', 'audio/bgm/hissatsu_bgm.mp3'];
+        
         export const cheerLines = {
             0: ["もちもちやろ？", "その調子や！", "ええ感じやで！", "もちすけ嬉しいわ！", "いいペースやな！", "もっともっと！", "楽しなってきたな！"],
             50: ["50コンボ突破や！", "頑張れ！", "やるやないか！", "その勢いええで！", "もっといけるやろ！", "ノリノリやな！", "ええ調子やで！"],
@@ -245,6 +251,7 @@
                 "もちすけ界の伝説になったな！", "ありがとう、ここまで一緒に来てくれて！"
             ]
         };
+
         export const comboEndLines = ["ナイスタップ！", "おつかれやで！", "ええコンボやったな！", "また続けような！", "もちもち楽しかったわ！", "ようやったで！"];
 
         // 🎁 ノーマル（灰）で出る消耗品アイテム一覧
@@ -272,17 +279,21 @@
             { id: 'ur',          label: 'ウルトラレア',  weight: 0.1, filter: 'saturate(3) hue-rotate(0deg)',                                  color: '#ff6ec7', desc: '最上位ランクの服・帽子・アクセサリー',
               flair: { flash: 0.7, glow: 90, vibrate: [25, 30, 25, 30, 25, 40], nameScale: 1.55, rays: true } }, // 虹（後でグラデ演出に差し替え予定）
         ];
+
         export const OMIYAGE_ROWS = [
             { itemTop: 20.2, itemBottom: 34.0, plateTop: 34.5, plateBottom: 37.7 },
             { itemTop: 38.1, itemBottom: 50.9, plateTop: 51.2, plateBottom: 54.1 },
             { itemTop: 54.8, itemBottom: 67.6, plateTop: 68.0, plateBottom: 71.2 }
         ];
+
         export const OMIYAGE_COLS = [
             { left: 9.2,  right: 35.2 },
             { left: 36.6, right: 61.9 },
             { left: 63.7, right: 89.7 }
         ];
+
         export const feedTeaseComments = ["ちょうだい！", "まだ〜？", "はやくよこせ！"];
+        
         export const FEED_TEASE_MAX_LEVEL = feedTeaseComments.length; // これ以上は毎回叫ぶだけになる
 
         // ===================================================================
@@ -305,6 +316,7 @@
                 { id: 'hat_graduate',       name: '学士の帽子',        star: 1, img: 'ui_images/kisekae/hat_graduate.webp',      top: -17.232144, left: 21.621614, width: 49.729738, height: 35.982146, locked: true },
                 { id: 'hat_sankakukin',     name: '三角巾',            star: 1, img: 'ui_images/kisekae/hat_sankakukin.webp',    top: -16.05825, left: -12.35295, width: 119.999992, height: 38.737865 },
             ],
+
             face: [
                 { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'ui_images/kisekae/face_sunglasses.webp',   top: -3.392867, left: -14.972971, width: 124.000039, height: 41.464299, rotation: -5, locked: true },
                 { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'ui_images/kisekae/face_glasses_black.webp', top: -0.267859,  left: -23.081076, width: 141.837891, height: 35.2143,   rotation: -5, locked: true },
@@ -313,6 +325,7 @@
                 { id: 'face_oni_mask',      name: '鬼のお面',          star: 2, img: 'ui_images/kisekae/face_oni_mask.webp',     top: -4.174759, left: 5.294116,  width: 87.058823,  height: 58.058251, rotation: 0 },
                 { id: 'face_pilot_goggles', name: 'パイロットゴーグル', star: 2, img: 'ui_images/kisekae/face_pilot_goggles.webp', top: -6.45631,  left: -16.17647, width: 125.29411,  height: 49.368932, rotation: -5 },
             ],
+
             clothes: [
                 { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'ui_images/mochisuke/image_0.webp' },
                 { id: 'clothes_king_red',    name: 'おうさまの服（赤）', star: 3, img: 'ui_images/kisekae/clothes_king_red.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
@@ -330,6 +343,7 @@
                 { id: 'clothes_pirate_cyan',   name: '海賊の服（水）',   star: 2, img: 'ui_images/kisekae/clothes_pirate_cyan.webp', mouthOverride: { top: 36.986244, left: 49.62382, width: 17 } },
                 { id: 'clothes_kacchu',        name: 'かっちゅう',       star: 2, img: 'ui_images/kisekae/clothes_kacchu.webp', mouthOverride: { top: 36.512312, left: 48.44735, width: 17 } },
             ],
+
             back: [
                 // 🕊️ 翼は左右それぞれ8枚のコマ送りで羽ばたく。大きさは両翼・全フレーム共通、位置(top/left)だけ1枚ずつ個別に調整できる
                 {
@@ -359,16 +373,18 @@
                     ],
                 },
             ],
+
             fullbody: [
-                // 🤖 全身は他のhat/face/clothesと同時装着不可。しゃべる時だけ口が5コマで開閉する
+                // 🤖 全身は他のhat/face/clothesと同時装着不可。しゃべる時だけ顔のシールドが5コマで開閉する
                 {
                     id: 'fullbody_robo', name: 'ロボもちすけ', star: 4,
-                    img: 'ui_images/kisekae/fullbody_robo.webp', // 通常時（口閉じ）
-                    mouthFrames: [1,2,3,4,5].map(n => `ui_images/kisekae/fullbody_robo_mouth_${n}.webp`), // 口が開くコマ送り
+                    img: 'ui_images/kisekae/fullbody_robo.webp', // 通常時（顔のシールド閉じ）
+                    mouthFrames: [1,2,3,4,5].map(n => `ui_images/kisekae/fullbody_robo_mouth_${n}.webp`), // 顔のシールドが開くコマ送り
                 },
             ],
-            // 🆕 以前はfullbodyの中に一緒に入れていたが、「着せ替え部屋でスクイーズ衣装とロボもちすけを
-            // 別枠にしてほしい」というまもすいの要望を受け、専用のカテゴリとして分離した（2-6・4-12参照）。
+
+            // 🆕 以前はfullbodyの中に一緒に入れていたが、着せ替え部屋でスクイーズ衣装とロボもちすけを
+            // 別枠にしたかったため専用のカテゴリとして分離した。
             // 見た目上のカルーセル・カテゴリボタンだけを分けており、実際に装備する時の置き場所
             // （equippedKisekae.fullbody / previewKisekae.fullbody という1つの「全身スロット」）は
             // fullbodyのアイテムと共用したまま。どちらのカテゴリのアイテムも同じ1スロットを取り合う形なので、
@@ -389,7 +405,9 @@
                 },
             ],
         };
+
         export const KISEKAE_CATEGORY_LABELS = { hat: '帽子', face: '顔パーツ', clothes: '服', back: '背中', fullbody: '全身', squeeze: 'スクイーズ' };
+        
         export const DEFAULT_MOUTH_POSITION = { top: 36.986245, left: 48.44735, width: 17 }; // 服の指定が無い時（初期衣装含む）はこちら
 
         // ===================================================================
@@ -397,7 +415,7 @@
         // 進捗は trackKey に対応するカウンター(missionCounters)を見て判定する
         // ===================================================================
         // 🔰 チュートリアルミッション：一度きり・累計カウンター（Totalが付くキー）で進捗を見る。
-        // 「ガチャを回そう」はここに置く（デイリー/ウィークリーで毎回ガチャを要求するのはガチャ運要素と
+        // 「ガチャを回そう」はここに置く（デイリー/ウィークリーで毎回ガチャを要求するのはガチャ要素と
         // 相性が悪いという判断のため、初回だけ体験してもらう形に変更した）
         export const TUTORIAL_MISSIONS = [
             { id: 'tut_tap10', text: '10回タップしよう！', trackKey: 'totalTaps', target: 10, reward: 5 },
@@ -427,7 +445,7 @@
             { id: 'weekly_skill5', text: 'スキルを合計5回使う', trackKey: 'skillUsedThisWeek', target: 5, reward: 15 },
         ];
         export const DAILY_MISSION_COUNT = 3; // 毎日、プールの中からこの数だけランダムに選ばれる
-        export const WEEKLY_MISSION_COUNT = 2;
+        export const WEEKLY_MISSION_COUNT = 3;
 
         // ===================================================================
         // 🚶 移動画面：家4つ・看板4つ・戻る看板1つの座標（すべて#move-menu-stage基準の%指定）
@@ -496,15 +514,18 @@
             ],
             small_deco: [],  // 小物（観葉植物・ぬいぐるみなど）
         };
+
         export const MYROOM_CATEGORY_LABELS = { wallpaper: '壁紙', flooring: '床', wall_deco: '壁掛け', big_furniture: '大型家具', table: '机・棚', small_deco: '小物' };
         // 家具4カテゴリの初期位置（プレイヤーが動かした後は、equippedMyroomの方の座標が優先される）
         // wall_decoだけ、壁の範囲(0〜62%)からはみ出せないよう制限する。他は床にさえ着いていれば壁側にはみ出してもよい
+        
         export const MYROOM_SLOT_POSITIONS = {
             wall_deco:      { top: 8,  left: 30, width: 26, height: 20 },
             big_furniture:  { top: 48, left: 4,  width: 40, height: 40 },
             table:          { top: 52, left: 56, width: 30, height: 32 },
             small_deco:     { top: 30, left: 68, width: 20, height: 20 },
         };
+
         export const MYROOM_WALL_ZONE_BOTTOM = 62; // 壁掛けが超えてはいけない下限（壁紙と床の境界と同じ値）
         export let MYROOM_MOCHISUKE_SIZE = { width: 22 }; // もちすけ本体の大きさ（管理者が調整）
         export const MYROOM_FURNITURE_LIMIT_PER_CATEGORY = 3; // カテゴリごとに置ける最大個数
@@ -517,14 +538,14 @@
         // 🚧 大きさ・位置(40px)が確定したので、CORNER_BTN_ADJUST_TOOL_ENABLEDと同じくfalseに戻してパネルを非表示にした。
         // また調整したくなったら true に戻すだけでOK
         export const MOCHI_ICON_ADJUST_TOOL_ENABLED = false;
-        // 🆕【まもすいの指摘で修正】このアイコンはwidth/heightで大きくすると、そのぶん.score-row（所持もち数の枠）が
+
+        // 🆕【修正】このアイコンはwidth/heightで大きくすると、そのぶん.score-row（所持もち数の枠）が
         // 広がってしまう。そのためMOCHI_ICON_SIZEは「見た目上の目標サイズ(px)」として扱い、実際に反映する時は
         // MOCHI_ICON_BASE_SIZE_PX（枠として確保されている本来の大きさ＝アプデ前と同じ24px、これは変えない）との
         // 比率をtransform:scaleに変換する（applyMochiIconAdjust@src/ui/core.js参照）。これにより見た目だけ
         // 拡大縮小され、枠の大きさ自体はアイコンの大きさに関わらず常にアプデ前のまま変わらない。
         export const MOCHI_ICON_BASE_SIZE_PX = 24;
         export let MOCHI_ICON_SIZE = 40; // アイコンの見た目上の目標サイズ(px)。まもすいが実機調整で40pxが良いと判断した値
-
         export let MOCHI_ICON_OFFSET = { dx: 0, dy: 0 }; // 通常位置からのズラし量(px)
         /**
          * MOCHI_ICON_SIZEを更新する（開発者用調整ツール）。
@@ -532,6 +553,7 @@
          * @returns {void}
          */
         export function setMOCHI_ICON_SIZE(v) { MOCHI_ICON_SIZE = v; }
+        
         export let CORNER_BTN_SIZE = 50; // 共通の大きさ(px)
         export const CORNER_BTN_OFFSETS = {
             'map-toggle-btn':  { vert: 1,  horiz: 12 },  // top: calc(8px+safe-area+vert)px; left: horizpx;
@@ -539,6 +561,7 @@
             'ui-toggle-btn':   { vert: 88, horiz: 10 },  // bottom: calc(14px+safe-area+vert)px; left: horizpx;
             'feed-toggle-btn': { vert: 88, horiz: 10 },  // bottom: calc(14px+safe-area+vert)px; right: horizpx;
         };
+
         // 📱 PWA（ホーム画面に追加した版）だけ、下2つのボタンの位置を別途上書きする
         export const CORNER_BTN_OFFSETS_PWA_OVERRIDE = {
             'ui-toggle-btn':   { vert: 50, horiz: 11 },

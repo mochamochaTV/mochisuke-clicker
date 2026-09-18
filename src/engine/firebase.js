@@ -45,6 +45,7 @@ try {
 // メインのゲームスクリプト（type=moduleではない）から呼べるようにwindowへ橋渡しする
 window.submitRankingScore = async function (name, scoreVal, totalTapsVal, prestigeCountVal, outfitVal) {
     if (!fbReady || !db || !currentUid) return;
+    // main.js: window.IS_DEV_MODE は開発者モードかどうかのフラグ（importではなくwindow経由なのは、main.js側はtype="module"ではなく、このfirebase.jsだけが別のtype="module"スクリプトとして読み込まれているため）
     if (window.IS_DEV_MODE) return; // 開発者モード中は、水増しした数値がランキングに反映されないよう送信自体を止める
     try {
         await setDoc(doc(db, "rankings", currentUid), {

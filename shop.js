@@ -91,6 +91,7 @@ import {
          * 転生ショップの「おみやげ価格割引」レベルに応じた価格倍率（1未満）を計算する。
          * @returns {number} 価格にかける割引倍率
          */
+        // progress.js: prestigeShopLv は転生ショップの各アップグレードの購入レベルをまとめたオブジェクト
         export function getOmiyagePriceMultiplier() { return 1 - prestigeShopLv.omiyagePriceDiscount * CONFIG.OMIYAGE_PRICE_DISCOUNT_PER_LEVEL; } // 価格そのものを割引
         /**
          * 転生ショップの「おみやげ値上がり緩和」レベルに応じた、レベルごとの価格上昇倍率（べき乗の底）を計算する。
@@ -118,8 +119,12 @@ import {
          */
         export function equipClothe(id) {
             equippedClotheId = id;
+            // tap.js: resetMochiFilter は装備中の見た目に合わせてもちの表示フィルターをリセットする関数
             resetMochiFilter();
-            saveGame(); updateDisplay();
+            // state.js: saveGame はセーブデータを保存する関数
+            saveGame();
+            // ui.js: updateDisplay は画面表示全体を最新の状態に更新する関数
+            updateDisplay();
         }
 
         // 起動時に読み込まなくていい大きな画像（マップ・おみやげ屋の背景）は、実際に開いた時だけ読み込む
@@ -129,13 +134,17 @@ import {
          */
         export function openShop() {
             const overlay = document.getElementById('fade-overlay');
+            // main.js: playAudioFile は指定した音声ファイルを再生する関数
             playAudioFile('audio/move.mp3'); // 県移動の時と同じ、移動音
             overlay.classList.add('fade-black');
             setTimeout(() => {
+                // main.js: lazyLoadImage は画像を実際に開いたタイミングで遅延読み込みする関数
                 lazyLoadImage('omiyage-shelf-img');
+                // ui.js: openModal はモーダル要素を表示する関数
                 openModal('shop-modal');
                 switchShopTab(currentShopTab);
                 updateShopTabHighlight();
+                // main.js: playBgmLoop は指定したBGMをループ再生に切り替える関数
                 playBgmLoop('audio/bgm/bgm_shop.mp3'); // ショップ専用BGMに切り替え
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.SHOP_FADE_CLEAR_MS);
             }, CONFIG.SHOP_TRANSITION_MS);
@@ -149,8 +158,10 @@ import {
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
+                // ui.js: closeModal はモーダル要素を非表示にする関数
                 closeModal('shop-modal');
                 playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
+                // ui.js: openMoveMenu は移動先選択メニューを開く関数
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.SHOP_FADE_CLEAR_MS);
             }, CONFIG.SHOP_TRANSITION_MS);
@@ -206,6 +217,7 @@ import {
          * @returns {Object} 抽選されたレア度オブジェクト
          */
         export function pickGachaRarity() {
+            // data.js: GACHA_RARITIES はガチャのレア度ごとの出現確率(weight)や見た目を定義した配列
             const total = GACHA_RARITIES.reduce((s, r) => s + r.weight, 0);
             let roll = Math.random() * total;
             for (const r of GACHA_RARITIES) {
@@ -229,8 +241,10 @@ import {
                 [{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }],
                 { duration: CONFIG.GACHA_CRANK_SPIN1_MS, easing: 'ease-in' }
             ).finished.then(() => {
+                // main.js: screenShake は画面全体を揺らす演出を行う関数
                 // ステージ②：少し速く2回転、軽い振動
                 screenShake('small');
+                // main.js: vibrate は端末をバイブレーションさせる関数（パターンはミリ秒の配列）
                 vibrate(CONFIG.GACHA_VIBRATE_STAGE2);
                 return crank.animate(
                     [{ transform: 'rotate(0deg)' }, { transform: 'rotate(720deg)' }],
@@ -294,6 +308,8 @@ import {
          * @returns {Object} 選ばれた消耗品アイテムのデータ
          */
         export function grantRandomNormalConsumable() {
+            // main.js: pickRandom は配列からランダムに1要素を選ぶ関数
+            // data.js: NORMAL_CONSUMABLE_ITEMS はガチャのノーマル枠で出る消耗品アイテムの一覧
             const item = pickRandom(NORMAL_CONSUMABLE_ITEMS);
             ticketInventory[item.id] = (ticketInventory[item.id] || 0) + 1;
             saveGame(); updateDisplay();
@@ -309,16 +325,21 @@ import {
         export function useTicket(itemId) {
             if ((ticketInventory[itemId] || 0) <= 0) return;
             if (itemId === 'minigameTicket') {
+                // minigames.js: minigamePlaysUsedToday はミニゲームごとの本日の使用済み回数を持つオブジェクト
                 Object.keys(minigamePlaysUsedToday).forEach(k => {
                     minigamePlaysUsedToday[k] = Math.max(0, (minigamePlaysUsedToday[k] || 0) - 1);
                 });
             } else if (itemId === 'cooldownTicket') {
+                // tap.js: skills はスキルごとの現在のクールタイム等を持つオブジェクト
                 Object.keys(skills).forEach(k => { skills[k].currentCd = 0; });
             } else if (itemId === 'mochi30minTicket') {
+                // state.js: score/setScore は現在のもち（スコア）と、それを書き換えるための関数
+                // tap.js: getMps は現在の自動増加量（1秒あたりのもち増加量）を返す関数
                 setScore(score + (getMps() * CONFIG.MOCHI_30MIN_TICKET_SECONDS)); // 30分ぶんの自動増加を即座に付与
             }
             ticketInventory[itemId]--;
             saveGame(); updateDisplay();
+            // ui.js: openTicketInventory はチケット所持数の一覧画面を開く関数
             openTicketInventory(); // 一覧を開いている場合、個数表示を更新する
         }
         window.useTicket = useTicket; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
@@ -329,6 +350,8 @@ import {
          */
         export function updateGachaCoinDisplay() {
             const el = document.getElementById('gacha-coin-value');
+            // main.js: IS_DEV_MODE は開発モードかどうかのフラグ、formatMochi は数値を「〇〇もち」表示用の文字列に整形する関数
+            // progress.js: gachaCoins は所持しているガチャコインの枚数
             if (el) el.innerText = IS_DEV_MODE ? '∞' : formatMochi(gachaCoins);
         }
 
@@ -343,6 +366,7 @@ import {
             if (showing) { overlay.style.display = 'none'; return; }
 
             const listEl = document.getElementById('gacha-rates-list');
+            // data.js: GACHA_RARITIES はガチャのレア度ごとの出現確率・色・説明を持つ配列
             listEl.innerHTML = GACHA_RARITIES.map(r => `
                 <div style="display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #eee;">
                     <div style="width:14px; height:14px; border-radius:50%; background:${r.color}; flex-shrink:0; box-shadow:0 0 0 2px #fff, 0 0 0 3px ${r.color};"></div>
@@ -392,6 +416,7 @@ import {
             const listEl = document.getElementById('gacha-item-rate-list');
             let rows = [];
             if (tabId === 'normal') {
+                // data.js: NORMAL_CONSUMABLE_ITEMS（ノーマル枠の消耗品一覧）を使って均等に排出率を割り振る
                 const per = (rarity.weight / NORMAL_CONSUMABLE_ITEMS.length).toFixed(2);
                 rows = NORMAL_CONSUMABLE_ITEMS.map(item => ({ img: item.img, name: item.name, rate: per }));
             } else if (tabId === 'sr' || tabId === 'ur') {
@@ -403,6 +428,7 @@ import {
                 // normalRare / rare：衣装とスプレーが半々
                 const star = { normalRare: 1, rare: 2 }[tabId];
                 const pool = getKisekaeItemsByStar(star);
+                // data.js: SPRAY_ITEMS はガチャで出るスプレーアイテムの一覧
                 const sprayItem = SPRAY_ITEMS.find(i => i.star === star);
                 const costumeRate = (rarity.weight * CONFIG.GACHA_SPRAY_SPLIT_RATE / pool.length).toFixed(2);
                 rows = pool.map(item => ({ img: item.img || (item.leftFrames ? item.leftFrames[0] : ''), name: item.name, rate: costumeRate }));
@@ -435,11 +461,15 @@ import {
         export function startGachaSpin() {
             const spinBtn = document.getElementById('gacha-spin-btn');
             if (spinBtn.disabled) return;
+            // main.js: IS_DEV_MODE は開発モードかどうかのフラグ（trueだとコインを消費せず遊べる）
+            // progress.js: gachaCoins は所持ガチャコインの枚数
             if (!IS_DEV_MODE && gachaCoins < GACHA_COST_SINGLE) {
                 alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_SINGLE - gachaCoins}枚必要です）\n\nステージクリア（スタンプ）やおしごとミッションのクリア、日本制覇・転生でも手に入ります！`);
                 return;
             }
+            // progress.js: setGachaCoins はガチャコインの枚数を書き換える関数
             if (!IS_DEV_MODE) setGachaCoins(gachaCoins - (GACHA_COST_SINGLE));
+            // progress.js: trackMissionEvent はミッションの進行カウンターを加算する関数
             trackMissionEvent('gachaSpinsTotal', 1);
 
             currentGachaRarity = pickGachaRarity(); // 🎨 この回で出るレア度を先に決めておく（カプセルの色に反映する）
@@ -537,6 +567,7 @@ import {
             const capsuleBottom = document.getElementById('gacha-capsule-bottom');
             playAudioFile('audio/gacha/open.mp3');
             vibrate(CONFIG.GACHA_OPEN_VIBRATE);
+            // main.js: screenFlash は画面全体を指定色で一瞬光らせる演出関数
             screenFlash('#ffffff', CONFIG.GACHA_FLASH_ALPHA_STANDARD);
 
             capsuleWhole.style.display = 'none';
@@ -569,6 +600,7 @@ import {
             // （2-6・4-12参照）。あわせて、fullbodyから分離した新カテゴリ'squeeze'もプール対象に追加しておく
             // （今はdevOnlyなアイテムしか無いため実質は何も追加されないが、将来devOnly:trueを外して
             // 正式に実装する時、ここへの追記を忘れずに済む）。
+            // data.js: KISEKAE_ITEMS はカテゴリ別（帽子・顔・服など）の着せ替えアイテム一覧
             ['hat', 'face', 'clothes', 'back', 'fullbody', 'squeeze'].forEach(cat => {
                 KISEKAE_ITEMS[cat].forEach(item => {
                     if (item.star === star && item.id !== 'clothes_mochisuke_tshirt' && !item.devOnly) pool.push({ ...item, category: cat });
@@ -598,6 +630,7 @@ import {
          */
         export function grantGachaKisekaeItem(star) {
             const pool = getKisekaeItemsByStar(star);
+            // progress.js: ownedKisekaeItems はカテゴリ別に所持済み着せ替えアイテムのID一覧を持つオブジェクト
             const notOwned = pool.filter(item => !(ownedKisekaeItems[item.category] || []).includes(item.id));
             const candidates = notOwned.length > 0 ? notOwned : pool; // 全部持っていたら重複当選になる
             const picked = pickRandom(candidates);
@@ -608,6 +641,7 @@ import {
                 ownedKisekaeItems[picked.category].push(picked.id);
             } else {
                 refundCoins = DUPLICATE_REFUND_BY_STAR[star] || 0;
+                // progress.js: setGachaCoins/gachaCoins でガチャコインを重複時の還元分だけ増やす
                 setGachaCoins(gachaCoins + (refundCoins));
             }
             return { item: picked, isDuplicate, refundCoins };
@@ -711,6 +745,7 @@ import {
         export function startGachaSpin10() {
             const spin10Btn = document.getElementById('gacha-spin10-btn');
             if (spin10Btn.disabled) return;
+            // main.js: IS_DEV_MODE / progress.js: gachaCoins（startGachaSpinと同様、コイン残高チェック用）
             if (!IS_DEV_MODE && gachaCoins < GACHA_COST_TEN) {
                 alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_TEN - gachaCoins}枚必要です）\n\nステージクリア（スタンプ）やおしごとミッションのクリア、日本制覇・転生でも手に入ります！`);
                 return;
@@ -985,10 +1020,13 @@ import {
          * @returns {void}
          */
         export function buyFurnitureItem(cat, itemId) {
+            // data.js: MYROOM_ITEMS はマイルームに置ける家具アイテムのカテゴリ別一覧
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             if (!item) return;
+            // state.js: score/setScore は現在のもち所持数と、それを書き換える関数
             if (!IS_DEV_MODE && score < item.price) return;
             if (!IS_DEV_MODE) setScore(score - (item.price));
+            // progress.js: ownedMyroomItems はカテゴリ別に所持している家具アイテムIDの一覧（重複購入可なので配列に複数入り得る）
             if (!ownedMyroomItems[cat]) ownedMyroomItems[cat] = [];
             ownedMyroomItems[cat].push(itemId); // 複数個買えるよう、重複を許可する（所持数は個数で管理）
             playAudioFile('audio/levelup.mp3');
@@ -1006,6 +1044,7 @@ import {
         export function previewShopFurniture(cat, itemId) {
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             if (!item) return;
+            // progress.js: equippedMyroom は現在装備中のマイルームアイテム（壁紙・床など）を持つオブジェクト
             const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === equippedMyroom.wallpaper) || MYROOM_ITEMS.wallpaper[0];
             const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === equippedMyroom.flooring) || MYROOM_ITEMS.flooring[0];
             document.getElementById('furniture-preview-wallpaper').src = wallpaperItem.img;
@@ -1014,6 +1053,7 @@ import {
             // 実際の配置と同じ考え方で、なるべく画面中央（壁掛けは壁の中央）に表示する
             let top, left;
             if (cat === 'wall_deco') {
+                // data.js: MYROOM_WALL_ZONE_BOTTOM は壁掛けアイテムを置ける領域の下端位置（%）
                 top = (MYROOM_WALL_ZONE_BOTTOM - item.height) / 2;
                 left = (100 - item.width) / 2;
             } else {
@@ -1252,15 +1292,19 @@ import {
          * @returns {void}
          */
         function renderFurnitureTab(listContainer) {
+            // data.js: MYROOM_CATEGORY_LABELS はカテゴリID→日本語見出しの対応表
             ['wall_deco', 'big_furniture', 'table'].forEach(cat => {
                 const heading = document.createElement('div');
                 heading.style.cssText = 'font-size:0.75rem; font-weight:900; color:#8d6e63; margin:10px 0 4px;';
                 heading.textContent = `${MYROOM_CATEGORY_LABELS[cat]}`;
                 listContainer.appendChild(heading);
+                // data.js: MYROOM_ITEMS はカテゴリ別の家具アイテム一覧
                 MYROOM_ITEMS[cat].forEach(item => {
+                    // progress.js: ownedMyroomItems は所持済み家具のID一覧（カテゴリ別）
                     const ownedCount = (ownedMyroomItems[cat] || []).filter(id => id === item.id).length;
                     const row = document.createElement('div');
                     row.className = 'list-item';
+                    // state.js: score は現在のもち所持数
                     const canBuy = score >= item.price;
                     const countBadge = ownedCount > 0 ? `<span style="color:#4caf50; font-weight:900; font-size:0.68rem;">所持:${ownedCount}個</span>` : '';
                     const btnHtml = `<button class="item-action-btn btn-shop" ${canBuy ? '' : 'disabled'} onclick="buyFurnitureItem('${cat}','${item.id}')" style="background:#ff9800; color:white;">${formatMochi(item.price)}もち</button>`;
@@ -1277,13 +1321,16 @@ import {
          * @returns {void}
          */
         function renderSkillsTab(listContainer) {
+            // tap.js: skills はスキルごとのレベル・価格・解放条件などを持つオブジェクト
             Object.keys(skills).forEach(key => {
                 const s = skills[key];
                 const row = document.createElement('div');
                 row.className = "list-item";
 
+                // progress.js: currentStageIndex は現在プレイ中のステージ番号
                 if (currentStageIndex < s.unlockStage) {
                     // まだ解放条件を満たしていない
+                    // data.js: stages はステージ（都道府県）データの配列
                     const reqStageName = stages[s.unlockStage] ? stages[s.unlockStage].name : "???";
                     row.style.opacity = "0.55";
                     row.innerHTML = `<div class="item-info"><span class="item-title">🔒 ${s.name}</span><span class="item-desc">「${reqStageName}」到達で解放</span></div><button class="item-action-btn" disabled>ロック中</button>`;
@@ -1354,8 +1401,10 @@ import {
          */
         export function renderOmiyageShelf(shake) {
             syncOmiyageImageFrame();
+            // data.js: stages はステージ（都道府県）データの配列。おみやげは1ステージにつき1個
             const maxPage = Math.ceil(stages.length / OMIYAGE_PAGE_SIZE) - 1;
             if (omiyagePage > maxPage) omiyagePage = 0;
+            // main.js: formatMochi は数値を「〇〇もち」表示用に整形する関数 / state.js: score は現在の所持もち数
             document.getElementById('omiyage-money-value').innerText = formatMochi(score);
 
             const slotsLayer = document.getElementById('omiyage-slots-layer');
@@ -1365,9 +1414,11 @@ import {
             for (let slot = 0; slot < OMIYAGE_PAGE_SIZE; slot++) {
                 const i = startIdx + slot;
                 if (i >= stages.length) continue;
+                // data.js: OMIYAGE_ROWS/OMIYAGE_COLS は棚の行・列ごとの配置座標（%）を定義した配列
                 const rowDef = OMIYAGE_ROWS[Math.floor(slot / 3)];
                 const colDef = OMIYAGE_COLS[slot % 3];
                 const stage = stages[i];
+                // progress.js: currentStageIndex は現在プレイ中のステージ番号（これより先はまだロック中）
                 const isLocked = i > currentStageIndex;
 
                 const itemDiv = document.createElement('div');
@@ -1455,8 +1506,10 @@ import {
             // →どのおみやげが伸びすぎているか、プレイヤー自身が実感しやすいように
             let contributionText = '';
             if (currentLv > 0) {
+                // progress.js: getPrefTrophy はその県のトロフィー段階（'gold'等）を判定する関数
                 const isGoldTrophyHere = getPrefTrophy(idx) === 'gold';
                 const myValue = currentLv * (stage.tapBonus || stage.mpsBonus) * (isGoldTrophyHere ? CONFIG.GOLD_TROPHY_BONUS_MULT : 1);
+                // tap.js: getTapPower/getMps は現在のタップ力・自動増加量（全おみやげ等込み）を返す関数
                 const totalValue = stage.tapBonus ? getTapPower() : getMps();
                 const percent = totalValue > 0 ? (myValue / totalValue * 100) : 0;
                 contributionText = ` ／ 全体の${percent < CONFIG.CONTRIBUTION_MIN_DISPLAY_PERCENT ? '<0.1' : percent.toFixed(1)}%`;
@@ -1531,10 +1584,14 @@ import {
         export function buyOmiyage(idx) {
             const stage = stages[idx]; const currentLv = purchasedItems[idx] || 0;
             const nextPrice = getOmiyagePrice(stage, currentLv);
+            // state.js: score/setScore で所持もち数を確認・消費する
             if (score >= nextPrice) {
                 setScore(score - (nextPrice)); purchasedItems[idx] = currentLv + 1;
+                // progress.js: trackMissionEvent はミッションの進行カウンターを加算する関数
                 trackMissionEvent('omiyageBoughtTotal', 1); trackMissionEvent('omiyageBoughtToday', 1);
                 playAudioFile('audio/levelup.mp3');
+                // ui.js: showMochiComment はもちすけにセリフを喋らせる関数
+                // main.js: pickRandom は配列からランダムに1件選ぶ関数 / data.js: dialogueData はセリフ文言集
                 showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
                 saveGame(); renderShopList(); updateDisplay(); updateShopTabHighlight();
             }
@@ -1546,6 +1603,7 @@ import {
          * @returns {void}
          */
         export function buyKisekae(id) {
+            // data.js: clothesData は購入可能な衣装データの配列
             const target = clothesData.find(c => c.id === id);
             if (score >= target.price && !purchasedClothes[id]) {
                 setScore(score - (target.price)); purchasedClothes[id] = true;
@@ -1561,6 +1619,7 @@ import {
          */
         export function updateShopTabHighlight() {
             const skillTab = document.getElementById('shop-tab-skills');
+            // ui.js: hasNewlyPurchasableSkill/hasNewlyPurchasableOmiyage は「新しく買えるようになったものがあるか」を判定する関数
             if (skillTab) skillTab.classList.toggle('shop-recommend-glow', hasNewlyPurchasableSkill());
             const omiyageTab = document.getElementById('shop-tab-omiyage');
             if (omiyageTab) omiyageTab.classList.toggle('shop-recommend-glow', hasNewlyPurchasableOmiyage());

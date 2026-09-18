@@ -37,6 +37,8 @@ import { consumeMinigamePlay, endMinigameToTiles, grantMinigameReward, minigameB
          */
         export function startConcentrationGame(container) {
             const candidates = [];
+            // progress.js: currentStageIndex は現在プレイ中のステージ（県）のインデックス
+            // data.js: stages は全都道府県のステージ定義配列（.itemImgが名産品イラストの有無を表す）
             for (let i = 0; i <= currentStageIndex; i++) { if (stages[i].itemImg) candidates.push(stages[i]); }
             if (candidates.length < CONFIG.CONCENTRATION_PAIR_COUNT) {
                 container.innerHTML = `<div style="text-align:center; padding:20px;">
@@ -111,6 +113,7 @@ import { consumeMinigamePlay, endMinigameToTiles, grantMinigameReward, minigameB
             if (st.flippedIndices.includes(i) || st.cards[i].matched) return;
             if (st.flippedIndices.length >= 2) return;
             st.flippedIndices.push(i);
+            // main.js: playAudioFile() は指定した音声ファイルを再生する共通関数
             playAudioFile('audio/tap.mp3');
             updateConcentrationCardVisual(i);
 
@@ -152,21 +155,29 @@ import { consumeMinigamePlay, endMinigameToTiles, grantMinigameReward, minigameB
          * @returns {void}
          */
         export function finishConcentration() {
+            // core.js: consumeMinigamePlay() は本日のプレイ回数を1消化して保存する共通処理
             consumeMinigamePlay('concentration');
             const moves = concentrationState.moves;
             const found = CONCENTRATION_THRESHOLDS.find(([max]) => moves <= max);
             const mult = found ? found[1] : CONFIG.CONCENTRATION_DEFAULT_MULT;
+            // core.js: grantMinigameReward() は渡した倍率からミニゲームコインを計算して付与する共通処理
             const reward = grantMinigameReward(mult);
+            // core.js: minigameBests はミニゲームの自己ベスト記録をまとめたオブジェクト（.concentrationが最少手数の記録先。小さいほど良い）。
+            // core.jsからimportした同じオブジェクトの中身を直接書き換えている
             const isNewBest = minigameBests.concentration == null || moves < minigameBests.concentration;
+            // state.js: saveGame() はゲームの状態をまとめて保存する共通処理
             if (isNewBest) { minigameBests.concentration = moves; playAudioFile('audio/levelup.mp3'); saveGame(); }
             concentrationState = null;
+            // main.js: screenFlash() は画面全体を一瞬光らせ、vibrate() は端末をバイブさせる共通関数
             screenFlash('#4caf50', CONFIG.CONCENTRATION_CLEAR_FLASH_OPACITY);
             vibrate([20, 30, 20, 30, 40]);
             const playView = document.getElementById('minigame-play-view');
             if (playView) {
                 const rect = playView.getBoundingClientRect();
+                // main.js: spawnModalParticleBurst() はモーダル内で完結するパーティクル演出を出す共通関数
                 spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 3, CONFIG.CONCENTRATION_CLEAR_PARTICLE_COUNT, '#ffd700');
             }
+            // core.js: showMinigameResult() はプレイ画面を共通の結果画面に差し替える処理
             showMinigameResult(`🃏 神経衰弱結果`, `${moves}回でクリア！${isNewBest ? '🎉自己ベスト更新！' : `（自己ベスト: ${minigameBests.concentration}回）`}`, reward);
         }
 

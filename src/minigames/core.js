@@ -42,6 +42,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
          * 転生ショップの「ミニゲーム報酬」強化レベルから、ミニゲーム報酬に掛ける倍率を計算する。
          * @returns {number} 報酬倍率（1.0が等倍）
          */
+        // progress.js: prestigeShopLv は転生ショップの各強化レベルをまとめたオブジェクト（.minigameRewardが「ミニゲーム報酬」強化のレベル）
         export function getMinigameRewardMultiplier() { return 1 + prestigeShopLv.minigameReward * CONFIG.MINIGAME_REWARD_PER_PRESTIGE_LEVEL; }      // ミニゲーム報酬の倍率
 
         export const minigames = {
@@ -67,7 +68,12 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
          * @returns {number} 基礎報酬額
          */
         export function getMinigameBaseReward() {
+            // data.js: stages は全都道府県のステージ定義配列（.distanceなど各県のデータを持つ）
+            // progress.js: currentStageIndex は現在プレイ中のステージ（県）のインデックス
             const currentStage = stages[currentStageIndex] || stages[0];
+            // main.js: PRESENT_REWARD_MIN・PRESENT_REWARD_DISTANCE_RATE・PRESENT_REWARD_MPS_RATE は、ミニゲーム基礎報酬の計算に使う定数
+            // （それぞれ最低報酬額／距離1あたりの倍率／秒速タップ数(mps)1あたりの倍率）
+            // tap.js: getMps() は現在の秒速タップ数(mps)を返す関数
             return Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
         }
 
@@ -83,10 +89,12 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
          * @returns {void}
          */
         export function resetMinigameCountsIfNewDay() {
+            // ui.js: getLocalDateString() はDateオブジェクトを「YYYY-MM-DD」形式のローカル日付文字列に変換する関数
             const today = getLocalDateString(new Date());
             if (minigameLastResetDate !== today) {
                 minigameLastResetDate = today;
                 minigamePlaysUsedToday = { quiz: 0, timeattack: 0, concentration: 0, mochitsuki: 0, slot: 0 };
+                // state.js: saveGame() はゲームの状態をまとめて保存する共通処理
                 saveGame();
             }
         }
@@ -97,6 +105,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
          */
         export function openMinigameCenter() {
             const overlay = document.getElementById('fade-overlay');
+            // main.js: playAudioFile() は指定した音声ファイルを再生する共通関数
             playAudioFile('audio/move.mp3'); // 県移動の時と同じ、移動音
             overlay.classList.add('fade-black');
             setTimeout(() => {
@@ -104,7 +113,9 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
                 document.getElementById('minigame-play-view').style.display = 'none';
                 document.getElementById('minigame-tile-view').style.display = 'flex';
                 renderMinigameTiles();
+                // ui.js: openModal() は指定idのモーダルを開く共通関数
                 openModal('minigame-center-modal');
+                // main.js: playBgmLoop() は指定したBGMをループ再生に切り替える共通関数
                 playBgmLoop('audio/bgm/bgm_minigame.mp3'); // ゲームセンター専用BGMに切り替え
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.MINIGAME_CENTER_FADE_IN_DELAY_MS);
             }, CONFIG.MINIGAME_CENTER_FADE_OUT_MS);
@@ -124,8 +135,10 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 cleanupActiveMinigameTimers();
+                // ui.js: closeModal() は指定idのモーダルを閉じる共通関数
                 closeModal('minigame-center-modal');
                 playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
+                // ui.js: openMoveMenu() は県移動メニューを開く共通関数
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.MINIGAME_CENTER_FADE_IN_DELAY_MS);
             }, CONFIG.MINIGAME_CENTER_FADE_OUT_MS);
@@ -141,8 +154,11 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
             // （importした変数には直接代入できないため）。ここでは3つを順に呼ぶだけ。
             // 処理の中身自体は分割前と完全に同じ（タイムアタックのタイマー停止／
             // もちつきのアニメーション停止／スロットの回転停止とループ音停止）。
+            // timeAttack.js: cleanupTimeAttackTimer() はタイムアタックのタイマーを止めて状態をリセットする後始末関数
             cleanupTimeAttackTimer();
+            // mochitsuki.js: cleanupMochitsukiTimer() はもちつきのアニメーションフレームを止めて状態をリセットする後始末関数
             cleanupMochitsukiTimer();
+            // slotMachine.js: cleanupSlotSpinState() はスロットの回転・ループ音を止めて状態をリセットする後始末関数
             cleanupSlotSpinState();
         }
 
@@ -155,11 +171,13 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
             // 調整パネル・ハンドルは残しつつ、筐体イラストだけ作り直す（毎回呼ばれるため、既存の筐体要素は先に消す）
             container.querySelectorAll('.arcade-cabinet-wrap').forEach(el => el.remove());
 
+            // data.js: ARCADE_CABINET_PARTS は筐体イラストの配置座標（top/left/width/heightなど）を県ごとに持つ配列
             ARCADE_CABINET_PARTS.forEach(part => {
                 const g = minigames[part.gameId];
                 if (!g) return;
                 const locked = currentStageIndex < g.unlockStage;
                 const usedToday = minigamePlaysUsedToday[g.id] || 0;
+                // progress.js: getMinigameDailyLimit() は転生ショップの強化状況などから「1日の最大プレイ回数」を返す関数
                 const remaining = getMinigameDailyLimit() - usedToday;
 
                 const wrap = document.createElement('div');
@@ -180,6 +198,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
                 } else if (g.isCoinGame) {
                     if (!minigameSeenUnlocked[g.id]) wrap.classList.add('minigame-recommend-glow');
                     wrap.onclick = () => startMinigame(g.id);
+                    // main.js: IS_DEV_MODE は開発モードかどうかのフラグ（trueだと所持コイン表示が∞になる）
                     badgeHtml = `<div class="arcade-cabinet-badge" style="color:#7b1fa2;">🪙 ${IS_DEV_MODE ? '∞' : minigameCoins} 所持</div>`;
                 } else if (remaining <= 0) {
                     wrap.style.filter = 'grayscale(1) brightness(0.75)';
@@ -209,10 +228,16 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
             playView.style.display = 'block';
             playView.style.background = 'rgba(255,248,236,0.95)'; // slotが透明にするので、他のゲームに移る時は毎回既定値へ戻す
             isMinigameActive = true;
+            // ここから下は、idに応じて各ゲームファイルのstart関数を呼び分けているだけ
+            // quiz.js: startQuizGame() はご当地クイズの導入・出題を開始する関数
             if (id === 'quiz') startQuizGame(playView);
+            // timeAttack.js: startTimeAttackGame() はタップタイムアタックの導入画面を表示する関数
             else if (id === 'timeattack') startTimeAttackGame(playView);
+            // concentration.js: startConcentrationGame() はご当地神経衰弱の盤面を作って開始する関数
             else if (id === 'concentration') startConcentrationGame(playView);
+            // mochitsuki.js: startMochitsukiGame() はもちつきリズムの初期化・開始を行う関数
             else if (id === 'mochitsuki') startMochitsukiGame(playView);
+            // slotMachine.js: startSlotGame() はスロットの導入画面を表示する関数
             else if (id === 'slot') startSlotGame(playView);
         }
 
@@ -258,7 +283,9 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
         export function grantMinigameReward(multiplier) {
             const coinGain = getMinigameCoinGain(multiplier);
             minigameCoins += coinGain;
+            // progress.js: trackMissionEvent() は指定したミッション項目のカウンターを進める関数
             trackMissionEvent('minigamesPlayedTotal', 1); trackMissionEvent('minigamesToday', 1); trackMissionEvent('minigamesThisWeek', 1);
+            // ui.js: updateDisplay() は画面上の数値表示（スコアなど）をまとめて再描画する共通関数
             saveGame(); updateDisplay();
             return { coins: coinGain };
         }

@@ -45,6 +45,8 @@
          * @returns {void}
          */
         export function onBgmVolumeChange(val) {
+            // ../../main.js: setBgmVolumeMult/bgmVolumeMult はBGM音量の倍率を設定・保持する変数と関数、
+            // applyBgmVolume は現在の倍率を実際の再生中BGMに反映する関数
             setBgmVolumeMult(val / 100);
             document.getElementById('bgm-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_bgm_volume', bgmVolumeMult);
@@ -57,6 +59,7 @@
          * @returns {void}
          */
         export function onSfxVolumeChange(val) {
+            // ../../main.js: setSfxVolumeMult/sfxVolumeMult は効果音音量の倍率を設定・保持する変数と関数
             setSfxVolumeMult(val / 100);
             document.getElementById('sfx-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_sfx_volume', sfxVolumeMult);
@@ -83,6 +86,7 @@
             if (bgmSlider) { bgmSlider.value = Math.round(bgmVolumeMult * 100); document.getElementById('bgm-vol-label').innerText = bgmSlider.value + '%'; }
             if (sfxSlider) { sfxSlider.value = Math.round(sfxVolumeMult * 100); document.getElementById('sfx-vol-label').innerText = sfxSlider.value + '%'; }
             const nameInput = document.getElementById('player-name-input');
+            // ../../state.js: playerName は現在のプレイヤー名
             if (nameInput) nameInput.value = playerName;
         }
 
@@ -97,6 +101,7 @@
             if (uiDeclutterState > 0) {
                 document.body.classList.add('ui-mode-' + uiDeclutterState);
             }
+            // ../../main.js: fixBottomGap は#game-screenの実際の高さを測り直してレイアウトのズレを補正する関数
             fixBottomGap(); // 表示するバーが変わって#game-screenの自然な高さが変わるので測り直す
         }
 
@@ -145,6 +150,7 @@
             if (!balloon) return;
             balloon.innerText = text;
             balloon.classList.add('balloon-show');
+            // ../../tap.js: setLastTappedTime は「最後にタップした時刻」を書き換えるsetter
             setLastTappedTime(Date.now()); // 表示直後にすぐ別のセリフへ切り替わらないようにリセット
             clearTimeout(balloonAutoHideTimer);
             if (!isTutorialActive) {
@@ -176,6 +182,8 @@
             if (mouthAdjustMode) { mouthPatchEl.style.display = 'block'; return; } // 🐛修正：調整中は、セリフ等で見えなくなるとイライラするので常に表示する
             const balloonEl = document.getElementById('mochi-balloon');
             const isTalking = balloonEl && balloonEl.classList.contains('balloon-show');
+            // ../../tap.js: skills はスキル状態一式、isScreamActive/isDraggingSqueeze/isSqueezeSettling は
+            // それぞれ「叫び中」「スクイーズをドラッグ中」「スクイーズが揺れ戻り中」を表すフラグ
             const isHissatsuActive = skills.hissatsu && skills.hissatsu.activeTimer > 0;
             // 伸ばしたり潰したりしている間・その後の揺れ戻りアニメーション中は、口パーツが元の位置に浮いて見えてしまうため非表示にする
             const shouldHide = isTalking || isScreamActive || isHissatsuActive || isDraggingSqueeze || isSqueezeSettling;
@@ -195,10 +203,12 @@
                 if (isShowing === wasShowing) return;
                 wasShowing = isShowing;
                 updateMouthPatchVisibility();
+                // ../../progress.js: equippedKisekae は現在装備中の着せ替えアイテムのID一式
                 // 🤖 ロボもちすけ装備中は、通常の「パッ」ではなく専用の口（窓）アニメ＋「ウィーン」音にする
                 if (equippedKisekae.fullbody === 'fullbody_robo') {
                     playRoboMouthAnimation(isShowing);
                 } else if (isShowing) {
+                    // ../../main.js: playAudioFile で効果音を再生
                     playAudioFile('audio/talk_pop.mp3');
                 }
             });
@@ -213,11 +223,13 @@
          * @returns {void}
          */
         export function playRoboMouthAnimation(open) {
+            // ../../data.js: KISEKAE_ITEMS はカテゴリ別の着せ替えアイテムデータ
             const item = KISEKAE_ITEMS.fullbody.find(i => i.id === 'fullbody_robo');
             const mainImg = document.getElementById('mochisuke-fullbody');
             if (!item || !mainImg) return;
             const frames = item.mouthFrames;
             clearInterval(roboMouthAnimTimer);
+            // ./kisekae.js: isMochisukeVisible はもちすけが画面上に表示されているか判定する関数
             if (isMochisukeVisible()) playAudioFile('audio/kisekae/robo_whir.mp3'); // ウィーン音（開閉どちらも同じ音、見えている画面の時だけ）
             let i = open ? 0 : frames.length - 1;
             const step = open ? 1 : -1;
@@ -242,7 +254,9 @@
          * @returns {string} 挨拶セリフ
          */
         export function getTimeGreeting() {
+            // ../../main.js: getTimeBucketIndex は時刻(0-23)から時間帯インデックスを求める関数
             const bucket = TIME_BUCKETS[getTimeBucketIndex(new Date().getHours())];
+            // ../../main.js: pickRandom は配列からランダムに1つ選ぶ関数、../../data.js: dialogueData はセリフ集データ
             return pickRandom(dialogueData.timeGreetings[bucket]);
         }
 
@@ -268,6 +282,7 @@
          */
         export function checkShowTutorial() {
             if (hasSeenTutorial) return;
+            // ../../state.js: score/totalTapsCount は現在のもちの数・累計タップ数、saveGame はセーブ関数
             // 何かしら既にプレイした形跡があれば、初見扱いにしない
             if (score > 0 || totalTapsCount > 0) { hasSeenTutorial = true; saveGame(); return; }
             openTutorial();
@@ -292,6 +307,7 @@
         export function runTutorialStep() {
             document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
 
+            // ../../data.js: TUTORIAL_STEPS はチュートリアルの各ステップ（表示テキスト・ハイライト対象・表示時間）データ
             if (tutorialStepIndex >= TUTORIAL_STEPS.length) {
                 endTutorial();
                 return;
@@ -354,6 +370,7 @@
         export function promptPlayerNameIfNeeded() {
             if (localStorage.getItem('punicker_player_name')) return;
             const input = document.getElementById('tutorial-name-input');
+            // ../../state.js: playerName は現在のプレイヤー名（自動生成された初期名がここに入っている）
             if (input) input.value = playerName;
             openModal('tutorial-name-modal');
         }
@@ -363,10 +380,15 @@
          */
         export function saveTutorialPlayerName() {
             const input = document.getElementById('tutorial-name-input');
+            // ../../state.js: sanitizePlayerName は入力された名前が使えるか検証する関数
             const result = sanitizePlayerName(input.value);
             if (!result.ok) { alert(result.reason); return; }
+            // ../../state.js: setPlayerName はplayerName変数を書き換えるsetter（importした束縛には直接代入できないため）
             setPlayerName(result.name);
             localStorage.setItem('punicker_player_name', playerName);
+            // src/engine/firebase.js: window.submitRankingScore はランキングにスコアを送信する関数（window経由なのは、
+            // firebase.jsがtype="module"で別読み込みされ、ここから直接importできないため）。
+            // ../../progress.js: prestigeCount/equippedKisekae は転生回数・現在の装備
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             closeModal('tutorial-name-modal');
         }
@@ -379,6 +401,7 @@
          */
         export function onMapButtonTap() {
             if (!seenButtonHints.map) { seenButtonHints.map = true; saveGame(); showMochiComment('地図で好きな県に飛べるで！'); }
+            // ./hud.js: openMap はマップモーダルを開く関数
             openMap();
         }
         // 🗺️⚙️🖼️🍴 4隅ボタンの位置・大きさを反映する
@@ -387,8 +410,12 @@
          * @returns {void}
          */
         export function applyCornerBtnPositions() {
+            // ../../data.js: CORNER_BTN_SIZE は4隅ボタンの共通サイズ（px）
             document.documentElement.style.setProperty('--corner-btn-size', CORNER_BTN_SIZE + 'px');
+            // ../../main.js: isRunningStandalone はPWA（ホーム画面起動）として動いているか判定する関数
             const isPwa = isRunningStandalone();
+            // ../../data.js: CORNER_BTN_OFFSETS_PWA_OVERRIDE/CORNER_BTN_OFFSETS はPWA用/通常用の
+            // 4隅ボタンごとの位置オフセットデータ
             const getOffsets = (id) => (isPwa && CORNER_BTN_OFFSETS_PWA_OVERRIDE[id]) ? CORNER_BTN_OFFSETS_PWA_OVERRIDE[id] : CORNER_BTN_OFFSETS[id];
             const map = document.getElementById('map-toggle-btn');
             map.style.top = `calc(8px + env(safe-area-inset-top, 0px) + ${getOffsets('map-toggle-btn').vert}px)`;
@@ -412,6 +439,7 @@
          * @returns {void}
          */
         export function adjustCornerBtnSize(delta) {
+            // ../../data.js: setCORNER_BTN_SIZE はCORNER_BTN_SIZE変数を書き換えるsetter
             setCORNER_BTN_SIZE(Math.max(CONFIG.CORNER_BTN_MIN_SIZE_PX, CORNER_BTN_SIZE + delta));
             document.getElementById('corner-btn-size-readout').textContent = CORNER_BTN_SIZE + 'px';
             applyCornerBtnPositions();
@@ -521,6 +549,8 @@
             // 🆕【まもすいの指摘で修正】width/heightではなくtransform:scaleで見た目だけを拡大縮小することで、
             // 所持もち数の枠（.score-row）の大きさ自体はMOCHI_ICON_BASE_SIZE_PX（アプデ前と同じ24px）のまま
             // 変わらないようにしている（style.cssの.mochi-count-icon-wrap参照）
+            // ../../data.js: MOCHI_ICON_SIZE/MOCHI_ICON_BASE_SIZE_PX/MOCHI_ICON_OFFSET は
+            // 所持もち数アイコンの現在サイズ・基準サイズ・位置ずらし量のデータ
             document.documentElement.style.setProperty('--mochi-count-icon-scale', MOCHI_ICON_SIZE / MOCHI_ICON_BASE_SIZE_PX);
             document.documentElement.style.setProperty('--mochi-count-icon-dx', MOCHI_ICON_OFFSET.dx + 'px');
             document.documentElement.style.setProperty('--mochi-count-icon-dy', MOCHI_ICON_OFFSET.dy + 'px');
@@ -531,6 +561,7 @@
          * @returns {void}
          */
         export function adjustMochiIconSize(delta) {
+            // ../../data.js: setMOCHI_ICON_SIZE はMOCHI_ICON_SIZE変数を書き換えるsetter
             setMOCHI_ICON_SIZE(Math.max(CONFIG.CORNER_BTN_MIN_SIZE_PX, MOCHI_ICON_SIZE + delta));
             document.getElementById('mochi-icon-size-readout').textContent = MOCHI_ICON_SIZE + 'px';
             applyMochiIconAdjust();
@@ -604,6 +635,7 @@
          */
         export function onMenuButtonTap() {
             if (!seenButtonHints.menu) { seenButtonHints.menu = true; saveGame(); showMochiComment('設定はここから触れるで！'); }
+            // ../../state.js: refreshCloudBackupStatus はクラウド上の最終バックアップ日時を取得して画面に反映する関数
             openModal('menu-modal'); refreshCloudBackupStatus();
         }
         /**
@@ -620,6 +652,7 @@
          */
         export function onFeedButtonTap() {
             if (!seenButtonHints.feed) { seenButtonHints.feed = true; saveGame(); showMochiComment('ここからお土産あげられるんやで！'); }
+            // ./hud.js: openOmiyageCollection はおみやげコレクション画面を開く関数
             openOmiyageCollection();
         }
 
@@ -629,17 +662,20 @@
          */
         export function showOpeningGreeting() {
             const now = new Date();
+            // ../../main.js: getTimeBucketIndex は時刻から時間帯インデックスを求める関数
             const bucketIdx = getTimeBucketIndex(now.getHours());
             const bucketName = TIME_BUCKETS[bucketIdx];
             const todayKey = getLocalDateString(now) + '_' + bucketName;
             const lastKey = localStorage.getItem(GREETING_STATE_KEY);
             let text;
+            // ../../main.js: pickRandom は配列からランダムに1つ選ぶ関数、../../data.js: dialogueData はセリフ集データ
             if (lastKey === todayKey) {
                 text = pickRandom(dialogueData.welcomeBack[bucketName]);
             } else {
                 text = pickRandom(dialogueData.timeGreetings[bucketName]);
                 localStorage.setItem(GREETING_STATE_KEY, todayKey);
             }
+            // ../../main.js: setLastGreetingHourBucket は「最後に挨拶した時間帯」を書き換えるsetter
             setLastGreetingHourBucket(bucketIdx); // アイドルループがすぐ二重に挨拶し直さないように
             showMochiComment(text);
         }
@@ -789,7 +825,9 @@
          * @returns {void}
          */
         export function openModal(id, skipSound) {
+            // ../../tap.js: cancelFeedDragIfActive は給餌中のドラッグ状態を中断して片付ける関数
             cancelFeedDragIfActive(); // 給餌中に他画面へ移動したら、置きっぱなしのおみやげを片付ける
+            // ../../main.js: playAudioFile で効果音を再生
             if (!skipSound) playAudioFile('audio/skill_tap.mp3');
             document.body.classList.add('modal-open');
             document.getElementById(id).style.display = "flex";
@@ -801,6 +839,7 @@
          */
         export function closeModal(id) {
             document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none";
+            // ../../progress.js: isPendingStampMoment はスタンプを押すべき瞬間かどうかを表すフラグ
             // 🔴 スタンプを押さずに絵日記を閉じた場合、進捗エリアのボタンを再表示して操作不能にならないようにする
             if (id === 'diary-modal' && isPendingStampMoment) {
                 const btn = document.getElementById('stamp-press-btn');
@@ -815,14 +854,18 @@
         export function openTrophyRoom() {
             const grid = document.getElementById('trophy-grid');
             grid.innerHTML = "";
+            // ../../data.js: stages は各ステージ（都道府県）のデータ配列
             stages.forEach((stage, i) => {
                 const cell = document.createElement('div');
                 cell.style.cssText = "text-align:center; padding:6px 2px; border-radius:8px; background:#fff8ec; cursor:pointer;";
+                // ../../progress.js: currentStageIndex は到達済み最終ステージの番号
                 if (i > currentStageIndex) {
                     cell.style.opacity = "0.4";
                     cell.innerHTML = `<div style="font-size:1.3rem;">❓</div><div style="font-size:0.55rem; color:#999;">???</div>`;
                     cell.onclick = () => alert("まだ訪れていない県じゃ！旅を進めよう。");
                 } else {
+                    // ../../progress.js: getPrefTrophy/getPrefTrophyIcon/showPrefTrophyDetail は、それぞれ
+                    // 県ごとのトロフィー種類の判定・アイコン取得・詳細表示を行う関数
                     const trophy = getPrefTrophy(i);
                     cell.innerHTML = `<div style="font-size:1.3rem;">${getPrefTrophyIcon(trophy)}</div><div style="font-size:0.55rem; color:#5d4037;">${stage.name}</div>`;
                     cell.onclick = () => showPrefTrophyDetail(i);
@@ -851,6 +894,7 @@
          * @returns {void}
          */
         export function openOshigotoPlaceholder() {
+            // ../../progress.js: checkAndRotateMissions は日付/週が変わっていればミッション内容を入れ替える関数
             checkAndRotateMissions(); // 開くたびに、日付/週またぎを最新化する
             openModal('mission-modal');
             switchMissionTab(currentMissionTab);
@@ -874,6 +918,8 @@
          * @returns {string} ミッションカードのHTML文字列
          */
         export function renderMissionRow(mission) {
+            // ../../progress.js: getMissionProgress/isMissionComplete/missionClaimed は、それぞれ
+            // ミッションの現在の進捗値を求める関数・達成済みか判定する関数・受取済みミッションIDの記録
             const progress = getMissionProgress(mission);
             const complete = isMissionComplete(mission);
             const claimed = missionClaimed[mission.id];
@@ -915,6 +961,8 @@
             const container = document.getElementById('mission-list-container');
             let html = '';
 
+            // ../../progress.js: tutorialMissionStep は現在のチュートリアルミッション段階、
+            // ../../data.js: TUTORIAL_MISSIONS はチュートリアルミッション定義の配列
             if (currentMissionTab === 'tutorial') {
                 if (tutorialMissionStep < TUTORIAL_MISSIONS.length) {
                     html += renderMissionRow(TUTORIAL_MISSIONS[tutorialMissionStep]);
@@ -922,11 +970,14 @@
                     html += `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:24px;">はじめてのおしごとは、もう全部クリアしたで！</div>`;
                 }
             } else if (currentMissionTab === 'daily') {
+                // ../../progress.js: missionDailySelected は今日選ばれているデイリーミッションIDの配列、
+                // getMissionDef はIDからミッション定義を引く関数
                 missionDailySelected.forEach(id => {
                     const m = getMissionDef(id);
                     if (m) html += renderMissionRow(m);
                 });
             } else if (currentMissionTab === 'weekly') {
+                // ../../progress.js: missionWeeklySelected は今週選ばれているウィークリーミッションIDの配列
                 missionWeeklySelected.forEach(id => {
                     const m = getMissionDef(id);
                     if (m) html += renderMissionRow(m);
@@ -941,8 +992,10 @@
          * @returns {void}
          */
         export function onClaimMissionTap(id) {
+            // ../../progress.js: claimMission はミッション報酬を受け取り済みにして報酬を付与する関数
             const success = claimMission(id);
             if (success) {
+                // ../../main.js: playAudioFile で効果音を再生、./hud.js: updateDisplay でHUD表示を更新
                 playAudioFile('audio/levelup.mp3');
                 updateDisplay();
                 renderMissionList();

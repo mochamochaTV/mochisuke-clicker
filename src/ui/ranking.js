@@ -27,6 +27,7 @@
          */
         export function closeRanking() {
             const overlay = document.getElementById('fade-overlay');
+            // ../../main.js: playAudioFile は指定した音声ファイルを再生する関数
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
@@ -62,6 +63,7 @@
          * @returns {Promise<void>}
          */
         export async function openRanking() {
+            // ./core.js: openModal は指定したIDのモーダルを画面に表示する共通関数
             openModal('ranking-modal');
             await renderRankingList();
         }
@@ -87,9 +89,12 @@
         export function renderRankOutfitPreviewHtml(outfit) {
             const fullbodyId = outfit && outfit.fullbody;
             if (fullbodyId) {
+                // ./kisekae.js: findFullbodySlotItem は全身衣装（fullbody/squeeze共通）のアイテムを
+                // カテゴリを問わずidだけで探す共有ヘルパー
                 const fbItem = findFullbodySlotItem(fullbodyId);
                 if (fbItem) return `<img src="${fbItem.img}" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">`;
             }
+            // ../../data.js: KISEKAE_ITEMS はカテゴリ別（clothes/back/hat/faceなど）の着せ替えアイテム一覧データ
             const clothesItem = (outfit && KISEKAE_ITEMS.clothes.find(i => i.id === outfit.clothes)) || KISEKAE_ITEMS.clothes[0];
             let html = '';
             // 🕊️ 翼は服より背面に表示する（1枚目のフレームで代表させる）
@@ -121,9 +126,14 @@
             listContainer.innerHTML = `<div style="text-align:center; color:#aaa; padding:20px;">読み込み中...</div>`;
 
             if (currentRankingTab === 'room') {
+                // src/engine/firebase.js: window.isRankingReady はFirebaseへの接続準備が完了したかを返す関数、
+                // window.fetchRoomLikeRanking は部屋（マイルーム）へのいいね数ランキングをサーバーから取得する関数
+                // （どちらもimportではなくwindow経由なのは、firebase.jsがtype="module"として別読み込みされ、
+                // このスクリプト側からは直接importできないため）。
                 const ready = window.isRankingReady && window.isRankingReady();
                 const result = ready ? await window.fetchRoomLikeRanking() : { list: null, error: 'offline' };
                 if (!result.list) {
+                    // ../../main.js: escapeHtml はHTMLとして埋め込む文字列をエスケープする関数（XSS対策）
                     listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.75rem; padding:10px;">部屋ランキングを取得できませんでした。<br>${escapeHtml(result.error || '')}</div>`;
                     return;
                 }
@@ -149,10 +159,14 @@
 
             const tab = currentRankingTab; // 'score' | 'taps' | 'prestige'
             const ready = window.isRankingReady && window.isRankingReady();
+            // src/engine/firebase.js: window.fetchTapRankingList/fetchPrestigeRankingList/fetchRankingList は
+            // それぞれ累計タップ数/転生回数/もちの数のランキング一覧をサーバーから取得する関数（window経由の理由は上と同じ）
             const fetchFn = tab === 'taps' ? window.fetchTapRankingList : tab === 'prestige' ? window.fetchPrestigeRankingList : window.fetchRankingList;
             let realList = ready ? await fetchFn() : null;
 
             const unit = tab === 'taps' ? 'タップ' : tab === 'prestige' ? '回' : 'もち';
+            // ../../state.js: totalTapsCount/score、../../progress.js: prestigeCount は
+            // それぞれ自分の累計タップ数・もちの数・転生回数（比較用に自分の現在値として使う）
             const myValue = tab === 'taps' ? totalTapsCount : tab === 'prestige' ? prestigeCount : score;
             const formatValue = (v) => tab === 'score' ? formatMochi(v) : Math.floor(v).toLocaleString();
             const getValue = (p) => tab === 'taps' ? (p.totalTaps || 0) : tab === 'prestige' ? (p.prestigeCount || 0) : (p.score || 0);
@@ -160,6 +174,7 @@
             if (!realList) {
                 listContainer.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:10px;">ランキングサーバーに接続できませんでした。<br>あなたの現在の${unit}数だけ表示しています。</div>`;
                 const item = document.createElement('div'); item.className = "list-item"; item.style.background = "#fff9c4";
+                // ../../state.js: playerName は自分のプレイヤー名
                 item.innerHTML = `<span>${escapeHtml(playerName)}（自分）</span><strong>${formatValue(myValue)} ${unit}</strong>`;
                 listContainer.appendChild(item);
                 return;
@@ -169,6 +184,7 @@
             // オートセーブ前後でスコアが少しズレていても二重表示にはならない）
             const alreadyIn = realList.some(p => p.isMe);
             const combined = realList.map(p => ({ ...p }));
+            // ../../progress.js: equippedKisekae は自分が現在装備している着せ替えアイテムのID一式
             if (!alreadyIn) combined.push({ name: playerName, score: Math.floor(score), totalTaps: totalTapsCount, prestigeCount: prestigeCount, outfit: equippedKisekae, isMe: true });
             else {
                 // 自分の分だけ表示値を最新のものに更新（サーバー側は最大10秒遅れているため）
@@ -203,11 +219,13 @@
          * @returns {void}
          */
         export function openDiary() {
+            // ../../progress.js: selectedStageIndex は現在選択されているステージ（都道府県）の番号
             diaryPageIndex = selectedStageIndex;
             diaryShowingBack = false;
             document.getElementById('diary-front-content').style.display = 'block';
             document.getElementById('diary-back-content').style.display = 'none';
             renderDiaryPage();
+            // ./core.js: openModal は指定したIDのモーダルを画面に表示する共通関数
             openModal('diary-modal');
         }
         export let diaryShowingBack = false;
@@ -216,8 +234,10 @@
          * @returns {void}
          */
         export function renderDiaryPage() {
+            // ../../data.js: stages は各ステージ（都道府県）ごとの名前・絵日記・おみやげ画像などのデータ配列
             const stage = stages[diaryPageIndex]; const paper = document.getElementById('diary-paper-element');
             paper.classList.remove('page-animate'); void paper.offsetWidth; paper.classList.add('page-animate');
+            // ../../shop.js: purchasedItems はステージごとに購入済みのおみやげアイテムのレベルを持つオブジェクト
             const isPurchased = (purchasedItems[diaryPageIndex] || 0) > 0;
 
             // 表面：メインの絵日記イラストと、旅の本文
@@ -227,6 +247,7 @@
 
             // 裏面：スタンプと、おみやげイラスト＋名前
             const stampMark = document.getElementById('diary-stamp-mark');
+            // ../../progress.js: collectedStamps はステージごとに到達スタンプを押したかどうかを持つオブジェクト
             if (collectedStamps[diaryPageIndex]) {
                 stampMark.innerText = `${stage.name}\n到達記念`;
                 stampMark.style.opacity = '0.88';
@@ -243,6 +264,7 @@
                 ? `🛍️ ${stage.item} (Lv.${purchasedItems[diaryPageIndex]})`
                 : '🛍️ アイテム: 未購入';
 
+            // ../../progress.js: currentStageIndex は現在到達している最終ステージの番号（ページ総数の基準に使う）
             document.getElementById('diary-footer-element').innerText = `枚数: ${diaryPageIndex + 1} / ${currentStageIndex + 1}`;
             document.getElementById('prev-page-btn').disabled = (diaryPageIndex === 0);
             document.getElementById('next-page-btn').disabled = (diaryPageIndex === currentStageIndex || diaryPageIndex === stages.length - 1);
@@ -256,6 +278,7 @@
             diaryShowingBack = showBack;
             document.getElementById('diary-front-content').style.display = showBack ? 'none' : 'block';
             document.getElementById('diary-back-content').style.display = showBack ? 'block' : 'none';
+            // ../../main.js: playAudioFile（closeRankingと同じ関数）でページめくり音を再生する
             playAudioFile('audio/page_turn.mp3', CONFIG.PAGE_TURN_VOLUME);
         }
         /**
@@ -270,6 +293,7 @@
         export function prevPage() { if (diaryPageIndex > 0) { diaryPageIndex--; flipDiaryPage(false); renderDiaryPage(); } }
 
         // 💬 マイルームのライブチャット：入力欄でEnterキーを押した時に送信できるようにする
+        // ./chat.js: setupChatInputEnterKey はチャット入力欄でEnterキー押下時に送信されるようイベントを登録する関数
         setupChatInputEnterKey();
         /**
          * diaryPageIndexを指定した値に設定する。

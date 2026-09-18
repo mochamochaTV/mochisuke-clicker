@@ -32,6 +32,8 @@
         export function openOmiyageCollection() {
             const grid = document.getElementById('omiyage-collection-grid');
             grid.innerHTML = '';
+            // ../../data.js: stages は各ステージ（都道府県）のデータ配列、
+            // ../../shop.js: purchasedItems はステージごとに購入済みのおみやげのレベルを持つオブジェクト
             const owned = stages.map((s, i) => ({ s, i, lv: purchasedItems[i] || 0 })).filter(o => o.lv > 0 && o.s.itemImg);
             if (owned.length === 0) {
                 grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; color:#999; font-size:0.8rem; padding:20px;">まだ持っているおみやげがありません</div>`;
@@ -46,6 +48,7 @@
                     grid.appendChild(cell);
                 });
             }
+            // ./core.js: openModal は指定したIDのモーダルを画面に表示する共通関数
             openModal('omiyage-collection-modal');
         }
 
@@ -55,9 +58,11 @@
          * @returns {void}
          */
         export function showOmiyageFeedConfirm(idx) {
+            // ../../tap.js: resetFeedCountIfNewDay は日付が変わっていたら給餌回数カウントをリセットする関数
             resetFeedCountIfNewDay();
             const stage = stages[idx];
             const lv = purchasedItems[idx] || 0;
+            // ../../tap.js: FEED_DAILY_LIMIT は1日に給餌できる回数の上限、feedPlaysUsedToday は今日すでに使った回数
             const remaining = FEED_DAILY_LIMIT - feedPlaysUsedToday;
             document.getElementById('feed-confirm-img').src = stage.itemImg;
             document.getElementById('feed-confirm-name').innerText = `${stage.item}（${lv}個持っている）`;
@@ -71,8 +76,11 @@
                 document.getElementById('feed-confirm-desc').innerText = `${stage.name}のお土産。もちすけにあげると喜んで食べてくれる。（本日あと${remaining}回）`;
                 btn.disabled = false;
                 btn.style.opacity = '1';
+                // ../../tap.js: placeFeedIconNearMochisuke はもちすけの近くに給餌アイコンを配置し、
+                // ドラッグして食べさせられるようにする関数
                 btn.onclick = () => placeFeedIconNearMochisuke(idx);
             }
+            // ./core.js: closeModal/openModal はモーダルの表示・非表示を切り替える共通関数
             closeModal('omiyage-collection-modal');
             openModal('omiyage-feed-confirm-modal');
         }
@@ -87,17 +95,27 @@
             const stage = stages[idx];
             if (!stage) return;
 
+            // ../../tap.js: feedTeaseTimer/isScreamActive/revertScreamFace/setFeedTeaseLevel は
+            // 「もちすけをじらして叫ばせる」演出まわりの状態・関数（給餌したら中断して元の顔に戻す）
             clearTimeout(feedTeaseTimer);
             if (isScreamActive) revertScreamFace(); // 叫び中に給餌で中断された場合も、確実に元の姿へ戻す
             setFeedTeaseLevel(0);
 
+            // ../../tap.js: setFeedBuffActiveUntil/FEED_BUFF_DURATION_MS でタップ力バフの終了時刻を設定、
+            // setFeedPlaysUsedToday/feedPlaysUsedToday で今日の給餌回数を1増やす
             setFeedBuffActiveUntil(Date.now() + FEED_BUFF_DURATION_MS);
             setFeedPlaysUsedToday(feedPlaysUsedToday + 1);
+            // ../../progress.js: trackMissionEvent はミッション達成条件のカウントを進める関数
             trackMissionEvent('feedToday', 1);
+            // ../../state.js: saveGame はゲームの状態をlocalStorageに保存する関数
             saveGame();
+            // ../../tap.js: startFeedBuffIndicator は画面上にタップ力バフの残り時間表示を出す関数
             startFeedBuffIndicator();
 
+            // ../../tap.js: mochiBtnElement はもちすけ本体のDOM要素（タップ対象のボタン）
             const mochiRect = mochiBtnElement.getBoundingClientRect();
+            // ../../main.js: playAudioFile/vibrate/screenFlash/screenShake は、それぞれ効果音再生・端末振動・
+            // 画面フラッシュ・画面揺らしの演出を行う共通関数
             playAudioFile('audio/mochisuke/mochi_eat.mp3');
             vibrate(CONFIG.FEED_VIBRATE_PATTERN_MS);
             screenFlash('#ff9800', CONFIG.FEED_SCREEN_FLASH_INTENSITY);
@@ -109,12 +127,17 @@
                 { transform: 'scale(1.1, 0.92) rotate(-2deg)', offset: 0.75 },
                 { transform: 'scale(1, 1) rotate(0deg)' }
             ], { duration: CONFIG.MOCHI_EAT_ANIM_DURATION_MS, easing: 'ease-in-out' });
+            // ../../main.js: createFloatingText は画面上にふわっと浮かぶテキスト演出を出す関数
             createFloatingText(mochiRect.left + mochiRect.width / 2, mochiRect.top + mochiRect.height / 3, `${stage.item}おいしい〜！`, "#ff9800", "1.1rem");
             setTimeout(() => {
                 createFloatingText(mochiRect.left + mochiRect.width / 2, mochiRect.top + mochiRect.height / 2.2, `⚡タップ力2倍！`, "#e91e63", "1.3rem");
             }, CONFIG.FEED_BUFF_TEXT_DELAY_MS);
+            // ./core.js: showMochiComment はもちすけの吹き出しにセリフを表示する関数、
+            // ../../main.js: pickRandom は配列からランダムに1つ選ぶ関数、
+            // ../../data.js: dialogueData はもちすけのセリフ集データ
             showMochiComment(pickRandom(dialogueData.feedComments).replace('○○', stage.item));
             for (let i = 0; i < CONFIG.FEED_PARTICLE_COUNT; i++) {
+                // ../../main.js: createParticle は指定座標に散るパーティクル演出を1つ生成する関数
                 createParticle(mochiRect.left + mochiRect.width / 2 + (Math.random() - 0.5) * CONFIG.FEED_PARTICLE_SPREAD_PX, mochiRect.top + mochiRect.height / 2 + (Math.random() - 0.5) * CONFIG.FEED_PARTICLE_SPREAD_PX, true);
             }
         }
@@ -131,11 +154,14 @@
          * @returns {void}
          */
         export function openMap() {
+            // ../../main.js: lazyLoadImage は指定した画像要素の実データを遅延読み込みする関数
             lazyLoadImage('map-illustration-img');
             const pinsLayer = document.getElementById('map-pins-layer');
             pinsLayer.innerHTML = "";
+            // ../../data.js: stages は各ステージ（都道府県）のピン座標などを含むデータ配列
             stages.forEach((stage, i) => {
                 if (stage.pinX == null || stage.pinY == null) return; // 座標未設定の県は非表示（エラーにしない）
+                // ../../progress.js: selectedStageIndex は現在選択中のステージ、currentStageIndex は到達済み最終ステージ
                 const isCurrent = selectedStageIndex === i;
                 const isLocked = i > currentStageIndex;
                 const pin = document.createElement('div');
@@ -151,7 +177,9 @@
                 pinsLayer.appendChild(pin);
             });
             mapZoomReset();
+            // ../../main.js: playAudioFile で効果音を再生
             playAudioFile('audio/page_turn.mp3'); // 絵日記をめくる音を流用（ショップなどとは違う専用の音にする）
+            // ./core.js: openModal でモーダルを表示
             openModal('map-modal', true);
         }
 
@@ -160,6 +188,7 @@
          * @returns {void}
          */
         export function closeMapModal() {
+            // ./core.js: closeModal でモーダルを閉じる
             closeModal('map-modal');
         }
 
@@ -170,6 +199,7 @@
          */
         export function onMapPinTap(idx) {
             const stage = stages[idx];
+            // ../../progress.js: selectedStageIndex は現在選択中のステージ
             if (selectedStageIndex === idx) return; // すでに滞在中
             document.getElementById('map-confirm-text').innerText = `${stage.name}に移動しますか？`;
             const overlay = document.getElementById('map-confirm-overlay');
@@ -191,9 +221,13 @@
          */
         export function mapMoveTo(idx) {
             closeModal('map-modal');
+            // ../../progress.js: triggerAreaTransition はエリア移動の画面演出（フェード等）を行い、
+            // 完了後に渡したコールバックを実行する関数
             triggerAreaTransition(stages[idx].bg, () => {
+                // ../../progress.js: setSelectedStageIndex は選択中ステージを書き換えるsetter
                 setSelectedStageIndex(idx); updateDisplay(); saveGame();
                 const name = stages[idx].name;
+                // ../../data.js: dialogueData は都道府県ごとのセリフ集データ
                 const prefPool = dialogueData.prefectureComments[name];
                 showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
             });
@@ -333,6 +367,8 @@
          * @returns {void}
          */
         export function toggleStampDebug() {
+            // ../../progress.js: setStampDebugMode/stampDebugMode でデバッグ表示のON/OFF状態を切り替え、
+            // setStampDebugInterval/stampDebugInterval で定期更新タイマーのIDを保持する
             setStampDebugMode(!stampDebugMode);
             if (stampDebugMode) {
                 setStampDebugInterval(setInterval(updateStampDebugReadout, CONFIG.STAMP_DEBUG_INTERVAL_MS));
@@ -351,6 +387,9 @@
             if (!el) return;
             const stage = stages[currentStageIndex];
             const btn = document.getElementById('stamp-press-btn');
+            // ../../progress.js: currentStageIndex/selectedStageIndex/currentStageProgress/stageArrivalTime/
+            // isPendingStampMoment/collectedStamps はいずれもステージ進行・到達スタンプ判定に関わる状態、
+            // ./ranking.js: diaryPageIndex は絵日記で今開いているページ番号（デバッグ表示にまとめて出している）
             el.textContent =
 `currentStageIndex: ${currentStageIndex} (${stage ? stage.name : '?'})
 selectedStageIndex: ${selectedStageIndex}
@@ -403,9 +442,12 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             // ① 今いる県のおみやげをまだ買っていない、かつ購入できる資金がある → ショップへ
             const stage = stages[selectedStageIndex];
             const curLv = purchasedItems[selectedStageIndex] || 0;
+            // ../../shop.js: getOmiyagePrice はステージとレベルからおみやげの価格を計算する関数、
+            // ../../state.js: score は現在のもちの数
             if (curLv === 0 && stage && score >= getOmiyagePrice(stage, 0)) {
                 return 'nav-btn-move';
             }
+            // ../../tap.js: skills はスキルごとのレベル・クールタイム等の状態を持つオブジェクト
             // ② スキルを1つも取得していない、かつ一番安いスキルが買える資金がある → ショップへ
             const anySkillUnlocked = Object.values(skills).some(s => s.lv > 0);
             if (!anySkillUnlocked) {
@@ -417,6 +459,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
             if (readyEntry) return 'btn-' + readyEntry[0];
             // ④ 必殺技が使用可能 → 必殺技ボタンへ
             if (skills.hissatsu.lv > 0 && skills.hissatsu.currentCd <= 0 && skills.hissatsu.activeTimer <= 0) return 'btn-hissatsu';
+            // ../../minigames.js: hasNewlyUnlockedMinigame は新しく解放されたが未プレイのミニゲームがあるか判定する関数
             // ⑤ 新しく解放されて、まだ見ていない（遊んでいない）ミニゲームがある → ミニゲームへ
             if (hasNewlyUnlockedMinigame()) return 'nav-btn-move';
             // 特に無ければハイライトしない
@@ -427,6 +470,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
          * @returns {void}
          */
         export function updateRecommendedActionHighlight() {
+            // ./core.js: isTutorialActive はチュートリアル進行中かどうかを表すフラグ
             if (isTutorialActive) return; // チュートリアル中は、こちらの自動ハイライトは出さない（チュートリアル自身のハイライトとぶつかるため）
             const now = Date.now();
             if (now - lastRecommendCheckTime < CONFIG.RECOMMEND_CHECK_THROTTLE_MS) return; // 連打のたびに毎回判定しなくていいよう、1秒に1回だけ再計算
@@ -445,6 +489,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
          * @returns {boolean} 新規購入可能なスキルがあればtrue
          */
         export function hasNewlyPurchasableSkill() {
+            // ../../tap.js: skills、../../progress.js: currentStageIndex、../../state.js: score
             return Object.values(skills).some(s => s.lv === 0 && currentStageIndex >= s.unlockStage && score >= s.unlockPrice);
         }
         // 未購入(lv===0)で、解放済み(訪問済み)かつ購入できるおみやげがあるか判定（レベルアップは対象外）
@@ -466,6 +511,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
          * @returns {void}
          */
         export function updateSprayEffectDisplay() {
+            // ../../shop.js: sprayBuffActiveUntil はスプレー効果が切れる時刻、activeSprayId は現在使用中のスプレーID
             const isActive = Date.now() < sprayBuffActiveUntil && activeSprayId;
             const auraEl = document.getElementById('spray-aura-effect');
             if (!isActive) {
@@ -474,6 +520,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
                 sprayParticleTimer = null;
                 return;
             }
+            // ../../data.js: SPRAY_ITEMS はスプレーアイテムの一覧データ
             const item = SPRAY_ITEMS.find(i => i.id === activeSprayId);
             if (!item) return;
             if (auraEl) auraEl.style.display = (item.effectId === 'aura') ? 'block' : 'none';
@@ -490,6 +537,7 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
          */
         export function spawnSparkleParticle() {
             if (Date.now() >= sprayBuffActiveUntil) { updateSprayEffectDisplay(); return; }
+            // ./kisekae.js: isMochisukeVisible はもちすけが現在の画面上に表示されているか判定する関数
             if (!isMochisukeVisible()) return; // 見えている画面の時だけ生成する
             const wrap = document.getElementById('mochisuke-deform-wrap');
             if (!wrap) return;
@@ -507,10 +555,14 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
         export function updateDisplay() {
             updateRecommendedActionHighlight();
             const prestigeBtn = document.getElementById('main-prestige-btn');
+            // ../../progress.js: canPrestige は転生条件を満たしているか判定する関数
             if (prestigeBtn) prestigeBtn.style.display = canPrestige() ? 'block' : 'none';
             updateSprayEffectDisplay(); // バフが切れていたら、ここで自動的にエフェクトも止まる
+            // ../../main.js: formatMochi は数値を「1.2万」のような見やすい表示文字列に変換する関数、
+            // ../../state.js: score は現在のもちの数
             const scoreFormatted = formatMochi(score) + " もち";
             const scoreEl = document.getElementById('score-text');
+            // ../../tap.js: isFever/feverTimeLeft はフィーバー中かどうか・残り秒数
             const fullText = isFever ? `🔥 5倍中 (${feverTimeLeft}s) ${scoreFormatted}` : scoreFormatted;
             // もちの数が実際に増えた瞬間だけ、変化した桁だけがポンっと弾む演出を出す（伸びていく実感を強化）
             if (fullText !== lastScoreFormatted) {
@@ -518,12 +570,14 @@ collectedStamps[現在]: ${!!collectedStamps[currentStageIndex]}
                 lastScoreFormatted = fullText;
             }
             document.getElementById('current-location-text').innerText = stages[selectedStageIndex].name;
+            // ../../tap.js: getMps/getTapPower は、それぞれ現在の自動増加量（毎秒）・タップ1回の増加量を計算する関数
             document.getElementById('mps-display').innerText = `↗ 自動増加: ${formatMochi(getMps())} もち/秒`;
             document.getElementById('tap-power-display').innerText = `👆 タップ力: +${formatMochi(getTapPower())}`;
 
             const distText = document.getElementById('distance-text');
             const progressBar = document.getElementById('progress-bar');
             const journeyText = document.getElementById('journey-progress-text');
+            // ../../progress.js: currentStageIndex/currentStageProgress は到達済み最終ステージ番号と、その進行度
             const isFullyCleared = currentStageIndex === stages.length - 1 && currentStageProgress >= stages[currentStageIndex].distance;
             if (journeyText) journeyText.innerHTML = `${isFullyCleared ? stages.length : currentStageIndex}/${stages.length}県<br>制覇`;
             if (selectedStageIndex < currentStageIndex) { distText.innerText = "このエリアは踏破済みです"; progressBar.style.width = "100%"; }

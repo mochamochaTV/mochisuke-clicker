@@ -322,7 +322,10 @@ import {
             const text = textEl.value.trim();
             if (!text) { alert("意見を入力してから送信してください！"); return; }
 
+            // src/engine/firebase.js: window.submitFeedback はご意見をFirestoreに送信する関数、window.isRankingReady()はFirebaseへの接続準備が完了したかを返す関数
+            // （importではなくwindow経由なのは、firebase.jsがtype="module"で読み込まれる一方、このメインスクリプト側はモジュールではないため）
             if (window.submitFeedback && window.isRankingReady && window.isRankingReady()) {
+                // state.js: playerName は現在のプレイヤー名
                 const ok = await window.submitFeedback(text, playerName);
                 if (ok) {
                     alert("送信しました！ありがとうございます🍡");
@@ -383,6 +386,7 @@ import {
          * @returns {void}
          */
         export function spawnMochiRain() {
+            // tap.js: getMps() は現在の自動増加量(1秒あたりのもち数)を返す関数
             const mps = getMps();
             // 🐛パフォーマンス修正：モーダルが開いていてタップ画面が見えていない間は、どうせ見えない
             // もちの雨を新しく降らせても無駄なので生成自体を止める（描画側もモーダル中は丸ごと止めている）
@@ -513,6 +517,7 @@ import {
          * @returns {void}
          */
         export function preloadAllSfx() {
+            // data.js: SFX_FILES は効果音ファイルパスの一覧配列
             SFX_FILES.forEach(loadAudioBuffer);
         }
 
@@ -523,6 +528,7 @@ import {
          * @returns {void}
          */
         export function preloadAllBgm() {
+            // data.js: BGM_FILES はBGMファイルパスの一覧配列
             BGM_FILES.forEach(loadAudioBuffer);
         }
 
@@ -673,6 +679,7 @@ import {
             // 操作をした時にしか呼ばれておらず、タップだけを続けてから何も購入せずにタブを閉じる／
             // 他アプリへ切り替えると、その間に貯めたもちが保存されないまま失われる可能性があった。
             // バックグラウンドに回った瞬間（タブ切り替え・アプリ切り替え・画面ロック）に必ず保存する。
+            // state.js: saveGame はセーブデータを保存する関数
             if (document.visibilityState === 'hidden') { try { saveGame(); } catch (e) {} }
         });
         // 🛡️ 同上の理由で、iOS Safariなど visibilitychange が発火しないケースの保険として
@@ -724,11 +731,17 @@ import {
          * @returns {void}
          */
         export function debugAddMochi() {
+            // data.js: stages は都道府県ごとのステージ定義（distance等を持つ）の配列
+            // progress.js: currentStageIndex は現在挑戦中のステージ番号
             const currentReq = stages[currentStageIndex] ? stages[currentStageIndex].distance : CONFIG.DEBUG_ADD_MOCHI_FALLBACK;
+            // state.js: score/setScore は所持もち数の値と、それを書き換えるsetter関数
             setScore(score + (currentReq));
+            // progress.js: selectedStageIndex は画面上で選択中のステージ番号
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
+                // progress.js: currentStageProgress/setCurrentStageProgress は現ステージの進捗値とそのsetter、checkStageProgress()は進捗からステージクリア判定を行う関数
                 setCurrentStageProgress(currentStageProgress + (currentReq)); checkStageProgress();
             }
+            // ui.js: updateDisplay は画面表示全体を最新の状態に更新する関数
             updateDisplay(); saveGame();
         }
 
@@ -738,8 +751,10 @@ import {
          * @returns {void}
          */
         export function debugLevelUpSkill(key) {
+            // tap.js: skills はスキルID→{lv, currentCd, ...}を持つスキル状態オブジェクト
             skills[key].lv++;
             playAudioFile('audio/levelup.mp3');
+            // tap.js: updateSkillUI はスキルボタンの表示（Lv・クールタイム等）を更新する関数
             updateSkillUI(); saveGame();
         }
 
@@ -761,6 +776,7 @@ import {
         export function debugResetCooldowns() {
             Object.keys(skills).forEach(key => {
                 skills[key].currentCd = 0; skills[key].activeTimer = 0;
+                // tap.js: endSkillVisualEffect はスキル発動中の画面演出（フィルター等）を終了させる関数
                 endSkillVisualEffect(key);
             });
             updateSkillUI();
@@ -800,7 +816,9 @@ import {
          */
         export function resizeParticleCanvas() {
             const rect = document.getElementById('game-screen').getBoundingClientRect();
+            // tap.js: setGameScreenRect はtap.js側が持つgameScreenRectキャッシュ変数を書き換えるsetter関数
             setGameScreenRect(rect); // タップ演出（リップル/文字/パーティクル）で使い回すキャッシュ
+            // tap.js: bunshinCloneRects は分身スキルで複製した各分身の位置矩形の配列、refreshBunshinCloneRectsはそれをリサイズ後の座標で再計算する関数
             if (bunshinCloneRects.length > 0) refreshBunshinCloneRects();
             if (rainCanvas) { rainCanvas.width = rect.width; rainCanvas.height = rect.height; }
 
@@ -820,6 +838,7 @@ import {
          * @returns {DOMRect} #game-screenの矩形
          */
         export function getGameScreenRect() {
+            // tap.js: gameScreenRect はresizeParticleCanvas()でキャッシュされた#game-screenの矩形
             return gameScreenRect || document.getElementById('game-screen').getBoundingClientRect();
         }
 
@@ -888,8 +907,10 @@ import {
          * @returns {void}
          */
         function showCornerBtnAdjustPanelIfEnabled() {
+            // data.js: CORNER_BTN_ADJUST_TOOL_ENABLED は4隅ボタン座標調整ツールを表示するかどうかのフラグ
             if (IS_DEV_MODE && CORNER_BTN_ADJUST_TOOL_ENABLED) {
                 const panel = document.getElementById('corner-btn-adjust-panel');
+                // ui.js: updateCornerBtnReadout は調整パネル内の座標表示を最新値に更新する関数
                 if (panel) { panel.style.display = 'block'; updateCornerBtnReadout(); }
             }
         }
@@ -899,8 +920,10 @@ import {
          * @returns {void}
          */
         function showMochiIconAdjustPanelIfEnabled() {
+            // data.js: MOCHI_ICON_ADJUST_TOOL_ENABLED は所持もち数アイコン座標調整ツールを表示するかどうかのフラグ
             if (IS_DEV_MODE && MOCHI_ICON_ADJUST_TOOL_ENABLED) {
                 const panel = document.getElementById('mochi-icon-adjust-panel');
+                // ui.js: updateMochiIconAdjustReadout は調整パネル内の座標表示を最新値に更新する関数
                 if (panel) { panel.style.display = 'block'; updateMochiIconAdjustReadout(); }
             }
         }
@@ -911,11 +934,14 @@ import {
          * @returns {void}
          */
         function scheduleBackgroundWatchers() {
+            // ui.js: checkIncomingGiftsOnLaunch は起動時に未受領ギフトが無いか確認する関数
             setTimeout(checkIncomingGiftsOnLaunch, CONFIG.GIFT_CHECK_DELAY_MS); // Firebase接続が整うのを少し待ってから確認する
             // 🐛修正：招待・スタンプの検知は、以前は45秒/20秒おきのポーリングだったため届くまで
             // 数十秒の時間差があった。onSnapshotによるリアルタイム監視に変更（起動時に1回だけ開始すればよい）
+            // ui.js: startIncomingRoomInviteWatch/startIncomingVisitStampWatch は、それぞれ部屋招待・訪問スタンプのリアルタイム監視を開始する関数
             setTimeout(startIncomingRoomInviteWatch, CONFIG.ROOM_INVITE_WATCH_DELAY_MS); // ギフト通知と重ならないよう、少し後にずらす
             setTimeout(startIncomingVisitStampWatch, CONFIG.VISIT_STAMP_WATCH_DELAY_MS);
+            // src/engine/firebase.js: window.sendHeartbeat は自分の最終アクティブ時刻をFirestoreへ送る関数（window経由なのはfirebase.jsがtype="module"のため）
             if (window.sendHeartbeat) { window.sendHeartbeat(); setInterval(window.sendHeartbeat, CONFIG.HEARTBEAT_INTERVAL_MS); } // 🟢 60秒おきに、自分がオンラインであることを知らせる
         }
 
@@ -927,12 +953,16 @@ import {
          */
         function grantDevModeItemsIfNeeded() {
             if (!IS_DEV_MODE) return;
+            // data.js: KISEKAE_ITEMS はカテゴリ別の着せ替えアイテム一覧データ
+            // progress.js: ownedKisekaeItems は所持中の着せ替えアイテムIDをカテゴリ別に持つオブジェクト
             Object.keys(KISEKAE_ITEMS).forEach(cat => {
                 KISEKAE_ITEMS[cat].forEach(item => {
                     if (!ownedKisekaeItems[cat].includes(item.id)) ownedKisekaeItems[cat].push(item.id);
                 });
             });
             // 🛋️ マイルームの家具も、管理者URLの人だけ全部持っている状態にする
+            // data.js: MYROOM_ITEMS はカテゴリ別のマイルーム家具一覧データ
+            // progress.js: ownedMyroomItems は所持中のマイルームアイテムIDをカテゴリ別に持つオブジェクト
             Object.keys(MYROOM_ITEMS).forEach(cat => {
                 MYROOM_ITEMS[cat].forEach(item => {
                     if (!ownedMyroomItems[cat].includes(item.id)) ownedMyroomItems[cat].push(item.id);
@@ -961,30 +991,42 @@ import {
             preloadAllSfx(); // 会心・黄金など出現頻度の低い効果音も先に読み込んでおき、初回再生の遅延を防ぐ
             preloadAllBgm(); // ショップ・ゲーセン等のBGMも同様に先読みし、初回入場時の再生遅れを防ぐ
 
+            // state.js: loadGame はlocalStorageのセーブデータを読み込み、各種状態変数へ復元する関数
             loadGame();
+            // ui.js: applyKisekaeToMainScreen はメイン画面のもちすけ表示へ、確定済みの着せ替えを反映する関数
             applyKisekaeToMainScreen(); // 🐛修正：確定済みの服装が、ページを開き直すと反映されないままだった
+            // progress.js: checkAndRotateMissions は日付/週が変わっていたらミッション内容を選び直す関数
             checkAndRotateMissions(); // 日付・週が変わっていたら、デイリー/ウィークリーミッションを選び直す
+            // ui.js: applyCornerBtnPositions/applyMochiIconAdjust は、それぞれ保存済みの4隅ボタン・所持もち数アイコンの位置調整値を画面へ反映する関数
             applyCornerBtnPositions();
             showCornerBtnAdjustPanelIfEnabled();
             applyMochiIconAdjust();
             showMochiIconAdjustPanelIfEnabled();
             scheduleBackgroundWatchers();
             grantDevModeItemsIfNeeded();
+            // state.js: checkForCloudRestoreOnLoad は、ローカルにセーブが無い時にクラウドの復元可能なバックアップが無いか確認する関数
             checkForCloudRestoreOnLoad();
+            // progress.js: checkOfflineEarnings は、離れていた間の自動増加(mps)ぶんのオフライン収益を計算して加算する関数
             checkOfflineEarnings();
+            // ui.js: checkShowTutorial はまだチュートリアル未経験なら開始する関数
             setTimeout(checkShowTutorial, CONFIG.TUTORIAL_CHECK_DELAY_MS);
 
+            // tap.js: resetMochiFilter は装備中の見た目に合わせてもちの表示フィルターをリセットする関数
             resetMochiFilter();
 
             setGameBackground(stages[selectedStageIndex].bg);
 
             updateDisplay();
             updateSkillUI();
+            // tap.js: startFeverSpawningLoop はフィーバータイム中のもち自動生成ループを開始する関数
             startFeverSpawningLoop();
             startPresentSpawningLoop();
             startMochiLifeLoop();
+            // ui.js: showOpeningGreeting は起動時に時間帯に応じたもちすけの挨拶を表示する関数
             showOpeningGreeting();
+            // minigames.js: resetMinigameCountsIfNewDay は日付が変わっていたらミニゲームの1日の残りプレイ回数をリセットする関数
             resetMinigameCountsIfNewDay();
+            // ui.js: initVolumeSliders/initMapInteractions は、それぞれ音量スライダー・マップ操作(ズーム/ドラッグ)のイベント登録を行う関数
             initVolumeSliders();
             initMapInteractions();
 
@@ -1512,6 +1554,7 @@ import {
 
         window.addEventListener('resize', () => {
             const shopModal = document.getElementById('shop-modal');
+            // shop.js: currentShopTab は現在ショップ内で開いているタブ名、syncOmiyageImageFrameはお土産タブの画像枠サイズを画面幅に合わせ直す関数
             if (shopModal && shopModal.style.display === 'flex' && currentShopTab === 'omiyage') {
                 syncOmiyageImageFrame();
             }
@@ -1524,9 +1567,12 @@ import {
          */
         export function startMochiLifeLoop() {
             setInterval(() => {
+                // ui.js: isTutorialActive はチュートリアル進行中かどうかのフラグ
                 if (isTutorialActive) return;
+                // tap.js: lastTappedTime は最後にタップした時刻(ms)
                 const idleDuration = Date.now() - lastTappedTime;
                 const balloon = document.getElementById('mochi-balloon');
+                // tap.js: isFever はフィーバータイム中かどうかのフラグ
                 if (idleDuration > CONFIG.MOCHI_IDLE_THRESHOLD_MS && !isFever) {
                     if (!balloon.classList.contains('balloon-show')) {
                         // 時間帯が切り替わった直後は優先的に挨拶する
@@ -1534,10 +1580,12 @@ import {
                         let text;
                         if (bucket !== lastGreetingHourBucket) {
                             lastGreetingHourBucket = bucket;
+                            // ui.js: getTimeGreeting は現在の時間帯に合った挨拶文をランダムに返す関数
                             text = getTimeGreeting();
                         } else {
                             // 現在地のご当地セリフがあれば時々混ぜる、それ以外は通常のつぶやき
                             const stageName = stages[selectedStageIndex] ? stages[selectedStageIndex].name : null;
+                            // data.js: dialogueData はもちすけのセリフ（都道府県別コメント・イベントコメント等）データ
                             const prefPool = stageName ? dialogueData.prefectureComments[stageName] : null;
                             if (prefPool && Math.random() < CONFIG.PREFECTURE_COMMENT_CHANCE) {
                                 text = pickRandom(prefPool);
@@ -1545,6 +1593,7 @@ import {
                                 text = pickRandom(dialogueData.idleComments);
                             }
                         }
+                        // ui.js: showMochiComment は指定テキストをもちすけの吹き出しに表示する関数
                         showMochiComment(text);
                     }
                 }
@@ -1612,6 +1661,7 @@ import {
                 createFloatingText(e.clientX, e.clientY, `🎁福もちボーナス +${formatMochi(bonus)}`, "#ff9800", "1.5rem");
                 saveGame(); updateDisplay();
                 present.remove();
+                // ui.js: hideMochiComment はもちすけの吹き出しを隠す関数
                 hideMochiComment();
             });
             setTimeout(() => { if (present.parentNode) { present.remove(); hideMochiComment(); } }, CONFIG.PRESENT_LIFETIME_MS);
@@ -1628,6 +1678,7 @@ import {
             const rect = gameScreen.getBoundingClientRect();
             goldMochi.style.left = (Math.random() * (rect.width - CONFIG.GOLD_MOCHI_X_MARGIN)) + 'px'; goldMochi.style.top = (Math.random() * (rect.height - CONFIG.EVENT_SPAWN_Y_RANGE_MARGIN) + CONFIG.EVENT_SPAWN_Y_MIN) + 'px';
             gameScreen.appendChild(goldMochi);
+            // tap.js: triggerFeverTime はフィーバータイムを発動させる関数
             goldMochi.addEventListener('pointerdown', (e) => { e.stopPropagation(); goldMochi.remove(); hideMochiComment(); triggerFeverTime(); });
             setTimeout(() => { if (goldMochi.parentNode) { goldMochi.remove(); hideMochiComment(); } }, CONFIG.GOLD_MOCHI_LIFETIME_MS);
         }
@@ -1638,7 +1689,10 @@ import {
         setInterval(() => {
             saveGame();
             if (Date.now() - appStartTime < AUTOSAVE_CLOUD_GRACE_MS) return;
+            // src/engine/firebase.js: window.submitRankingScore はランキングにスコアを送信する関数（importではなくwindow経由なのは、firebase.jsがtype="module"で読み込まれる一方、このメインスクリプト側はモジュールではないため）
+            // state.js: totalTapsCount は累計タップ数、progress.js: prestigeCount/equippedKisekae は転生回数と現在装備中の着せ替え
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
+            // src/engine/firebase.js: window.backupSaveData はクラウドへ現在のセーブデータを上書き保存する関数（同じ理由でwindow経由）
             if (window.backupSaveData) {
                 const raw = localStorage.getItem('mochisuke_save_data');
                 if (raw) window.backupSaveData(raw);
@@ -1685,5 +1739,6 @@ import {
         window.debugLevelUpSkill = debugLevelUpSkill;
         window.debugLevelUpAllSkills = debugLevelUpAllSkills;
         window.debugResetCooldowns = debugResetCooldowns;
+        // progress.js: adminJumpToFinalStage は開発者用に最終ステージまで一気に進める関数（onclick=""から呼ぶための橋渡し）
         window.adminJumpToFinalStage = adminJumpToFinalStage;
         window.startGameFromOpScreen = startGameFromOpScreen;

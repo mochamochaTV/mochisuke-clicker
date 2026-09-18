@@ -55,6 +55,9 @@ import {
          */
         export function menuSaveGame() {
             saveGame();
+            // src/engine/firebase.js: window.submitRankingScore はランキングにスコアを送信する関数（importではなくwindow経由なのは、
+            // firebase.jsがtype="module"で読み込まれる一方、このメインスクリプト側はモジュールではないため）。
+            // firebase.jsの読み込みが終わる前に呼ばれる可能性があるので、if文で「まだ定義されていない（undefined＝falsy）」場合を弾いている。
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             alert("💾 セーブしました！");
         }
@@ -132,6 +135,8 @@ import {
             const el = document.getElementById('cloud-backup-status');
             if (!el) return;
             el.innerText = '最終バックアップ: 確認中…';
+            // src/engine/firebase.js: window.restoreSaveData はクラウド上の最新バックアップ（{data, updatedAt}など）を取得する関数。
+            // menuSaveGameのsubmitRankingScoreと同じ理由で、window経由＋if文での存在チェックになっている。
             if (!window.restoreSaveData) { el.innerText = '最終バックアップ: 準備中（少し待ってから開き直してください）'; return; }
             const backup = await window.restoreSaveData();
             if (backup && backup.updatedAt) {
@@ -147,6 +152,8 @@ import {
          * @returns {Promise<void>}
          */
         export async function manualCloudBackup() {
+            // src/engine/firebase.js: window.backupSaveData はクラウドへ現在のセーブデータを強制上書き保存する関数（第2引数forceがtrueの時、
+            // 自動バックアップ側の安全装置チェックをスキップする）。
             if (!window.backupSaveData) { alert('クラウド機能の準備ができていません。少し待ってからもう一度試してください'); return; }
             saveGame(); // 念のため、まずローカルの保存内容を最新にしておく
             const raw = localStorage.getItem('mochisuke_save_data');
@@ -167,6 +174,7 @@ import {
          * @returns {Promise<void>}
          */
         export async function restoreFromCloud() {
+            // src/engine/firebase.js: window.restoreSaveData（refreshCloudBackupStatusと同じ関数）でクラウドのバックアップを取得する。
             if (!window.restoreSaveData) { alert('クラウド機能の準備ができていません。少し待ってからもう一度試してください'); return; }
             const backup = await window.restoreSaveData();
             if (!backup || !backup.data) {
@@ -211,6 +219,7 @@ import {
             if (!result.ok) { alert(result.reason); return; }
             playerName = result.name;
             localStorage.setItem('punicker_player_name', playerName);
+            // src/engine/firebase.js: window.submitRankingScore（menuSaveGameと同じ関数）で、新しい名前をランキングにも反映する。
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             alert('保存しました！');
         }
@@ -429,6 +438,8 @@ import {
             let attempts = 0;
             const poll = setInterval(async () => {
                 attempts++;
+                // src/engine/firebase.js: window.isRankingReady() はFirebaseへの接続準備が完了したかを返す関数、
+                // window.restoreSaveData はクラウド上の最新バックアップを取得する関数（他の呼び出し箇所と同じもの）。
                 if (window.isRankingReady && window.isRankingReady()) {
                     clearInterval(poll);
                     const backup = await window.restoreSaveData();

@@ -158,6 +158,7 @@ import {
          * @returns {void}
          */
         export function buyPrestigeShopItem(key) {
+            // data.js: PRESTIGE_SHOP_ITEMS は転生ポイントショップの各アイテムの価格・上限・効果量を定義したオブジェクト
             const item = PRESTIGE_SHOP_ITEMS[key];
             if (!item) return;
             const currentCount = prestigeShopLv[key] || 0;
@@ -165,6 +166,7 @@ import {
             if (prestigePoints < item.cost) { alert('転生ポイントが足りません'); return; }
             prestigePoints -= item.cost;
             prestigeShopLv[key] = currentCount + 1;
+            // state.js: saveGame はセーブデータを保存する関数
             saveGame();
             renderPrestigeShop();
         }
@@ -245,16 +247,22 @@ import {
          * @returns {void}
          */
         export function checkOfflineEarnings() {
+            // state.js: lastActiveTimestamp は前回アプリを操作していた時刻（タイムスタンプ）
             if (!lastActiveTimestamp) return; // 初回プレイなど、前回の記録が無ければ何もしない
             const elapsedSeconds = (Date.now() - lastActiveTimestamp) / 1000;
+            // state.js: OFFLINE_EARNINGS_MIN_SECONDS はオフライン収益を計算する最低経過秒数
             if (elapsedSeconds < OFFLINE_EARNINGS_MIN_SECONDS) return;
             const cappedSeconds = Math.min(elapsedSeconds, getOfflineEarningsCapHours() * CONFIG.OFFLINE_EARNINGS_SECONDS_PER_HOUR);
+            // tap.js: getMps は現在の自動増加量（1秒あたりのもち増加量）を返す関数
             const mps = getMps();
             const earnings = Math.floor(mps * cappedSeconds);
             if (earnings <= 0) return;
 
+            // state.js: score/setScore/saveGame でオフライン中の増加分をもちに反映して保存
             setScore(score + (earnings));
-            saveGame(); updateDisplay();
+            saveGame();
+            // ui.js: updateDisplay で画面表示を更新
+            updateDisplay();
 
             const totalMinutes = Math.floor(elapsedSeconds / 60);
             const hours = Math.floor(totalMinutes / 60);
@@ -266,7 +274,9 @@ import {
             document.getElementById('offline-earnings-time').innerText = `${timeText}の間、もちすけがひとりで頑張ってくれてたで！`;
             document.getElementById('offline-earnings-amount').innerText = `+${formatMochi(earnings)} もち`;
             document.getElementById('offline-earnings-note').innerText = cappedNote;
+            // main.js: playAudioFile は効果音を再生する関数
             playAudioFile('audio/gold_mochi.mp3');
+            // ui.js: openModal はモーダルを表示する関数
             openModal('offline-earnings-modal', true);
         }
 
@@ -282,6 +292,7 @@ import {
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 callback();
+                // main.js: setGameBackground はゲーム画面の背景画像を切り替える関数
                 setGameBackground(newBgUrl);
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.AREA_TRANSITION_UNFADE_MS);
             }, CONFIG.AREA_TRANSITION_FADE_MS);
@@ -295,6 +306,7 @@ import {
          * @returns {void}
          */
         export function showPrefTrophyDetail(i) {
+            // data.js: stages はステージ（都道府県）データの配列
             const stage = stages[i];
             const taps = prefTaps[i] || 0;
             const trophy = getPrefTrophy(i);
@@ -346,24 +358,32 @@ import {
          * @returns {void}
          */
         export function doPrestige() {
+            // state.js: score は現在の所持もち数（リセット前の記録として使う）
             prestigeScoreHistory.push({ prestigeNumber: prestigeCount + 1, score: Math.floor(score), timestamp: Date.now() });
             prestigeCount++;
             prestigePoints += PRESTIGE_POINTS_PER_RUN;
             gachaCoins += GACHA_COIN_PER_PRESTIGE; // ガチャコインは転生しても引き継がれる（他の進行データと違い、リセットしない）
+            // state.js: setScore はもち所持数を書き換える関数（0にリセット）
             setScore(0);
             currentStageIndex = 0;
             selectedStageIndex = 0;
             currentStageProgress = 0;
+            // shop.js: setPurchasedItems はおみやげの購入レベル一覧を書き換える関数（空にリセット）
             setPurchasedItems({});
             hasSeenJapanClear = false; // 🐛修正：これが無いと、2回目以降は沖縄クリア無しで転生し放題になってしまっていた
             collectedStamps = {}; // スタンプ帳も、絵日記の記録と同様に周回ごとリセットする
+            // tap.js: skills はスキルごとのレベル・クールタイム等を持つオブジェクト（全部リセット）
             Object.keys(skills).forEach(k => {
                 skills[k].lv = 0;
                 skills[k].activeTimer = 0;
                 skills[k].currentCd = 0;
             });
             saveGame();
+            // src/engine/firebase.js: window.submitRankingScore はランキングにスコアを送信する関数（importではなくwindow経由なのは、
+            // firebase.jsがtype="module"で読み込まれる別スクリプトのため。まだ定義されていない可能性をif文で弾いている）
+            // state.js: playerName/totalTapsCount は現在のプレイヤー名・累計タップ数
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
+            // src/engine/firebase.js: window.backupSaveData はクラウドへ現在のセーブデータを強制上書き保存する関数
             if (window.backupSaveData) {
                 const raw = localStorage.getItem('mochisuke_save_data');
                 if (raw) window.backupSaveData(raw, true); // 転生による意図的なリセットなので、ガードを無視して確実にバックアップを更新する
@@ -386,18 +406,22 @@ import {
             vibrate(CONFIG.JAPAN_CLEAR_VIBRATE_PATTERN);
 
             // 紙吹雪演出：色を増やし、量も時間も伸ばして、より豪華に
+            // main.js: getGameScreenRect はゲーム画面の表示領域（座標・幅高さ）を取得する関数
             const rect = getGameScreenRect();
             for (let i = 0; i < CONFIG.CONFETTI_PARTICLE_COUNT; i++) {
                 setTimeout(() => {
                     const x = rect.left + Math.random() * rect.width;
                     const y = rect.top + rect.height * CONFIG.CONFETTI_ORIGIN_Y_FRACTION;
+                    // main.js: createParticle は紙吹雪などの1粒のパーティクルを生成する関数
                     createParticle(x, y, Math.random() < CONFIG.CONFETTI_SPECIAL_COLOR_PROBABILITY);
                 }, i * CONFIG.CONFETTI_STAGGER_MS);
             }
 
+            // state.js: firstPlayTimestamp/totalTapsCount/score は初回プレイ日時・累計タップ数・現在の所持もち数
             const days = firstPlayTimestamp ? Math.max(1, Math.ceil((Date.now() - firstPlayTimestamp) / CONFIG.MS_PER_DAY)) : 1;
             const finalTaps = totalTapsCount, finalScore = score;
 
+            // ui.js: openModal はモーダルを表示する関数
             openModal('japan-clear-modal');
 
             // 🎬 段階的な演出：①称号がバウンドして現れる →②統計が0からカウントアップ →③もちすけのメッセージ →④ボタン
@@ -453,6 +477,7 @@ import {
          */
         export function closeJapanClearAndExplainPrestige() {
             document.getElementById('japan-clear-confirm').style.display = 'none';
+            // ui.js: closeModal はモーダルを非表示にする関数
             closeModal('japan-clear-modal');
             // 🐛修正：以前は「転生は倉庫の画面から選べます」と案内していたが、実際には倉庫（おみやげ収納）に
             // 転生の入り口は無く、本当のボタン(main-prestige-btn)は次のエリアまでのゲージの下、
@@ -509,6 +534,8 @@ import {
                 ctx.font = 'bold 34px sans-serif';
                 ctx.fillText('🏅「日本もち王」の称号を獲得！', cw / 2, ch - 360);
 
+                // state.js: firstPlayTimestamp/totalTapsCount/score（初回プレイ日時・累計タップ数・所持もち数）
+                // main.js: formatMochi は数値を「〇〇もち」表示用に整形する関数
                 const days = firstPlayTimestamp ? Math.max(1, Math.ceil((Date.now() - firstPlayTimestamp) / CONFIG.MS_PER_DAY)) : 1;
                 ctx.fillStyle = '#fff';
                 ctx.font = '30px sans-serif';
@@ -520,6 +547,7 @@ import {
                 const imgEl = document.getElementById('save-image-preview');
                 if (imgEl) imgEl.src = dataUrl;
                 lastJapanClearCanvas = canvas;
+                // ui.js: openModal はモーダルを表示する関数
                 openModal('save-image-modal');
             };
             bg.onerror = () => {
@@ -584,6 +612,7 @@ import {
          * @returns {void}
          */
         export function checkStageProgress() {
+            // data.js: stages はステージ（都道府県）データの配列。distanceが「そのステージのクリアに必要な進行量」
             if (currentStageProgress >= stages[currentStageIndex].distance) {
                 currentStageProgress = stages[currentStageIndex].distance; // スタンプを押すまでの間、表示が100%を超えて増え続けないようにする
                 if (currentStageIndex < stages.length - 1) {
@@ -617,6 +646,7 @@ import {
             const btn = document.getElementById('stamp-press-btn');
             if (btn) btn.style.display = 'none';
             isPendingStampMoment = true;
+            // ui.js: openDiary/setDiaryPageIndex/renderDiaryPage/flipDiaryPage は絵日記モーダルの開閉・ページ制御を行う関数群
             openDiary();
             setDiaryPageIndex(currentStageIndex); // openDiary()内でselectedStageIndexに上書きされるため、必ずその後に設定する
             renderDiaryPage();
@@ -630,6 +660,7 @@ import {
          */
         export function tapStampFrame() {
             if (!isPendingStampMoment) return; // 通常の閲覧中は何も起きない
+            // ui.js: diaryPageIndex は絵日記で現在開いているページ番号
             if (diaryPageIndex !== currentStageIndex) return;
             if (collectedStamps[currentStageIndex]) return;
             if (currentStageProgress < stages[currentStageIndex].distance) { isPendingStampMoment = false; return; } // 念のため、本当にゲージが満タンか直接確認する
@@ -641,6 +672,7 @@ import {
             trackMissionEvent('stampsThisWeek', 1); trackMissionEvent('stampsTotal', 1);
             saveGame();
 
+            // main.js: playAudioFile/vibrate/screenShake は効果音再生・バイブ・画面揺れの演出関数
             playAudioFile('audio/stamp.mp3'); // 専用のスタンプ音（無ければ用意してください。それまでは無音）
             vibrate(CONFIG.STAMP_VIBRATE_PATTERN);
             screenShake('small');
@@ -671,6 +703,7 @@ import {
             }
 
             setTimeout(() => {
+                // ui.js: closeModal はモーダルを閉じる関数
                 closeModal('diary-modal');
                 currentStageIndex++; const nextIdx = currentStageIndex; currentStageProgress = 0;
                 triggerAreaTransition(stages[nextIdx].bg, () => {
@@ -679,7 +712,9 @@ import {
                     const stampBtn = document.getElementById('stamp-press-btn');
                     if (stampBtn) stampBtn.style.display = 'none';
                     const name = stages[nextIdx].name;
+                    // data.js: dialogueData は各種セリフ文言集（県ごとの到着コメント等を含む）
                     const prefPool = dialogueData.prefectureComments[name];
+                    // ui.js: showMochiComment はもちすけにセリフを喋らせる関数 / main.js: pickRandom は配列から1件ランダムに選ぶ関数
                     showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
                 });
             }, 900);
@@ -775,6 +810,7 @@ import {
                 missionCounters.feedToday = 0;
                 // 🔴 昨日までに受け取り済みだったデイリーミッションを、今日また挑戦できるようにする
                 // （missionClaimedはミッションID単位のフラグなので、リセットしないと同じIDは二度と受け取れない）
+                // data.js: DAILY_MISSION_POOL/DAILY_MISSION_COUNT はデイリーミッションの候補一覧と、そこから選ぶ件数
                 DAILY_MISSION_POOL.forEach(m => { delete missionClaimed[m.id]; });
                 missionDailySelected = pickRandomMissions(DAILY_MISSION_POOL, DAILY_MISSION_COUNT);
                 trackMissionEvent('loginDaysThisWeek', 1);
@@ -791,6 +827,7 @@ import {
                 missionCounters.skillUsedThisWeek = 0;
                 missionCounters.loginDaysThisWeek = 1; // 週の変わり目＝今日ログインした1日目
                 // 🔴 デイリーと同様、週替わりで受け取り済みフラグをリセットする
+                // data.js: WEEKLY_MISSION_POOL/WEEKLY_MISSION_COUNT はウィークリーミッションの候補一覧と選ぶ件数
                 WEEKLY_MISSION_POOL.forEach(m => { delete missionClaimed[m.id]; });
                 missionWeeklySelected = pickRandomMissions(WEEKLY_MISSION_POOL, WEEKLY_MISSION_COUNT);
             }
@@ -801,6 +838,7 @@ import {
          * @returns {(Object|undefined)} 見つかったミッション定義
          */
         export function getMissionDef(id) {
+            // data.js: TUTORIAL_MISSIONS/DAILY_MISSION_POOL/WEEKLY_MISSION_POOL は各種ミッション定義の一覧
             return TUTORIAL_MISSIONS.find(m => m.id === id) || DAILY_MISSION_POOL.find(m => m.id === id) || WEEKLY_MISSION_POOL.find(m => m.id === id);
         }
         /**
@@ -829,7 +867,9 @@ import {
             if (!mission || missionClaimed[id] || !isMissionComplete(mission)) return false;
             missionClaimed[id] = true;
             gachaCoins += mission.reward;
+            // data.js: TUTORIAL_MISSIONS はチュートリアルミッションの定義一覧（.lengthで全ステップ数を見る）
             if (id.startsWith('tut_') && tutorialMissionStep < TUTORIAL_MISSIONS.length) tutorialMissionStep++;
+            // state.js: saveGame はセーブデータを保存する関数
             saveGame();
             return true;
         }
