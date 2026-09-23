@@ -593,7 +593,7 @@
             padding: 5px 14px;
             display: flex; align-items: center; gap: 4px;
         }
-        .omiyage-money-icon { width: 32px; height: 32px; display: block; flex-shrink: 0; }
+        .omiyage-money-icon { width: 14px; height: 14px; display: block; flex-shrink: 0; }
         #omiyage-money-flash {
             position: absolute; z-index: 41;
             font-weight: 900; color: #e53935; font-size: 1.05rem;
