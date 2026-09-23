@@ -1,19 +1,19 @@
         // ui.js を機能ごとに分割したファイルの1つ（フレンド・他人の部屋への訪問（フレンドリスト・招待・訪問中の演出・移動メニュー・ものおき））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-23-002';
-        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-23-002';
-        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-23-002';
-        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-23-002';
-        import { saveGame } from '../../state.js?v=2026-09-23-002';
-        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-23-002';
-        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-23-002';
-        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-23-002';
-        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-23-002';
-        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-23-002';
+        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-23-003';
+        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-23-003';
+        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-23-003';
+        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-23-003';
+        import { saveGame } from '../../state.js?v=2026-09-23-003';
+        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-23-003';
+        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-23-003';
+        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-23-003';
+        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-23-003';
+        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-23-003';
         // 🆕 全身スロット（fullbody/squeeze共用）のアイテムを、カテゴリを問わずidだけで引くための
         // 共有ヘルパー（2-6・4-12参照）。KISEKAE_ITEMS.fullbodyだけを見ていると、スクイーズ衣装を
         // 着けたまま訪問してきたフレンドの見た目が反映できなくなる。
-        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-23-002';
+        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-23-003';
 
         // 🔧 このファイル内で使う「調整可能な数値」をまとめた設定オブジェクト
         const CONFIG = {

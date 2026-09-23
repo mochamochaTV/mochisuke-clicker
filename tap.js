@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-23-002';
+} from './data.js?v=2026-09-23-003';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-23-002';
-import { isMinigameActive } from './minigames.js?v=2026-09-23-002';
+} from './main.js?v=2026-09-23-003';
+import { isMinigameActive } from './minigames.js?v=2026-09-23-003';
 // 🆕 スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -22,22 +22,22 @@ import {
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-23-002';
+} from './src/squeeze/physics.js?v=2026-09-23-003';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-23-002';
+} from './progress.js?v=2026-09-23-003';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-23-002';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-23-002';
+} from './shop.js?v=2026-09-23-003';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-23-003';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-23-002';
+} from './ui.js?v=2026-09-23-003';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）

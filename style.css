@@ -593,7 +593,14 @@
             padding: 5px 14px;
             display: flex; align-items: center; gap: 4px;
         }
-        .omiyage-money-icon { width: 14px; height: 14px; display: block; flex-shrink: 0; }
+        /* 🆕【まもすいの指摘で修正】もち数アイコンを32px（見た目）で表示しつつ、枠(#omiyage-money-display)の
+           高さ・形がアイコンの大きさに引っ張られて変わらないよう、タップ画面の.mochi-count-icon-wrapと同じ
+           手法を採用。flexboxのレイアウト計算に使われる箱(.omiyage-money-icon-wrap)は14px固定のまま、
+           中の画像はtransform:scaleで見た目だけ拡大する（transformは占有スペースに影響しないため）。
+           32÷14＝約2.2857倍。今後アイコンの見た目サイズだけを変えたい時は、このscale値を
+           「目標px ÷ 14」で計算し直すこと。枠自体を大きくしたい時はwrap側のwidth/heightを変える。 */
+        .omiyage-money-icon-wrap { display: inline-block; width: 14px; height: 14px; flex-shrink: 0; transform: scale(2.2857); }
+        .omiyage-money-icon { display: block; width: 100%; height: 100%; }
         #omiyage-money-flash {
             position: absolute; z-index: 41;
             font-weight: 900; color: #e53935; font-size: 1.05rem;
