@@ -584,12 +584,16 @@
         #omiyage-image-frame { position: absolute; }
         #omiyage-image-frame > img { width: 100%; height: 100%; display: block; }
 
+        /* 🆕 もち数表示：以前は棚イラスト左上（戻るボタンの下）にあったが、戻るボタンと同じY軸・画面右上に移動。
+           🆕 🍡絵文字だったアイコンも、タップ画面（.mochi-count-icon）と同じもちパーティクル画像に差し替え。 */
         #omiyage-money-display {
-            position: absolute; top: calc(48px + env(safe-area-inset-top, 0px)); left: 6px; z-index: 40;
+            position: absolute; top: calc(2px + env(safe-area-inset-top, 0px)); right: calc(6px + env(safe-area-inset-right, 0px)); z-index: 40;
             font-weight: 900; font-size: 1.15rem; color: #5d4037;
             background: rgba(255,248,236,0.92); border: 2px solid #e8dcc0; border-radius: 22px;
             padding: 5px 14px;
+            display: flex; align-items: center; gap: 4px;
         }
+        .omiyage-money-icon { width: 32px; height: 32px; display: block; flex-shrink: 0; }
         #omiyage-money-flash {
             position: absolute; z-index: 41;
             font-weight: 900; color: #e53935; font-size: 1.05rem;

@@ -547,7 +547,6 @@ window.addFriendByCode = async function (code) {
     } catch (e) {
         console.error("フレンド追加エラー:", e);
         return { success: false, reason: 'error', errorMessage: (e && e.message) ? e.message : String(e) };
-        return { success: false, reason: 'error' };
     }
 };
 window.fetchFriendList = async function () {

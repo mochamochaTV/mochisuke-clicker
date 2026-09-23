@@ -1569,7 +1569,10 @@ import {
             // 所持もち数の桁数によって表示幅が変わるため、その時点での右上位置を実測して合わせる
             const valueRect = valueEl.getBoundingClientRect();
             const containerRect = container.getBoundingClientRect();
-            el.style.left = (valueRect.right - containerRect.left + CONFIG.OMIYAGE_MONEY_FLASH_OFFSET_X_PX) + 'px';
+            // 🆕 もち数表示を画面右上に移動したため、以前のように値の右側へ表示すると画面外にはみ出す。
+            //    右端からの距離（right）で位置指定し、値の左側へ向かって伸びるようにする。
+            el.style.left = '';
+            el.style.right = (containerRect.right - valueRect.left + CONFIG.OMIYAGE_MONEY_FLASH_OFFSET_X_PX) + 'px';
             el.style.top = (valueRect.top - containerRect.top + CONFIG.OMIYAGE_MONEY_FLASH_OFFSET_Y_PX) + 'px';
 
             el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
