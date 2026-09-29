@@ -1,13 +1,13 @@
         // ui.js を機能ごとに分割したファイルの1つ（自分のマイルーム（家具配置・部屋の編集・スロット切り替え））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { MYROOM_CATEGORY_LABELS, MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS, MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, stages } from '../../data.js?v=2026-09-29-002';
-        import { IS_DEV_MODE, playAudioFile, playBgmLoop } from '../../main.js?v=2026-09-29-002';
-        import { currentMyroomSlotIndex, equippedMyroom, myroomSlots, ownedMyroomItems, setCurrentMyroomSlotIndex, setEquippedMyroom } from '../../progress.js?v=2026-09-29-002';
-        import { activeSprayId, purchasedItems, sprayBuffActiveUntil, sprayInventory, ticketInventory } from '../../shop.js?v=2026-09-29-002';
-        import { saveGame } from '../../state.js?v=2026-09-29-002';
-        import { closeModal, openModal } from './core.js?v=2026-09-29-002';
-        import { closeMyroomActionMenu, moveMenuGoTo, openMoveMenu, renderWarehouseItems, setMyroomMouthHidden } from './social.js?v=2026-09-29-002';
-        import { applyKisekaeToMyroom, stopWingFlapLoop } from './kisekae.js?v=2026-09-29-002';
+        import { MYROOM_CATEGORY_LABELS, MYROOM_FURNITURE_LIMIT_PER_CATEGORY, MYROOM_ITEMS, MYROOM_MOCHISUKE_SIZE, MYROOM_SLOT_POSITIONS, MYROOM_WALL_ZONE_BOTTOM, NORMAL_CONSUMABLE_ITEMS, SPRAY_ITEMS, stages } from '../../data.js?v=2026-09-29-004';
+        import { IS_DEV_MODE, playAudioFile, playBgmLoop } from '../../main.js?v=2026-09-29-004';
+        import { currentMyroomSlotIndex, equippedMyroom, myroomSlots, ownedMyroomItems, setCurrentMyroomSlotIndex, setEquippedMyroom } from '../../progress.js?v=2026-09-29-004';
+        import { activeSprayId, purchasedItems, sprayBuffActiveUntil, sprayInventory, ticketInventory } from '../../shop.js?v=2026-09-29-004';
+        import { saveGame } from '../../state.js?v=2026-09-29-004';
+        import { closeModal, openModal } from './core.js?v=2026-09-29-004';
+        import { closeMyroomActionMenu, moveMenuGoTo, openMoveMenu, renderWarehouseItems, setMyroomMouthHidden } from './social.js?v=2026-09-29-004';
+        import { applyKisekaeToMyroom, stopWingFlapLoop } from './kisekae.js?v=2026-09-29-004';
 
         // 🔧 このファイル内のロジックで使う「調整可能な」数値をまとめる（data.jsの配置テーブル等はそちらに残す）
         const CONFIG = {
@@ -167,7 +167,7 @@
             const currentLeft = parseFloat(wrap.style.left) || 50;
             const newLeftPct = CONFIG.MOCHISUKE_WALK_LEFT_MIN_PCT + Math.random() * CONFIG.MOCHISUKE_WALK_LEFT_RANGE_PCT; // 端に寄りすぎないよう12〜88%の範囲で歩く
             const newBottomPct = CONFIG.MOCHISUKE_WALK_BOTTOM_MIN_PCT + Math.random() * CONFIG.MOCHISUKE_WALK_BOTTOM_RANGE_PCT; // 床の中で少し前後にも動く
-            // 🐛修正：距離に関わらず速度が一定になるよう、移動時間を距離から逆算する（前は時間固定で、距離次第で速さがバラついていた）
+            // 修正：距離に関わらず速度が一定になるよう、移動時間を距離から逆算する（前は時間固定で、距離次第で速さがバラついていた）
             const distance = Math.abs(newLeftPct - currentLeft);
             const moveDuration = Math.max(CONFIG.MOCHISUKE_WALK_MIN_DURATION_SEC, distance / MYROOM_WALK_SPEED_PCT_PER_SEC).toFixed(2);
             wrap.style.transition = `left ${moveDuration}s linear, bottom ${moveDuration}s linear`;
@@ -175,7 +175,7 @@
             wrap.style.bottom = newBottomPct + '%';
             const inner = document.getElementById('myroom-mochisuke-inner');
             if (inner) inner.classList.add('myroom-walking'); // 🚶 スーッと滑るのではなく、とことこ歩いて見えるようにする（内側要素だけをアニメーションさせ、外側の中央寄せtransformとぶつからないようにする）
-            // ../../main.js: playAudioFile は効果音ファイルを再生する関数
+            // ../../main.js: playAudioFile：効果音ファイルを再生する
             playAudioFile('audio/move_small.mp3', CONFIG.MOCHISUKE_WALK_SOUND_VOLUME);
             // ./social.js: setMyroomMouthHidden はもちすけの口パーツの表示/非表示を切り替える関数（歩行・叫び・全身衣装など複数の理由を内部で管理している）
             setMyroomMouthHidden('myroom-mochisuke', 'walk', true); // 👄 歩いている間は口を開ける（叫び中なら叫び終わるまでは戻さない。全身衣装中は触らない）
@@ -200,7 +200,7 @@
                 { duration: CONFIG.MOCHISUKE_TAP_ANIM_DURATION_MS, easing: 'ease-out' }
             );
         }
-        // 🐛修正：PWA環境ではonclick属性が不安定になることがあるため、pointerupで明示的に判定する
+        // 修正：PWA環境ではonclick属性が不安定になることがあるため、pointerupで明示的に判定する
         /**
          * もちすけ要素にpointerupイベントリスナーを一度だけ登録し、タップ時にonMyroomMochisukeTap()を呼ぶようにする。
          * @returns {void}
@@ -224,7 +224,7 @@
             myroomCurrentCategory = 'wallpaper';
             myroomItemListVisible = false;
             document.getElementById('myroom-switcher-overlay').style.display = 'none';
-            // ../../progress.js: myroomSlots は部屋スロットごとの家具配置データの配列、currentMyroomSlotIndex は今選択中のスロット番号、
+            // ../../progress.js: myroomSlots：部屋スロットごとの家具配置データの配列、currentMyroomSlotIndex は今選択中のスロット番号、
             // equippedMyroom は現在装備中（表示中）の部屋の家具配置データ
             // 🔀 部屋1がまだ無ければ、今のequippedMyroomをそのまま部屋1として引き継ぐ（既存プレイヤー対応）
             if (!myroomSlots[currentMyroomSlotIndex]) myroomSlots[currentMyroomSlotIndex] = JSON.parse(JSON.stringify(equippedMyroom));
@@ -234,17 +234,17 @@
             document.getElementById('myroom-decorate-btn').textContent = '🎨 もようがえ';
             previewMyroom = JSON.parse(JSON.stringify(equippedMyroom)); // 配列(家具配置)も含めて完全に独立させる
             renderMyroomLayout();
-            // ./kisekae.js: applyKisekaeToMyroom はマイルーム中のもちすけに、現在の着せ替え衣装を反映させる関数
+            // ./kisekae.js: applyKisekaeToMyroom はマイルーム中のもちすけに、現在の着せ替え衣装を反映させる
             applyKisekaeToMyroom();
-            // ./core.js: openModal は指定idのモーダルを開く共通関数
+            // ./core.js: openModal：指定idのモーダルを開く共通関数
             openModal('myroom-modal');
-            // ../../main.js: playBgmLoop は指定した音楽ファイルをループ再生する関数
+            // ../../main.js: playBgmLoop は指定した音楽ファイルをループ再生する
             playBgmLoop('audio/bgm/bgm_myroom.mp3');
             const mochisukeWrap = document.getElementById('myroom-mochisuke-breathe-wrap');
             if (mochisukeWrap) { mochisukeWrap.style.transition = 'none'; mochisukeWrap.style.left = '50%'; mochisukeWrap.style.bottom = '2%'; }
             startMyroomMochisukeWalk();
             setupMyroomMochisukeTapHandler();
-            // ../../main.js: IS_DEV_MODE（同じフラグ。ここでは開発者用サイズ調整パネルの初期化をスキップするかどうかに使う）
+            // ../../main.js: IS_DEV_MODE（同じフラグ。ここで：開発者用サイズ調整パネルの初期化をスキップするかどうかに使う）
             if (IS_DEV_MODE) {
                 renderMyroomSizeAdjustOptions();
                 document.getElementById('myroom-size-adjust-panel').style.display = 'none'; // もようがえモードに入った時だけ表示する
@@ -264,12 +264,12 @@
             setTimeout(() => {
                 // ./core.js: closeModal は指定idのモーダルを閉じる共通関数
                 closeModal('myroom-modal');
-                // ./kisekae.js: stopWingFlapLoop は羽ばたきアニメーションのループを停止する関数
+                // ./kisekae.js: stopWingFlapLoop：羽ばたきアニメーションのループを停止する
                 stopWingFlapLoop('myroom');
                 stopMyroomMochisukeWalk();
                 // ../../main.js: playBgmLoop（同じループ再生関数。通常BGMに戻す）
                 playBgmLoop('audio/bgm/bgm.mp3');
-                // ./social.js: openMoveMenu は「どこへ行く？」の移動メニュー画面を開く関数
+                // ./social.js: openMoveMenu は「どこへ行く？」の移動メニュー画面を開く
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.CLOSE_MYROOM_OVERLAY_CLEAR_DELAY_MS);
             }, CONFIG.CLOSE_MYROOM_FADE_DELAY_MS);
@@ -280,7 +280,7 @@
          * @returns {void}
          */
         export function renderMyroomLayout() {
-            // ../../data.js: MYROOM_ITEMS はマイルームで使える家具・壁紙・床などのアイテム定義データ（カテゴリごとの配列）
+            // ../../data.js: MYROOM_ITEMS：マイルームで使える家具・壁紙・床などのアイテム定義データ（カテゴリごとの配列）
             const wallpaperItem = MYROOM_ITEMS.wallpaper.find(i => i.id === previewMyroom.wallpaper) || MYROOM_ITEMS.wallpaper[0];
             const flooringItem = MYROOM_ITEMS.flooring.find(i => i.id === previewMyroom.flooring) || MYROOM_ITEMS.flooring[0];
             document.getElementById('myroom-wallpaper-layer').src = wallpaperItem.img;
@@ -349,7 +349,7 @@
             inst.zIndex = (inst.zIndex || 10) + delta;
             renderMyroomLayout();
         }
-        // 🆕 家具を配置に追加する（上限あり）
+        // 家具を配置に追加する（上限あり）
         /**
          * 指定カテゴリに家具を1つ新規配置する。上限・所持数チェックの上、初期位置を計算して追加し、再描画・一覧クローズ・アイテム名ラベル表示まで行う。
          * @param {string} cat - 家具のカテゴリ名
@@ -363,7 +363,7 @@
                 alert(`⚠️ ${MYROOM_CATEGORY_LABELS[cat]}は最大${MYROOM_FURNITURE_LIMIT_PER_CATEGORY}個までしか置けません`);
                 return;
             }
-            // ../../progress.js: ownedMyroomItems はプレイヤーが所持しているマイルームアイテムのidをカテゴリ別に持つオブジェクト
+            // ../../progress.js: ownedMyroomItems：プレイヤーが所持しているマイルームアイテムのidをカテゴリ別に持つオブジェクト
             const ownedCount = (ownedMyroomItems[cat] || []).filter(id => id === itemId).length;
             const placedCount = previewMyroom[cat].filter(inst => inst.itemId === itemId).length;
             // ../../main.js: IS_DEV_MODE（同じフラグ。開発者モードでは所持数チェックをスキップできる）
@@ -374,7 +374,7 @@
             const item = MYROOM_ITEMS[cat].find(i => i.id === itemId);
             // 最初はなるべく画面の中央（壁掛けは壁の中央）に配置する
             let top, left;
-            // ../../data.js: MYROOM_WALL_ZONE_BOTTOM は壁掛け家具が置ける範囲の下端（%）
+            // ../../data.js: MYROOM_WALL_ZONE_BOTTOM：壁掛け家具が置ける範囲の下端（%）
             if (cat === 'wall_deco') {
                 top = (MYROOM_WALL_ZONE_BOTTOM - item.height) / 2;
                 left = (100 - item.width) / 2;
@@ -428,7 +428,7 @@
             let dragState = null;
             stage.addEventListener('pointerdown', (e) => {
                 if (!myroomIsEditMode) return; // 🎨 もようがえモード中だけ動かせる
-                if (e.target.tagName === 'BUTTON') return; // 🐛修正：✕・🔄・⬆️⬇️ボタンを押した時、先に選択解除→再描画が走ってボタン自体が消え、押した処理が実行されなくなっていた
+                if (e.target.tagName === 'BUTTON') return; // 修正：✕・🔄・⬆️⬇️ボタンを押した時、先に選択解除→再描画が走ってボタン自体が消え、押した処理が実行されなくなっていた
                 if (!e.target.classList.contains('myroom-slot-img')) {
                     // 家具以外の場所をタップしたら、選択を解除する
                     if (selectedMyroomInstance) { selectedMyroomInstance = null; renderMyroomLayout(); }
@@ -467,7 +467,7 @@
                 } else {
                     // 他の家具は、画面の外に完全に消えない程度なら、壁側にはみ出してもよいが、
                     // 床置きの家具なので、少しでも床(壁紙と床の境界より下)に重なっている必要がある
-                    // 🐛修正：はみ出し量が大きすぎると、画面端に近づいた時にスマホのOSジェスチャー(戻る操作等)に
+                    // 修正：はみ出し量が大きすぎると、画面端に近づいた時にスマホのOSジェスチャー(戻る操作等)に
                     // 割り込まれてドラッグが強制中断され、身動きが取れなくなるバグがあったため、はみ出し量を小さくした
                     newTop = Math.max(-height * CONFIG.FURNITURE_DRAG_VERTICAL_OVERFLOW_RATIO, Math.min(100 - height * CONFIG.FURNITURE_DRAG_VISIBLE_RATIO, newTop));
                     newLeft = Math.max(-width * CONFIG.FURNITURE_DRAG_HORIZONTAL_OVERFLOW_RATIO, Math.min(100 - width * CONFIG.FURNITURE_DRAG_VISIBLE_RATIO, newLeft));
@@ -565,7 +565,7 @@
             const previewImg = document.getElementById('myroom-size-preview-img');
             if (cat !== 'mochisuke') {
                 // 実際の配置データ(previewMyroom)には触れず、専用のプレビュー要素にだけ試着表示する
-                // ../../data.js: MYROOM_SLOT_POSITIONS はカテゴリごとの初期配置位置（%）を持つデータ
+                // ../../data.js: MYROOM_SLOT_POSITIONS：カテゴリごとの初期配置位置（%）を持つデータ
                 const defaultPos = MYROOM_SLOT_POSITIONS[cat];
                 previewImg.src = item.img;
                 previewImg.style.display = 'block';
@@ -869,11 +869,11 @@
                 };
             }
             previewMyroom = JSON.parse(JSON.stringify(myroomSlots[currentMyroomSlotIndex]));
-            // ../../progress.js: setEquippedMyroom はequippedMyroom（現在表示中の部屋データ）を更新する関数
+            // ../../progress.js: setEquippedMyroom：equippedMyroom（現在表示中の部屋データ）を更新する
             setEquippedMyroom(JSON.parse(JSON.stringify(myroomSlots[currentMyroomSlotIndex])));
             selectedMyroomInstance = null;
             renderMyroomLayout();
-            // ../../state.js: saveGame はゲーム全体のセーブデータをlocalStorage（＋可能ならクラウド）に保存する関数
+            // ../../state.js: saveGame はゲーム全体のセーブデータをlocalStorage（＋可能ならクラウド）に保存する
             saveGame();
             closeMyroomSwitcher();
         }
@@ -902,7 +902,7 @@
             setEquippedMyroom(JSON.parse(JSON.stringify(previewMyroom))); // 公開時点の内容を、決定扱いにもしておく
             // ../../state.js: saveGame（同じセーブ関数）
             saveGame();
-            // src/engine/firebase.js: window.submitMyroomData はマイルームのデータをフレンド・ランキングから見られるよう公開送信する関数（importではなくwindow経由なのは、
+            // src/engine/firebase.js: window.submitMyroomData：マイルームのデータをフレンド・ランキングから見られるよう公開送信する関数（importではなくwindow経由なのは、
             // firebase.jsがtype="module"で読み込まれる一方、このファイルはそうではないため。まだ準備できていない可能性があるのでif文で存在チェックしている）
             if (window.submitMyroomData) {
                 // ../../progress.js: equippedMyroom（同じ現在装備中の部屋データ）
@@ -918,11 +918,11 @@
         export function openWarehouse() {
             let boughtCount = 0;
             // ../../data.js: stages はゲーム内の各ステージ（都道府県など）の定義データ
-            // ../../shop.js: purchasedItems はステージごとの購入済みおみやげ数を持つ配列
+            // ../../shop.js: purchasedItems：ステージごとの購入済みおみやげ数を持つ配列
             stages.forEach((s, idx) => { if((purchasedItems[idx] || 0) > 0) boughtCount++; });
             const badge = document.getElementById('warehouse-omiyage-badge');
             if (badge) badge.textContent = `${boughtCount}/${stages.length}`;
-            // ./social.js: renderWarehouseItems は倉庫（おみやげコレクション）のアイテム一覧を描画する関数
+            // ./social.js: renderWarehouseItems は倉庫（おみやげコレクション）のアイテム一覧を描画する
             renderWarehouseItems();
             // ./core.js: openModal（同じモーダル表示関数）
             openModal('warehouse-modal');
@@ -938,7 +938,7 @@
         export function openTicketInventory() {
             const list = document.getElementById('ticket-inventory-list');
             list.innerHTML = '';
-            // ../../data.js: NORMAL_CONSUMABLE_ITEMS はチケットなど通常の消費アイテム定義データ
+            // ../../data.js: NORMAL_CONSUMABLE_ITEMS：チケットなど通常の消費アイテム定義データ
             NORMAL_CONSUMABLE_ITEMS.forEach(item => {
                 // ../../shop.js: ticketInventory は所持チケットのidごとの個数を持つオブジェクト
                 const count = ticketInventory[item.id] || 0;
@@ -947,11 +947,11 @@
                 row.innerHTML = `<div class="item-info-row"><img class="item-thumb" src="${item.img}" alt="${item.name}"><div class="item-info"><span class="item-title">🎫 ${item.name}　<span style="color:#ff9800; font-weight:900;">×${count}</span></span><span class="item-desc">${item.desc}</span></div></div><button class="item-action-btn btn-shop" ${count > 0 ? '' : 'disabled'} onclick="useTicket('${item.id}')" style="background:#4caf50; color:white;">使う</button>`;
                 list.appendChild(row);
             });
-            // ../../data.js: SPRAY_ITEMS はスプレー系アイテムの定義データ
+            // ../../data.js: SPRAY_ITEMS：スプレー系アイテムの定義データ
             SPRAY_ITEMS.forEach(item => {
                 // ../../shop.js: sprayInventory は所持スプレーのidごとの個数
                 const count = sprayInventory[item.id] || 0;
-                // ../../shop.js: activeSprayId は今効果が有効なスプレーのid、sprayBuffActiveUntil はその効果が切れる時刻(ms)
+                // ../../shop.js: activeSprayId：今効果が有効なスプレーのid、sprayBuffActiveUntil はその効果が切れる時刻(ms)
                 const isActive = activeSprayId === item.id && Date.now() < sprayBuffActiveUntil;
                 const emoji = item.effectId === 'sparkle' ? '✨' : '🌟';
                 const row = document.createElement('div');

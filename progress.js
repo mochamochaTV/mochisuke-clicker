@@ -3,21 +3,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-29-002';
+} from './data.js?v=2026-09-29-004';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-29-002';
-import { setPurchasedItems } from './shop.js?v=2026-09-29-002';
+} from './main.js?v=2026-09-29-004';
+import { setPurchasedItems } from './shop.js?v=2026-09-29-004';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-29-002';
-import { getMps, skills } from './tap.js?v=2026-09-29-002';
+} from './state.js?v=2026-09-29-004';
+import { getMps, skills } from './tap.js?v=2026-09-29-004';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-29-002';
+} from './ui.js?v=2026-09-29-004';
 
         // 🔧 CONFIG：ロジック中のマジックナンバーを調整しやすいようにまとめたもの
         const CONFIG = {
@@ -68,7 +68,7 @@ import {
         export let prestigeCount = 0;      // 転生した回数
 
         // 👗 着せ替え部屋：所持アイテムと、今装着中のアイテム（カテゴリごとに1つだけ）
-        // 🆕 squeeze（スクイーズ衣装）はカルーセルの見た目上は別カテゴリだが、実際に装備する場所は
+        // squeeze（スクイーズ衣装）はカルーセルの見た目上は別カテゴリだが、実際に装備する場所は
         // fullbodyと共用の1つの「全身スロット」なので、equippedKisekae/previewKisekaeにはsqueeze用の
         // フィールドを増やしていない（kisekae.jsのfindFullbodySlotItem()参照）。所持状況だけは
         // カテゴリごとに別々に持つ必要があるため、ownedKisekaeItemsにはsqueezeを追加している。
@@ -166,7 +166,7 @@ import {
             if (prestigePoints < item.cost) { alert('転生ポイントが足りません'); return; }
             prestigePoints -= item.cost;
             prestigeShopLv[key] = currentCount + 1;
-            // state.js: saveGame はセーブデータを保存する関数
+            // state.js: saveGame：セーブデータを保存する
             saveGame();
             renderPrestigeShop();
         }
@@ -250,10 +250,10 @@ import {
             // state.js: lastActiveTimestamp は前回アプリを操作していた時刻（タイムスタンプ）
             if (!lastActiveTimestamp) return; // 初回プレイなど、前回の記録が無ければ何もしない
             const elapsedSeconds = (Date.now() - lastActiveTimestamp) / 1000;
-            // state.js: OFFLINE_EARNINGS_MIN_SECONDS はオフライン収益を計算する最低経過秒数
+            // state.js: OFFLINE_EARNINGS_MIN_SECONDS：オフライン収益を計算する最低経過秒数
             if (elapsedSeconds < OFFLINE_EARNINGS_MIN_SECONDS) return;
             const cappedSeconds = Math.min(elapsedSeconds, getOfflineEarningsCapHours() * CONFIG.OFFLINE_EARNINGS_SECONDS_PER_HOUR);
-            // tap.js: getMps は現在の自動増加量（1秒あたりのもち増加量）を返す関数
+            // tap.js: getMps は現在の自動増加量（1秒あたりのもち増加量）を返す
             const mps = getMps();
             const earnings = Math.floor(mps * cappedSeconds);
             if (earnings <= 0) return;
@@ -274,9 +274,9 @@ import {
             document.getElementById('offline-earnings-time').innerText = `${timeText}の間、もちすけがひとりで頑張ってくれてたで！`;
             document.getElementById('offline-earnings-amount').innerText = `+${formatMochi(earnings)} もち`;
             document.getElementById('offline-earnings-note').innerText = cappedNote;
-            // main.js: playAudioFile は効果音を再生する関数
+            // main.js: playAudioFile：効果音を再生する
             playAudioFile('audio/gold_mochi.mp3');
-            // ui.js: openModal はモーダルを表示する関数
+            // ui.js: openModal はモーダルを表示する
             openModal('offline-earnings-modal', true);
         }
 
@@ -292,7 +292,7 @@ import {
             overlay.classList.add('fade-black');
             setTimeout(() => {
                 callback();
-                // main.js: setGameBackground はゲーム画面の背景画像を切り替える関数
+                // main.js: setGameBackground：ゲーム画面の背景画像を切り替える
                 setGameBackground(newBgUrl);
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.AREA_TRANSITION_UNFADE_MS);
             }, CONFIG.AREA_TRANSITION_FADE_MS);
@@ -358,7 +358,7 @@ import {
          * @returns {void}
          */
         export function doPrestige() {
-            // state.js: score は現在の所持もち数（リセット前の記録として使う）
+            // state.js: score：現在の所持もち数（リセット前の記録として使う）
             prestigeScoreHistory.push({ prestigeNumber: prestigeCount + 1, score: Math.floor(score), timestamp: Date.now() });
             prestigeCount++;
             prestigePoints += PRESTIGE_POINTS_PER_RUN;
@@ -368,9 +368,9 @@ import {
             currentStageIndex = 0;
             selectedStageIndex = 0;
             currentStageProgress = 0;
-            // shop.js: setPurchasedItems はおみやげの購入レベル一覧を書き換える関数（空にリセット）
+            // shop.js: setPurchasedItems：おみやげの購入レベル一覧を書き換える関数（空にリセット）
             setPurchasedItems({});
-            hasSeenJapanClear = false; // 🐛修正：これが無いと、2回目以降は沖縄クリア無しで転生し放題になってしまっていた
+            hasSeenJapanClear = false; // 修正：これが無いと、2回目以降は沖縄クリア無しで転生し放題になってしまっていた
             collectedStamps = {}; // スタンプ帳も、絵日記の記録と同様に周回ごとリセットする
             // tap.js: skills はスキルごとのレベル・クールタイム等を持つオブジェクト（全部リセット）
             Object.keys(skills).forEach(k => {
@@ -379,11 +379,11 @@ import {
                 skills[k].currentCd = 0;
             });
             saveGame();
-            // src/engine/firebase.js: window.submitRankingScore はランキングにスコアを送信する関数（importではなくwindow経由なのは、
+            // src/engine/firebase.js: window.submitRankingScore：ランキングにスコアを送信する関数（importではなくwindow経由なのは、
             // firebase.jsがtype="module"で読み込まれる別スクリプトのため。まだ定義されていない可能性をif文で弾いている）
             // state.js: playerName/totalTapsCount は現在のプレイヤー名・累計タップ数
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
-            // src/engine/firebase.js: window.backupSaveData はクラウドへ現在のセーブデータを強制上書き保存する関数
+            // src/engine/firebase.js: window.backupSaveData：クラウドへ現在のセーブデータを強制上書き保存する
             if (window.backupSaveData) {
                 const raw = localStorage.getItem('mochisuke_save_data');
                 if (raw) window.backupSaveData(raw, true); // 転生による意図的なリセットなので、ガードを無視して確実にバックアップを更新する
@@ -406,13 +406,13 @@ import {
             vibrate(CONFIG.JAPAN_CLEAR_VIBRATE_PATTERN);
 
             // 紙吹雪演出：色を増やし、量も時間も伸ばして、より豪華に
-            // main.js: getGameScreenRect はゲーム画面の表示領域（座標・幅高さ）を取得する関数
+            // main.js: getGameScreenRect はゲーム画面の表示領域（座標・幅高さ）を取得する
             const rect = getGameScreenRect();
             for (let i = 0; i < CONFIG.CONFETTI_PARTICLE_COUNT; i++) {
                 setTimeout(() => {
                     const x = rect.left + Math.random() * rect.width;
                     const y = rect.top + rect.height * CONFIG.CONFETTI_ORIGIN_Y_FRACTION;
-                    // main.js: createParticle は紙吹雪などの1粒のパーティクルを生成する関数
+                    // main.js: createParticle：紙吹雪などの1粒のパーティクルを生成する
                     createParticle(x, y, Math.random() < CONFIG.CONFETTI_SPECIAL_COLOR_PROBABILITY);
                 }, i * CONFIG.CONFETTI_STAGGER_MS);
             }
@@ -421,7 +421,7 @@ import {
             const days = firstPlayTimestamp ? Math.max(1, Math.ceil((Date.now() - firstPlayTimestamp) / CONFIG.MS_PER_DAY)) : 1;
             const finalTaps = totalTapsCount, finalScore = score;
 
-            // ui.js: openModal はモーダルを表示する関数
+            // ui.js: openModal：モーダルを表示する
             openModal('japan-clear-modal');
 
             // 🎬 段階的な演出：①称号がバウンドして現れる →②統計が0からカウントアップ →③もちすけのメッセージ →④ボタン
@@ -477,9 +477,9 @@ import {
          */
         export function closeJapanClearAndExplainPrestige() {
             document.getElementById('japan-clear-confirm').style.display = 'none';
-            // ui.js: closeModal はモーダルを非表示にする関数
+            // ui.js: closeModal はモーダルを非表示にする
             closeModal('japan-clear-modal');
-            // 🐛修正：以前は「転生は倉庫の画面から選べます」と案内していたが、実際には倉庫（おみやげ収納）に
+            // 修正：以前は「転生は倉庫の画面から選べます」と案内していたが、実際には倉庫（おみやげ収納）に
             // 転生の入り口は無く、本当のボタン(main-prestige-btn)は次のエリアまでのゲージの下、
             // スタンプボタンと同じ場所に出る作りになっていた。案内文が実態と食い違っていたので修正する。
             setTimeout(() => {
@@ -493,7 +493,7 @@ import {
         }
 
         // 📷 達成画面を、そのまま画像として保存できるようにする
-        // 🐛修正：PWA（ホーム画面に追加してアプリのように起動した状態）だと、通常のSafariタブでは
+        // 修正：PWA（ホーム画面に追加してアプリのように起動した状態）だと、通常のSafariタブでは
         // 効いていた「画像を長押しして保存」がなぜか反応しないケースがある（iOSのstandalone表示モード
         // 特有の制限と見られる）。CSS側の-webkit-touch-callout解除だけでは救えないため、
         // 生成したcanvasをFileに変換し、Web Share API（navigator.share）で共有シートを直接呼び出す
@@ -535,7 +535,7 @@ import {
                 ctx.fillText('🏅「日本もち王」の称号を獲得！', cw / 2, ch - 360);
 
                 // state.js: firstPlayTimestamp/totalTapsCount/score（初回プレイ日時・累計タップ数・所持もち数）
-                // main.js: formatMochi は数値を「〇〇もち」表示用に整形する関数
+                // main.js: formatMochi：数値を「〇〇もち」表示用に整形する
                 const days = firstPlayTimestamp ? Math.max(1, Math.ceil((Date.now() - firstPlayTimestamp) / CONFIG.MS_PER_DAY)) : 1;
                 ctx.fillStyle = '#fff';
                 ctx.font = '30px sans-serif';
@@ -547,7 +547,7 @@ import {
                 const imgEl = document.getElementById('save-image-preview');
                 if (imgEl) imgEl.src = dataUrl;
                 lastJapanClearCanvas = canvas;
-                // ui.js: openModal はモーダルを表示する関数
+                // ui.js: openModal はモーダルを表示する
                 openModal('save-image-modal');
             };
             bg.onerror = () => {
@@ -612,7 +612,7 @@ import {
          * @returns {void}
          */
         export function checkStageProgress() {
-            // data.js: stages はステージ（都道府県）データの配列。distanceが「そのステージのクリアに必要な進行量」
+            // data.js: stages：ステージ（都道府県）データの配列。distanceが「そのステージのクリアに必要な進行量」
             if (currentStageProgress >= stages[currentStageIndex].distance) {
                 currentStageProgress = stages[currentStageIndex].distance; // スタンプを押すまでの間、表示が100%を超えて増え続けないようにする
                 if (currentStageIndex < stages.length - 1) {
@@ -660,7 +660,7 @@ import {
          */
         export function tapStampFrame() {
             if (!isPendingStampMoment) return; // 通常の閲覧中は何も起きない
-            // ui.js: diaryPageIndex は絵日記で現在開いているページ番号
+            // ui.js: diaryPageIndex：絵日記で現在開いているページ番号
             if (diaryPageIndex !== currentStageIndex) return;
             if (collectedStamps[currentStageIndex]) return;
             if (currentStageProgress < stages[currentStageIndex].distance) { isPendingStampMoment = false; return; } // 念のため、本当にゲージが満タンか直接確認する
@@ -672,7 +672,7 @@ import {
             trackMissionEvent('stampsThisWeek', 1); trackMissionEvent('stampsTotal', 1);
             saveGame();
 
-            // main.js: playAudioFile/vibrate/screenShake は効果音再生・バイブ・画面揺れの演出関数
+            // main.js: playAudioFile/vibrate/screenShake は効果音再生・バイブ・画面揺れの演出
             playAudioFile('audio/stamp.mp3'); // 専用のスタンプ音（無ければ用意してください。それまでは無音）
             vibrate(CONFIG.STAMP_VIBRATE_PATTERN);
             screenShake('small');
@@ -703,7 +703,7 @@ import {
             }
 
             setTimeout(() => {
-                // ui.js: closeModal はモーダルを閉じる関数
+                // ui.js: closeModal：モーダルを閉じる
                 closeModal('diary-modal');
                 currentStageIndex++; const nextIdx = currentStageIndex; currentStageProgress = 0;
                 triggerAreaTransition(stages[nextIdx].bg, () => {
@@ -714,7 +714,7 @@ import {
                     const name = stages[nextIdx].name;
                     // data.js: dialogueData は各種セリフ文言集（県ごとの到着コメント等を含む）
                     const prefPool = dialogueData.prefectureComments[name];
-                    // ui.js: showMochiComment はもちすけにセリフを喋らせる関数 / main.js: pickRandom は配列から1件ランダムに選ぶ関数
+                    // ui.js: showMochiComment：もちすけにセリフを喋らせる関数 / main.js: pickRandom は配列から1件ランダムに選ぶ
                     showMochiComment(prefPool ? `${name}到着！${pickRandom(prefPool)}` : `${name}到着！ここはどんな場所やろな？`);
                 });
             }, 900);
@@ -827,7 +827,7 @@ import {
                 missionCounters.skillUsedThisWeek = 0;
                 missionCounters.loginDaysThisWeek = 1; // 週の変わり目＝今日ログインした1日目
                 // 🔴 デイリーと同様、週替わりで受け取り済みフラグをリセットする
-                // data.js: WEEKLY_MISSION_POOL/WEEKLY_MISSION_COUNT はウィークリーミッションの候補一覧と選ぶ件数
+                // data.js: WEEKLY_MISSION_POOL/WEEKLY_MISSION_COUNT：ウィークリーミッションの候補一覧と選ぶ件数
                 WEEKLY_MISSION_POOL.forEach(m => { delete missionClaimed[m.id]; });
                 missionWeeklySelected = pickRandomMissions(WEEKLY_MISSION_POOL, WEEKLY_MISSION_COUNT);
             }
@@ -867,9 +867,9 @@ import {
             if (!mission || missionClaimed[id] || !isMissionComplete(mission)) return false;
             missionClaimed[id] = true;
             gachaCoins += mission.reward;
-            // data.js: TUTORIAL_MISSIONS はチュートリアルミッションの定義一覧（.lengthで全ステップ数を見る）
+            // data.js: TUTORIAL_MISSIONS：チュートリアルミッションの定義一覧（.lengthで全ステップ数を見る）
             if (id.startsWith('tut_') && tutorialMissionStep < TUTORIAL_MISSIONS.length) tutorialMissionStep++;
-            // state.js: saveGame はセーブデータを保存する関数
+            // state.js: saveGame はセーブデータを保存する
             saveGame();
             return true;
         }

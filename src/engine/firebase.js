@@ -12,9 +12,9 @@
  * firebaseConfigの中身は、自分のFirebaseプロジェクトの値に置き換えてください。
  */
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https:// www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https:// www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment, onSnapshot, writeBatch } from "https:// www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
 const firebaseConfig = {
@@ -45,7 +45,7 @@ try {
 // メインのゲームスクリプト（type=moduleではない）から呼べるようにwindowへ橋渡しする
 window.submitRankingScore = async function (name, scoreVal, totalTapsVal, prestigeCountVal, outfitVal) {
     if (!fbReady || !db || !currentUid) return;
-    // main.js: window.IS_DEV_MODE は開発者モードかどうかのフラグ（importではなくwindow経由なのは、main.js側はtype="module"ではなく、このfirebase.jsだけが別のtype="module"スクリプトとして読み込まれているため）
+    // main.js: window.IS_DEV_MODE：開発者モードかどうかのフラグ（importではなくwindow経由なのは、main.js側はtype="module"ではなく、このfirebase.jsだけが別のtype="module"スクリプトとして読み込まれているため）
     if (window.IS_DEV_MODE) return; // 開発者モード中は、水増しした数値がランキングに反映されないよう送信自体を止める
     try {
         await setDoc(doc(db, "rankings", currentUid), {
@@ -55,7 +55,7 @@ window.submitRankingScore = async function (name, scoreVal, totalTapsVal, presti
             prestigeCount: Math.floor(prestigeCountVal || 0),
             outfit: outfitVal || null,
             updatedAt: Date.now()
-        }, { merge: true }); // 🐛修正：mergeが無いとドキュメント全体を上書きしてしまい、friendCodeなど他の場所で保存したフィールドが消えていた
+        }, { merge: true }); // 修正：mergeが無いとドキュメント全体を上書きしてしまい、friendCodeなど他の場所で保存したフィールドが消えていた
     } catch (e) { console.error("ランキング送信エラー:", e); }
 };
 
@@ -139,7 +139,7 @@ window.likeRoom = async function (ownerUid) {
     if (!fbReady || !db || !currentUid) return { success: false, reason: 'offline' };
     if (ownerUid === currentUid) return { success: false, reason: 'self' };
     try {
-        // 🐛修正：テスト用にID末尾へDate.now()を足して毎回別ドキュメント化＋重複チェックを
+        // 修正：テスト用にID末尾へDate.now()を足して毎回別ドキュメント化＋重複チェックを
         // 無効化したままになっていたため、いいねボタン連打でroomLikeCountとガチャコインが
         // 無限に増やせてしまっていた。checkRoomLiked()が前提とする`${liker}_${owner}`という
         // 固定IDに戻し、重複チェックも復活させる（Firestoreルール側でも1組につき1回に制限する）
@@ -147,7 +147,7 @@ window.likeRoom = async function (ownerUid) {
         const likeRef = doc(db, "roomLikes", likeDocId);
         const existing = await getDoc(likeRef);
         if (existing.exists()) return { success: false, reason: 'already' };
-        // 🐛修正：いいねドキュメントの新規作成とroomLikeCountの+1を、別々の書き込みではなく
+        // 修正：いいねドキュメントの新規作成とroomLikeCountの+1を、別々の書き込みではなく
         // 1つのバッチにまとめる。Firestoreルール側でgetAfter()を使い「このバッチで
         // いいねドキュメントが新規作成された時だけ+1を許可する」ように連動させるための対応
         // （別々の書き込みのままだと、いいねドキュメント作成をすり抜けてカウントだけ連打できてしまう）
@@ -326,7 +326,7 @@ window.startRoomHostSession = async function (guestUid) {
         // 実際の可否はFirestoreルール側でも同じ条件をget()で再計算して検証するので、
         // ここで送る値を偽ってもチャット送信は許可されない
         const chatEnabled = await computeChatEnabled(currentUid, guestUid);
-        // 🐛修正：roomSessionsのドキュメントは同じ2人の間で半永久的に使い回されるため、
+        // 修正：roomSessionsのドキュメントは同じ2人の間で半永久的に使い回されるため、
         // 過去に何度訪問し合っても会話ログ(messagesサブコレクション)は同じ場所に積み上がり続けていた。
         // その結果「一度退室してまた通信し直しても、前回までの会話が見えてしまう」状態になっていた。
         // ここでホストが新しく部屋を開くたび(＝新しい訪問セッションの開始)に
@@ -416,7 +416,7 @@ window.sendRoomChatMessage = async function (roomId, text, isStamp) {
         });
         return { success: true };
     } catch (e) {
-        // 🐛修正：以前は失敗してもコンソールに出すだけで、呼び出し側は結果を確認せず
+        // 修正：以前は失敗してもコンソールに出すだけで、呼び出し側は結果を確認せず
         // 「送れたつもり」になっていた。理由(especially permission-denied＝Firestoreルールで
         // 弾かれた)を呼び出し側に返して、原因が分かるようにする
         console.error("チャット送信エラー:", e);
@@ -437,7 +437,7 @@ window.listenRoomChatMessages = function (roomId, onMessages) {
     } catch (e) { console.error("チャット監視エラー:", e); return () => {}; }
 };
 
-// ✉️🐛修正：招待の検知は、以前は45秒おきにgetDocsで問い合わせる「ポーリング」方式だったため、
+// ✉️修正：招待の検知は、以前は45秒おきにgetDocsで問い合わせる「ポーリング」方式だったため、
 // 実際に届くまで最大で数十秒の時間差があった。onSnapshotでリアルタイム監視することで、
 // Firestore側の書き込みとほぼ同時に検知できるようにする。戻り値は監視解除用の関数
 window.listenIncomingRoomInvites = function (onInvites) {
@@ -496,7 +496,7 @@ window.ensureMyFriendCode = async function () {
             const dupCheck = await getDocs(query(collection(db, "rankings"), where("friendCode", "==", candidate)));
             if (dupCheck.empty) {
                 await setDoc(doc(db, "rankings", currentUid), { friendCode: candidate }, { merge: true });
-                // 🐛検証：setDoc自体はローカルキャッシュにより見かけ上成功することがあるため、
+                // 検証：setDoc自体はローカルキャッシュにより見かけ上成功することがあるため、
                 // キャッシュを迂回してサーバーから直接読み直し、実際に反映されたか確認する
                 try {
                     const verifyDoc = await getDocFromServer(doc(db, "rankings", currentUid));
@@ -534,7 +534,7 @@ window.addFriendByCode = async function (code) {
         if (myFriendsQ.size >= FRIEND_LIMIT) return { success: false, reason: 'limit_reached' };
 
         const pairId = [currentUid, targetUid].sort().join('_');
-        // 🐛修正：以前はコードの一致確認がクライアント側だけだったため、ルール上は
+        // 修正：以前はコードの一致確認がクライアント側だけだったため、ルール上は
         // 相手のフレンドコードを知らなくても uids に相手のuidを直接指定すれば
         // 一方的にフレンド関係を作成できてしまっていた。usedFriendCodeを一緒に送り、
         // ルール側で「相手の現在のfriendCodeと一致するか」をget()で検証できるようにする
@@ -571,7 +571,7 @@ window.fetchFriendList = async function () {
 // 🪙 フレンドに、無料のガチャコインを1枚送る
 window.sendGiftCoin = async function (toUid) {
     if (!fbReady || !db || !currentUid) return { success: false };
-    if (toUid === currentUid) return { success: false, reason: 'self' }; // 🐛修正：自分宛ギフトの量産防止（サーバー側のルールでも別途禁止済み）
+    if (toUid === currentUid) return { success: false, reason: 'self' }; // 修正：自分宛ギフトの量産防止（サーバー側のルールでも別途禁止済み）
     try {
         const myDoc = await getDoc(doc(db, "rankings", currentUid));
         const myName = myDoc.exists() ? (myDoc.data().name || '名無しさん') : '名無しさん';

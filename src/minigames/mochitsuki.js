@@ -10,9 +10,9 @@
  * この状態を持つ本ファイル自身に後始末専用の関数として切り出した。処理の中身は同じ。
  */
 
-import { pickRandom, playAudioFile, screenFlash, screenShake, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-29-002';
-import { showMochiComment } from '../../ui.js?v=2026-09-29-002';
-import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './core.js?v=2026-09-29-002';
+import { pickRandom, playAudioFile, screenFlash, screenShake, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-29-004';
+import { showMochiComment } from '../../ui.js?v=2026-09-29-004';
+import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './core.js?v=2026-09-29-004';
 
         const CONFIG = {
             MOCHI_BAND_OPACITY: 0.35,           // 判定帯（トラック上の色付きゾーン）の透明度
@@ -156,14 +156,14 @@ import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './
                 // ミス：連続記録をリセットし、トラックが軽くよろける演出＋もちすけの反応
                 mochitsukiState.streak = 0;
                 if (track) { track.classList.remove('mochi-track-miss'); void track.offsetWidth; track.classList.add('mochi-track-miss'); }
-                // ui.js: showMochiComment() はもちすけのセリフを吹き出しで表示する関数
+                // ui.js: showMochiComment()：もちすけのセリフを吹き出しで表示する
                 // main.js: pickRandom() は配列からランダムに1件選ぶ共通ユーティリティ
                 if (Math.random() < CONFIG.MOCHI_MISS_COMMENT_CHANCE) showMochiComment(pickRandom(["あちゃー！", "むむっ、ズレたで！", "おっと〜！"]));
             } else {
                 mochitsukiState.streak++;
                 mochitsukiState.bestStreak = Math.max(mochitsukiState.bestStreak, mochitsukiState.streak);
                 if (rank.name === 'PERFECT') {
-                    // main.js: playAudioFile() は効果音再生、vibrate() は端末バイブ、screenFlash() は画面フラッシュを行う共通関数
+                    // main.js: playAudioFile()：効果音再生、vibrate() は端末バイブ、screenFlash() は画面フラッシュを行う共通関数
                     playAudioFile('audio/critical.mp3'); vibrate(CONFIG.MOCHI_PERFECT_VIBRATE_MS);
                     screenFlash('#ffd700', CONFIG.MOCHI_PERFECT_FLASH_OPACITY);
                     if (track) { track.classList.remove('mochi-track-glow'); void track.offsetWidth; track.classList.add('mochi-track-glow'); }
@@ -187,7 +187,7 @@ import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './
             const indicatorEl = document.getElementById('mochi-indicator');
             if (indicatorEl && rank.particles > 0) {
                 const rect = indicatorEl.getBoundingClientRect();
-                // main.js: spawnModalParticleBurst() はモーダル内で完結するパーティクル演出を出す共通関数
+                // main.js: spawnModalParticleBurst()：モーダル内で完結するパーティクル演出を出す共通関数
                 spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, rank.particles, rank.color);
             }
 
@@ -227,7 +227,7 @@ import { consumeMinigamePlay, grantMinigameReward, showMinigameResult } from './
             const weightedSum = MOCHITSUKI_RANKS.reduce((sum, r) => sum + st.counts[r.name] * r.weight, 0);
             const mult = Math.min(MOCHITSUKI_REWARD_CAP, weightedSum / MOCHITSUKI_BEATS);
             mochitsukiState = null;
-            // core.js: grantMinigameReward() は渡した倍率からミニゲームコインを計算して付与する共通処理
+            // core.js: grantMinigameReward()：渡した倍率からミニゲームコインを計算して付与する共通処理
             const reward = grantMinigameReward(mult);
             const summary = MOCHITSUKI_RANKS.map(r => `${r.name}:${st.counts[r.name]}`).join(' ') + (st.bestStreak >= CONFIG.MOCHI_STREAK_DISPLAY_THRESHOLD ? ` ／ 最大${st.bestStreak}連続！` : '');
             // core.js: showMinigameResult() はプレイ画面を共通の結果画面に差し替える処理

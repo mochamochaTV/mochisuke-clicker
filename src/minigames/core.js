@@ -15,19 +15,19 @@
 
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { ARCADE_CABINET_PARTS, stages } from '../../data.js?v=2026-09-29-002';
+import { ARCADE_CABINET_PARTS, stages } from '../../data.js?v=2026-09-29-004';
 import {
   IS_DEV_MODE,
   playAudioFile, playBgmLoop
-} from '../../main.js?v=2026-09-29-002';
-import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from '../../progress.js?v=2026-09-29-002';
-import { saveGame } from '../../state.js?v=2026-09-29-002';
-import { closeModal, getLocalDateString, openModal, openMoveMenu, updateDisplay } from '../../ui.js?v=2026-09-29-002';
-import { startQuizGame } from './quiz.js?v=2026-09-29-002';
-import { startTimeAttackGame, cleanupTimeAttackTimer } from './timeAttack.js?v=2026-09-29-002';
-import { startConcentrationGame } from './concentration.js?v=2026-09-29-002';
-import { startMochitsukiGame, cleanupMochitsukiTimer } from './mochitsuki.js?v=2026-09-29-002';
-import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-29-002';
+} from '../../main.js?v=2026-09-29-004';
+import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from '../../progress.js?v=2026-09-29-004';
+import { saveGame } from '../../state.js?v=2026-09-29-004';
+import { closeModal, getLocalDateString, openModal, openMoveMenu, updateDisplay } from '../../ui.js?v=2026-09-29-004';
+import { startQuizGame } from './quiz.js?v=2026-09-29-004';
+import { startTimeAttackGame, cleanupTimeAttackTimer } from './timeAttack.js?v=2026-09-29-004';
+import { startConcentrationGame } from './concentration.js?v=2026-09-29-004';
+import { startMochitsukiGame, cleanupMochitsukiTimer } from './mochitsuki.js?v=2026-09-29-004';
+import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-29-004';
 
         const CONFIG = {
             MINIGAME_CENTER_FADE_OUT_MS: 300,        // ミニゲームセンター開閉時、画面が暗転してから中身を切り替えるまでの時間
@@ -74,7 +74,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
          * @returns {void}
          */
         export function resetMinigameCountsIfNewDay() {
-            // ui.js: getLocalDateString() はDateオブジェクトを「YYYY-MM-DD」形式のローカル日付文字列に変換する関数
+            // ui.js: getLocalDateString()：Dateオブジェクトを「YYYY-MM-DD」形式のローカル日付文字列に変換する
             const today = getLocalDateString(new Date());
             if (minigameLastResetDate !== today) {
                 minigameLastResetDate = today;
@@ -90,7 +90,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
          */
         export function openMinigameCenter() {
             const overlay = document.getElementById('fade-overlay');
-            // main.js: playAudioFile() は指定した音声ファイルを再生する共通関数
+            // main.js: playAudioFile()：指定した音声ファイルを再生する共通関数
             playAudioFile('audio/move.mp3'); // 県移動の時と同じ、移動音
             overlay.classList.add('fade-black');
             setTimeout(() => {
@@ -100,7 +100,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
                 renderMinigameTiles();
                 // ui.js: openModal() は指定idのモーダルを開く共通関数
                 openModal('minigame-center-modal');
-                // main.js: playBgmLoop() は指定したBGMをループ再生に切り替える共通関数
+                // main.js: playBgmLoop()：指定したBGMをループ再生に切り替える共通関数
                 playBgmLoop('audio/bgm/bgm_minigame.mp3'); // ゲームセンター専用BGMに切り替え
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.MINIGAME_CENTER_FADE_IN_DELAY_MS);
             }, CONFIG.MINIGAME_CENTER_FADE_OUT_MS);
@@ -123,7 +123,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
                 // ui.js: closeModal() は指定idのモーダルを閉じる共通関数
                 closeModal('minigame-center-modal');
                 playBgmLoop('audio/bgm/bgm.mp3'); // 通常のBGMに戻す
-                // ui.js: openMoveMenu() は県移動メニューを開く共通関数
+                // ui.js: openMoveMenu()：県移動メニューを開く共通関数
                 openMoveMenu();
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.MINIGAME_CENTER_FADE_IN_DELAY_MS);
             }, CONFIG.MINIGAME_CENTER_FADE_OUT_MS);
@@ -139,11 +139,11 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
             // （importした変数には直接代入できないため）。ここでは3つを順に呼ぶだけ。
             // 処理の中身自体は分割前と完全に同じ（タイムアタックのタイマー停止／
             // もちつきのアニメーション停止／スロットの回転停止とループ音停止）。
-            // timeAttack.js: cleanupTimeAttackTimer() はタイムアタックのタイマーを止めて状態をリセットする後始末関数
+            // timeAttack.js: cleanupTimeAttackTimer() はタイムアタックのタイマーを止めて状態をリセットする後始末
             cleanupTimeAttackTimer();
-            // mochitsuki.js: cleanupMochitsukiTimer() はもちつきのアニメーションフレームを止めて状態をリセットする後始末関数
+            // mochitsuki.js: cleanupMochitsukiTimer()：もちつきのアニメーションフレームを止めて状態をリセットする後始末
             cleanupMochitsukiTimer();
-            // slotMachine.js: cleanupSlotSpinState() はスロットの回転・ループ音を止めて状態をリセットする後始末関数
+            // slotMachine.js: cleanupSlotSpinState() はスロットの回転・ループ音を止めて状態をリセットする後始末
             cleanupSlotSpinState();
         }
 
@@ -156,13 +156,13 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
             // 調整パネル・ハンドルは残しつつ、筐体イラストだけ作り直す（毎回呼ばれるため、既存の筐体要素は先に消す）
             container.querySelectorAll('.arcade-cabinet-wrap').forEach(el => el.remove());
 
-            // data.js: ARCADE_CABINET_PARTS は筐体イラストの配置座標（top/left/width/heightなど）を県ごとに持つ配列
+            // data.js: ARCADE_CABINET_PARTS：筐体イラストの配置座標（top/left/width/heightなど）を県ごとに持つ配列
             ARCADE_CABINET_PARTS.forEach(part => {
                 const g = minigames[part.gameId];
                 if (!g) return;
                 const locked = currentStageIndex < g.unlockStage;
                 const usedToday = minigamePlaysUsedToday[g.id] || 0;
-                // progress.js: getMinigameDailyLimit() は転生ショップの強化状況などから「1日の最大プレイ回数」を返す関数
+                // progress.js: getMinigameDailyLimit() は転生ショップの強化状況などから「1日の最大プレイ回数」を返す
                 const remaining = getMinigameDailyLimit() - usedToday;
 
                 const wrap = document.createElement('div');
@@ -183,7 +183,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
                 } else if (g.isCoinGame) {
                     if (!minigameSeenUnlocked[g.id]) wrap.classList.add('minigame-recommend-glow');
                     wrap.onclick = () => startMinigame(g.id);
-                    // main.js: IS_DEV_MODE は開発モードかどうかのフラグ（trueだと所持コイン表示が∞になる）
+                    // main.js: IS_DEV_MODE：開発モードかどうかのフラグ（trueだと所持コイン表示が∞になる）
                     badgeHtml = `<div class="arcade-cabinet-badge" style="color:#7b1fa2;">🪙 ${IS_DEV_MODE ? '∞' : minigameCoins} 所持</div>`;
                 } else if (remaining <= 0) {
                     wrap.style.filter = 'grayscale(1) brightness(0.75)';
@@ -214,15 +214,15 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
             playView.style.background = 'rgba(255,248,236,0.95)'; // slotが透明にするので、他のゲームに移る時は毎回既定値へ戻す
             isMinigameActive = true;
             // ここから下は、idに応じて各ゲームファイルのstart関数を呼び分けているだけ
-            // quiz.js: startQuizGame() はご当地クイズの導入・出題を開始する関数
+            // quiz.js: startQuizGame() はご当地クイズの導入・出題を開始する
             if (id === 'quiz') startQuizGame(playView);
-            // timeAttack.js: startTimeAttackGame() はタップタイムアタックの導入画面を表示する関数
+            // timeAttack.js: startTimeAttackGame()：タップタイムアタックの導入画面を表示する
             else if (id === 'timeattack') startTimeAttackGame(playView);
-            // concentration.js: startConcentrationGame() はご当地神経衰弱の盤面を作って開始する関数
+            // concentration.js: startConcentrationGame() はご当地神経衰弱の盤面を作って開始する
             else if (id === 'concentration') startConcentrationGame(playView);
-            // mochitsuki.js: startMochitsukiGame() はもちつきリズムの初期化・開始を行う関数
+            // mochitsuki.js: startMochitsukiGame()：もちつきリズムの初期化・開始を行う
             else if (id === 'mochitsuki') startMochitsukiGame(playView);
-            // slotMachine.js: startSlotGame() はスロットの導入画面を表示する関数
+            // slotMachine.js: startSlotGame() はスロットの導入画面を表示する
             else if (id === 'slot') startSlotGame(playView);
         }
 
@@ -268,7 +268,7 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
         export function grantMinigameReward(multiplier) {
             const coinGain = getMinigameCoinGain(multiplier);
             minigameCoins += coinGain;
-            // progress.js: trackMissionEvent() は指定したミッション項目のカウンターを進める関数
+            // progress.js: trackMissionEvent()：指定したミッション項目のカウンターを進める
             trackMissionEvent('minigamesPlayedTotal', 1); trackMissionEvent('minigamesToday', 1); trackMissionEvent('minigamesThisWeek', 1);
             // ui.js: updateDisplay() は画面上の数値表示（スコアなど）をまとめて再描画する共通関数
             saveGame(); updateDisplay();

@@ -217,16 +217,16 @@
         ];
 
         export const SFX_FILES = ['audio/tap.mp3', 'audio/move.mp3', 'audio/critical.mp3', 'audio/gold_mochi.mp3', 'audio/skill_tap.mp3', 'audio/ready.mp3', 'audio/levelup.mp3', 'audio/page_turn.mp3', 'audio/balloon_pop.mp3', 'audio/mochisuke/mochi_eat.mp3', 'audio/mochisuke/mochi_scream.mp3', 'audio/mochisuke/mochi_stretch.mp3', 'audio/mochisuke/mochi_release_pop.mp3', 'audio/mochisuke/japan_clear.mp3', 'audio/stamp.mp3', 'audio/talk_pop.mp3', 'audio/gacha/crank.mp3', 'audio/gacha/drop.mp3', 'audio/gacha/open.mp3',
-            // 🆕 通常のもちすけの「本格的にドラッグした瞬間の強弱で音が変わる」つつき音（src/squeeze/materials.js の
+            // 通常のもちすけの「本格的にドラッグした瞬間の強弱で音が変わる」つつき音（src/squeeze/materials.js の
             // default.pokeSoundFile）。全プレイヤーに聞こえる通常機能なので、他の効果音と同じ扱い。
             'audio/mochisuke/mochi_poke.mp3',
-            // 🆕 引っ張らずに長押ししている間だけループする「じわじわ潰れる」専用音（default.longPressLoopSoundFile）。
+            // 引っ張らずに長押ししている間だけループする「じわじわ潰れる」専用音（default.longPressLoopSoundFile）。
             // 最大まで潰れたら自動的に止まる（src/squeeze/physics.jsのstartLongPressLoopSound等参照）。
             'audio/mochisuke/mochi_squish_loop.mp3',
-            // 🧪 管理者限定・試作中：スライムもちすけ用（src/squeeze/materials.js参照）。通常プレイヤーは
+            // 管理者限定・試作中：スライムもちすけ用（src/squeeze/materials.js参照）。通常プレイヤーは
             // 全身衣装一覧にこのアイテム自体が出てこないため、事前読み込みされていても再生されない。
-            // 🆕 slime_splash.mp3：タップした瞬間に鳴る「ぴちゃ」という水っぽい音（splashSoundFile）。
-            // 🆕 slime_poke_still.mp3：長押し中だけループする専用音（longPressLoopSoundFile。default側と同じ役割）。
+            // slime_splash.mp3：タップした瞬間に鳴る「ぴちゃ」という水っぽい音（splashSoundFile）。
+            // slime_poke_still.mp3：長押し中だけループする専用音（longPressLoopSoundFile。default側と同じ役割）。
             'audio/mochisuke/slime_stretch.mp3', 'audio/mochisuke/slime_release_pop.mp3', 'audio/mochisuke/slime_poke.mp3', 'audio/mochisuke/slime_splash.mp3', 'audio/mochisuke/slime_poke_still.mp3'];
         
         // 🎵 BGMも起動時に先読みしておく一覧。していないと、初めてその場所（ショップ等）に入った瞬間に
@@ -383,7 +383,7 @@
                 },
             ],
 
-            // 🆕 以前はfullbodyの中に一緒に入れていたが、着せ替え部屋でスクイーズ衣装とロボもちすけを
+            // 以前はfullbodyの中に一緒に入れていたが、着せ替え部屋でスクイーズ衣装とロボもちすけを
             // 別枠にしたかったため専用のカテゴリとして分離した。
             // 見た目上のカルーセル・カテゴリボタンだけを分けており、実際に装備する時の置き場所
             // （equippedKisekae.fullbody / previewKisekae.fullbody という1つの「全身スロット」）は
@@ -391,7 +391,7 @@
             // 「fullbodyとsqueezeは同時装着できない」という仕様は今まで通り自然に保たれている
             // （kisekae.jsのfindFullbodySlotItem()参照）。
             squeeze: [
-                // 🧪 試作中：スクイーズ衣装の第一弾。全身スロットを使う衣装の一種として、他の衣装と
+                // 試作中：スクイーズ衣装の第一弾。全身スロットを使う衣装の一種として、他の衣装と
                 // まったく同じカルーセル（外す✕・装着で帽子等が消える、等）で選べるようにしてある（2-1参照）。
                 // squeezeMaterialは装備中にsrc/squeeze/materials.jsのどのキーの素材（音）を使うかの指定で、
                 // kisekae.jsのapplyKisekaeToMainScreen()がここを見てsetSqueezeMaterial()に渡している。
@@ -534,12 +534,12 @@
         // 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時は true に戻すだけでOK
         export const CORNER_BTN_ADJUST_TOOL_ENABLED = false;
 
-        // 🆕 所持もち数アイコン（#mochi-count-icon）の大きさ・位置（管理者が実機で調整）
+        // 所持もち数アイコン（#mochi-count-icon）の大きさ・位置（管理者が実機で調整）
         // 🚧 大きさ・位置(40px)が確定したので、CORNER_BTN_ADJUST_TOOL_ENABLEDと同じくfalseに戻してパネルを非表示にした。
         // また調整したくなったら true に戻すだけでOK
         export const MOCHI_ICON_ADJUST_TOOL_ENABLED = false;
 
-        // 🆕【修正】このアイコンはwidth/heightで大きくすると、そのぶん.score-row（所持もち数の枠）が
+        // 【修正】このアイコンはwidth/heightで大きくすると、そのぶん.score-row（所持もち数の枠）が
         // 広がってしまう。そのためMOCHI_ICON_SIZEは「見た目上の目標サイズ(px)」として扱い、実際に反映する時は
         // MOCHI_ICON_BASE_SIZE_PX（枠として確保されている本来の大きさ＝アプデ前と同じ24px、これは変えない）との
         // 比率をtransform:scaleに変換する（applyMochiIconAdjust@src/ui/core.js参照）。これにより見た目だけ

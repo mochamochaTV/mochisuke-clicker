@@ -1,6 +1,6 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-29-002';
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-29-004';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -9,7 +9,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-29-002';
+} from './minigames.js?v=2026-09-29-004';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -22,21 +22,21 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-29-002';
+} from './progress.js?v=2026-09-29-004';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-29-002';
+} from './shop.js?v=2026-09-29-004';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-29-002';
+} from './tap.js?v=2026-09-29-004';
 import {
   hasSeenTutorial, lastGiftSentDates, seenButtonHints, setHasSeenTutorial,
   setLastGiftSentDates, setSeenButtonHints
-} from './ui.js?v=2026-09-29-002';
+} from './ui.js?v=2026-09-29-004';
 
         // 🔧 このファイル内で使うチューニング用の数値をまとめたもの（挙動は変えず、名前を付けただけ）
         const CONFIG = {
@@ -135,7 +135,7 @@ import {
             const el = document.getElementById('cloud-backup-status');
             if (!el) return;
             el.innerText = '最終バックアップ: 確認中…';
-            // src/engine/firebase.js: window.restoreSaveData はクラウド上の最新バックアップ（{data, updatedAt}など）を取得する関数。
+            // src/engine/firebase.js: window.restoreSaveData：クラウド上の最新バックアップ（{data, updatedAt}など）を取得する。
             // menuSaveGameのsubmitRankingScoreと同じ理由で、window経由＋if文での存在チェックになっている。
             if (!window.restoreSaveData) { el.innerText = '最終バックアップ: 準備中（少し待ってから開き直してください）'; return; }
             const backup = await window.restoreSaveData();
@@ -231,12 +231,12 @@ import {
         export const OFFLINE_EARNINGS_CAP_HOURS_BASE = 4; // オフライン収益として計算する時間の上限（これ以上離れていても4時間分だけ）
         export const OFFLINE_EARNINGS_MIN_SECONDS = 90; // これより短い離席では出さない（毎回のリロードで鬱陶しくならないように）
 
-        // 🐛修正：以前は初期名を「もちすけファン」+ 数字にしていたが、「もちすけファン」だけで7文字あり、
+        // 修正：以前は初期名を「もちすけファン」+ 数字にしていたが、「もちすけファン」だけで7文字あり、
         // 数字を足すと8文字制限(PLAYER_NAME_MAX_LENGTH)を超えてしまっていた（例：もちすけファン1111）。
         // 「もちすけ」(4文字) + 最大4桁の数字 = 最大8文字となり、制限にちょうど収まる。
         export let playerName = localStorage.getItem('punicker_player_name') || ('もちすけ' + Math.floor(Math.random() * CONFIG.PLAYER_NAME_RANDOM_SUFFIX_MAX));
 
-        // 🐛修正：文字数制限を20→8文字に変更した際、それより前に9文字以上の名前を設定していた人の
+        // 修正：文字数制限を20→8文字に変更した際、それより前に9文字以上の名前を設定していた人の
         // 既存の名前は、sanitizePlayerName()を通さない限り再チェックされないため、そのままでは
         // 8文字を超えた名前がいつまでも残ってしまう。ここで読み込み直後に一度だけ長さを確認し、
         // 超えていれば黙って先頭8文字に短縮してlocalStorageにも保存し直す（記号だけの名前かどうか等の
@@ -376,7 +376,7 @@ import {
                     setSprayBuffActiveUntil(state.sprayBuffActiveUntil ?? 0);
                     setFavoriteFriendIds(state.favoriteFriendIds ?? []);
                     setBlockedUserIds(state.blockedUserIds ?? []);
-                    // 🐛修正：以前は日付の文字列1つだけを保存していた（フレンドごとの管理ではなかった）。
+                    // 修正：以前は日付の文字列1つだけを保存していた（フレンドごとの管理ではなかった）。
                     // 古いセーブデータにその形の値が残っていても引き継がず、素直に空オブジェクトから始める
                     setLastGiftSentDates((state.lastGiftSentDates && typeof state.lastGiftSentDates === 'object') ? state.lastGiftSentDates : {});
                     setSlotPlaysRemaining(state.slotPlaysRemaining ?? 0);
@@ -401,7 +401,7 @@ import {
                         wall_deco: [], big_furniture: [], table: [], small_deco: [],
                         ...(state.equippedMyroom || {}),
                     });
-                    // 🐛互換性：旧セーブ（単一アイテムID形式）が残っていた場合は、配列形式に安全変換する
+                    // 互換性：旧セーブ（単一アイテムID形式）が残っていた場合は、配列形式に安全変換する
                     ['wall_deco', 'big_furniture', 'table', 'small_deco'].forEach(cat => {
                         if (!Array.isArray(equippedMyroom[cat])) {
                             const oldId = equippedMyroom[cat];
@@ -438,7 +438,7 @@ import {
             let attempts = 0;
             const poll = setInterval(async () => {
                 attempts++;
-                // src/engine/firebase.js: window.isRankingReady() はFirebaseへの接続準備が完了したかを返す関数、
+                // src/engine/firebase.js: window.isRankingReady()：Firebaseへの接続準備が完了したかを返す、
                 // window.restoreSaveData はクラウド上の最新バックアップを取得する関数（他の呼び出し箇所と同じもの）。
                 if (window.isRankingReady && window.isRankingReady()) {
                     clearInterval(poll);
@@ -499,7 +499,7 @@ import {
         //   ESモジュールのimportは読み取り専用の束縛なので、書き換えが必要な変数はまだ
         //   window経由の暗黙グローバルに頼っている。
         //
-        // 🐛関連の重大バグの記録：以前ここを window.名前 = 名前 という「値の一回きりのコピー」に
+        // 関連の重大バグの記録：以前ここを window.名前 = 名前 という「値の一回きりのコピー」に
         // していたところ、let で宣言された変数はコピーした瞬間の値のまま凍結され、後から
         // 値が変わってもwindow側に反映されない、というバグがあった（もち数が起動のたびに0に戻る
         // 原因になった。詳しくは解体新書 第4章）。そこで書き換わる可能性がある変数（let）は

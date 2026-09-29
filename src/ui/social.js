@@ -1,19 +1,19 @@
         // ui.js を機能ごとに分割したファイルの1つ（フレンド・他人の部屋への訪問（フレンドリスト・招待・訪問中の演出・移動メニュー・ものおき））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-29-002';
-        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-29-002';
-        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-29-002';
-        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-29-002';
-        import { saveGame } from '../../state.js?v=2026-09-29-002';
-        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-29-002';
-        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-29-002';
-        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-29-002';
-        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-29-002';
-        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-29-002';
-        // 🆕 全身スロット（fullbody/squeeze共用）のアイテムを、カテゴリを問わずidだけで引くための
+        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-29-004';
+        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-29-004';
+        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-29-004';
+        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-29-004';
+        import { saveGame } from '../../state.js?v=2026-09-29-004';
+        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-29-004';
+        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-29-004';
+        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-29-004';
+        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-29-004';
+        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-29-004';
+        // 全身スロット（fullbody/squeeze共用）のアイテムを、カテゴリを問わずidだけで引くための
         // 共有ヘルパー（2-6・4-12参照）。KISEKAE_ITEMS.fullbodyだけを見ていると、スクイーズ衣装を
         // 着けたまま訪問してきたフレンドの見た目が反映できなくなる。
-        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-29-002';
+        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-29-004';
 
         // 🔧 このファイル内で使う「調整可能な数値」をまとめた設定オブジェクト
         const CONFIG = {
@@ -84,7 +84,7 @@
          * @returns {Promise<void>}
          */
         export async function openFriendPlaceholder() {
-            // ./core.js: openModal は指定idのモーダルを開く共通関数
+            // ./core.js: openModal：指定idのモーダルを開く共通関数
             openModal('friend-modal');
             document.getElementById('friend-add-result').innerText = '';
             document.getElementById('friend-code-input').value = '';
@@ -94,7 +94,7 @@
             // src/engine/firebase.js: window.isRankingReady() はFirebaseへの接続準備が完了したかを返す関数（importではなくwindow経由なのは、
             // firebase.jsがtype="module"で読み込まれる一方、このファイルはそうではないため）
             if (window.isRankingReady && window.isRankingReady()) {
-                // src/engine/firebase.js: window.ensureMyFriendCode は自分のフレンドコードを取得（無ければ新規発行）する関数
+                // src/engine/firebase.js: window.ensureMyFriendCode：自分のフレンドコードを取得（無ければ新規発行）する
                 const code = await window.ensureMyFriendCode();
                 codeEl.innerText = code || '（取得できませんでした）';
             } else {
@@ -117,7 +117,7 @@
          * @returns {Promise<void>}
          */
         export async function visitMyroomOf(uid, showBoth) {
-            // src/engine/firebase.js: window.fetchMyroomData は指定uidの相手が公開しているマイルームデータを取得する関数
+            // src/engine/firebase.js: window.fetchMyroomData は指定uidの相手が公開しているマイルームデータを取得する
             if (!window.fetchMyroomData) return;
             const data = await window.fetchMyroomData(uid);
             if (!data || !data.myroom) {
@@ -132,7 +132,7 @@
             if (showBoth) {
                 // 🚶 フレンド訪問時は、自分（今の着せ替え）も一緒に部屋に立って歩き回る
                 myselfWrap.style.display = 'block';
-                // ../../progress.js: equippedKisekae は自分が今装備している着せ替えデータ
+                // ../../progress.js: equippedKisekae：自分が今装備している着せ替えデータ
                 applyVisitOutfit(equippedKisekae, 'visit-myroom-myself');
             } else {
                 myselfWrap.style.display = 'none';
@@ -151,7 +151,7 @@
             likeBtn.style.background = '#e91e63';
             // いいね連打対策(likeRoomの atomic batch化)の動作確認が取れたので、コメントアウトしていた
             // 「いいね済み」判定を復活。再訪問時に、既にいいね済みならボタンをその表示にする
-            // src/engine/firebase.js: window.checkRoomLiked は指定uidの部屋にすでに「いいね」済みかを確認する関数
+            // src/engine/firebase.js: window.checkRoomLiked は指定uidの部屋にすでに「いいね」済みかを確認する
             if (window.checkRoomLiked) {
                 const alreadyLiked = await window.checkRoomLiked(uid);
                 if (alreadyLiked) {
@@ -167,7 +167,7 @@
          * @returns {Promise<void>}
          */
         export async function onLikeRoomTap() {
-            // src/engine/firebase.js: window.likeRoom は訪問先の部屋に「いいね」を送信する関数（atomicなbatch処理で連打対策済み）
+            // src/engine/firebase.js: window.likeRoom：訪問先の部屋に「いいね」を送信する関数（atomicなbatch処理で連打対策済み）
             if (!visitingUid || !window.likeRoom) return;
             const likeBtn = document.getElementById('visit-like-btn');
             likeBtn.disabled = true;
@@ -175,13 +175,13 @@
             if (res.success) {
                 likeBtn.textContent = '❤️ いいね済み';
                 likeBtn.style.background = '#ccc';
-                // ../../main.js: playAudioFile は効果音ファイルを再生する関数
+                // ../../main.js: playAudioFile は効果音ファイルを再生する
                 playAudioFile('audio/levelup.mp3');
-                // ../../progress.js: gachaCoins は所持ガチャコイン数、setGachaCoins はそれを更新する関数
+                // ../../progress.js: gachaCoins：所持ガチャコイン数、setGachaCoins はそれを更新する
                 setGachaCoins(gachaCoins + (CONFIG.LIKE_REWARD_COINS)); // 🪙 いいねを送った自分も、ガチャコインを1枚もらう
-                // ../../state.js: saveGame はゲーム全体のセーブデータを保存する関数
+                // ../../state.js: saveGame はゲーム全体のセーブデータを保存する
                 saveGame();
-                // ../../shop.js: updateGachaCoinDisplay は画面上のガチャコイン表示を最新の値に更新する関数
+                // ../../shop.js: updateGachaCoinDisplay：画面上のガチャコイン表示を最新の値に更新する
                 updateGachaCoinDisplay();
                 showLikeCoinPopup(likeBtn);
             } else if (res.reason === 'already') {
@@ -217,20 +217,20 @@
             overlay.classList.add('fade-black');
             // ./chat.js: activeChatRoomId は今参加中のライブチャット/訪問部屋のid（無ければnull）
             if (activeChatRoomId) {
-                // src/engine/firebase.js: window.leaveRoomSession はライブ訪問セッションから退出する関数（importではなくwindow経由なのは、
+                // src/engine/firebase.js: window.leaveRoomSession：ライブ訪問セッションから退出する関数（importではなくwindow経由なのは、
                 // firebase.jsがtype="module"で読み込まれる一方、このファイルはそうではないため）
                 window.leaveRoomSession(activeChatRoomId);
-                // ./chat.js: stopRoomSessionWatch はセッション状態のリアルタイム監視を止める関数
+                // ./chat.js: stopRoomSessionWatch はセッション状態のリアルタイム監視を止める
                 stopRoomSessionWatch();
                 // ./chat.js: setActiveChatRoomId/setActiveChatOtherUid/setActiveChatIsHost/setMyAvatarPrefix/setOtherAvatarPrefix は、
                 // それぞれ対応するチャット状態の値をリセットするsetter関数
                 setActiveChatRoomId(null); setActiveChatOtherUid(null); setActiveChatIsHost(false);
                 setMyAvatarPrefix(null); setOtherAvatarPrefix(null);
             }
-            // ./chat.js: setChatUiVisible はチャットUIの表示/非表示を切り替える関数
+            // ./chat.js: setChatUiVisible はチャットUIの表示/非表示を切り替える
             setChatUiVisible(false);
             document.getElementById('visit-waiting-indicator').style.display = 'none';
-            // ./chat.js: setVisitActionButtonsForHosting はホスト/ゲストに応じた訪問アクションボタンの表示切り替え関数
+            // ./chat.js: setVisitActionButtonsForHosting：ホスト/ゲストに応じた訪問アクションボタンの表示切り替え
             setVisitActionButtonsForHosting(false);
             closeMyroomActionMenu('visit');
             closeMyroomFeedPicker();
@@ -242,7 +242,7 @@
                 setVisitingUid(null);
                 stopVisitMochisukeWalk('visitHost');
                 stopVisitMochisukeWalk('visitSelf');
-                // 🐛修正：下に隠れているランキング・フレンド画面がまだ開いたままなら、modal-openクラスを維持する
+                // 修正：下に隠れているランキング・フレンド画面がまだ開いたままなら、modal-openクラスを維持する
                 const rankingModal = document.getElementById('ranking-modal');
                 const friendModal = document.getElementById('friend-modal');
                 if ((rankingModal && rankingModal.style.display === 'flex') || (friendModal && friendModal.style.display === 'flex')) {
@@ -251,7 +251,7 @@
                 setTimeout(() => overlay.classList.remove('fade-black'), CONFIG.FADE_CLEAR_DELAY_MS);
             }, CONFIG.FADE_TRANSITION_MS);
         }
-        // 🚶🐛修正：以前はホスト・ゲスト双方の見た目を、host側とguest側それぞれの画面が独立して
+        // 🚶修正：以前はホスト・ゲスト双方の見た目を、host側とguest側それぞれの画面が独立して
         // ランダムに歩かせていたため、2人の画面でもちすけの位置がバラバラになっていた。
         // これ以降は「自分のアバター」だけをこのタイマーでランダムに歩かせ、選んだ目的地を
         // roomSessionsドキュメントに書き込む。相手側は自分で歩かせず、届いた目的地をそのまま
@@ -298,16 +298,16 @@
             const newLeftPct = CONFIG.VISIT_WALK_LEFT_MIN_PCT + Math.random() * CONFIG.VISIT_WALK_LEFT_RANDOM_RANGE_PCT;
             const newBottomPct = CONFIG.VISIT_WALK_BOTTOM_MIN_PCT + Math.random() * CONFIG.VISIT_WALK_BOTTOM_RANDOM_RANGE_PCT;
             applyVisitWalkTarget(wrapId, newLeftPct, newBottomPct);
-            // 🐛修正：ライブセッション中なら、自分が選んだ目的地を相手にも伝える（コストを抑えるため
+            // 修正：ライブセッション中なら、自分が選んだ目的地を相手にも伝える（コストを抑えるため
             // 目的地が変わった時だけ書き込む。1回の訪問セッションで数秒に1回程度の頻度）
             // ./chat.js: activeChatIsHost は自分がこのライブ訪問セッションのホスト側かどうかのフラグ
-            // src/engine/firebase.js: window.sendRoomWalkTarget は自分の歩行目的地を相手にリアルタイムで送信する関数
+            // src/engine/firebase.js: window.sendRoomWalkTarget：自分の歩行目的地を相手にリアルタイムで送信する
             if (activeChatRoomId && window.sendRoomWalkTarget) {
                 window.sendRoomWalkTarget(activeChatRoomId, activeChatIsHost, { leftPct: newLeftPct, bottomPct: newBottomPct, ts: Date.now() });
             }
             scheduleNextVisitWalk(wrapId, key);
         }
-        // 👄🐛修正：以前は「歩く」と「叫ぶ」がそれぞれ独立して口閉じパーツ(mouth-anchor)の
+        // 👄修正：以前は「歩く」と「叫ぶ」がそれぞれ独立して口閉じパーツ(mouth-anchor)の
         // display を直接 'none'/'block' で上書きしていたため、叫んでいる最中に歩行が止まる
         // （＝歩行側のsetTimeoutが「止まったから口を閉じよう」と割り込む）と、まだ叫んでいる
         // 途中なのに口閉じパーツが復活してしまう不具合があった。
@@ -404,7 +404,7 @@
          */
         export function getMyroomActionContext(context) {
             if (context === 'edit') return { selfPrefix: 'myroom-mochisuke', otherPrefix: null };
-            // ./chat.js: myAvatarPrefix は自分側もちすけDOMのprefix、otherAvatarPrefix は相手側のprefix（ライブ訪問中のみ設定される）
+            // ./chat.js: myAvatarPrefix：自分側もちすけDOMのprefix、otherAvatarPrefix は相手側のprefix（ライブ訪問中のみ設定される）
             if (activeChatRoomId && myAvatarPrefix) return { selfPrefix: myAvatarPrefix, otherPrefix: otherAvatarPrefix };
             return { selfPrefix: 'visit-myroom-mochisuke', otherPrefix: null };
         }
@@ -436,9 +436,9 @@
         export function onMyroomAvatarTap(prefix) {
             playMyroomTapEffect(prefix);
             const now = Date.now();
-            // 🐛連打対策：タップは瞬間的に大量発生しうるので、見た目の反映は毎回でも、
+            // 連打対策：タップは瞬間的に大量発生しうるので、見た目の反映は毎回でも、
             // Firestoreへの同期だけは間引く（300msに1回まで）。通信コストを抑えるため
-            // src/engine/firebase.js: window.sendRoomAction はタップ・叫ぶ等の演出イベントを相手側にリアルタイム送信する関数、
+            // src/engine/firebase.js: window.sendRoomAction はタップ・叫ぶ等の演出イベントを相手側にリアルタイム送信する、
             // window.getMyUid は自分のFirebase認証uidを返す関数
             if (activeChatRoomId && window.sendRoomAction && now - lastMyroomTapSentAt > CONFIG.TAP_SYNC_THROTTLE_MS) {
                 lastMyroomTapSentAt = now;
@@ -489,7 +489,7 @@
             const grid = document.getElementById('myroom-feed-picker-grid');
             if (!grid) return;
             grid.innerHTML = '';
-            // ../../data.js: stages はゲーム内の各ステージ（都道府県など）の定義データ
+            // ../../data.js: stages：ゲーム内の各ステージ（都道府県など）の定義データ
             // ../../shop.js: purchasedItems はステージごとの購入済みおみやげ数（レベル）を持つ配列
             const owned = stages.map((s, i) => ({ s, i, lv: purchasedItems[i] || 0 })).filter(o => o.lv > 0);
             if (owned.length === 0) {
@@ -499,7 +499,7 @@
             owned.forEach(({ s, i }) => {
                 const cell = document.createElement('div');
                 cell.style.cssText = 'text-align:center; cursor:pointer; padding:6px; border-radius:10px; background:#fff8ec;';
-                // ../../main.js: escapeHtml はHTML特殊文字をエスケープする関数（innerHTMLへの差し込みが安全になるようにする）
+                // ../../main.js: escapeHtml：HTML特殊文字をエスケープする関数（innerHTMLへの差し込みが安全になるようにする）
                 cell.innerHTML = `<img src="${s.itemImg}" alt="${escapeHtml(s.item)}" style="width:100%; aspect-ratio:1; object-fit:contain;">
                     <div style="font-size:0.6rem; font-weight:bold; color:#5d4037; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(s.item)}</div>`;
                 cell.onclick = () => { closeMyroomFeedPicker(); placeMyroomFeedIcon(i); };
@@ -620,10 +620,10 @@
                 { transform: 'scale(1, 1)' }
             ], { duration: CONFIG.TAP_EFFECT_DURATION_MS, easing: 'ease-out' });
             const rect = wrap.getBoundingClientRect();
-            // ../../main.js: spawnModalParticleBurst は指定座標にパーティクルを散らす演出を生成する関数
+            // ../../main.js: spawnModalParticleBurst は指定座標にパーティクルを散らす演出を生成する
             spawnModalParticleBurst(rect.left + rect.width / 2, rect.top + rect.height / 2, CONFIG.TAP_EFFECT_PARTICLE_COUNT, '#ffcc80');
         }
-        // 😱🐛修正：タップ画面と同じimage_scream.webpに差し替えるようにした。マイルームの体は
+        // 😱修正：タップ画面と同じimage_scream.webpに差し替えるようにした。マイルームの体は
         // 「衣装(clothes)」「帽子/顔」「フルボディ衣装」に分かれた重ね着き構造なので、タップ画面の
         // 単一画像(mochiBtnElement.src)swapと同じ見た目にするため、叫んでいる間だけ帽子・顔・
         // フルボディ衣装を隠して衣装レイヤーだけをimage_scream.webpに差し替え、終わったら全て元に戻す
@@ -640,7 +640,7 @@
             if (!wrap || wrap.style.display === 'none' || !inner || !clothesEl) return;
             // ../../main.js: playAudioFile（同じ効果音再生関数）
             playAudioFile('audio/mochisuke/mochi_scream.mp3');
-            // ../../main.js: vibrate は端末をパターン振動させる関数
+            // ../../main.js: vibrate：端末をパターン振動させる
             vibrate(CONFIG.SCREAM_VIBRATE_PATTERN_MS);
             const hatEl = document.getElementById(prefix + '-hat');
             const faceEl = document.getElementById(prefix + '-face');
@@ -663,10 +663,10 @@
             if (hatEl) hatEl.style.display = 'none';
             if (faceEl) faceEl.style.display = 'none';
             if (fullbodyEl) fullbodyEl.style.display = 'none';
-            // 👄🐛修正：歩行中に叫んで、叫んでいる途中で歩行が止まっても口閉じパーツが復活しないよう、
+            // 👄修正：歩行中に叫んで、叫んでいる途中で歩行が止まっても口閉じパーツが復活しないよう、
             // 歩行と共通の理由ベースの管理(setMyroomMouthHidden)を使う（全身衣装中は自動で触らない）
             setMyroomMouthHidden(prefix, 'scream', true);
-            // 🐛修正：タップ画面用の.mochi-screamはscale(1.5)固定で、部屋の中では小さいもちすけが
+            // 修正：タップ画面用の.mochi-screamはscale(1.5)固定で、部屋の中では小さいもちすけが
             // 急に大きくなりすぎて浮いて見える（他の一人と重なることもある）ため、拡大率を控えめにした
             // マイルーム専用クラスを使う（見た目の大きさへの配慮）
             inner.classList.remove('myroom-avatar-scream');
@@ -680,7 +680,7 @@
                     const dist = CONFIG.SCREAM_FLOAT_DIST_MIN_PX + Math.random() * CONFIG.SCREAM_FLOAT_DIST_RANDOM_RANGE_PX;
                     const x = rect.left + rect.width / 2 + Math.cos(angle) * dist;
                     const y = rect.top + rect.height / 3 + Math.sin(angle) * dist - 20;
-                    // ../../main.js: spawnModalFloatingText は指定座標に浮遊する文字エフェクトを生成する関数
+                    // ../../main.js: spawnModalFloatingText は指定座標に浮遊する文字エフェクトを生成する
                     spawnModalFloatingText(x, y, 'あ゛', '#e91e63', (1.1 + Math.random() * 0.7) + 'rem');
                 }, i * CONFIG.SCREAM_FLOAT_STAGGER_MS);
             }
@@ -779,7 +779,7 @@
             const clothesEl = document.getElementById(`${prefix}-clothes`);
             const fullbodyEl = document.getElementById(`${prefix}-fullbody`);
             if (fullbodyId) {
-                // ./kisekae.js: findFullbodySlotItem はフルボディ衣装idから、カテゴリを問わずアイテムデータを引く共有ヘルパー
+                // ./kisekae.js: findFullbodySlotItem：フルボディ衣装idから、カテゴリを問わずアイテムデータを引く共有ヘルパー
                 const fbItem = findFullbodySlotItem(fullbodyId);
                 if (fbItem) { fullbodyEl.src = fbItem.img; fullbodyEl.style.display = 'block'; }
                 clothesEl.style.opacity = '0';
@@ -833,16 +833,16 @@
          */
         export async function sendVisitStamp(text) {
             // 💬 ライブチャット中は、定型文もそのままチャットへ即送信する（相手にリアルタイムで届く）。
-            // 🐛修正：isStamp=trueで送ることで、13歳未満が関わり自由文チャットが無効なペアでも
+            // 修正：isStamp=trueで送ることで、13歳未満が関わり自由文チャットが無効なペアでも
             // 定型スタンプだけは送れるようにする（Firestoreルール側もこのフラグを見て許可する）。
             // また送信結果を確認せず「送れたつもり」にしていたのも直し、失敗時は知らせる
             if (activeChatRoomId) {
                 const now = Date.now();
-                // ./chat.js: lastChatSendAt は前回チャット送信時刻、CHAT_SEND_COOLDOWN_MS は連投を防ぐための最短間隔(ms)、
+                // ./chat.js: lastChatSendAt：前回チャット送信時刻、CHAT_SEND_COOLDOWN_MS は連投を防ぐための最短間隔(ms)、
                 // setLastChatSendAt はlastChatSendAtを更新する関数
                 if (now - lastChatSendAt < CHAT_SEND_COOLDOWN_MS) return;
                 setLastChatSendAt(now);
-                // src/engine/firebase.js: window.sendRoomChatMessage はライブチャットへメッセージを送信する関数
+                // src/engine/firebase.js: window.sendRoomChatMessage はライブチャットへメッセージを送信する
                 const res = await window.sendRoomChatMessage(activeChatRoomId, text, true);
                 if (!res || !res.success) {
                     alert('⚠️ 送信できませんでした。時間を置いて試してください');
@@ -850,7 +850,7 @@
                 }
                 return;
             }
-            // src/engine/firebase.js: window.sendVisitStampMsg はライブチャットでない通常の訪問先へスタンプを送信する関数
+            // src/engine/firebase.js: window.sendVisitStampMsg：ライブチャットでない通常の訪問先へスタンプを送信する
             if (!visitingUid || !window.sendVisitStampMsg) return;
             const res = await window.sendVisitStampMsg(visitingUid, text);
             if (res.success) {
@@ -869,7 +869,7 @@
             if (!targetUid) return;
             const label = document.getElementById('visit-myroom-name-label').textContent;
             if (!confirm(`${label}\n\nこの人をブロックしますか？\n今後、この人からの招待・スタンプ・チャットが届かなくなります。`)) return;
-            // ../../shop.js: blockedUserIds はブロック済みユーザーのuidを持つ配列
+            // ../../shop.js: blockedUserIds：ブロック済みユーザーのuidを持つ配列
             if (!blockedUserIds.includes(targetUid)) blockedUserIds.push(targetUid);
             // ../../state.js: saveGame（同じセーブ関数）
             saveGame();
@@ -886,7 +886,7 @@
             const reason = prompt('通報の理由を教えてください（任意）');
             if (reason === null) return; // キャンセル
             const label = document.getElementById('visit-myroom-name-label').textContent;
-            // src/engine/firebase.js: window.reportUser は指定uidのユーザーを理由付きで通報する関数
+            // src/engine/firebase.js: window.reportUser は指定uidのユーザーを理由付きで通報する
             if (window.reportUser) {
                 const res = await window.reportUser(targetUid, label, reason);
                 if (res.success) alert('🚨 通報しました。ご協力ありがとうございます。');
@@ -935,7 +935,7 @@
                 result.style.color = '#4caf50';
                 result.innerText = 'コピーしました！';
             } catch (e) {
-                // 🐛修正：自動コピーが失敗しても気づけず「コピーしました」と表示していたため、
+                // 修正：自動コピーが失敗しても気づけず「コピーしました」と表示していたため、
                 // 古い内容のままペーストして「コードが見つからない」バグに繋がっていた。
                 // 失敗時は、コードを選択状態にして、長押しで手動コピーできるようにする
                 result.style.color = '#e57373';
@@ -957,14 +957,14 @@
         export async function onAddFriendTap() {
             const input = document.getElementById('friend-code-input');
             const result = document.getElementById('friend-add-result');
-            // 🐛保険：コピペ時に紛れ込む改行・空白などの見えない文字を除去してから照合する
+            // 保険：コピペ時に紛れ込む改行・空白などの見えない文字を除去してから照合する
             const code = input.value.trim().replace(/[^A-Za-z0-9]/g, '');
             if (!code) return;
             if (!window.isRankingReady || !window.isRankingReady()) {
                 result.style.color = '#e57373'; result.innerText = '通信エラー：時間を置いて試してください'; return;
             }
             result.style.color = '#999'; result.innerText = '追加中...';
-            // src/engine/firebase.js: window.addFriendByCode は入力されたフレンドコードで相手をフレンド追加する関数
+            // src/engine/firebase.js: window.addFriendByCode：入力されたフレンドコードで相手をフレンド追加する
             const res = await window.addFriendByCode(code);
             if (res.success) {
                 result.style.color = '#4caf50';
@@ -990,7 +990,7 @@
          * @returns {void}
          */
         export function toggleFavoriteFriend(uid) {
-            // ../../shop.js: favoriteFriendIds はお気に入り登録済みフレンドのuidを持つ配列
+            // ../../shop.js: favoriteFriendIds：お気に入り登録済みフレンドのuidを持つ配列
             const idx = favoriteFriendIds.indexOf(uid);
             if (idx >= 0) favoriteFriendIds.splice(idx, 1);
             else favoriteFriendIds.push(uid);
@@ -998,7 +998,7 @@
             renderFriendList();
         }
         window.toggleFavoriteFriend = toggleFavoriteFriend; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
-        // 🐛修正：以前は日付を1つだけ覚える方式で「誰か1人に送ったら他の全員に送れない」状態だった。
+        // 修正：以前は日付を1つだけ覚える方式で「誰か1人に送ったら他の全員に送れない」状態だった。
         // フレンドごとに1日1回、という意図に合わせて { [フレンドのuid]: 送った日の文字列 } で管理する。
         // セーブデータにも保存し、リロードでリセットされないようにする
         export let lastGiftSentDates = {};
@@ -1020,7 +1020,7 @@
                 return;
             }
             btnEl.disabled = true;
-            // src/engine/firebase.js: window.sendGiftCoin は指定uidのフレンドにガチャコインを1枚贈る関数
+            // src/engine/firebase.js: window.sendGiftCoin は指定uidのフレンドにガチャコインを1枚贈る
             const res = await window.sendGiftCoin(uid);
             if (res.success) {
                 lastGiftSentDates[uid] = todayStr;
@@ -1044,7 +1044,7 @@
                 listEl.innerHTML = `<div style="text-align:center; color:#aaa; font-size:0.78rem; padding:14px;">通信エラーのため、フレンド一覧を表示できません</div>`;
                 return;
             }
-            // src/engine/firebase.js: window.fetchFriendList は自分のフレンド一覧（名前・スコア・着せ替え等）を取得する関数
+            // src/engine/firebase.js: window.fetchFriendList：自分のフレンド一覧（名前・スコア・着せ替え等）を取得する
             let friends = await window.fetchFriendList();
             if (!friends) friends = [];
             // ../../shop.js: favoriteFriendIds（同じお気に入りフレンドuid配列）
@@ -1064,7 +1064,7 @@
                 const alreadySentToday = lastGiftSentDates[f.uid] === todayStr; // フレンドごとに個別判定
                 const row = document.createElement('div');
                 row.style.cssText = `display:flex; align-items:center; gap:8px; padding:9px 8px; margin-bottom:6px; border-radius:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.08);`;
-                // ./ranking.js: renderRankOutfitPreviewHtml は着せ替えデータからプレビュー画像のHTMLを組み立てる関数
+                // ./ranking.js: renderRankOutfitPreviewHtml は着せ替えデータからプレビュー画像のHTMLを組み立てる
                 row.innerHTML = `
                     <div style="flex-shrink:0; position:relative; width:44px; height:44px;">${renderRankOutfitPreviewHtml(f.outfit)}</div>
                     <div style="flex-shrink:0; align-self:stretch; width:1px; background:#e0d5c5;"></div>
@@ -1109,7 +1109,7 @@
             pendingRoomChatTermsAction = null;
         }
         // ✉️ フレンドをマイルームに招待する
-        // 🐛修正：オンライン/オフラインの丸は開いた瞬間の一度きりの判定だったため、パネルを開いたまま
+        // 修正：オンライン/オフラインの丸は開いた瞬間の一度きりの判定だったため、パネルを開いたまま
         // 待っていると、相手が後からオンラインになっても丸の色が変わらず「時間差がある」ように見えていた。
         // パネルを開いている間だけ、定期的に丸だけを再判定するタイマーを回す（リストの作り直しはしない）
         export let inviteFriendDotRefreshTimer = null;
@@ -1137,7 +1137,7 @@
          * @returns {Promise<void>}
          */
         export async function refreshMyroomInviteFriendDots() {
-            // src/engine/firebase.js: window.checkUserOnline は指定uidのユーザーが今オンラインかを確認する関数
+            // src/engine/firebase.js: window.checkUserOnline：指定uidのユーザーが今オンラインかを確認する
             if (!window.checkUserOnline) return;
             const dots = document.querySelectorAll('#myroom-invite-friend-list .friend-online-dot');
             for (const dot of dots) {
@@ -1200,17 +1200,17 @@
          */
         export async function onSendRoomInviteTap(uid, btnEl) {
             const guestName = btnEl.dataset.friendName || '名無しさん';
-            // ./chat.js: ensureChatEligibilityAnswered はチャット利用に必要な生年月日確認を（未回答なら）促す関数
+            // ./chat.js: ensureChatEligibilityAnswered はチャット利用に必要な生年月日確認を（未回答なら）促す
             await ensureChatEligibilityAnswered(); // 🎂 招待する側：初回だけ生年月日を確認する
             showRoomChatTermsModal(async () => {
                 btnEl.disabled = true;
                 btnEl.textContent = '...';
-                // src/engine/firebase.js: window.sendRoomInvite は指定uidのフレンドへマイルーム招待を送信する関数
+                // src/engine/firebase.js: window.sendRoomInvite：指定uidのフレンドへマイルーム招待を送信する
                 const res = await window.sendRoomInvite(uid);
                 if (res.success) {
                     btnEl.textContent = '✅送信済';
                     closeMyroomInvitePanel();
-                    // ./chat.js: openHostWaitingRoom はホスト側の「ゲスト待機中」画面を開く関数
+                    // ./chat.js: openHostWaitingRoom はホスト側の「ゲスト待機中」画面を開く
                     openHostWaitingRoom(uid, guestName);
                 } else {
                     btnEl.disabled = false;
@@ -1224,7 +1224,7 @@
             });
         }
         window.onSendRoomInviteTap = onSendRoomInviteTap; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
-        // 💌🐛修正：以前は45秒(招待)/20秒(スタンプ)おきにgetDocsで問い合わせる「ポーリング」方式だったため、
+        // 💌修正：以前は45秒(招待)/20秒(スタンプ)おきにgetDocsで問い合わせる「ポーリング」方式だったため、
         // 実際に届くまで最大で数十秒の時間差があった。onSnapshotによるリアルタイム監視に切り替えることで、
         // Firestore側の書き込みとほぼ同時に検知できるようにする。
         /**
@@ -1233,10 +1233,10 @@
          */
         export function startIncomingVisitStampWatch() {
             if (!window.isRankingReady || !window.isRankingReady()) { setTimeout(startIncomingVisitStampWatch, CONFIG.RANKING_READY_RETRY_MS); return; }
-            // src/engine/firebase.js: window.listenIncomingVisitStamps は自分宛の訪問スタンプをリアルタイム監視するリスナー登録関数
+            // src/engine/firebase.js: window.listenIncomingVisitStamps：自分宛の訪問スタンプをリアルタイム監視するリスナー登録
             if (!window.listenIncomingVisitStamps) return; // 旧バージョンのindex.html併用時など、関数が無ければ何もしない
             window.listenIncomingVisitStamps((stamps) => {
-                // src/engine/firebase.js: window.markVisitStampClaimed は届いたスタンプを既読化する関数
+                // src/engine/firebase.js: window.markVisitStampClaimed は届いたスタンプを既読化する
                 // 見つかった時点で（見るかどうかに関わらず）既読化するのは、ポーリング時代の挙動を踏襲
                 stamps.forEach(s => { if (window.markVisitStampClaimed) window.markVisitStampClaimed(s.id); });
                 // ../../shop.js: blockedUserIds（同じブロック済みユーザーuid配列）
@@ -1255,10 +1255,10 @@
          */
         export function startIncomingRoomInviteWatch() {
             if (!window.isRankingReady || !window.isRankingReady()) { setTimeout(startIncomingRoomInviteWatch, CONFIG.RANKING_READY_RETRY_MS); return; }
-            // src/engine/firebase.js: window.listenIncomingRoomInvites は自分宛の部屋招待をリアルタイム監視するリスナー登録関数
+            // src/engine/firebase.js: window.listenIncomingRoomInvites：自分宛の部屋招待をリアルタイム監視するリスナー登録
             if (!window.listenIncomingRoomInvites) return;
             window.listenIncomingRoomInvites((invites) => {
-                // src/engine/firebase.js: window.markRoomInviteClaimed は届いた招待を既読化する関数
+                // src/engine/firebase.js: window.markRoomInviteClaimed は届いた招待を既読化する
                 invites.forEach(inv => { if (window.markRoomInviteClaimed) window.markRoomInviteClaimed(inv.id); });
                 // ../../shop.js: blockedUserIds（同じブロック済みユーザーuid配列）
                 const validInvites = invites.filter(inv => !blockedUserIds.includes(inv.fromUid)); // 🚫 ブロックした相手からは無視する
@@ -1270,7 +1270,7 @@
                             // ./chat.js: ensureChatEligibilityAnswered（同じ生年月日確認関数）
                             await ensureChatEligibilityAnswered(); // 🎂 招待される側：初回だけ生年月日を確認する
                             showRoomChatTermsModal(() => {
-                                // ./chat.js: joinFriendRoomAndChat は招待を承諾して相手の部屋セッションに参加する関数
+                                // ./chat.js: joinFriendRoomAndChat：招待を承諾して相手の部屋セッションに参加する
                                 joinFriendRoomAndChat(latest.fromUid, latest.fromName);
                             });
                         })();
@@ -1284,14 +1284,14 @@
          */
         export async function checkIncomingGiftsOnLaunch() {
             if (!window.isRankingReady || !window.isRankingReady()) return;
-            // src/engine/firebase.js: window.checkIncomingGifts は起動時に未受取のガチャコイン贈り物（いいね由来・フレンド送付）をまとめて取得する関数
+            // src/engine/firebase.js: window.checkIncomingGifts は起動時に未受取のガチャコイン贈り物（いいね由来・フレンド送付）をまとめて取得する
             const gifts = await window.checkIncomingGifts();
             if (!gifts || gifts.length === 0) return;
             const totalAmount = gifts.reduce((sum, g) => sum + (g.amount || 0), 0);
             // ../../progress.js: gachaCoins/setGachaCoins（同じガチャコイン所持数とその更新関数）
             setGachaCoins(gachaCoins + (totalAmount));
             // ../../state.js: saveGame（同じセーブ関数）
-            // ./hud.js: updateDisplay は画面上部のスコア等の表示を最新の値に更新する関数
+            // ./hud.js: updateDisplay：画面上部のスコア等の表示を最新の値に更新する
             saveGame(); updateDisplay();
 
             // 🏠❤️ 部屋のいいね由来と、フレンドからの直接送付を分けて、分かりやすく通知する
@@ -1363,7 +1363,7 @@
                 { transform: 'scale(0.6, 1.3)', offset: 0.4 },
                 { transform: 'scale(1, 1)' },
             ], { duration: CONFIG.MOVE_SHRINK_DURATION_MS, easing: 'ease-in-out' });
-            // 🐛修正：以前は看板ごとの幅を基準にしていたため、看板の大きさが違うともちすけの大きさも違って見えていた。
+            // 修正：以前は看板ごとの幅を基準にしていたため、看板の大きさが違うともちすけの大きさも違って見えていた。
             // 「戻る看板」の幅を基準にした固定値にして、どの看板の横にいても同じ大きさに統一する
             const mochiWidth = returnSignPart.width * CONFIG.MOVE_MOCHISUKE_WIDTH_RATIO;
             mochi.style.width = mochiWidth + '%';
@@ -1435,13 +1435,13 @@
          * @returns {void}
          */
         export function warehouseItemAction(action) {
-            // ./core.js: openTrophyRoom はトロフィールーム画面を開く関数
+            // ./core.js: openTrophyRoom：トロフィールーム画面を開く
             if (action === 'trophy') openTrophyRoom();
-            // ./hud.js: openOmiyageCollection はおみやげコレクション画面を開く関数
+            // ./hud.js: openOmiyageCollection はおみやげコレクション画面を開く
             else if (action === 'omiyage') openOmiyageCollection();
-            // ./myroom.js: openTicketInventory は所持チケット・スプレー一覧画面を開く関数
+            // ./myroom.js: openTicketInventory：所持チケット・スプレー一覧画面を開く
             else if (action === 'ticket') openTicketInventory();
-            // ./ranking.js: openDiary は旅の日記画面を開く関数
+            // ./ranking.js: openDiary は旅の日記画面を開く
             else if (action === 'diary') openDiary();
         }
         /**
@@ -1451,7 +1451,7 @@
         export function renderWarehouseItems() {
             const stage = document.getElementById('warehouse-item-stage');
             stage.querySelectorAll('.warehouse-item-wrap').forEach(el => el.remove());
-            // ../../data.js: WAREHOUSE_ITEM_PARTS はものおき内の各アイテム画像の位置・サイズ・タップ時の動作を持つ定義データ
+            // ../../data.js: WAREHOUSE_ITEM_PARTS：ものおき内の各アイテム画像の位置・サイズ・タップ時の動作を持つ定義データ
             WAREHOUSE_ITEM_PARTS.forEach(part => {
                 const img = document.createElement('img');
                 img.className = 'warehouse-item-wrap';

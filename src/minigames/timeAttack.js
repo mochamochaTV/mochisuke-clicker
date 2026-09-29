@@ -11,9 +11,9 @@
  * この状態を持つ本ファイル自身に後始末専用の関数として切り出した。処理の中身は同じ。
  */
 
-import { playAudioFile, playAudioFilePitched, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-29-002';
-import { saveGame } from '../../state.js?v=2026-09-29-002';
-import { consumeMinigamePlay, grantMinigameReward, minigameBests, showMinigameResult } from './core.js?v=2026-09-29-002';
+import { playAudioFile, playAudioFilePitched, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-29-004';
+import { saveGame } from '../../state.js?v=2026-09-29-004';
+import { consumeMinigamePlay, grantMinigameReward, minigameBests, showMinigameResult } from './core.js?v=2026-09-29-004';
 
         const CONFIG = {
             TIME_ATTACK_TICK_MS: 1000,             // 残り時間を1減らす間隔
@@ -98,7 +98,7 @@ import { consumeMinigamePlay, grantMinigameReward, minigameBests, showMinigameRe
                     barInner.style.background = pct > CONFIG.TIME_ATTACK_BAR_HIGH_PCT ? 'linear-gradient(90deg,#81c784,#4caf50)' : pct > CONFIG.TIME_ATTACK_BAR_MID_PCT ? 'linear-gradient(90deg,#ffd54f,#ffc107)' : 'linear-gradient(90deg,#ef5350,#f44336)';
                 }
                 if (timeAttackState.timeLeft > 0 && timeAttackState.timeLeft <= CONFIG.TIME_ATTACK_URGENT_SEC) {
-                    // main.js: playAudioFile() は効果音再生、vibrate() は端末バイブを行う共通関数
+                    // main.js: playAudioFile()：効果音再生、vibrate() は端末バイブを行う共通関数
                     playAudioFile('audio/skill_tap.mp3', 0.35); // ラスト3秒のカウントダウン合図に流用
                     vibrate(CONFIG.TIME_ATTACK_URGENT_VIBRATE_MS);
                 }
@@ -149,7 +149,7 @@ import { consumeMinigamePlay, grantMinigameReward, minigameBests, showMinigameRe
 
             // 叩けば叩くほど音がだんだん高くなっていく（連打の気持ちよさを強化）
             const rate = 1 + Math.min(CONFIG.TIME_ATTACK_PITCH_MAX_BOOST, timeAttackState.taps * CONFIG.TIME_ATTACK_PITCH_PER_TAP);
-            // main.js: playAudioFilePitched() は再生速度（音程）を変えて効果音を再生する共通関数
+            // main.js: playAudioFilePitched()：再生速度（音程）を変えて効果音を再生する共通関数
             playAudioFilePitched('audio/tap.mp3', 0.5, rate);
 
             if (timeAttackState.taps % CONFIG.TIME_ATTACK_MILESTONE_TAPS === 0) { vibrate(CONFIG.TIME_ATTACK_MILESTONE_VIBRATE_MS); screenFlash('#26a69a', CONFIG.TIME_ATTACK_MILESTONE_FLASH_OPACITY); }
@@ -166,12 +166,12 @@ import { consumeMinigamePlay, grantMinigameReward, minigameBests, showMinigameRe
             timeAttackState = null;
             const found = TIME_ATTACK_THRESHOLDS.find(([min]) => taps >= min);
             const mult = found ? found[1] : CONFIG.TIME_ATTACK_DEFAULT_MULT;
-            // core.js: grantMinigameReward() は渡した倍率からミニゲームコインを計算して付与する共通処理
+            // core.js: grantMinigameReward()：渡した倍率からミニゲームコインを計算して付与する共通処理
             const reward = grantMinigameReward(mult);
             // core.js: minigameBests はミニゲームの自己ベスト記録をまとめたオブジェクト（.timeattackが今回のタップ数の記録先）。
             // core.jsからimportした同じオブジェクトを直接書き換えている（配列/オブジェクトはimportした束縛自体には代入できないが、中身のプロパティは書き換えられるため）
             const isNewBest = taps > (minigameBests.timeattack || 0);
-            // state.js: saveGame() はゲームの状態をまとめて保存する共通処理
+            // state.js: saveGame()：ゲームの状態をまとめて保存する共通処理
             if (isNewBest) { minigameBests.timeattack = taps; playAudioFile('audio/levelup.mp3'); saveGame(); screenFlash('#ffd700', CONFIG.TIME_ATTACK_BEST_FLASH_OPACITY); }
             // core.js: showMinigameResult() はプレイ画面を共通の結果画面に差し替える処理
             showMinigameResult(`⏱️ タイムアタック結果`, `${taps}回タップ！${isNewBest ? '🎉自己ベスト更新！' : `（自己ベスト: ${minigameBests.timeattack}回）`}`, reward);

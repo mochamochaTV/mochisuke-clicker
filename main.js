@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MOCHI_ICON_ADJUST_TOOL_ENABLED,
   MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-29-002';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-29-002';
+} from './data.js?v=2026-09-29-004';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-29-004';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-29-002';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-29-002';
+} from './progress.js?v=2026-09-29-004';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-29-004';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-29-002';
+} from './state.js?v=2026-09-29-004';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-29-002';
+} from './tap.js?v=2026-09-29-004';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, applyMochiIconAdjust, checkIncomingGiftsOnLaunch,
   checkShowTutorial, getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders,
   isTutorialActive, showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay, updateMochiIconAdjustReadout
-} from './ui.js?v=2026-09-29-002';
+} from './ui.js?v=2026-09-29-004';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -108,17 +108,17 @@ import {
             PARTICLE_DRAW_OFFSET: 21,                  // 描画サイズの半分（中心合わせ用オフセット）
             PARTICLE_OFFSCREEN_MARGIN: 50,             // 画面外に出たと判定するまでの余白
 
-            // 🆕 もち吸い込み演出：createParticle由来のもちが画面下（下部ナビボタンの高さ）まで
+            // もち吸い込み演出：createParticle由来のもちが画面下（下部ナビボタンの高さ）まで
             // 重力で落ちたら、そこで「ふわっと」一瞬止まり、その後に所持もち数の表示へ吸い込まれて消える。
             // まもすいの要望「重力で一番下までいってから、ふわっと止まって、所持もち数に吸い込まれる感じ」を
             // 反映。あくまで見た目だけの演出で、実際の所持もち数の加算タイミングには一切影響しない
             // （加算は今まで通り即時。2-1参照）
-            // 🐛パフォーマンス修正：吸い込み演出は「fall→pause→home」の分だけ、以前(画面外に落ちたら即消滅)より
+            // パフォーマンス修正：吸い込み演出は「fall→pause→home」の分だけ、以前(画面外に落ちたら即消滅)より
             // 1粒あたりの生存時間・描画され続ける時間が伸びる。連打・フィーバー中はPARTICLE_MAX_COUNT(50)近くまで
             // 粒が滞留しやすくなり、まもすいの報告通り体感のラグにつながっていた。そこで同時に「吸い込み中」に
             // なれる粒数に上限（PARTICLE_SUCK_MAX_CONCURRENT）を設け、それを超えた分は演出をスキップして
             // 従来通りそのまま画面外へ落として片付けるようにした（ラグ対策の本体はこちら）。
-            // 🆕【まもすいの指摘で再調整】上記の上限があるおかげで1粒あたりの時間を削らなくても最悪ケースは
+            // 【まもすいの指摘で再調整】上記の上限があるおかげで1粒あたりの時間を削らなくても最悪ケースは
             // 頭打ちになるため、「吸い込むスピードが速すぎる」の指摘を受けてHOMING_DURATIONは
             // 元の見た目（26フレーム）に近い24フレームまで戻した（PAUSEは変更なし）。
             PARTICLE_SUCK_PAUSE_FRAMES: 10,            // 下部で静止する時間（フレーム数。60fps換算で約0.17秒）
@@ -133,7 +133,7 @@ import {
             SPARKLE_OUTER_ALPHA: 0.16,                 // 外側の円の最大不透明度
             SPARKLE_INNER_ALPHA: 0.35,                 // 内側の円の最大不透明度
 
-            // 🆕 きなこ・粉っぽい「弾けるパーティクル」（createBurstParticle）専用。スコア用のparticleImg/
+            // きなこ・粉っぽい「弾けるパーティクル」（createBurstParticle）専用。スコア用のparticleImg/
             // goldParticleImgとは見た目の系統が違う（画像ではなく単純な円を描く）ため、descriptionを分けている
             BURST_PARTICLE_VX_RANGE: 5.5,               // 中心から広がる横方向の初速の最大値
             BURST_PARTICLE_VY_RANGE: 5.5,               // 中心から広がる縦方向の初速の最大値
@@ -148,7 +148,7 @@ import {
             RIPPLE_LINE_WIDTH: 4,                      // 波紋の線の太さ
             RIPPLE_MAX_RADIUS: 65,                     // 波紋が広がる最大半径
             RIPPLE_DEFAULT_COLOR: '255, 152, 0',       // 波紋の既定色（従来通りのオレンジ）。'R, G, B'形式の文字列
-            // 🆕 もちすけ以外（背景など）をタップした時用の、控えめな波紋。もちすけタップ時の主張の強い波紋とは
+            // もちすけ以外（背景など）をタップした時用の、控えめな波紋。もちすけタップ時の主張の強い波紋とは
             // 差をつけて、あくまで「触れたことへの軽いフィードバック」に留める
             RIPPLE_LIGHT_ALPHA_MULT: 0.5,
             RIPPLE_LIGHT_RADIUS_MULT: 0.7,
@@ -322,10 +322,10 @@ import {
             const text = textEl.value.trim();
             if (!text) { alert("意見を入力してから送信してください！"); return; }
 
-            // src/engine/firebase.js: window.submitFeedback はご意見をFirestoreに送信する関数、window.isRankingReady()はFirebaseへの接続準備が完了したかを返す関数
+            // src/engine/firebase.js: window.submitFeedback はご意見をFirestoreに送信する関数、window.isRankingReady()はFirebaseへの接続準備が完了したかを返す
             // （importではなくwindow経由なのは、firebase.jsがtype="module"で読み込まれる一方、このメインスクリプト側はモジュールではないため）
             if (window.submitFeedback && window.isRankingReady && window.isRankingReady()) {
-                // state.js: playerName は現在のプレイヤー名
+                // state.js: playerName：現在のプレイヤー名
                 const ok = await window.submitFeedback(text, playerName);
                 if (ok) {
                     alert("送信しました！ありがとうございます🍡");
@@ -349,17 +349,17 @@ import {
 
         export let isBgmInitialized = false;
         export let canvas = null; export let ctx = null; export let particleList = [];
-        // 🆕 もち吸い込み演出用のキャッシュ座標（#game-screen基準の相対座標）。
+        // もち吸い込み演出用のキャッシュ座標（#game-screen基準の相対座標）。
         // 毎フレーム・毎パーティクルでgetBoundingClientRectを呼ぶと重いので、resizeParticleCanvas()の
         // タイミング（初回描画時・リサイズ時・端末回転時）でまとめて計算し直す方式にしている
         // （gameScreenRectのキャッシュと同じ考え方）。
         export let suckPauseY = null;      // 下部で「ふわっと止まる」高さ（下部ナビボタンの上端付近）
-        // 🐛パフォーマンス修正：現在「pause」または「home」状態にある粒の数。PARTICLE_SUCK_MAX_CONCURRENTと
+        // パフォーマンス修正：現在「pause」または「home」状態にある粒の数。PARTICLE_SUCK_MAX_CONCURRENTと
         // 比較して、超過分は吸い込み演出をスキップさせるためのカウンタ（粒ごとにparticleListを毎フレーム
         // 数え直すのではなく、pause開始時に+1、pause/homeから抜ける時に-1する軽量な方式にしている）
         export let suckingParticleCount = 0;
         /**
-         * 🆕【まもすいの指摘で修正】吸い込まれる先＝所持もち数アイコン(#mochi-count-icon)の中心座標を
+         * 【まもすいの指摘で修正】吸い込まれる先＝所持もち数アイコン(#mochi-count-icon)の中心座標を
          * その場で計算して返す（#game-screen基準の相対座標）。以前はsuckTargetPointとしてresize時に
          * キャッシュしていたが、開発者用調整ツール（大きさ・位置のドラッグ調整）でアイコンの見た目上の
          * 位置がリサイズを経ずに変わるケースに追従できず「吸い込まれる位置がずれる」原因になっていた。
@@ -386,9 +386,9 @@ import {
          * @returns {void}
          */
         export function spawnMochiRain() {
-            // tap.js: getMps() は現在の自動増加量(1秒あたりのもち数)を返す関数
+            // tap.js: getMps() は現在の自動増加量(1秒あたりのもち数)を返す
             const mps = getMps();
-            // 🐛パフォーマンス修正：モーダルが開いていてタップ画面が見えていない間は、どうせ見えない
+            // パフォーマンス修正：モーダルが開いていてタップ画面が見えていない間は、どうせ見えない
             // もちの雨を新しく降らせても無駄なので生成自体を止める（描画側もモーダル中は丸ごと止めている）
             if (!rainCanvas || mps <= 0 || document.hidden || document.body.classList.contains('modal-open')) return;
             if (mochiRainList.length >= MOCHI_RAIN_MAX) return; // 上限に達している間は新規追加を控える（既存の粒を消して落下を妨げないため）
@@ -417,7 +417,7 @@ import {
          * @returns {void}
          */
         export function spawnAmbientSparkle() {
-            // 🐛パフォーマンス修正：このキラキラも spawnMochiRain と同じくタップ画面専用の演出。
+            // パフォーマンス修正：このキラキラも spawnMochiRain と同じくタップ画面専用の演出。
             // モーダルが開いていて画面が見えていない間は生成しても無駄なので止める
             if (!canvas || document.hidden || document.body.classList.contains('modal-open')) return;
             ambientSparkles.push({
@@ -517,7 +517,7 @@ import {
          * @returns {void}
          */
         export function preloadAllSfx() {
-            // data.js: SFX_FILES は効果音ファイルパスの一覧配列
+            // data.js: SFX_FILES：効果音ファイルパスの一覧配列
             SFX_FILES.forEach(loadAudioBuffer);
         }
 
@@ -671,7 +671,7 @@ import {
             // 操作をした時にしか呼ばれておらず、タップだけを続けてから何も購入せずにタブを閉じる／
             // 他アプリへ切り替えると、その間に貯めたもちが保存されないまま失われる可能性があった。
             // バックグラウンドに回った瞬間（タブ切り替え・アプリ切り替え・画面ロック）に必ず保存する。
-            // state.js: saveGame はセーブデータを保存する関数
+            // state.js: saveGame：セーブデータを保存する
             if (document.visibilityState === 'hidden') { try { saveGame(); } catch (e) {} }
         });
         // 🛡️ 同上の理由で、iOS Safariなど visibilitychange が発火しないケースの保険として
@@ -702,7 +702,7 @@ import {
         export function initDevMode() {
             // 推測されないよう、単純な値ではなく長いランダムな文字列をキーにしている
             const isDevParam = new URLSearchParams(location.search).get('dev') === 'zk9m2xq7wv4p8trh21bs';
-            // 🐛修正：PWAとしてホーム画面に追加すると、manifest.jsonの固定start_urlが使われ、
+            // 修正：PWAとしてホーム画面に追加すると、manifest.jsonの固定start_urlが使われ、
             // クエリパラメータが失われてしまう。一度でも管理者URLでアクセスしたら、
             // localStorageに記憶しておき、以後クエリパラメータが無くてもdevモードを維持する
             if (isDevParam) {
@@ -724,16 +724,16 @@ import {
          */
         export function debugAddMochi() {
             // data.js: stages は都道府県ごとのステージ定義（distance等を持つ）の配列
-            // progress.js: currentStageIndex は現在挑戦中のステージ番号
+            // progress.js: currentStageIndex：現在挑戦中のステージ番号
             const currentReq = stages[currentStageIndex] ? stages[currentStageIndex].distance : CONFIG.DEBUG_ADD_MOCHI_FALLBACK;
-            // state.js: score/setScore は所持もち数の値と、それを書き換えるsetter関数
+            // state.js: score/setScore は所持もち数の値と、それを書き換えるsetter
             setScore(score + (currentReq));
-            // progress.js: selectedStageIndex は画面上で選択中のステージ番号
+            // progress.js: selectedStageIndex：画面上で選択中のステージ番号
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
-                // progress.js: currentStageProgress/setCurrentStageProgress は現ステージの進捗値とそのsetter、checkStageProgress()は進捗からステージクリア判定を行う関数
+                // progress.js: currentStageProgress/setCurrentStageProgress は現ステージの進捗値とそのsetter、checkStageProgress()は進捗からステージクリア判定を行う
                 setCurrentStageProgress(currentStageProgress + (currentReq)); checkStageProgress();
             }
-            // ui.js: updateDisplay は画面表示全体を最新の状態に更新する関数
+            // ui.js: updateDisplay：画面表示全体を最新の状態に更新する
             updateDisplay(); saveGame();
         }
 
@@ -746,7 +746,7 @@ import {
             // tap.js: skills はスキルID→{lv, currentCd, ...}を持つスキル状態オブジェクト
             skills[key].lv++;
             playAudioFile('audio/levelup.mp3');
-            // tap.js: updateSkillUI はスキルボタンの表示（Lv・クールタイム等）を更新する関数
+            // tap.js: updateSkillUI：スキルボタンの表示（Lv・クールタイム等）を更新する
             updateSkillUI(); saveGame();
         }
 
@@ -768,7 +768,7 @@ import {
         export function debugResetCooldowns() {
             Object.keys(skills).forEach(key => {
                 skills[key].currentCd = 0; skills[key].activeTimer = 0;
-                // tap.js: endSkillVisualEffect はスキル発動中の画面演出（フィルター等）を終了させる関数
+                // tap.js: endSkillVisualEffect はスキル発動中の画面演出（フィルター等）を終了させる
                 endSkillVisualEffect(key);
             });
             updateSkillUI();
@@ -808,13 +808,13 @@ import {
          */
         export function resizeParticleCanvas() {
             const rect = document.getElementById('game-screen').getBoundingClientRect();
-            // tap.js: setGameScreenRect はtap.js側が持つgameScreenRectキャッシュ変数を書き換えるsetter関数
+            // tap.js: setGameScreenRect：tap.js側が持つgameScreenRectキャッシュ変数を書き換えるsetter
             setGameScreenRect(rect); // タップ演出（リップル/文字/パーティクル）で使い回すキャッシュ
-            // tap.js: bunshinCloneRects は分身スキルで複製した各分身の位置矩形の配列、refreshBunshinCloneRectsはそれをリサイズ後の座標で再計算する関数
+            // tap.js: bunshinCloneRects は分身スキルで複製した各分身の位置矩形の配列、refreshBunshinCloneRectsはそれをリサイズ後の座標で再計算する
             if (bunshinCloneRects.length > 0) refreshBunshinCloneRects();
             if (rainCanvas) { rainCanvas.width = rect.width; rainCanvas.height = rect.height; }
 
-            // 🆕 もち吸い込み演出用：下部の静止ラインは、ナビボタン行の位置が変わる頻度が低い
+            // もち吸い込み演出用：下部の静止ラインは、ナビボタン行の位置が変わる頻度が低い
             // （リサイズ・回転くらい）ため、これまで通りここでキャッシュし直す方式のままにしている
             const navMenuEl = document.querySelector('.nav-menu');
             if (navMenuEl) {
@@ -830,7 +830,7 @@ import {
          * @returns {DOMRect} #game-screenの矩形
          */
         export function getGameScreenRect() {
-            // tap.js: gameScreenRect はresizeParticleCanvas()でキャッシュされた#game-screenの矩形
+            // tap.js: gameScreenRect：resizeParticleCanvas()でキャッシュされた#game-screenの矩形
             return gameScreenRect || document.getElementById('game-screen').getBoundingClientRect();
         }
 
@@ -902,7 +902,7 @@ import {
             // data.js: CORNER_BTN_ADJUST_TOOL_ENABLED は4隅ボタン座標調整ツールを表示するかどうかのフラグ
             if (IS_DEV_MODE && CORNER_BTN_ADJUST_TOOL_ENABLED) {
                 const panel = document.getElementById('corner-btn-adjust-panel');
-                // ui.js: updateCornerBtnReadout は調整パネル内の座標表示を最新値に更新する関数
+                // ui.js: updateCornerBtnReadout：調整パネル内の座標表示を最新値に更新する
                 if (panel) { panel.style.display = 'block'; updateCornerBtnReadout(); }
             }
         }
@@ -915,7 +915,7 @@ import {
             // data.js: MOCHI_ICON_ADJUST_TOOL_ENABLED は所持もち数アイコン座標調整ツールを表示するかどうかのフラグ
             if (IS_DEV_MODE && MOCHI_ICON_ADJUST_TOOL_ENABLED) {
                 const panel = document.getElementById('mochi-icon-adjust-panel');
-                // ui.js: updateMochiIconAdjustReadout は調整パネル内の座標表示を最新値に更新する関数
+                // ui.js: updateMochiIconAdjustReadout：調整パネル内の座標表示を最新値に更新する
                 if (panel) { panel.style.display = 'block'; updateMochiIconAdjustReadout(); }
             }
         }
@@ -926,11 +926,11 @@ import {
          * @returns {void}
          */
         function scheduleBackgroundWatchers() {
-            // ui.js: checkIncomingGiftsOnLaunch は起動時に未受領ギフトが無いか確認する関数
+            // ui.js: checkIncomingGiftsOnLaunch は起動時に未受領ギフトが無いか確認する
             setTimeout(checkIncomingGiftsOnLaunch, CONFIG.GIFT_CHECK_DELAY_MS); // Firebase接続が整うのを少し待ってから確認する
-            // 🐛修正：招待・スタンプの検知は、以前は45秒/20秒おきのポーリングだったため届くまで
+            // 修正：招待・スタンプの検知は、以前は45秒/20秒おきのポーリングだったため届くまで
             // 数十秒の時間差があった。onSnapshotによるリアルタイム監視に変更（起動時に1回だけ開始すればよい）
-            // ui.js: startIncomingRoomInviteWatch/startIncomingVisitStampWatch は、それぞれ部屋招待・訪問スタンプのリアルタイム監視を開始する関数
+            // ui.js: startIncomingRoomInviteWatch/startIncomingVisitStampWatch は、それぞれ部屋招待・訪問スタンプのリアルタイム監視を開始する
             setTimeout(startIncomingRoomInviteWatch, CONFIG.ROOM_INVITE_WATCH_DELAY_MS); // ギフト通知と重ならないよう、少し後にずらす
             setTimeout(startIncomingVisitStampWatch, CONFIG.VISIT_STAMP_WATCH_DELAY_MS);
             // src/engine/firebase.js: window.sendHeartbeat は自分の最終アクティブ時刻をFirestoreへ送る関数（window経由なのはfirebase.jsがtype="module"のため）
@@ -940,12 +940,12 @@ import {
         /**
          * 開発者モード時のみ、まだガチャ実装前のきせかえ・マイルーム家具アイテムを全部所持済みの状態にする。
          * 🎫 着せ替えアイテムは、まだガチャ実装前なので、開発者URLの人だけ全部持っている状態にする
-         * 🐛修正：loadGame()より前にやると、セーブデータの読み込みで上書きされて消えてしまっていた
+         * 修正：loadGame()より前にやると、セーブデータの読み込みで上書きされて消えてしまっていた
          * @returns {void}
          */
         function grantDevModeItemsIfNeeded() {
             if (!IS_DEV_MODE) return;
-            // data.js: KISEKAE_ITEMS はカテゴリ別の着せ替えアイテム一覧データ
+            // data.js: KISEKAE_ITEMS：カテゴリ別の着せ替えアイテム一覧データ
             // progress.js: ownedKisekaeItems は所持中の着せ替えアイテムIDをカテゴリ別に持つオブジェクト
             Object.keys(KISEKAE_ITEMS).forEach(cat => {
                 KISEKAE_ITEMS[cat].forEach(item => {
@@ -953,7 +953,7 @@ import {
                 });
             });
             // 🛋️ マイルームの家具も、管理者URLの人だけ全部持っている状態にする
-            // data.js: MYROOM_ITEMS はカテゴリ別のマイルーム家具一覧データ
+            // data.js: MYROOM_ITEMS：カテゴリ別のマイルーム家具一覧データ
             // progress.js: ownedMyroomItems は所持中のマイルームアイテムIDをカテゴリ別に持つオブジェクト
             Object.keys(MYROOM_ITEMS).forEach(cat => {
                 MYROOM_ITEMS[cat].forEach(item => {
@@ -983,42 +983,42 @@ import {
             preloadAllSfx(); // 会心・黄金など出現頻度の低い効果音も先に読み込んでおき、初回再生の遅延を防ぐ
             preloadAllBgm(); // ショップ・ゲーセン等のBGMも同様に先読みし、初回入場時の再生遅れを防ぐ
 
-            // state.js: loadGame はlocalStorageのセーブデータを読み込み、各種状態変数へ復元する関数
+            // state.js: loadGame：localStorageのセーブデータを読み込み、各種状態変数へ復元する
             loadGame();
-            // ui.js: applyKisekaeToMainScreen はメイン画面のもちすけ表示へ、確定済みの着せ替えを反映する関数
-            applyKisekaeToMainScreen(); // 🐛修正：確定済みの服装が、ページを開き直すと反映されないままだった
-            // progress.js: checkAndRotateMissions は日付/週が変わっていたらミッション内容を選び直す関数
+            // ui.js: applyKisekaeToMainScreen はメイン画面のもちすけ表示へ、確定済みの着せ替えを反映する
+            applyKisekaeToMainScreen(); // 修正：確定済みの服装が、ページを開き直すと反映されないままだった
+            // progress.js: checkAndRotateMissions：日付/週が変わっていたらミッション内容を選び直す
             checkAndRotateMissions(); // 日付・週が変わっていたら、デイリー/ウィークリーミッションを選び直す
-            // ui.js: applyCornerBtnPositions/applyMochiIconAdjust は、それぞれ保存済みの4隅ボタン・所持もち数アイコンの位置調整値を画面へ反映する関数
+            // ui.js: applyCornerBtnPositions/applyMochiIconAdjust は、それぞれ保存済みの4隅ボタン・所持もち数アイコンの位置調整値を画面へ反映する
             applyCornerBtnPositions();
             showCornerBtnAdjustPanelIfEnabled();
             applyMochiIconAdjust();
             showMochiIconAdjustPanelIfEnabled();
             scheduleBackgroundWatchers();
             grantDevModeItemsIfNeeded();
-            // state.js: checkForCloudRestoreOnLoad は、ローカルにセーブが無い時にクラウドの復元可能なバックアップが無いか確認する関数
+            // state.js: checkForCloudRestoreOnLoad は、ローカルにセーブが無い時にクラウドの復元可能なバックアップが無いか確認する
             checkForCloudRestoreOnLoad();
-            // progress.js: checkOfflineEarnings は、離れていた間の自動増加(mps)ぶんのオフライン収益を計算して加算する関数
+            // progress.js: checkOfflineEarnings は、離れていた間の自動増加(mps)ぶんのオフライン収益を計算して加算する
             checkOfflineEarnings();
-            // ui.js: checkShowTutorial はまだチュートリアル未経験なら開始する関数
+            // ui.js: checkShowTutorial：まだチュートリアル未経験なら開始する
             setTimeout(checkShowTutorial, CONFIG.TUTORIAL_CHECK_DELAY_MS);
 
-            // tap.js: resetMochiFilter は装備中の見た目に合わせてもちの表示フィルターをリセットする関数
+            // tap.js: resetMochiFilter は装備中の見た目に合わせてもちの表示フィルターをリセットする
             resetMochiFilter();
 
             setGameBackground(stages[selectedStageIndex].bg);
 
             updateDisplay();
             updateSkillUI();
-            // tap.js: startFeverSpawningLoop はフィーバータイム中のもち自動生成ループを開始する関数
+            // tap.js: startFeverSpawningLoop：フィーバータイム中のもち自動生成ループを開始する
             startFeverSpawningLoop();
             startPresentSpawningLoop();
             startMochiLifeLoop();
-            // ui.js: showOpeningGreeting は起動時に時間帯に応じたもちすけの挨拶を表示する関数
+            // ui.js: showOpeningGreeting は起動時に時間帯に応じたもちすけの挨拶を表示する
             showOpeningGreeting();
-            // minigames.js: resetMinigameCountsIfNewDay は日付が変わっていたらミニゲームの1日の残りプレイ回数をリセットする関数
+            // minigames.js: resetMinigameCountsIfNewDay：日付が変わっていたらミニゲームの1日の残りプレイ回数をリセットする
             resetMinigameCountsIfNewDay();
-            // ui.js: initVolumeSliders/initMapInteractions は、それぞれ音量スライダー・マップ操作(ズーム/ドラッグ)のイベント登録を行う関数
+            // ui.js: initVolumeSliders/initMapInteractions は、それぞれ音量スライダー・マップ操作(ズーム/ドラッグ)のイベント登録を行う
             initVolumeSliders();
             initMapInteractions();
 
@@ -1070,7 +1070,7 @@ import {
             }
         }
 
-        // 🆕 もち吸い込み演出：所持もち数アイコンの「ぴょん」バウンス
+        // もち吸い込み演出：所持もち数アイコンの「ぴょん」バウンス
         export let lastMochiCountIconBounceTime = 0;
         /**
          * 吸い込まれてきたもちパーティクルが所持もち数アイコン(#mochi-count-icon)に到達した瞬間、
@@ -1222,7 +1222,7 @@ import {
         /**
          * @param {boolean} [light=false] - true時は、もちすけ以外をタップした時用の控えめな波紋にする
          * @param {string} [color=CONFIG.RIPPLE_DEFAULT_COLOR] - 波紋の色。'R, G, B'形式の文字列（rgba()にそのまま埋め込む）。
-         *   🆕 スライムもちすけの水色の波紋（src/squeeze/physics.jsのtriggerSqueezeTouchSplash参照）等、
+         *   スライムもちすけの水色の波紋（src/squeeze/physics.jsのtriggerSqueezeTouchSplash参照）等、
          *   素材ごとに色を変えたい呼び出し元のために追加した。省略時は従来通りのオレンジ。
          */
         export function createRippleEffect(x, y, light = false, color = CONFIG.RIPPLE_DEFAULT_COLOR) {
@@ -1265,11 +1265,11 @@ import {
                 vy: -(Math.random() * CONFIG.PARTICLE_VY_RANDOM_RANGE + CONFIG.PARTICLE_VY_BASE),
                 gravity: CONFIG.PARTICLE_GRAVITY,
                 isGold: isGold,
-                suckPhase: 'fall' // 🆕 'fall'(重力落下) → 'pause'(下部でふわっと静止) → 'home'(所持もち数へ吸い込み)
+                suckPhase: 'fall' // 'fall'(重力落下) → 'pause'(下部でふわっと静止) → 'home'(所持もち数へ吸い込み)
             });
         }
 
-        // 🆕 きなこ・粉っぽい「弾けるパーティクル」。スコア加算用のcreateParticleとは見た目も用途も違う
+        // きなこ・粉っぽい「弾けるパーティクル」。スコア加算用のcreateParticleとは見た目も用途も違う
         // （画像を貼るのではなく、単純な円を薄く描くだけ）ため、同じparticleListに積みつつ
         // kind:'burst'で区別し、updateAndRenderParticles側で別扱いにする（drawImageの失敗処理などを
         // burst用にわざわざ複製せずに済むよう、既存のループにそのまま相乗りさせる設計）。
@@ -1297,7 +1297,7 @@ import {
             });
         }
 
-        // 🐛パフォーマンス修正：タップ演出（particleList/rippleList/floatingTextList）が全部空＝
+        // パフォーマンス修正：タップ演出（particleList/rippleList/floatingTextList）が全部空＝
         // 「今まさに反応が必要なものは何もない、環境演出だけが動いているアイドル状態」の時だけ、
         // 描画を約30fpsに間引いて負荷とバッテリー消費を抑える。タップした瞬間にこれらのリストへ
         // 要素が入るので、その場で即座に60fpsへ戻り、タップの反応速度には一切影響しない
@@ -1310,7 +1310,7 @@ import {
          */
         export const updateAndRenderParticles = (ts) => {
             if (!ctx || !canvas) { requestAnimationFrame(updateAndRenderParticles); return; }
-            // 🐛パフォーマンス修正：この描画loopはタップ画面のcanvas専用だが、ランキング・移動・ショップ・
+            // パフォーマンス修正：この描画loopはタップ画面のcanvas専用だが、ランキング・移動・ショップ・
             // マイルームなど、何かモーダルを開いている間はタップ画面自体が見えない（モーダルの黒い背景に
             // 覆われる）。見えていないのに毎フレーム描画し続けるのは完全に無駄なので、モーダルが開いている
             // 間は描画処理を丸ごとスキップする（RAFの連鎖だけは切らさず維持し、モーダルを閉じた瞬間に
@@ -1330,7 +1330,7 @@ import {
             for (let i = particleList.length - 1; i >= 0; i--) {
                 const p = particleList[i];
 
-                // 🆕 もち吸い込み演出のフェーズ遷移・位置更新。
+                // もち吸い込み演出のフェーズ遷移・位置更新。
                 //   'fall' （通常の重力落下）→ 静止ラインに達したら'pause'（ふわっと静止）
                 //   → 既定フレーム数経過で'home'（所持もち数表示へイーズインで吸い込まれる）。
                 // 'pause'/'home'中は重力を止めて専用の動きに切り替えるため、通常の重力更新は
@@ -1344,7 +1344,7 @@ import {
                 } else if (p.suckPhase === 'pause') {
                     p.pauseFrames--;
                     if (p.pauseFrames <= 0) {
-                        // 🆕 ここでその都度アイコンの現在位置を取得する（1粒がpause→homeへ遷移する瞬間のみ、
+                        // ここでその都度アイコンの現在位置を取得する（1粒がpause→homeへ遷移する瞬間のみ、
                         // 毎フレームではない）ことで、開発者用調整ツールでアイコンをドラッグ中でも
                         // 常に「今アイコンがある場所」へ正しく吸い込まれる
                         const targetPoint = getMochiCountIconTargetPoint();
@@ -1356,12 +1356,12 @@ import {
                         } else {
                             // 吸い込み先の座標が取れていない異常系は、従来通り重力で画面外へ落として片付ける
                             p.suckPhase = 'fall';
-                            suckingParticleCount--; // 🐛パフォーマンス修正：「吸い込み中」の集計から抜けるのでカウンタも戻す
+                            suckingParticleCount--; // パフォーマンス修正：「吸い込み中」の集計から抜けるのでカウンタも戻す
                         }
                     }
                 } else {
                     p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
-                    // 🐛パフォーマンス修正：同時に「pause」「home」でいられる粒数に上限を設け、
+                    // パフォーマンス修正：同時に「pause」「home」でいられる粒数に上限を設け、
                     // 超過分は演出をスキップしてこれまで通りそのまま画面外へ落とす（連打・フィーバー中の
                     // 滞留粒数を頭打ちにして、まもすいの報告にあったラグを軽減する）
                     if (p.suckPhase === 'fall' && suckPauseY !== null && p.y >= suckPauseY
@@ -1373,7 +1373,7 @@ import {
                     }
                 }
 
-                // 🆕 きなこ・粉っぽい「弾けるパーティクル」（createBurstParticle）は、スコア用の
+                // きなこ・粉っぽい「弾けるパーティクル」（createBurstParticle）は、スコア用の
                 // drawImage系パーティクルと見た目も寿命の管理方法も違うため、ここで先に分岐して処理してしまう
                 // （画像を使わないので、下のdrawImageの例外処理には一切乗せる必要が無い。suckPhaseを
                 // 持たないため、上の分岐では常にelse側＝通常の重力更新のみが適用される＝従来通り）。
@@ -1395,7 +1395,7 @@ import {
                 // このrequestAnimationFrameループ全体がその場で止まり、以後タップしても一切の演出
                 // （パーティクル・波紋・浮き文字）が出なくなる事故につながる。該当パーティクルだけ諦めて
                 // リストから外し、ループ自体は必ず継続させる。
-                // 🆕【まもすいの指摘で修正】吸い込まれる最中(suckPhase==='home')も、フェードアウトや
+                // 【まもすいの指摘で修正】吸い込まれる最中(suckPhase==='home')も、フェードアウトや
                 // 縮小はせず、fall中と全く同じ見た目（等倍・不透明）のまま所持もち数アイコンまで飛ばす。
                 // 見た目が小さく・薄くなっていくと「到達する前に消えた」ように見えてしまうため。
                 try {
@@ -1411,7 +1411,7 @@ import {
                     }
                 } catch (e) {
                     ctx.shadowBlur = 0;
-                    // 🐛パフォーマンス修正：pause/home中だった粒がここで取り除かれる場合も、
+                    // パフォーマンス修正：pause/home中だった粒がここで取り除かれる場合も、
                     // 吸い込み中カウンタが戻らないと上限に達したまま解放されなくなってしまう
                     if (p.suckPhase === 'pause' || p.suckPhase === 'home') suckingParticleCount--;
                     particleList.splice(i, 1);
@@ -1419,10 +1419,10 @@ import {
                 }
 
                 if (p.suckPhase === 'home') {
-                    // 🆕 所持もち数アイコンに到達した瞬間：もちが消えると同時にアイコンを「ぴょん」と跳ねさせる
+                    // 所持もち数アイコンに到達した瞬間：もちが消えると同時にアイコンを「ぴょん」と跳ねさせる
                     if (p.homeT >= 1) {
                         triggerMochiCountIconBounce();
-                        suckingParticleCount--; // 🐛パフォーマンス修正：吸い込み完了で「吸い込み中」から抜ける
+                        suckingParticleCount--; // パフォーマンス修正：吸い込み完了で「吸い込み中」から抜ける
                         particleList.splice(i, 1);
                     }
                 } else if (p.y > canvas.height + CONFIG.PARTICLE_OFFSCREEN_MARGIN) {
@@ -1431,7 +1431,7 @@ import {
             }
 
             // ✨ 環境パーティクル（ゆっくり漂う光の粒。フェードイン→フェードアウト）
-            // 🐛パフォーマンス修正：この演出はタップ操作に関係なく常時（何もしていなくても）動き続けるため、
+            // パフォーマンス修正：この演出はタップ操作に関係なく常時（何もしていなくても）動き続けるため、
             // 従来のshadowBlur（canvasの中でも特にモバイルSafariで負荷が重い処理）を使っていると、
             // 起動しているだけでスマホが熱くなったりバッテリーを消費し続ける一因になっていた。
             // 見た目はほぼそのままに、影(shadow)ではなく単純に二重の円（外側は薄く大きく、内側は濃く小さく）を
@@ -1546,7 +1546,7 @@ import {
 
         window.addEventListener('resize', () => {
             const shopModal = document.getElementById('shop-modal');
-            // shop.js: currentShopTab は現在ショップ内で開いているタブ名、syncOmiyageImageFrameはお土産タブの画像枠サイズを画面幅に合わせ直す関数
+            // shop.js: currentShopTab：現在ショップ内で開いているタブ名、syncOmiyageImageFrameはお土産タブの画像枠サイズを画面幅に合わせ直す
             if (shopModal && shopModal.style.display === 'flex' && currentShopTab === 'omiyage') {
                 syncOmiyageImageFrame();
             }
@@ -1561,7 +1561,7 @@ import {
             setInterval(() => {
                 // ui.js: isTutorialActive はチュートリアル進行中かどうかのフラグ
                 if (isTutorialActive) return;
-                // tap.js: lastTappedTime は最後にタップした時刻(ms)
+                // tap.js: lastTappedTime：最後にタップした時刻(ms)
                 const idleDuration = Date.now() - lastTappedTime;
                 const balloon = document.getElementById('mochi-balloon');
                 // tap.js: isFever はフィーバータイム中かどうかのフラグ
@@ -1572,7 +1572,7 @@ import {
                         let text;
                         if (bucket !== lastGreetingHourBucket) {
                             lastGreetingHourBucket = bucket;
-                            // ui.js: getTimeGreeting は現在の時間帯に合った挨拶文をランダムに返す関数
+                            // ui.js: getTimeGreeting：現在の時間帯に合った挨拶文をランダムに返す
                             text = getTimeGreeting();
                         } else {
                             // 現在地のご当地セリフがあれば時々混ぜる、それ以外は通常のつぶやき
@@ -1585,7 +1585,7 @@ import {
                                 text = pickRandom(dialogueData.idleComments);
                             }
                         }
-                        // ui.js: showMochiComment は指定テキストをもちすけの吹き出しに表示する関数
+                        // ui.js: showMochiComment：指定テキストをもちすけの吹き出しに表示する
                         showMochiComment(text);
                     }
                 }
@@ -1653,7 +1653,7 @@ import {
                 createFloatingText(e.clientX, e.clientY, `🎁福もちボーナス +${formatMochi(bonus)}`, "#ff9800", "1.5rem");
                 saveGame(); updateDisplay();
                 present.remove();
-                // ui.js: hideMochiComment はもちすけの吹き出しを隠す関数
+                // ui.js: hideMochiComment はもちすけの吹き出しを隠す
                 hideMochiComment();
             });
             setTimeout(() => { if (present.parentNode) { present.remove(); hideMochiComment(); } }, CONFIG.PRESENT_LIFETIME_MS);
@@ -1670,7 +1670,7 @@ import {
             const rect = gameScreen.getBoundingClientRect();
             goldMochi.style.left = (Math.random() * (rect.width - CONFIG.GOLD_MOCHI_X_MARGIN)) + 'px'; goldMochi.style.top = (Math.random() * (rect.height - CONFIG.EVENT_SPAWN_Y_RANGE_MARGIN) + CONFIG.EVENT_SPAWN_Y_MIN) + 'px';
             gameScreen.appendChild(goldMochi);
-            // tap.js: triggerFeverTime はフィーバータイムを発動させる関数
+            // tap.js: triggerFeverTime：フィーバータイムを発動させる
             goldMochi.addEventListener('pointerdown', (e) => { e.stopPropagation(); goldMochi.remove(); hideMochiComment(); triggerFeverTime(); });
             setTimeout(() => { if (goldMochi.parentNode) { goldMochi.remove(); hideMochiComment(); } }, CONFIG.GOLD_MOCHI_LIFETIME_MS);
         }
@@ -1682,7 +1682,7 @@ import {
             saveGame();
             if (Date.now() - appStartTime < AUTOSAVE_CLOUD_GRACE_MS) return;
             // src/engine/firebase.js: window.submitRankingScore はランキングにスコアを送信する関数（importではなくwindow経由なのは、firebase.jsがtype="module"で読み込まれる一方、このメインスクリプト側はモジュールではないため）
-            // state.js: totalTapsCount は累計タップ数、progress.js: prestigeCount/equippedKisekae は転生回数と現在装備中の着せ替え
+            // state.js: totalTapsCount：累計タップ数、progress.js: prestigeCount/equippedKisekae は転生回数と現在装備中の着せ替え
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             // src/engine/firebase.js: window.backupSaveData はクラウドへ現在のセーブデータを上書き保存する関数（同じ理由でwindow経由）
             if (window.backupSaveData) {
@@ -1731,6 +1731,6 @@ import {
         window.debugLevelUpSkill = debugLevelUpSkill;
         window.debugLevelUpAllSkills = debugLevelUpAllSkills;
         window.debugResetCooldowns = debugResetCooldowns;
-        // progress.js: adminJumpToFinalStage は開発者用に最終ステージまで一気に進める関数（onclick=""から呼ぶための橋渡し）
+        // progress.js: adminJumpToFinalStage：開発者用に最終ステージまで一気に進める関数（onclick=""から呼ぶための橋渡し）
         window.adminJumpToFinalStage = adminJumpToFinalStage;
         window.startGameFromOpScreen = startGameFromOpScreen;

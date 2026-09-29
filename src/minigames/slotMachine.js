@@ -19,11 +19,11 @@
 import {
   IS_DEV_MODE, getAudioContext, loadAudioBuffer, playAudioFile, playAudioFilePitched,
   screenFlash, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-29-002';
-import { gachaCoins, setGachaCoins, trackMissionEvent } from '../../progress.js?v=2026-09-29-002';
-import { saveGame } from '../../state.js?v=2026-09-29-002';
-import { updateDisplay } from '../../ui.js?v=2026-09-29-002';
-import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
+} from '../../main.js?v=2026-09-29-004';
+import { gachaCoins, setGachaCoins, trackMissionEvent } from '../../progress.js?v=2026-09-29-004';
+import { saveGame } from '../../state.js?v=2026-09-29-004';
+import { updateDisplay } from '../../ui.js?v=2026-09-29-004';
+import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
 
         const CONFIG = {
             SLOT_STRIP_LANDING_MARGIN: 2,          // リールが止まる位置を、帯の最後から何周ぶん手前にするか
@@ -100,7 +100,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
          * @returns {void}
          */
         export function playSlotSpinLoopSound() {
-            // main.js: getAudioContext は共通のWeb Audio APIコンテキスト（AudioContext）を返す関数
+            // main.js: getAudioContext：共通のWeb Audio APIコンテキスト（AudioContext）を返す
             const ctx = getAudioContext();
             if (ctx.state === 'suspended') ctx.resume().catch(() => {});
             // main.js: loadAudioBuffer は音声ファイルを読み込んでAudioBufferにする関数（一度読み込んだものはキャッシュされる）
@@ -110,7 +110,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
                 source.buffer = buffer;
                 source.loop = true;
                 const gain = ctx.createGain();
-                // main.js: sfxVolumeMult は設定画面のSE音量スライダーに応じた倍率（0〜1）
+                // main.js: sfxVolumeMult：設定画面のSE音量スライダーに応じた倍率（0〜1）
                 gain.gain.value = 0.5 * sfxVolumeMult;
                 source.connect(gain).connect(ctx.destination);
                 source.start(0);
@@ -536,7 +536,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
          */
         export function startSlotGame(container) {
             // main.js: IS_DEV_MODE は開発者モードかどうかのフラグ。trueの間、下のHTML内でコイン所持数を「∞」表示にしたり、位置調整ツールを出したりしている
-            // src/minigames/core.js: minigameCoins は全ミニゲーム共通で使う、今持っているミニゲームコインの枚数（下のHTML内で所持数として表示）
+            // src/minigames/core.js: minigameCoins：全ミニゲーム共通で使う、今持っているミニゲームコインの枚数（下のHTML内で所持数として表示）
             slotIsSpinning = false; slotStoppedCount = 0; slotNextSpinFree = false; // slotPlaysRemainingは、離脱しても引き継がれるようリセットしない
             container.style.background = 'transparent'; // 機体イラストの後ろに白い箱が見えないよう、この画面だけ背景を消す
             container.innerHTML = `
@@ -580,7 +580,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
                     <p id="slot-result-text" style="font-weight:900; font-size:1rem; margin:10px 0 6px; min-height:1.4em; text-shadow:0 1px 3px rgba(255,255,255,0.8);"></p>
                     <div id="slot-payout-popup" style="display:none; font-weight:900; font-size:1.8rem; color:#ffd700; text-shadow:0 2px 8px rgba(0,0,0,0.5), 0 0 12px #ff6ec7;"></div>
 
-                    <!-- 🐛修正：PWA(ホーム画面追加/standalone)で開くと、Safariのタブ表示と違い画面が
+                    <!-- 修正：PWA(ホーム画面追加/standalone)で開くと、Safariのタブ表示と違い画面が
                          ノッチ/ステータスバーの裏まで完全に覆うため、固定20pxのpaddingだけだと
                          閉じるボタンや見出しがその下に隠れて「全体的に上がった」ように見えていた。
                          env(safe-area-inset-top)ぶんを上だけ追加で確保する（ブラウザ表示では
@@ -672,7 +672,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
                 ],
                 { duration: CONFIG.SLOT_COIN_INSERT_ANIM_MS, easing: 'ease-in', fill: 'forwards' }
             );
-            // main.js: playAudioFile は指定した音声ファイルを1回再生する関数
+            // main.js: playAudioFile は指定した音声ファイルを1回再生する
             playAudioFile('audio/slot/coin_insert.mp3');
         }
 
@@ -688,11 +688,11 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
                 document.getElementById('slot-result-text').innerText = `コインが足りません（あと${SLOT_COIN_COST - minigameCoins}枚）`;
                 return;
             }
-            // src/minigames/core.js: setMinigameCoins はminigameCoinsの値を書き換えるセッター関数（importした変数には直接代入できないため経由する）
+            // src/minigames/core.js: setMinigameCoins：minigameCoinsの値を書き換えるセッター関数（importした変数には直接代入できないため経由する）
             if (!IS_DEV_MODE) setMinigameCoins(minigameCoins - SLOT_COIN_COST);
             slotPlaysRemaining += SLOT_PLAYS_PER_COIN; // 残りがあっても、さらに継ぎ足せる（何度でも連続投入できる）
-            // state.js: saveGame はセーブデータをlocalStorage（＋クラウド）に保存する関数
-            // ui.js: updateDisplay は画面全体の表示（所持数など）を最新の状態に描き直す関数
+            // state.js: saveGame はセーブデータをlocalStorage（＋クラウド）に保存する
+            // ui.js: updateDisplay：画面全体の表示（所持数など）を最新の状態に描き直す
             saveGame(); updateDisplay();
             document.getElementById('slot-coin-value').innerText = IS_DEV_MODE ? '∞' : minigameCoins;
             updateSlotPlaysRemainingDisplay();
@@ -750,7 +750,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
                 { duration: 550, easing: 'ease-in-out' }
             );
             lever.style.pointerEvents = 'none';
-            // main.js: playAudioFile は音声を1回再生する関数、vibrate は端末を振動させる関数（配列は振動パターン[ms]）
+            // main.js: playAudioFile：音声を1回再生する関数、vibrate は端末を振動させる関数（配列は振動パターン[ms]）
             playAudioFile('audio/gacha/crank.mp3');
             vibrate([15]);
 
@@ -932,7 +932,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-002';
                         ],
                         { duration: CONFIG.SLOT_PAYOUT_COIN_FALL_DURATION_MS + Math.random() * CONFIG.SLOT_PAYOUT_COIN_FALL_DURATION_VARIANCE_MS, easing: 'ease-in' }
                     ).finished.then(() => coin.remove());
-                    // main.js: playAudioFilePitched は再生ピッチ（速さ・音高）を指定できる効果音再生関数
+                    // main.js: playAudioFilePitched は再生ピッチ（速さ・音高）を指定できる効果音再生
                     // 当たりが大きいほど、ピッチを少し上げて景気良く聞こえるようにする
                     playAudioFilePitched('audio/tap.mp3', 0.6, pitchRate + (Math.random() - 0.5) * CONFIG.SLOT_PAYOUT_COIN_PITCH_JITTER);
                 }, i * CONFIG.SLOT_PAYOUT_COIN_STAGGER_MS);

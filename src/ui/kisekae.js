@@ -1,17 +1,17 @@
         // ui.js を機能ごとに分割したファイルの1つ（着せ替え部屋（コーデ装備・羽ばたき等の演出・調整ツール））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-29-002';
-        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-29-002';
-        // 🧪 管理者限定・試作中：全身の「スクイーズ衣装」を装備/解除するたびに、スクイーズの音の素材を
+        import { DEFAULT_MOUTH_POSITION, KISEKAE_CATEGORY_LABELS, KISEKAE_ITEMS, MYROOM_MOCHISUKE_SIZE } from '../../data.js?v=2026-09-29-004';
+        import { IS_DEV_MODE, playAudioFile } from '../../main.js?v=2026-09-29-004';
+        // 管理者限定・試作中：全身の「スクイーズ衣装」を装備/解除するたびに、スクイーズの音の素材を
         // 同期させるために使う（applyKisekaeToMainScreen参照）
-        import { setAccumulateModeActive, setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-29-002';
-        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-29-002';
-        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-29-002';
-        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-29-002';
-        import { saveGame } from '../../state.js?v=2026-09-29-002';
-        import { closeModal, openModal } from './core.js?v=2026-09-29-002';
-        import { openTicketInventory } from './myroom.js?v=2026-09-29-002';
-        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-29-002';
+        import { setAccumulateModeActive, setSqueezeMaterial } from '../squeeze/physics.js?v=2026-09-29-004';
+        import { DEFAULT_SQUEEZE_MATERIAL_KEY } from '../squeeze/materials.js?v=2026-09-29-004';
+        import { equippedKisekae, ownedKisekaeItems, previewKisekae, setEquippedKisekae, setPreviewKisekae } from '../../progress.js?v=2026-09-29-004';
+        import { setActiveSprayId, setSprayBuffActiveUntil, sprayInventory } from '../../shop.js?v=2026-09-29-004';
+        import { saveGame } from '../../state.js?v=2026-09-29-004';
+        import { closeModal, openModal } from './core.js?v=2026-09-29-004';
+        import { openTicketInventory } from './myroom.js?v=2026-09-29-004';
+        import { updateDisplay, updateSprayEffectDisplay } from './hud.js?v=2026-09-29-004';
 
         // 🔧 このファイル内で使う「調整可能な」数値をまとめた設定オブジェクト（位置テーブル等はdata.js側のまま）
         const CONFIG = {
@@ -55,14 +55,14 @@
             // ../../shop.js: sprayInventory は所持しているスプレーの個数を管理するオブジェクト
             if ((sprayInventory[itemId] || 0) <= 0) return;
             sprayInventory[itemId]--;
-            // ../../shop.js: setActiveSprayId は今使用中のスプレーIDを設定する関数、
+            // ../../shop.js: setActiveSprayId：今使用中のスプレーIDを設定する、
             // setSprayBuffActiveUntil はスプレー効果が切れる時刻を設定する関数
             setActiveSprayId(itemId);
             setSprayBuffActiveUntil(Date.now() + CONFIG.SPRAY_BUFF_DURATION_MS);
-            // ../../state.js: saveGame はセーブデータを保存する関数
-            // ./hud.js: updateDisplay/updateSprayEffectDisplay は画面表示・スプレー効果の見た目を更新する関数
+            // ../../state.js: saveGame はセーブデータを保存する
+            // ./hud.js: updateDisplay/updateSprayEffectDisplay：画面表示・スプレー効果の見た目を更新する
             saveGame(); updateDisplay(); updateSprayEffectDisplay();
-            // ./myroom.js: openTicketInventory は所持アイテム一覧モーダルを開く関数
+            // ./myroom.js: openTicketInventory は所持アイテム一覧モーダルを開く
             openTicketInventory(); // 一覧を開いている場合、表示を更新する
         }
         window.useSpray = useSpray; // 動的に生成されるonclick=""から呼ばれるため、橋渡しが必要
@@ -75,7 +75,7 @@
          * @returns {void}
          */
         export function openKisekaeRoom() {
-            // ./core.js: openModal はモーダルウィンドウを開く共通関数
+            // ./core.js: openModal：モーダルウィンドウを開く共通関数
             openModal('kisekae-room-modal'); // タップ音のみでOK、フェード・移動音は不要
             // ../../progress.js: equippedKisekae は確定済みの装備中の着せ替え情報、
             // setPreviewKisekae は試着中（プレビュー）の着せ替え状態を更新する関数
@@ -89,7 +89,7 @@
          */
         export function closeKisekaeRoom() {
             const overlay = document.getElementById('fade-overlay');
-            // ../../main.js: playAudioFile は指定した音声ファイルを再生する共通関数
+            // ../../main.js: playAudioFile：指定した音声ファイルを再生する共通関数
             playAudioFile('audio/move.mp3');
             overlay.classList.add('fade-black');
             setTimeout(() => {
@@ -99,7 +99,7 @@
             }, CONFIG.KISEKAE_ROOM_CLOSE_FADE_MS);
         }
 
-        // 🧪 試作中：着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。
+        // 試作中：着せ替え部屋の5カテゴリボタンの上に置く「スクイーズ」ボタン。
         // 以前はスクイーズ衣装（スライムもちすけ等）とロボもちすけ等を同じ「全身」カテゴリに
         // まとめていたため、このボタンは「全身」カテゴリを開く近道でしかなかったが、まもすいから
         // 「着せ替え部屋でスクイーズ衣装とロボもちすけは別枠にしてほしい」という要望を受け、
@@ -111,12 +111,12 @@
          * @returns {void}
          */
         export function onSqueezeModeButtonClick() {
-            // ../../main.js: playAudioFile は指定した音声ファイルを再生する共通関数
+            // ../../main.js: playAudioFile：指定した音声ファイルを再生する共通関数
             playAudioFile('audio/tap.mp3');
             openKisekaeCategory('squeeze');
         }
 
-        // 🆕 全身スロットに入るアイテムは、見た目上は「全身」「スクイーズ」という2つの別カテゴリに分かれて
+        // 全身スロットに入るアイテムは、見た目上は「全身」「スクイーズ」という2つの別カテゴリに分かれて
         // 一覧表示されるが、実際に装備する場所（previewKisekae.fullbody / equippedKisekae.fullbody）は
         // 1つの「全身スロット」を共用している（着せ替え部屋のスクイーズ衣装とロボもちすけを別枠にしてほしい、
         // というまもすいの要望を受けて、一覧のカテゴリだけを分けた・2-1/2-6/4-12参照）。どちらのカテゴリの
@@ -130,7 +130,7 @@
             // ../../data.js: KISEKAE_ITEMS は全カテゴリの着せ替えアイテムの定義データ（画像・位置・レア度など）
             return KISEKAE_ITEMS.fullbody.find(i => i.id === id) || KISEKAE_ITEMS.squeeze.find(i => i.id === id);
         }
-        // 🆕 カテゴリ名(cat)が「全身スロットを使う側」（'fullbody'・'squeeze'）かどうかを判定する。
+        // カテゴリ名(cat)が「全身スロットを使う側」（'fullbody'・'squeeze'）かどうかを判定する。
         // このスロットは1つしか無いため、帽子/顔/背中の自動解除ルールや、試着中かどうかの判定を
         // fullbody/squeeze共通の処理にまとめるために使う。
         /**
@@ -150,7 +150,7 @@
         export function renderKisekaeMochisuke() {
             const roomClothes = document.getElementById('kisekae-mochisuke-clothes');
             const roomFullbody = document.getElementById('kisekae-mochisuke-fullbody');
-            // ../../progress.js: previewKisekae は「決定」を押す前の試着中（プレビュー）の着せ替え状態
+            // ../../progress.js: previewKisekae：「決定」を押す前の試着中（プレビュー）の着せ替え状態
             const fullbodyId = previewKisekae.fullbody;
 
             if (fullbodyId) {
@@ -208,7 +208,7 @@
         export function adjustWingFlapVolume(delta) {
             WING_FLAP_VOLUME = Math.max(CONFIG.WING_FLAP_VOLUME_MIN, Math.min(CONFIG.WING_FLAP_VOLUME_MAX, Math.round((WING_FLAP_VOLUME + delta) * CONFIG.WING_FLAP_VOLUME_ROUND_FACTOR) / CONFIG.WING_FLAP_VOLUME_ROUND_FACTOR));
             document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
-            // ../../main.js: playAudioFile は指定した音声ファイルを再生する共通関数
+            // ../../main.js: playAudioFile：指定した音声ファイルを再生する共通関数
             playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 押した音量でその場で試し鳴らしする
         }
         /**
@@ -296,7 +296,7 @@
             wingFlapTimers[target] = setInterval(() => {
                 wingFlapFrameIndex[target] = (wingFlapFrameIndex[target] + 1) % item.leftFrames.length;
                 applyWingFrame(leftEl, rightEl, item, wingFlapFrameIndex[target]);
-                // ../../main.js: playAudioFile は指定した音声ファイルを再生する共通関数
+                // ../../main.js: playAudioFile：指定した音声ファイルを再生する共通関数
                 if (wingFlapFrameIndex[target] === 0 && isMochisukeVisible()) playAudioFile('audio/kisekae/wing_flap.mp3', WING_FLAP_VOLUME); // 1周ごとに、動きに合わせて羽ばたき音を鳴らす（見えている画面の時だけ）
             }, WING_FLAP_INTERVAL_MS);
         }
@@ -342,7 +342,7 @@
                 const d = dirs[cat];
                 // ../../progress.js: equippedKisekae は確定済みの装備中の着せ替え状態
                 const itemId = equippedKisekae[cat];
-                // ../../data.js: KISEKAE_ITEMS はカテゴリ別の着せ替えアイテム定義データ
+                // ../../data.js: KISEKAE_ITEMS：カテゴリ別の着せ替えアイテム定義データ
                 const item = itemId ? KISEKAE_ITEMS[cat].find(i => i.id === itemId) : null;
                 const restTransform = item ? `rotate(${item.rotation || 0}deg)` : 'none';
                 el.animate([
@@ -363,29 +363,29 @@
             // ../../progress.js: equippedKisekae は確定済みの装備中の着せ替え状態
             const fullbodyId = equippedKisekae.fullbody;
             const fbItem = fullbodyId ? findFullbodySlotItem(fullbodyId) : null;
-            // 🧪 管理者限定・試作中：装備中の全身衣装がスクイーズ素材を持っていれば（例：スライムもちすけ）
+            // 管理者限定・試作中：装備中の全身衣装がスクイーズ素材を持っていれば（例：スライムもちすけ）
             // 物理演算側の音をそれに同期させ、持っていなければ（ロボもちすけ・未装備含む）通常素材に戻す。
             // 画像の表示自体はこの関数がこの後で担当するので、physics.js側は音だけを切り替える（2-1参照）。
-            // ../squeeze/physics.js: setSqueezeMaterial はスクイーズ演出の効果音素材を切り替える関数
+            // ../squeeze/physics.js: setSqueezeMaterial：スクイーズ演出の効果音素材を切り替える
             // ../squeeze/materials.js: DEFAULT_SQUEEZE_MATERIAL_KEY は通常時（スクイーズ衣装でない時）の既定素材キー
             setSqueezeMaterial((fbItem && fbItem.squeezeMaterial) || DEFAULT_SQUEEZE_MATERIAL_KEY);
-            // 🆕 スクイーズ「専用モード」（触るたびに変形が蓄積し、「戻す」ボタンで精算する遊び方。
+            // スクイーズ「専用モード」（触るたびに変形が蓄積し、「戻す」ボタンで精算する遊び方。
             // src/squeeze/physics.js参照）は、squeezeMaterialを持つ衣装を装備している間だけ有効にする。
             // tap.js側は循環依存を避けるためこの関数をimportしていないので、HUD（「戻す」ボタン）の
             // 表示・非表示もここでDOM直接操作でまとめて済ませる（tap.js側のrefreshSqueezeAccumHud()でも
             // 同じ判定を毎回やり直すため、二重に安全になっている）
             const isSqueezeCostume = !!(fbItem && fbItem.squeezeMaterial);
-            // 🆕 まもすいの要望で、永続変形が蓄積する「専用モード」（触るたびに変形が戻りきらず、
+            // まもすいの要望で、永続変形が蓄積する「専用モード」（触るたびに変形が戻りきらず、
             // 「戻す」ボタンで精算する遊び方）はいったん無効化した。スライムもちすけも通常のもちすけと
             // 同じく、離せば必ず元の形に「ぷるん」と戻る（＝下のfalseを固定で渡している）。
             // 素材ごとの音・見た目の切り替え(setSqueezeMaterial呼び出し)自体はこれと独立しているので、
             // スライム専用の音（ぴちゃ音・つつき音等）には影響しない。専用モードを再度使いたくなったら、
             // 下のfalseをisSqueezeCostumeに戻すだけでよい（tap.js側のpointerdownの保険呼び出しも合わせて戻すこと）。
-            // ../squeeze/physics.js: setAccumulateModeActive はスクイーズの「専用モード」（変形蓄積）を有効/無効にする関数
+            // ../squeeze/physics.js: setAccumulateModeActive：スクイーズの「専用モード」（変形蓄積）を有効/無効にする
             setAccumulateModeActive(false);
             const accumHudEl = document.getElementById('squeeze-accum-hud');
             if (accumHudEl) accumHudEl.style.display = 'none'; // 専用モードを無効化したので、「戻す」ボタンごと常に非表示にする
-            // 🆕 スクイーズ衣装装備中はスキル・必殺技のUIそのものが不要（まもすいの要望）。こちらは上の
+            // スクイーズ衣装装備中はスキル・必殺技のUIそのものが不要（まもすいの要望）。こちらは上の
             // 専用モードとは別の判定で、衣装を着ている間は常に適用する。実際の非表示はstyle.cssの
             // body.squeeze-costume-active側にまとめてあるので、ここではクラスの付け外しだけを行う
             // （tap.js側のpointerdownからも保険として同じ判定で同期される）
@@ -403,11 +403,11 @@
                 mainBtn.style.opacity = '1';
                 if (mouthAnchor) mouthAnchor.style.display = 'block';
                 // ../../data.js: KISEKAE_ITEMS はカテゴリ別の着せ替えアイテム定義データ
-                // ../../progress.js: equippedKisekae は確定済みの装備中の着せ替え状態
+                // ../../progress.js: equippedKisekae：確定済みの装備中の着せ替え状態
                 const clothesItem = KISEKAE_ITEMS.clothes.find(i => i.id === equippedKisekae.clothes) || KISEKAE_ITEMS.clothes[0];
                 mainBtn.src = clothesItem.img;
 
-                // 🐛服のイラストによって、口の位置が微妙にずれるものがあるため、服ごとの指定（無ければ既定値）を反映する
+                // 服のイラストによって、口の位置が微妙にずれるものがあるため、服ごとの指定（無ければ既定値）を反映する
                 if (mouthAnchor) {
                     // ../../data.js: DEFAULT_MOUTH_POSITION は服側に指定が無い場合に使う口の既定位置
                     const mouthPos = clothesItem.mouthOverride || DEFAULT_MOUTH_POSITION;
@@ -437,7 +437,7 @@
             }
             updateKisekaeWingDisplay('main', fullbodyId ? null : equippedKisekae.back);
         }
-        // 🧪 管理者限定・試作中：現在装備中の全身衣装がスクイーズ衣装なら、そのsqueezeMaterialキーを返す
+        // 管理者限定・試作中：現在装備中の全身衣装がスクイーズ衣装なら、そのsqueezeMaterialキーを返す
         // （スクイーズ衣装でなければ、通常のロボもちすけ・未装備を含めてnullを返す）。tap.js側がこれを見て、
         // タップした時に通常のタップ生産（コンボ・パーティクル・ミッション等）を行うか、スクイーズ演出
         // だけを行うかを分けている（ui.js経由でexport *されるので、tap.jsからはui.js参照でimportする）。
@@ -446,7 +446,7 @@
          * @returns {string|null}
          */
         export function getEquippedSqueezeMaterialKey() {
-            // ../../progress.js: equippedKisekae は確定済みの装備中の着せ替え状態
+            // ../../progress.js: equippedKisekae：確定済みの装備中の着せ替え状態
             const fullbodyId = equippedKisekae.fullbody;
             if (!fullbodyId) return null;
             const fbItem = findFullbodySlotItem(fullbodyId);
@@ -464,7 +464,7 @@
             const clothesEl = document.getElementById('myroom-mochisuke-clothes');
             const fullbodyEl = document.getElementById('myroom-mochisuke-fullbody');
             const mouthAnchor = document.getElementById('myroom-mochisuke-mouth-anchor');
-            // ../../progress.js: equippedKisekae は確定済みの装備中の着せ替え状態
+            // ../../progress.js: equippedKisekae：確定済みの装備中の着せ替え状態
             const fullbodyId = equippedKisekae.fullbody;
 
             if (fullbodyId) {
@@ -483,7 +483,7 @@
                 clothesEl.src = clothesItem.img;
 
                 if (mouthAnchor) {
-                    // ../../data.js: DEFAULT_MOUTH_POSITION は服側に指定が無い場合に使う口の既定位置
+                    // ../../data.js: DEFAULT_MOUTH_POSITION：服側に指定が無い場合に使う口の既定位置
                     const mouthPos = clothesItem.mouthOverride || DEFAULT_MOUTH_POSITION;
                     mouthAnchor.style.top = mouthPos.top + '%';
                     mouthAnchor.style.left = mouthPos.left + '%';
@@ -526,7 +526,7 @@
             // ../../progress.js: previewKisekae は「決定」を押す前の試着中（プレビュー）の着せ替え状態
             const backId = previewKisekae.back;
             if (backId) {
-                // ../../data.js: KISEKAE_ITEMS.back は背中(翼)カテゴリの着せ替えアイテム定義データ
+                // ../../data.js: KISEKAE_ITEMS.back：背中(翼)カテゴリの着せ替えアイテム定義データ
                 const item = KISEKAE_ITEMS.back.find(i => i.id === backId);
                 if (item) startWingFlapLoop('room', item);
             }
@@ -550,7 +550,7 @@
             // ../../main.js: playAudioFile は指定した音声ファイルを再生する共通関数
             playAudioFile('audio/skill_tap.mp3');
             if (cat !== 'back') clearWingGhostFrames(); // 背中カテゴリから離れる時は、翼のゴースト表示を片付ける
-            // ../../main.js: IS_DEV_MODE は開発者モードが有効かどうかを表すフラグ
+            // ../../main.js: IS_DEV_MODE：開発者モードが有効かどうかを表すフラグ
             const showWingSpeedPanel = WING_SPEED_TOOL_ENABLED && IS_DEV_MODE && cat === 'back';
             document.getElementById('kisekae-wing-speed-panel').style.display = showWingSpeedPanel ? 'block' : 'none';
             if (showWingSpeedPanel) document.getElementById('wing-flap-speed-readout').textContent = WING_FLAP_INTERVAL_MS + 'ms';
@@ -558,7 +558,7 @@
             document.getElementById('kisekae-wing-volume-panel').style.display = showWingVolumePanel ? 'block' : 'none';
             if (showWingVolumePanel) document.getElementById('wing-flap-volume-readout').textContent = WING_FLAP_VOLUME.toFixed(1);
             kisekaeCurrentCategory = cat;
-            // 🧪 管理者限定・試作中：devOnly:trueのアイテム（スクイーズ衣装等）は、まだガチャ等の正式な
+            // 管理者限定・試作中：devOnly:trueのアイテム（スクイーズ衣装等）は、まだガチャ等の正式な
             // 入手経路が無いため、開発者モードでない限り一覧にすら出さない（2-1参照）
             // ../../data.js: KISEKAE_ITEMS はカテゴリ別の着せ替えアイテム定義データ
             const sortedItems = [...KISEKAE_ITEMS[cat]]
@@ -566,14 +566,14 @@
                 .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
             // 帽子・顔パーツは、一番左上に「外す」ボタンを置く（服は必ず何か着ている状態にするので対象外）
             const items = (cat === 'clothes') ? sortedItems : [{ id: null, name: '外す', isRemoveButton: true }, ...sortedItems];
-            // ../../progress.js: ownedKisekaeItems は所持している着せ替えアイテムIDの一覧（カテゴリ別）
+            // ../../progress.js: ownedKisekaeItems：所持している着せ替えアイテムIDの一覧（カテゴリ別）
             const owned = ownedKisekaeItems[cat] || [];
 
             const leftList = document.getElementById('kisekae-item-list-left');
             const rightList = document.getElementById('kisekae-item-list-right');
             leftList.innerHTML = ''; rightList.innerHTML = '';
 
-            // 🆕 'fullbody'/'squeeze'は同じ全身スロット(previewKisekae.fullbody)を共用しているため、
+            // 'fullbody'/'squeeze'は同じ全身スロット(previewKisekae.fullbody)を共用しているため、
             // 「今このカテゴリの何が装着中か」の判定も、そのスロットを見る（isFullbodySlotCategory参照）
             const isFullbodySlot = isFullbodySlotCategory(cat);
             items.forEach((item, i) => {
@@ -587,7 +587,7 @@
                     (i % 2 === 0 ? leftList : rightList).appendChild(cell);
                     return;
                 }
-                // 🧪 管理者限定・試作中：devOnlyアイテムは、開発者モードなら所持チェックを免除して選べるようにする
+                // 管理者限定・試作中：devOnlyアイテムは、開発者モードなら所持チェックを免除して選べるようにする
                 // （ガチャに入っていないので、通常の所持判定だけでは管理者も永遠に選べなくなってしまう）
                 const isOwned = owned.includes(item.id) || (item.devOnly && IS_DEV_MODE);
                 const isEquipped = (isFullbodySlot ? previewKisekae.fullbody : previewKisekae[cat]) === item.id;
@@ -637,11 +637,11 @@
          * @returns {void}
          */
         export function equipKisekaeItem(cat, id) {
-            // 🆕 'fullbody'（全身）と'squeeze'（スクイーズ衣装）は、着せ替え部屋のカルーセル上は別カテゴリだが、
+            // 'fullbody'（全身）と'squeeze'（スクイーズ衣装）は、着せ替え部屋のカルーセル上は別カテゴリだが、
             // 装備する場所は同じ1つの「全身スロット」を共用している。どちらの一覧から選んでも、
             // previewKisekae.fullbodyという同じフィールドを書き換える（isFullbodySlotCategory参照）。
             const isFullbodySlot = isFullbodySlotCategory(cat);
-            // ../../progress.js: previewKisekae は「決定」を押す前の試着中（プレビュー）の着せ替え状態。ここで直接書き換えている
+            // ../../progress.js: previewKisekae：「決定」を押す前の試着中（プレビュー）の着せ替え状態。ここで直接書き換えている
             if (isFullbodySlot && id) {
                 // 全身スロットを装着すると、帽子・顔パーツ・背中（翼）は自動的に外れる（服は保持したまま、解除時に元へ戻る）
                 previewKisekae.hat = null;
@@ -669,9 +669,9 @@
          * @returns {void}
          */
         export function confirmKisekaeOutfit() {
-            // ../../progress.js: setEquippedKisekae は装備を確定する関数、previewKisekae は試着中（プレビュー）の着せ替え状態
+            // ../../progress.js: setEquippedKisekae：装備を確定する関数、previewKisekae は試着中（プレビュー）の着せ替え状態
             setEquippedKisekae({ ...previewKisekae });
-            // ../../state.js: saveGame はセーブデータを保存する関数
+            // ../../state.js: saveGame はセーブデータを保存する
             saveGame();
             applyKisekaeToMainScreen();
             const btn = document.getElementById('kisekae-confirm-btn');
@@ -695,7 +695,7 @@
             if (kisekaeCurrentCategory === 'back') {
                 const [itemId, frameIdxStr] = val.split('__');
                 const frameIdx = parseInt(frameIdxStr, 10);
-                // ../../data.js: KISEKAE_ITEMS.back は背中(翼)カテゴリの着せ替えアイテム定義データ
+                // ../../data.js: KISEKAE_ITEMS.back：背中(翼)カテゴリの着せ替えアイテム定義データ
                 const item = KISEKAE_ITEMS.back.find(i => i.id === itemId);
                 return {
                     item, side: 'left', frameIdx, // 左翼を操作対象にする。右翼は自動でミラー追従する
@@ -823,7 +823,7 @@
             const resolved = resolveKisekaeAdjustTarget();
             const target = resolved.el;
             if (kisekaeAdjustMode) {
-                stopWingFlapLoop('room'); // 🐛修正：翼が動いたままだと調整できないので、調整中は静止させる
+                stopWingFlapLoop('room'); // 修正：翼が動いたままだと調整できないので、調整中は静止させる
                 target.style.display = 'block'; // プレビューが無い状態でも調整できるよう、選択中のIDの画像を仮表示する
                 if (resolved.item) {
                     const { posObj, sizeObj } = getKisekaeAdjustRefs(resolved);
@@ -834,7 +834,7 @@
                     syncMirroredRightWing(resolved, posObj, sizeObj);
                 }
                 target.style.outline = '2px dashed #e91e63';
-                target.style.zIndex = CONFIG.KISEKAE_ZINDEX_ADJUST_ACTIVE; // 🐛修正：翼は普段もちすけより背面のため、調整モード中は一時的に最前面へ（操作できるように）
+                target.style.zIndex = CONFIG.KISEKAE_ZINDEX_ADJUST_ACTIVE; // 修正：翼は普段もちすけより背面のため、調整モード中は一時的に最前面へ（操作できるように）
                 if (resolved.item && kisekaeCurrentCategory === 'back') renderWingGhostFrames(resolved.item, resolved.frameIdx);
                 btn.style.background = '#4caf50';
                 setupKisekaeAdjustDrag();
@@ -962,7 +962,7 @@
          */
         export function adjustKisekaeFaceRotation(delta) {
             const val = document.getElementById('kisekae-adjust-target').value;
-            // ../../data.js: KISEKAE_ITEMS.face は顔パーツカテゴリの着せ替えアイテム定義データ
+            // ../../data.js: KISEKAE_ITEMS.face：顔パーツカテゴリの着せ替えアイテム定義データ
             const item = KISEKAE_ITEMS.face.find(i => i.id === val);
             if (!item) return;
             item.rotation = (item.rotation || 0) + delta;
@@ -996,7 +996,7 @@
             ['hat', 'face'].forEach(cat => {
                 const adjustable = KISEKAE_ITEMS[cat].filter(i => i.locked);
                 if (adjustable.length === 0) return;
-                // ../../data.js: KISEKAE_CATEGORY_LABELS はカテゴリ名を日本語表示に変換する辞書
+                // ../../data.js: KISEKAE_CATEGORY_LABELS：カテゴリ名を日本語表示に変換する辞書
                 lines.push(`【${KISEKAE_CATEGORY_LABELS[cat]}】`);
                 adjustable.forEach(item => {
                     let line = `${item.name}(${item.id}): top:${item.top}%; left:${item.left}%; width:${item.width}%; height:${item.height}%;`;

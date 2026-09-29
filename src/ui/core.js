@@ -1,12 +1,12 @@
         // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, MOCHI_ICON_BASE_SIZE_PX, MOCHI_ICON_OFFSET, MOCHI_ICON_SIZE, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, setMOCHI_ICON_SIZE, stages } from '../../data.js?v=2026-09-29-002';
-        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-29-002';
-        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-29-002';
-        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-29-002';
-        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-29-002';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-29-002';
-        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-29-002';
+        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, MOCHI_ICON_BASE_SIZE_PX, MOCHI_ICON_OFFSET, MOCHI_ICON_SIZE, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, setMOCHI_ICON_SIZE, stages } from '../../data.js?v=2026-09-29-004';
+        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-29-004';
+        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-29-004';
+        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-29-004';
+        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-29-004';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-09-29-004';
+        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-29-004';
 
         // 🔧 このファイル内でロジックに使う「調整可能な」数値をまとめたもの（CSS文字列内の値や、配列添字などの構造的な数値は対象外）
         const CONFIG = {
@@ -59,7 +59,7 @@
          * @returns {void}
          */
         export function onSfxVolumeChange(val) {
-            // ../../main.js: setSfxVolumeMult/sfxVolumeMult は効果音音量の倍率を設定・保持する変数と関数
+            // ../../main.js: setSfxVolumeMult/sfxVolumeMult：効果音音量の倍率を設定・保持する変数と関数
             setSfxVolumeMult(val / 100);
             document.getElementById('sfx-vol-label').innerText = val + '%';
             localStorage.setItem('punicker_sfx_volume', sfxVolumeMult);
@@ -101,12 +101,12 @@
             if (uiDeclutterState > 0) {
                 document.body.classList.add('ui-mode-' + uiDeclutterState);
             }
-            // ../../main.js: fixBottomGap は#game-screenの実際の高さを測り直してレイアウトのズレを補正する関数
+            // ../../main.js: fixBottomGap：#game-screenの実際の高さを測り直してレイアウトのズレを補正する
             fixBottomGap(); // 表示するバーが変わって#game-screenの自然な高さが変わるので測り直す
         }
 
         // PWA: Service Workerを登録（対応ブラウザのみ、失敗しても通常プレイに影響なし）
-        // 🐛修正：GitHub Pagesは自分でHTTPヘッダーを設定できないため、ブラウザがsw.js自体を
+        // 修正：GitHub Pagesは自分でHTTPヘッダーを設定できないため、ブラウザがsw.js自体を
         // 予想より長くキャッシュしてしまい、通常モードだと更新が反映されないことがあった。
         // register()直後にupdate()を明示的に呼んで、sw.js自体の再チェックを強制する。
         // さらに、新しいSWが実際に有効になった瞬間を検知して、自動でページを再読み込みする。
@@ -117,7 +117,7 @@
                     setInterval(() => reg.update().catch(() => {}), CONFIG.SW_UPDATE_CHECK_INTERVAL_MS); // 開いたままの人のためのフォローアップ
                 }).catch(() => {});
 
-                // 🐛修正：以前はこのページ内だけのただの変数(let hasReloadedForUpdate)でリロード済みを
+                // 修正：以前はこのページ内だけのただの変数(let hasReloadedForUpdate)でリロード済みを
                 // 管理していたが、この変数自体がlocation.reload()のたびに消えてしまうため、何らかの理由で
                 // controllerchangeが立て続けに発生すると（GitHub Pagesのキャッシュの揺れでSWの更新判定が
                 // 安定しない場合など）「リロード→また即controllerchange→またリロード」の無限ループになり、
@@ -179,10 +179,10 @@
         export function updateMouthPatchVisibility() {
             const mouthPatchEl = document.getElementById('mochisuke-mouth-patch');
             if (!mouthPatchEl) return;
-            if (mouthAdjustMode) { mouthPatchEl.style.display = 'block'; return; } // 🐛修正：調整中は、セリフ等で見えなくなるとイライラするので常に表示する
+            if (mouthAdjustMode) { mouthPatchEl.style.display = 'block'; return; } // 修正：調整中は、セリフ等で見えなくなるとイライラするので常に表示する
             const balloonEl = document.getElementById('mochi-balloon');
             const isTalking = balloonEl && balloonEl.classList.contains('balloon-show');
-            // ../../tap.js: skills はスキル状態一式、isScreamActive/isDraggingSqueeze/isSqueezeSettling は
+            // ../../tap.js: skills：スキル状態一式、isScreamActive/isDraggingSqueeze/isSqueezeSettling は
             // それぞれ「叫び中」「スクイーズをドラッグ中」「スクイーズが揺れ戻り中」を表すフラグ
             const isHissatsuActive = skills.hissatsu && skills.hissatsu.activeTimer > 0;
             // 伸ばしたり潰したりしている間・その後の揺れ戻りアニメーション中は、口パーツが元の位置に浮いて見えてしまうため非表示にする
@@ -223,13 +223,13 @@
          * @returns {void}
          */
         export function playRoboMouthAnimation(open) {
-            // ../../data.js: KISEKAE_ITEMS はカテゴリ別の着せ替えアイテムデータ
+            // ../../data.js: KISEKAE_ITEMS：カテゴリ別の着せ替えアイテムデータ
             const item = KISEKAE_ITEMS.fullbody.find(i => i.id === 'fullbody_robo');
             const mainImg = document.getElementById('mochisuke-fullbody');
             if (!item || !mainImg) return;
             const frames = item.mouthFrames;
             clearInterval(roboMouthAnimTimer);
-            // ./kisekae.js: isMochisukeVisible はもちすけが画面上に表示されているか判定する関数
+            // ./kisekae.js: isMochisukeVisible はもちすけが画面上に表示されているか判定する
             if (isMochisukeVisible()) playAudioFile('audio/kisekae/robo_whir.mp3'); // ウィーン音（開閉どちらも同じ音、見えている画面の時だけ）
             let i = open ? 0 : frames.length - 1;
             const step = open ? 1 : -1;
@@ -254,7 +254,7 @@
          * @returns {string} 挨拶セリフ
          */
         export function getTimeGreeting() {
-            // ../../main.js: getTimeBucketIndex は時刻(0-23)から時間帯インデックスを求める関数
+            // ../../main.js: getTimeBucketIndex：時刻(0-23)から時間帯インデックスを求める
             const bucket = TIME_BUCKETS[getTimeBucketIndex(new Date().getHours())];
             // ../../main.js: pickRandom は配列からランダムに1つ選ぶ関数、../../data.js: dialogueData はセリフ集データ
             return pickRandom(dialogueData.timeGreetings[bucket]);
@@ -282,7 +282,7 @@
          */
         export function checkShowTutorial() {
             if (hasSeenTutorial) return;
-            // ../../state.js: score/totalTapsCount は現在のもちの数・累計タップ数、saveGame はセーブ関数
+            // ../../state.js: score/totalTapsCount：現在のもちの数・累計タップ数、saveGame はセーブ
             // 何かしら既にプレイした形跡があれば、初見扱いにしない
             if (score > 0 || totalTapsCount > 0) { hasSeenTutorial = true; saveGame(); return; }
             openTutorial();
@@ -370,7 +370,7 @@
         export function promptPlayerNameIfNeeded() {
             if (localStorage.getItem('punicker_player_name')) return;
             const input = document.getElementById('tutorial-name-input');
-            // ../../state.js: playerName は現在のプレイヤー名（自動生成された初期名がここに入っている）
+            // ../../state.js: playerName：現在のプレイヤー名（自動生成された初期名がここに入っている）
             if (input) input.value = playerName;
             openModal('tutorial-name-modal');
         }
@@ -380,15 +380,15 @@
          */
         export function saveTutorialPlayerName() {
             const input = document.getElementById('tutorial-name-input');
-            // ../../state.js: sanitizePlayerName は入力された名前が使えるか検証する関数
+            // ../../state.js: sanitizePlayerName は入力された名前が使えるか検証する
             const result = sanitizePlayerName(input.value);
             if (!result.ok) { alert(result.reason); return; }
-            // ../../state.js: setPlayerName はplayerName変数を書き換えるsetter（importした束縛には直接代入できないため）
+            // ../../state.js: setPlayerName：playerName変数を書き換えるsetter（importした束縛には直接代入できないため）
             setPlayerName(result.name);
             localStorage.setItem('punicker_player_name', playerName);
             // src/engine/firebase.js: window.submitRankingScore はランキングにスコアを送信する関数（window経由なのは、
             // firebase.jsがtype="module"で別読み込みされ、ここから直接importできないため）。
-            // ../../progress.js: prestigeCount/equippedKisekae は転生回数・現在の装備
+            // ../../progress.js: prestigeCount/equippedKisekae：転生回数・現在の装備
             if (window.submitRankingScore) window.submitRankingScore(playerName, score, totalTapsCount, prestigeCount, equippedKisekae);
             closeModal('tutorial-name-modal');
         }
@@ -401,7 +401,7 @@
          */
         export function onMapButtonTap() {
             if (!seenButtonHints.map) { seenButtonHints.map = true; saveGame(); showMochiComment('地図で好きな県に飛べるで！'); }
-            // ./hud.js: openMap はマップモーダルを開く関数
+            // ./hud.js: openMap はマップモーダルを開く
             openMap();
         }
         // 🗺️⚙️🖼️🍴 4隅ボタンの位置・大きさを反映する
@@ -410,11 +410,11 @@
          * @returns {void}
          */
         export function applyCornerBtnPositions() {
-            // ../../data.js: CORNER_BTN_SIZE は4隅ボタンの共通サイズ（px）
+            // ../../data.js: CORNER_BTN_SIZE：4隅ボタンの共通サイズ（px）
             document.documentElement.style.setProperty('--corner-btn-size', CORNER_BTN_SIZE + 'px');
-            // ../../main.js: isRunningStandalone はPWA（ホーム画面起動）として動いているか判定する関数
+            // ../../main.js: isRunningStandalone はPWA（ホーム画面起動）として動いているか判定する
             const isPwa = isRunningStandalone();
-            // ../../data.js: CORNER_BTN_OFFSETS_PWA_OVERRIDE/CORNER_BTN_OFFSETS はPWA用/通常用の
+            // ../../data.js: CORNER_BTN_OFFSETS_PWA_OVERRIDE/CORNER_BTN_OFFSETS：PWA用/通常用の
             // 4隅ボタンごとの位置オフセットデータ
             const getOffsets = (id) => (isPwa && CORNER_BTN_OFFSETS_PWA_OVERRIDE[id]) ? CORNER_BTN_OFFSETS_PWA_OVERRIDE[id] : CORNER_BTN_OFFSETS[id];
             const map = document.getElementById('map-toggle-btn');
@@ -535,7 +535,7 @@
             if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
         }
 
-        // 🆕 開発者用：所持もち数アイコン（#mochi-count-icon）の大きさ・位置の調整ツール。
+        // 開発者用：所持もち数アイコン（#mochi-count-icon）の大きさ・位置の調整ツール。
         // 4隅ボタンの調整ツール（上記）と同じ考え方だが、対象が1個だけで、かつ通常のflowに乗っている
         // インライン要素（position:fixedの4隅ボタンとは違う）なので、位置調整は.mochi-count-icon-wrap側の
         // transform:translateで見た目だけをズラす方式にしている（レイアウト自体は動かさない）。
@@ -546,7 +546,7 @@
          * @returns {void}
          */
         export function applyMochiIconAdjust() {
-            // 🆕【まもすいの指摘で修正】width/heightではなくtransform:scaleで見た目だけを拡大縮小することで、
+            // 【まもすいの指摘で修正】width/heightではなくtransform:scaleで見た目だけを拡大縮小することで、
             // 所持もち数の枠（.score-row）の大きさ自体はMOCHI_ICON_BASE_SIZE_PX（アプデ前と同じ24px）のまま
             // 変わらないようにしている（style.cssの.mochi-count-icon-wrap参照）
             // ../../data.js: MOCHI_ICON_SIZE/MOCHI_ICON_BASE_SIZE_PX/MOCHI_ICON_OFFSET は
@@ -611,7 +611,7 @@
         export function updateMochiIconAdjustReadout() {
             document.getElementById('mochi-icon-adjust-readout').textContent =
                 `大きさ:${MOCHI_ICON_SIZE}px; dx:${Math.round(MOCHI_ICON_OFFSET.dx)}px; dy:${Math.round(MOCHI_ICON_OFFSET.dy)}px;`;
-            // 🐛修正：+/-ボタン以外（パネル表示時など）でもここを通るケースがあるため、
+            // 修正：+/-ボタン以外（パネル表示時など）でもここを通るケースがあるため、
             // 大きさの単独readout（mochi-icon-size-readout）もここで一緒に同期しておく
             const sizeReadout = document.getElementById('mochi-icon-size-readout');
             if (sizeReadout) sizeReadout.textContent = MOCHI_ICON_SIZE + 'px';
@@ -635,7 +635,7 @@
          */
         export function onMenuButtonTap() {
             if (!seenButtonHints.menu) { seenButtonHints.menu = true; saveGame(); showMochiComment('設定はここから触れるで！'); }
-            // ../../state.js: refreshCloudBackupStatus はクラウド上の最終バックアップ日時を取得して画面に反映する関数
+            // ../../state.js: refreshCloudBackupStatus：クラウド上の最終バックアップ日時を取得して画面に反映する
             openModal('menu-modal'); refreshCloudBackupStatus();
         }
         /**
@@ -652,7 +652,7 @@
          */
         export function onFeedButtonTap() {
             if (!seenButtonHints.feed) { seenButtonHints.feed = true; saveGame(); showMochiComment('ここからお土産あげられるんやで！'); }
-            // ./hud.js: openOmiyageCollection はおみやげコレクション画面を開く関数
+            // ./hud.js: openOmiyageCollection はおみやげコレクション画面を開く
             openOmiyageCollection();
         }
 
@@ -662,7 +662,7 @@
          */
         export function showOpeningGreeting() {
             const now = new Date();
-            // ../../main.js: getTimeBucketIndex は時刻から時間帯インデックスを求める関数
+            // ../../main.js: getTimeBucketIndex：時刻から時間帯インデックスを求める
             const bucketIdx = getTimeBucketIndex(now.getHours());
             const bucketName = TIME_BUCKETS[bucketIdx];
             const todayKey = getLocalDateString(now) + '_' + bucketName;
@@ -675,7 +675,7 @@
                 text = pickRandom(dialogueData.timeGreetings[bucketName]);
                 localStorage.setItem(GREETING_STATE_KEY, todayKey);
             }
-            // ../../main.js: setLastGreetingHourBucket は「最後に挨拶した時間帯」を書き換えるsetter
+            // ../../main.js: setLastGreetingHourBucket：「最後に挨拶した時間帯」を書き換えるsetter
             setLastGreetingHourBucket(bucketIdx); // アイドルループがすぐ二重に挨拶し直さないように
             showMochiComment(text);
         }
@@ -825,7 +825,7 @@
          * @returns {void}
          */
         export function openModal(id, skipSound) {
-            // ../../tap.js: cancelFeedDragIfActive は給餌中のドラッグ状態を中断して片付ける関数
+            // ../../tap.js: cancelFeedDragIfActive は給餌中のドラッグ状態を中断して片付ける
             cancelFeedDragIfActive(); // 給餌中に他画面へ移動したら、置きっぱなしのおみやげを片付ける
             // ../../main.js: playAudioFile で効果音を再生
             if (!skipSound) playAudioFile('audio/skill_tap.mp3');
@@ -839,7 +839,7 @@
          */
         export function closeModal(id) {
             document.body.classList.remove('modal-open'); document.getElementById(id).style.display = "none";
-            // ../../progress.js: isPendingStampMoment はスタンプを押すべき瞬間かどうかを表すフラグ
+            // ../../progress.js: isPendingStampMoment：スタンプを押すべき瞬間かどうかを表すフラグ
             // 🔴 スタンプを押さずに絵日記を閉じた場合、進捗エリアのボタンを再表示して操作不能にならないようにする
             if (id === 'diary-modal' && isPendingStampMoment) {
                 const btn = document.getElementById('stamp-press-btn');
@@ -858,7 +858,7 @@
             stages.forEach((stage, i) => {
                 const cell = document.createElement('div');
                 cell.style.cssText = "text-align:center; padding:6px 2px; border-radius:8px; background:#fff8ec; cursor:pointer;";
-                // ../../progress.js: currentStageIndex は到達済み最終ステージの番号
+                // ../../progress.js: currentStageIndex：到達済み最終ステージの番号
                 if (i > currentStageIndex) {
                     cell.style.opacity = "0.4";
                     cell.innerHTML = `<div style="font-size:1.3rem;">❓</div><div style="font-size:0.55rem; color:#999;">???</div>`;
@@ -894,7 +894,7 @@
          * @returns {void}
          */
         export function openOshigotoPlaceholder() {
-            // ../../progress.js: checkAndRotateMissions は日付/週が変わっていればミッション内容を入れ替える関数
+            // ../../progress.js: checkAndRotateMissions：日付/週が変わっていればミッション内容を入れ替える
             checkAndRotateMissions(); // 開くたびに、日付/週またぎを最新化する
             openModal('mission-modal');
             switchMissionTab(currentMissionTab);
@@ -961,7 +961,7 @@
             const container = document.getElementById('mission-list-container');
             let html = '';
 
-            // ../../progress.js: tutorialMissionStep は現在のチュートリアルミッション段階、
+            // ../../progress.js: tutorialMissionStep：現在のチュートリアルミッション段階、
             // ../../data.js: TUTORIAL_MISSIONS はチュートリアルミッション定義の配列
             if (currentMissionTab === 'tutorial') {
                 if (tutorialMissionStep < TUTORIAL_MISSIONS.length) {
@@ -970,7 +970,7 @@
                     html += `<div style="text-align:center; color:#aaa; font-size:0.8rem; padding:24px;">はじめてのおしごとは、もう全部クリアしたで！</div>`;
                 }
             } else if (currentMissionTab === 'daily') {
-                // ../../progress.js: missionDailySelected は今日選ばれているデイリーミッションIDの配列、
+                // ../../progress.js: missionDailySelected：今日選ばれているデイリーミッションIDの配列、
                 // getMissionDef はIDからミッション定義を引く関数
                 missionDailySelected.forEach(id => {
                     const m = getMissionDef(id);
@@ -992,7 +992,7 @@
          * @returns {void}
          */
         export function onClaimMissionTap(id) {
-            // ../../progress.js: claimMission はミッション報酬を受け取り済みにして報酬を付与する関数
+            // ../../progress.js: claimMission：ミッション報酬を受け取り済みにして報酬を付与する
             const success = claimMission(id);
             if (success) {
                 // ../../main.js: playAudioFile で効果音を再生、./hud.js: updateDisplay でHUD表示を更新

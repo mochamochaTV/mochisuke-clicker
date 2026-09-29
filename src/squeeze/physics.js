@@ -15,27 +15,27 @@
 import {
   audioBuffers, createBurstParticle, createRippleEffect, getAudioContext, playAudioFile,
   playAudioFilePitched, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-29-002';
+} from '../../main.js?v=2026-09-29-004';
 // 素材ごとの音の設定はデータとしてmaterials.jsに分離してある
 // （data.jsと同じ考え方。詳しくはそのファイルとこの下のsetSqueezeMaterial参照）。
-import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-29-002';
+import { DEFAULT_SQUEEZE_MATERIAL_KEY, SQUEEZE_MATERIALS } from './materials.js?v=2026-09-29-004';
 
 // 🔧 スクイーズ関連の調整用マジックナンバー（値はtap.jsに元々あったものと完全に同じ）
 const CONFIG = {
   STRETCH_SOUND_BASE_PITCH: 0.85,
   STRETCH_SOUND_PITCH_RANGE: 0.5,
   STRETCH_SOUND_MAX_GAIN: 0.35,
-  // 🆕 同じ伸び具合でも毎回まったく同じ音にならないよう、指を触れた瞬間だけランダムに
+  // 同じ伸び具合でも毎回まったく同じ音にならないよう、指を触れた瞬間だけランダムに
   // ピッチをずらす幅（±この割合）。
   STRETCH_SOUND_PITCH_VARIANCE: 0.04,
   SQUEEZE_OVERSHOOT_RATIO: 0.55, // 離した時の揺れ戻りの大きさ
   SQUEEZE_OVERSHOOT_BASE_DURATION_MS: 420,
   SQUEEZE_OVERSHOOT_DURATION_RANGE_MS: 280,
-  // --- 🆕 スクイーズ：離した瞬間の「弾ける」演出 ---
+  // --- スクイーズ：離した瞬間の「弾ける」演出 ---
   SQUEEZE_RELEASE_BURST_MIN_RATIO: 0.5, // これ以上伸ばして離した時だけ、パーティクル＋強振動を出す（軽いタップでは出さない）
   SQUEEZE_RELEASE_BURST_COUNT_BASE: 6,  // 弾けるパーティクルの最低数
   SQUEEZE_RELEASE_BURST_COUNT_RANGE: 8, // 伸び率に応じて上乗せされる最大数
-  // 🆕 以前はここ（triggerSqueezeReleaseBurst）でreleasePopSoundFileを引っ張った長さに応じた音量で
+  // 以前はここ（triggerSqueezeReleaseBurst）でreleasePopSoundFileを引っ張った長さに応じた音量で
   // 鳴らしていたが、「もちが出る時にひとつずつmochi_release_popを鳴らそう（３つ出るなら３回）」という
   // まもすいの要望を受けて、ポン音はtap.js側のgrantSqueezeReleaseMochiPop（もちぽんぽん報酬）が
   // もちを1個出すたびにplaySqueezeReleasePopSound()を呼ぶ方式に一本化した。このためこの関数
@@ -44,16 +44,16 @@ const CONFIG = {
   // 下のSQUEEZE_RELEASE_POP_PITCH_BASE/PITCH_PER_TIERを引き続き使う（playSqueezeReleasePopSound参照）。
   SQUEEZE_RELEASE_POP_PITCH_BASE: 0.95,       // ポン音の基本ピッチ
   SQUEEZE_RELEASE_POP_PITCH_PER_TIER: 0.06,   // コンボtierが1段上がるごとに足すピッチ（見た目のコンボ演出と音を連動させる）
-  // 🆕 もちぽんぽん報酬（tap.js側のgrantSqueezeReleaseMochiPop）で、もちが1個出るたびに鳴らすポン音の
+  // もちぽんぽん報酬（tap.js側のgrantSqueezeReleaseMochiPop）で、もちが1個出るたびに鳴らすポン音の
   // 音量。以前のように引っ張った長さで音量を連続的に変えるのではなく、「同じ音量のポンが1〜3回鳴る」
   // というシンプルな設計にしたので、固定値1つで十分（playSqueezeReleasePopSound参照）
   SQUEEZE_RELEASE_MOCHI_POP_SOUND_VOLUME: 0.5,
   SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO: 0.85, // かなり大きく伸ばして離した時だけ、軽いバイブで区切りを付ける
   SQUEEZE_RELEASE_STRONG_VIBRATE_PATTERN: [12, 25, 12],
-  // --- 🆕 スクイーズ：指が触れている場所が優しく光る演出 ---
+  // --- スクイーズ：指が触れている場所が優しく光る演出 ---
   SQUEEZE_GLOW_MAX_SCALE: 1.35, // 伸び率が最大の時、光がどれだけ大きく広がるか
   SQUEEZE_GLOW_FADE_OUT_MS: 260,
-  // --- 🆕 押した瞬間の強弱で音が変わる「つつき」ギミック ---
+  // --- 押した瞬間の強弱で音が変わる「つつき」ギミック ---
   // もともとはスライムもちすけ専用・管理者限定の試作だったが、「スクイーズにかぎらず通常のタップ・
   // 長押しでも効果音がほしい」という要望を受け、通常のもちすけ（'default'素材）にもpokeSoundFileを
   // 用意し、全プレイヤー向けの機能に昇格させた（2-1参照）。素材ごとの音の違いはmaterials.js側の
@@ -65,26 +65,26 @@ const CONFIG = {
   POKE_MAX_VOLUME: 0.7,  // 強く押した時の音量
   POKE_MIN_PITCH: 0.7,   // 強く押した時のピッチ（強いほど低く・重い音にする）
   POKE_MAX_PITCH: 1.15,  // 弱く押した時のピッチ（弱いほど高く・軽い音にする）
-  // 🆕 つつき音(firePokeImpact)は「実際に指を動かして押し込んだ速さ」を表す演出なので、
+  // つつき音(firePokeImpact)は「実際に指を動かして押し込んだ速さ」を表す演出なので、
   // ドラッグ扱いになる前（tap.js側のSQUEEZE_MIN_DRAG未満）は鳴らさない。ただのタップ・長押しでは
   // tap.mp3（またはsplashSoundFile）だけが鳴り、つつき音は本格的にドラッグが始まった時だけ鳴る
   // （まもすいの要望：ただのタップの時は1音だけにしたい。2-1参照）。
-  // 🆕 2本指ストレッチも同じ考え方：2点間の距離がこれだけ開いて初めて「本格的なドラッグ」とみなし、
+  // 2本指ストレッチも同じ考え方：2点間の距離がこれだけ開いて初めて「本格的なドラッグ」とみなし、
   // つつき音を1回だけ鳴らす（tap.js側のSQUEEZE_MIN_DRAGと役割は同じだが、1本指と2本指で座標の
   // 取り方が全く別物なので、値だけ揃えた専用の定数を別途持たせている。まもすいの指摘：2本指で
   // 引っ張った時にslime_pokeが鳴っていなかった不具合の修正。2-1参照）。
   TWO_FINGER_POKE_MIN_GROWTH_PX: 9,
-  // --- 🆕 タップした瞬間の「ぴちゃ」という水っぽい音＋水色の波紋（materials.jsのsplashSoundFile） ---
+  // --- タップした瞬間の「ぴちゃ」という水っぽい音＋水色の波紋（materials.jsのsplashSoundFile） ---
   SPLASH_VOLUME: 0.6,
   SPLASH_RIPPLE_COLOR: '79, 195, 247', // このアプリの「水色」アクセント(#4fc3f7)と同じ色。squeeze-accum-hud等でも使用
-  // --- 🆕 長押し（引っ張らずに押し続ける）専用の「じわじわ潰れる」演出＋離した時の反動 ---
+  // --- 長押し（引っ張らずに押し続ける）専用の「じわじわ潰れる」演出＋離した時の反動 ---
   // ドラッグ用スクイーズ(squeezeTransformFor)とは別に、単純な軸に沿ったscale()の直線補間だけで
   // 実装している。tap.js側の固定の初期押し込みポーズ(scale(1.25,0.72))から始まり、ドラッグが
   // 始まらない限り、時間経過だけでじわじわ最終ポーズへ近づく（まもすいの要望：長押しでだんだん
   // 潰れるようにしたい。最終的には今より潰す）。
   LONGPRESS_SQUISH_START_SCALE_X: 1.25, // 開始スケール（tap.js側の初期押し込みポーズと同じ値にしておくこと）
   LONGPRESS_SQUISH_START_SCALE_Y: 0.72,
-  // 🆕 長押しを続けた末にたどり着く、最終的な潰れポーズ。「もう少し潰したい」というまもすいの
+  // 長押しを続けた末にたどり着く、最終的な潰れポーズ。「もう少し潰したい」というまもすいの
   // 要望を受けて1.42/0.52から強めた。この2つの数値がそのまま「最大どれだけ潰れるか」を決めるので、
   // 感触を自分で調整したい時はここを直接書き換えるだけでよい（他のロジックには一切影響しない）。
   // 目安：X（横方向の伸び）を大きく・Y（縦方向のつぶれ）を小さくするほど、ぺしゃんこな見た目になる。
@@ -92,26 +92,26 @@ const CONFIG = {
   // 一緒に見比べて調整すると、潰れ量と反動のバランスが取りやすい。
   LONGPRESS_SQUISH_END_SCALE_X: 1.55,
   LONGPRESS_SQUISH_END_SCALE_Y: 0.40,
-  // 🆕「私がその長さ決めたい」＝どれだけ潰れるか(大きさ)ではなく、潰れきるまでにかかる"時間"を
+  // 「私がその長さ決めたい」＝どれだけ潰れるか(大きさ)ではなく、潰れきるまでにかかる"時間"を
   // 自分で調整したい、というまもすいの要望はこの数値のこと。開始ポーズ(LONGPRESS_SQUISH_START_SCALE_X/Y)
   // から最終ポーズ(LONGPRESS_SQUISH_END_SCALE_X/Y)まで、ここで指定したミリ秒をかけて直線的に潰れていく。
   // 短くするほどすぐに潰れきり、長くするほどじわじわゆっくり潰れる。ここだけを書き換えれば良く、
   // 他の見た目・音のロジックには影響しない（長押し音のループもこの時間に合わせて自動的に追従する）。
-  LONGPRESS_SQUISH_DURATION_MS: 1400, // 🆕 実機での確認を経てまもすいが1200→1400msに調整
+  LONGPRESS_SQUISH_DURATION_MS: 1400, // 実機での確認を経てまもすいが1200→1400msに調整
   LONGPRESS_RELEASE_OVERSHOOT_RATIO: 0.5, // 長押しから離した時、反動でどれだけ逆方向(伸びる方向)へ弾むか。潰れの進み具合(0〜1)に比例する
   LONGPRESS_RELEASE_DURATION_MS: 480,     // 反動アニメーションの長さ
-  // 🆕 longPressSquishLastRatio（時間経過にそのまま比例する潰れ具合、0〜1）は、rAFが1回でも回れば
+  // longPressSquishLastRatio（時間経過にそのまま比例する潰れ具合、0〜1）は、rAFが1回でも回れば
   // ほんの数十msの軽いタップでもわずかに0より大きくなってしまう。これをそのまま「長押しした」と
   // 判定してしまうと、ただの軽いタップのたびに反動アニメ・もちぽんぽん報酬が発生してしまう
   // （まもすいの指摘：「軽いタップの時はそのまま」と言ったのに鳴ってしまっている、の原因）。
   // この値未満の間はreleaseLongPressSquishがrebounded:falseを返し、tap.js側は反動アニメも
   // もちぽんぽん報酬も出さない（通常もちすけ・スライムもちすけ共通のルール。2-1参照）。
   LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS: 0.15,
-  // 🆕 長押し中だけループする専用音（materials.jsのlongPressLoopSoundFile）の最大音量。
+  // 長押し中だけループする専用音（materials.jsのlongPressLoopSoundFile）の最大音量。
   // 潰れの進み具合(0〜1)に比例して0からこの値まで音量を上げていき、最大まで潰れきったら
   // （t>=1）ぴたりと止める（まもすいの要望：もちすけが最大まで縮まったらその効果音は止まる。2-1参照）。
   LONGPRESS_LOOP_SOUND_MAX_GAIN: 0.4,
-  // --- 🆕 スクイーズ：伸びる「方向」の追従（2-1-b22で追加、2-1-b23で調整） ---
+  // --- スクイーズ：伸びる「方向」の追従（2-1-b22で追加、2-1-b23で調整） ---
   // 最初は大きさ(SQUEEZE_FOLLOW_LERP)とまったく同じ追従係数・同じ「伸びるほど重くなる」heaviness補正を
   // 方向にもかけていたが、「重みのせいでもちすけを暴れさせる楽しさが無くなった」というまもすいからの
   // フィードバックを受け、方向は伸び具合に関わらず常に一定の軽さで追従するよう分離した（heaviness補正なし）。
@@ -120,7 +120,7 @@ const CONFIG = {
   // 新しい方向へ伸ばし直す（「もちすけの中心付近を一度通ってから反対側へ伸びる」感触にするため）。
   // 他の方向を経由してじわじわ反対方向に持っていった場合は、見た目の方向(squeezeVisualDx/Dy)が生の方向に
   // 毎フレームほぼ追従できているため、内積の変化が緩やかで、この閾値を割り込まない＝この特別処理には入らない。
-  // 🆕 -0.5（およそ120度）だと「急な反転」判定の対象が狭すぎ、それより少し浅い角度（100度台前半など）で
+  // -0.5（およそ120度）だと「急な反転」判定の対象が狭すぎ、それより少し浅い角度（100度台前半など）で
   // 急に引っ張った時に、この特別処理に入らずそのまま方向をlerpしてしまい、ぐるんと回って見えることがある
   // というまもすいの指摘を受けて、-0.3（およそ107度）まで緩めた。判定範囲が広がるほど「反転」寄りに倒れ、
   // 素早い斜め方向転換まで一瞬中心に戻る動きに巻き込みやすくなるトレードオフがあるため、様子を見ながら
@@ -129,7 +129,7 @@ const CONFIG = {
   SQUEEZE_REVERSAL_RETRACT_LERP: 0.3, // 急な反転を検出した時、伸び率だけをこの速さで0へ戻す（大きさの重みheavinessの影響を受けない、常に一定の軽快さ）
   SQUEEZE_REVERSAL_RATIO_EPSILON: 0.04, // 伸び率がここまで縮んだら「中心に戻った」とみなし、方向を新しい向きへ切り替えて伸ばし直す
 
-  // --- 🆕 スクイーズ「専用モード」（まもすいが最初から考えていた本来の姿。2-1参照） ---
+  // --- スクイーズ「専用モード」（まもすいが最初から考えていた本来の姿。2-1参照） ---
   // 通常のタップ生産とは完全に別枠の遊び方：スクイーズ衣装を装備している間だけ、触るたびに変形が
   // 完全には戻らず少しずつ永続的に蓄積していく（＝好きなだけ変形させ続けられる）。tap.js側の
   // 「戻す」ボタンを押した時だけ、その時点までの蓄積量に応じてまとめてもちを獲得し、もちすけは
@@ -139,24 +139,24 @@ const CONFIG = {
   SQUEEZE_ACCUM_IDLE_SETTLE_LERP: 0.1, // 指を離した瞬間の見た目（伸ばした分だけ底上げされた状態）から、新しい永続形へ「もにゅっ」と収まっていく速さ
 };
 
-// 🆕 「もっと伸ばせるようにしたい」というフィードバックを受けて、1本指スクイーズの限界を底上げ
+// 「もっと伸ばせるようにしたい」というフィードバックを受けて、1本指スクイーズの限界を底上げ
 // （70px/+38%→100px/+55%。伸びをより長い距離まで追従させつつ、伸び率そのものも大きくしている）
 export const SQUEEZE_MAX_DRAG = 100; // これ以上引っ張っても伸びが頭打ちになる距離(px)。tap.js側の離した時の判定計算でも同じ値が必要なためexportしている
 const SQUEEZE_MAX_STRETCH = 0.55; // 最大でどれだけ伸びるか（+55%）
 const SQUEEZE_MAX_SQUASH = 0.3; // 伸びる方向と垂直に、最大どれだけ縮むか（-30%）
 const SQUEEZE_ELEMENT_RADIUS = 95; // もちすけの見た目上の半径の目安(px)。伸びを引っ張った側だけに見せるためのオフセット計算に使う
-// 🆕「重み・粘り気・弾力」を出すための3つの仕掛け。①抵抗カーブ：伸ばすほど、同じ指の移動量でも
+// 「重み・粘り気・弾力」を出すための3つの仕掛け。①抵抗カーブ：伸ばすほど、同じ指の移動量でも
 // 伸びが増えにくくなる（弾力の限界に近づく感覚）。②追従の遅れ：見た目は指の位置に一気に追従せず、
 // 毎フレーム少しずつ近づく（重くて粘り気のある物体を引っ張っている感覚）。③追従の遅れ自体も、
 // 既にどれだけ伸びているかに応じてさらに遅くなる（伸びるほど重みが増して、後半になるほどゆっくり
 // にしか伸びなくなる）。全部数値を変えるだけで感触を調整できる
-// 🆕 以前はSQUEEZE_STRETCH_EASE_POWERを2.0にしていたが、これだと序盤だけ指の動きより速く伸びる
+// 以前はSQUEEZE_STRETCH_EASE_POWERを2.0にしていたが、これだと序盤だけ指の動きより速く伸びる
 // （1-(1-x)^pの傾きはx=0でpになるため、pが1より大きいほど触れた瞬間の反応が良くなりすぎる）。
 // 「触れた瞬間から重い」を優先し、1に近い値（ほぼ線形）に変更。伸びるほど重くなる効果は
 // SQUEEZE_FOLLOW_HEAVY_END_FACTOR側（追従速度そのものの低下）に任せている
 const SQUEEZE_STRETCH_EASE_POWER = 1.15; // 1より大きいほど、伸ばすほど追加の伸びに必要な指の移動量が増える（抵抗が強くなる）。1に近いほど序盤の伸びが指の動きに対して素直（速くならない）
 const SQUEEZE_FOLLOW_LERP = 0.045; // 毎フレーム、目標値との差にこの割合だけ近づく基本値。小さいほど追従が遅れて「重く・粘っこく」感じる（触れた瞬間からの重さはこの値が支配する）
-const SQUEEZE_FOLLOW_HEAVY_END_FACTOR = 0.35; // 🆕 伸び切った時点で追従速度が基本値の何倍まで落ちるか。小さいほど「伸ばすほど重くなる」度合いが強い
+const SQUEEZE_FOLLOW_HEAVY_END_FACTOR = 0.35; // 伸び切った時点で追従速度が基本値の何倍まで落ちるか。小さいほど「伸ばすほど重くなる」度合いが強い
 
 // 🫧🫧 2本指ストレッチ用。1本指スクイーズ（片側だけ固定して反対側だけ伸ばす）とは見た目の計算式が
 // 異なるため、状態・関数ともに分けている。
@@ -166,13 +166,13 @@ const TWO_FINGER_MAX_SQUASH = 0.42; // 2本指で伸びる方向と垂直に、�
 const mochiBtnElement = document.getElementById('mochisuke-btn');
 const mochiDeformWrap = document.getElementById('mochisuke-deform-wrap'); // タップ・スクイーズの見た目の変形は、もちすけ本体ではなくこちらにかける（帽子・顔パーツ・口も道連れで一緒に動くように）
 
-// 🧪 管理者限定・試作中：現在有効なスクイーズ素材（'default'/'slime'。materials.js参照）。音（伸び音・
+// 管理者限定・試作中：現在有効なスクイーズ素材（'default'/'slime'。materials.js参照）。音（伸び音・
 // 弾け音・つつき音）だけを担当し、見た目（画像）はここでは一切触らない。スクイーズ衣装は着せ替え
 // （kisekae.js）の全身カテゴリの1アイテムとして装備するようになっており、画像の表示・切り戻しは
 // kisekae.jsのapplyKisekaeToMainScreen()が一元的に担当している。もしここで画像にも触ってしまうと、
 // タップのたびに再描画されるapplyKisekaeToMainScreen()の結果と競合し、タップした瞬間に画像だけ
 // 通常のもちすけへ戻ってしまう、という不具合を過去に起こした（経緯は2-1参照）。
-// materials.js: DEFAULT_SQUEEZE_MATERIAL_KEY は素材未指定時に使うフォールバックのキー（'default'）
+// materials.js: DEFAULT_SQUEEZE_MATERIAL_KEY：素材未指定時に使うフォールバックのキー（'default'）
 let currentSqueezeMaterialKey = DEFAULT_SQUEEZE_MATERIAL_KEY;
 
 /**
@@ -192,12 +192,12 @@ export function setSqueezeMaterial(key) {
     currentSqueezeMaterialKey = key;
 }
 
-// 🆕 指で触れている場所が優しく光って見える演出。衣装(kisekae)の絵とは別レイヤーに、
+// 指で触れている場所が優しく光って見える演出。衣装(kisekae)の絵とは別レイヤーに、
 // mix-blend-mode:screenで光を重ねるだけなので、どんな衣装を着せていても崩れずに使える
 // （帽子・顔パーツはこの上のz-indexなので隠れない）
 const squeezeGlowLayerEl = document.getElementById('squeeze-glow-layer');
 const squeezeGlowPointerMap = new Map(); // pointerId -> { el, dentEl, fadeTimer }
-// 🆕 専用モード中だけ使う「へこみ」レイヤーと「みずみずしい」光沢レイヤー（まもすいが最初から
+// 専用モード中だけ使う「へこみ」レイヤーと「みずみずしい」光沢レイヤー（まもすいが最初から
 // 考えていた質感演出。2-1参照）。どちらも通常のスクイーズの見た目には一切影響しない別レイヤー。
 const squeezeDentLayerEl = document.getElementById('squeeze-dent-layer');
 const squeezeJuicySheenEl = document.getElementById('squeeze-juicy-sheen');
@@ -223,7 +223,7 @@ export function assignSqueezeGlow(pointerId, clientX, clientY) {
         squeezeDentLayerEl.appendChild(dentEl);
     }
     squeezeGlowPointerMap.set(pointerId, { el, dentEl, fadeTimer: null });
-    // 🆕 まもすいの指摘（タップしたこと自体で反動アニメも呼吸アニメも一瞬止まって見える）の調査で発見：
+    // まもすいの指摘（タップしたこと自体で反動アニメも呼吸アニメも一瞬止まって見える）の調査で発見：
     // ここのupdateSqueezeGlow()はmochiBtnElement.getBoundingClientRect()を呼ぶため、以前は
     // pointerdownの同期処理の中（＝呼吸アイドルのクラスを外した直後、押し込みポーズを描く前）で
     // 毎タップ強制的にレイアウト計算を発生させてしまっていた（=forced synchronous layout。
@@ -310,7 +310,7 @@ function squeezeTransformFor(dx, dy, d) {
     const angleDeg = angleRad * (180 / Math.PI);
 
     const along = 1 + d * SQUEEZE_MAX_STRETCH;
-    // 🆕 通常のスクイーズはd(伸縮量)が0〜1の範囲にしか来ないため元々問題にならなかったが、
+    // 通常のスクイーズはd(伸縮量)が0〜1の範囲にしか来ないため元々問題にならなかったが、
     // 専用モードの永続変形はdが1を大きく超えることがあり（SQUEEZE_ACCUM_MAX_D参照）、
     // 何もしないとperpが0を割り込んで見た目が反転・破綻する。他の呼び出し元には影響しない
     // 安全な下限（0.12）でクランプしておく。
@@ -322,7 +322,7 @@ function squeezeTransformFor(dx, dy, d) {
     return `translate(${offsetX}px, ${offsetY}px) rotate(${angleDeg}deg) scale(${along}, ${perp}) rotate(${-angleDeg}deg)`;
 }
 
-// 🆕 生の伸び比率(0〜1)に「伸ばすほど抵抗が強くなる」カーブをかける。序盤は指の動きに対して素直に
+// 生の伸び比率(0〜1)に「伸ばすほど抵抗が強くなる」カーブをかける。序盤は指の動きに対して素直に
 // 伸び（柔らかい餅が素直に伸びる感じ）、終盤は指を動かしてもなかなか伸びなくなる（弾力の限界）。
 /**
  * @param {number} rawRatio - 0〜1の生の伸び比率
@@ -347,34 +347,34 @@ function twoFingerSqueezeTransformFor(angleDeg, d) {
     return `rotate(${angleDeg}deg) scale(${along}, ${perp}) rotate(${-angleDeg}deg)`;
 }
 
-// 🆕 追従ループが今どちらのモードで動いているか（'one'=1本指スクイーズ, 'two'=2本指ストレッチ,
+// 追従ループが今どちらのモードで動いているか（'one'=1本指スクイーズ, 'two'=2本指ストレッチ,
 // null=非アクティブ）。tap.js側のisMochiPressed等を読みに行かず、このファイル内で完結させるための状態。
 let currentMode = null;
 let oneFingerRawRatio = 0, oneFingerDx = 0, oneFingerDy = 0;
 let twoFingerRawRatio = 0, twoFingerAngleDeg = 0;
-// 🆕 押した瞬間の強弱で音が変わる「つつき」ギミック用の状態（全素材共通）。
+// 押した瞬間の強弱で音が変わる「つつき」ギミック用の状態（全素材共通）。
 // armPokeImpact()でpointerdownの瞬間の時刻を記録し、その後tap.js側で本格的なドラッグ
 // （SQUEEZE_MIN_DRAG以上の移動）と判定された最初のupdateOneFingerSqueezeTarget呼び出し1回分だけで
 // 強度を判定して音を鳴らし、以降は何もしない（1タップにつき1回だけ。ドラッグにならなければ鳴らない）。
 let pokeArmed = false;
 let pokeFired = false;
 let pokeStartTime = 0;
-// 🆕 実際の見た目・音に使う比率。stepSqueezeFollowが毎フレーム目標値へ近づける（追従の遅れ＝重み・粘り気）
+// 実際の見た目・音に使う比率。stepSqueezeFollowが毎フレーム目標値へ近づける（追従の遅れ＝重み・粘り気）
 let squeezeVisualRatio = 0;
-// 🆕 1本指スクイーズの「見た目の伸び方向」。指の生の方向(oneFingerDx/Dy)へ毎フレーム少しずつ近づける
+// 1本指スクイーズの「見た目の伸び方向」。指の生の方向(oneFingerDx/Dy)へ毎フレーム少しずつ近づける
 // （追従の遅れ）ことで、方向にも瞬時ではない軽い追従感を持たせている。以前は伸び率とまったく同じ
 // heaviness込みの重い追従係数を使っていたが、「重みのせいでもちすけを暴れさせる楽しさが無くなった」
 // というまもすいの指摘を受け、方向はSQUEEZE_DIRECTION_FOLLOW_LERPという専用の軽い係数（heaviness補正なし）
 // で追従するよう分離した。急な正反対方向への反転だけは、これとは別にsqueezeReversalActiveで特別扱いする
 // （下記参照・2-1-b23）。
 let squeezeVisualDx = 0, squeezeVisualDy = 0;
-// 🆕 「急な反転」を検出して処理中かどうか。trueの間は方向(squeezeVisualDx/Dy)を凍結し、伸び率だけを
+// 「急な反転」を検出して処理中かどうか。trueの間は方向(squeezeVisualDx/Dy)を凍結し、伸び率だけを
 // SQUEEZE_REVERSAL_RETRACT_LERPで0へ縮める。伸び率がSQUEEZE_REVERSAL_RATIO_EPSILON未満まで縮んだら、
 // その時点でほぼ見えなくなっている方向を新しい生の方向へ切り替えてfalseに戻す（2-1-b23参照）。
 let squeezeReversalActive = false;
 let squeezeFollowRafId = null;
 
-// --- 🆕 スクイーズ「専用モード」の状態（2-1参照）。tap.js側のisSqueezeCostumeActiveが変わるたびに
+// --- スクイーズ「専用モード」の状態（2-1参照）。tap.js側のisSqueezeCostumeActiveが変わるたびに
 // setAccumulateModeActive()経由で教えてもらう（このファイルからtap.jsへは相変わらず一切importしない）。
 let accumulateModeActive = false;
 let accumD = 0; // 現在の「永続変形」量（d値）。0で通常の丸い形、離すたびに少しずつ増えていく。戻すボタンで0に戻る
@@ -393,7 +393,7 @@ export function setAccumulateModeActive(active) {
     if (accumulateModeActive === active) return;
     accumulateModeActive = active;
     if (!active) {
-        // 🆕 衣装を外した/切り替えた時点で、精算していなかった蓄積分は破棄する（見た目もすぐ元に戻す）。
+        // 衣装を外した/切り替えた時点で、精算していなかった蓄積分は破棄する（見た目もすぐ元に戻す）。
         // 装備を変えた瞬間はどのみち見た目の画像自体が別衣装に切り替わるため、中途半端に変形した
         // transformを残さないことが重要
         accumD = 0; accumVisualD = 0; accumDx = 1; accumDy = 0;
@@ -417,7 +417,7 @@ export function isAccumulateModeActive() { return accumulateModeActive; }
  */
 export function getAccumD() { return accumD; }
 
-// 🆕 1回分の指の伸び(liveRatio, 0〜1)を永続変形へ上乗せする。既に貯まっているほど上乗せ分が
+// 1回分の指の伸び(liveRatio, 0〜1)を永続変形へ上乗せする。既に貯まっているほど上乗せ分が
 // 小さくなる（SQUEEZE_ACCUM_MAX_DへのDiminishing returns）ことで、「無制限に触り続けられる」ようにしつつ、
 // squeezeTransformForの計算が破綻しない範囲に自然と収まるようにしている。
 /**
@@ -461,7 +461,7 @@ function updateJuicySheen(d) {
     squeezeJuicySheenEl.style.opacity = String(Math.max(0, Math.min(1, d / CONFIG.SQUEEZE_ACCUM_MAX_D)));
 }
 
-// 🆕 指を触れていない間（currentMode===null）、永続変形の見た目(accumVisualD)をaccumDへ
+// 指を触れていない間（currentMode===null）、永続変形の見た目(accumVisualD)をaccumDへ
 // 少しずつ近づけ続けるループ。endSqueeze()で指を離した直後は、離した瞬間の見た目からスタートして
 // 新しい（一部だけが残った、より小さい）永続量へ「もにゅっ」と収まっていく見た目になる。
 /**
@@ -511,7 +511,7 @@ export function updateOneFingerSqueezeTarget(dx, dy) {
     return oneFingerRawRatio;
 }
 
-// 🆕 pointerdownの瞬間に呼んでおく「腕付け」関数。実際の音判定・再生は、tap.js側で本格的な
+// pointerdownの瞬間に呼んでおく「腕付け」関数。実際の音判定・再生は、tap.js側で本格的な
 // ドラッグ（SQUEEZE_MIN_DRAG以上の移動）と判定された最初のupdateOneFingerSqueezeTarget呼び出しで
 // 行う（ドラッグにならなければ一生呼ばれず、つつき音も鳴らない＝ただのタップ・長押しはtap.mp3や
 // splashSoundFileだけになる。まもすいの要望：ただのタップの時は1音だけにしたい。2-1参照）。
@@ -523,7 +523,7 @@ export function updateOneFingerSqueezeTarget(dx, dy) {
  * @returns {void}
  */
 export function armPokeImpact() {
-    // materials.js: SQUEEZE_MATERIALS[key].pokeSoundFile は今の素材につつき音が設定されているかどうか（nullならこのギミック自体を無効にする）
+    // materials.js: SQUEEZE_MATERIALS[key].pokeSoundFile：今の素材につつき音が設定されているかどうか（nullならこのギミック自体を無効にする）
     if (!SQUEEZE_MATERIALS[currentSqueezeMaterialKey].pokeSoundFile) return;
     pokeArmed = true;
     pokeFired = false;
@@ -549,12 +549,12 @@ function firePokeImpact(dx, dy) {
     const intensity = Math.min(1, speed / CONFIG.POKE_IMPACT_MAX_SPEED_PX_MS);
     const volume = CONFIG.POKE_MIN_VOLUME + intensity * (CONFIG.POKE_MAX_VOLUME - CONFIG.POKE_MIN_VOLUME);
     const pitch = CONFIG.POKE_MAX_PITCH - intensity * (CONFIG.POKE_MAX_PITCH - CONFIG.POKE_MIN_PITCH); // 強いほど低いピッチ
-    // main.js: playAudioFilePitched はピッチ（音の高さ）を指定して効果音を再生する関数、
+    // main.js: playAudioFilePitched はピッチ（音の高さ）を指定して効果音を再生する、
     // sfxVolumeMult は設定画面で調整できる効果音全体の音量倍率（掛け合わせて最終的な音量にする）
     playAudioFilePitched(pokeSoundFile, volume * sfxVolumeMult, pitch);
 }
 
-// 🆕 触れた瞬間に鳴る「ぴちゃ」という水っぽい音＋水色の波紋演出（現状はスライムもちすけ専用）。
+// 触れた瞬間に鳴る「ぴちゃ」という水っぽい音＋水色の波紋演出（現状はスライムもちすけ専用）。
 // pokeSoundFileと同じく、対応可否は素材ごとのデータ(materials.jsのsplashSoundFile)だけで決まるため、
 // この関数自体はどの素材で呼んでも安全（splashSoundFileがnullの素材では何もしない）。
 /**
@@ -568,13 +568,13 @@ export function triggerSqueezeTouchSplash(clientX, clientY) {
     // materials.js: SQUEEZE_MATERIALS（前述と同じ）から、今の素材のsplashSoundFileを取り出す
     const splashSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].splashSoundFile;
     if (!splashSoundFile) return; // splashSoundFileを持たない素材（通常のもちすけ等）ではこの演出自体を出さない
-    // main.js: playAudioFile は効果音ファイルを再生する関数、sfxVolumeMult は効果音全体の音量倍率（前述と同じ）
+    // main.js: playAudioFile：効果音ファイルを再生する関数、sfxVolumeMult は効果音全体の音量倍率（前述と同じ）
     playAudioFile(splashSoundFile, CONFIG.SPLASH_VOLUME * sfxVolumeMult);
-    // main.js: createRippleEffect は指定座標に波紋エフェクトを表示する関数
+    // main.js: createRippleEffect は指定座標に波紋エフェクトを表示する
     createRippleEffect(clientX, clientY, false, CONFIG.SPLASH_RIPPLE_COLOR);
 }
 
-// --- 🆕 長押し（引っ張らずに押し続ける）専用の「じわじわ潰れる」演出＋離した時の反動 ---
+// --- 長押し（引っ張らずに押し続ける）専用の「じわじわ潰れる」演出＋離した時の反動 ---
 // ドラッグ用スクイーズ(squeezeTransformFor、指の方向に応じた非対称な変形)とは別に、こちらは
 // 単純に軸に沿ったscale()を直線補間するだけの、もっと素朴な実装にしている。tap.js側の固定の
 // 初期押し込みポーズ(scale(1.25,0.72)。CONFIG.LONGPRESS_SQUISH_START_SCALE_X/Yと同じ値)から始まり、
@@ -586,7 +586,7 @@ let longPressSquishStartTime = 0;
 let longPressSquishActive = false;
 let longPressSquishLastRatio = 0; // 離した瞬間の反動の大きさ計算に使う、直近の潰れ具合(0〜1)
 
-// 🆕 長押し中だけループする専用音（materials.jsのlongPressLoopSoundFile）用の状態。
+// 長押し中だけループする専用音（materials.jsのlongPressLoopSoundFile）用の状態。
 // startStretchSound/updateStretchSound/stopStretchSoundと全く同じWeb Audio APIのバッファ＋ゲイン方式。
 let longPressLoopSoundSource = null, longPressLoopSoundGain = null;
 
@@ -600,7 +600,7 @@ function startLongPressLoopSound() {
     // materials.js: SQUEEZE_MATERIALS（前述と同じ）から、今の素材のlongPressLoopSoundFileを取り出す
     const longPressLoopSoundFile = SQUEEZE_MATERIALS[currentSqueezeMaterialKey].longPressLoopSoundFile;
     if (!longPressLoopSoundFile) return;
-    // main.js: getAudioContext はWeb Audio APIのAudioContext（音声再生用のコンテキスト）を取得する関数
+    // main.js: getAudioContext：Web Audio APIのAudioContext（音声再生用のコンテキスト）を取得する
     const ctx = getAudioContext();
     if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     // main.js: audioBuffers は音声ファイルパスをキーに、読み込み済みの音声データ（AudioBuffer）を保持するオブジェクト
@@ -650,7 +650,7 @@ export function startLongPressSquish() {
     longPressSquishActive = true;
     longPressSquishStartTime = performance.now();
     longPressSquishLastRatio = 0;
-    startLongPressLoopSound(); // 🆕 見た目と同時に、長押し専用のループ音も鳴らし始める
+    startLongPressLoopSound(); // 見た目と同時に、長押し専用のループ音も鳴らし始める
     if (longPressSquishRafId === null) longPressSquishRafId = requestAnimationFrame(stepLongPressSquish);
 }
 
@@ -666,7 +666,7 @@ function stepLongPressSquish() {
     const scaleY = CONFIG.LONGPRESS_SQUISH_START_SCALE_Y + (CONFIG.LONGPRESS_SQUISH_END_SCALE_Y - CONFIG.LONGPRESS_SQUISH_START_SCALE_Y) * t;
     mochiDeformWrap.style.transform = `scale(${scaleX}, ${scaleY})`;
     if (t >= 1) {
-        // 🆕 最大まで潰れきった＝もう変化が無いので、まもすいの要望通りループ音をここで止める
+        // 最大まで潰れきった＝もう変化が無いので、まもすいの要望通りループ音をここで止める
         // （見た目のrAFループ自体は今まで通りここで停止し、以後は静止したポーズを維持する）
         stopLongPressLoopSound();
         longPressSquishRafId = null;
@@ -693,7 +693,7 @@ export function stopLongPressSquish() {
  * 指を離した時にtap.js側から呼ぶ。「本当に長押しと呼べる域まで潰れが進んでいたか」だけを判定して
  * 返す（LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS未満はrebounded:falseになる。上のCONFIGコメント参照）。
  *
- * 🆕 以前はここで反動アニメーション自体も（生のratioに比例した連続的な強さで）再生していたが、
+ * 以前はここで反動アニメーション自体も（生のratioに比例した連続的な強さで）再生していたが、
  * 「もちぽんぽん報酬と同じ5段階の反動にしてほしい」というまもすいの要望を受け、アニメーション自体は
  * 呼び出し側（tap.js）がこの戻り値のratioからtierを計算した後、playLongPressReboundAnimation(tier, maxTier)
  * を呼んで再生する形に分離した。この関数自体はもう見た目に触れず、状態のクリーンアップと
@@ -707,10 +707,10 @@ export function releaseLongPressSquish() {
     const ratio = longPressSquishLastRatio;
     longPressSquishActive = false;
     if (longPressSquishRafId !== null) { cancelAnimationFrame(longPressSquishRafId); longPressSquishRafId = null; }
-    stopLongPressLoopSound(); // 🆕 途中で離した場合（t<1でまだループ音が鳴っている場合）はここで止める
+    stopLongPressLoopSound(); // 途中で離した場合（t<1でまだループ音が鳴っている場合）はここで止める
     longPressSquishLastRatio = 0;
 
-    // 🆕 「本当に長押しと呼べる域まで進んでいたか」は、生のratioではなくLONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS
+    // 「本当に長押しと呼べる域まで進んでいたか」は、生のratioではなくLONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS
     // 未満を切り捨てたものだけで判定する（上のCONFIG.LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTSのコメント参照）。
     const isGenuineLongPress = ratio >= CONFIG.LONGPRESS_MIN_RATIO_FOR_RELEASE_EFFECTS;
     return { rebounded: isGenuineLongPress, ratio };
@@ -721,7 +721,7 @@ export function releaseLongPressSquish() {
  * 潰れた状態から、行き過ぎて逆方向（伸びる方向）へ弾んでから、通常の形に収まる「反動」モーション
  * （releaseSqueezeWithOvershootと似た考え方だが、squeezeTransformForの伸縮曲線とは値の対応が異なる
  * （初期押し込みポーズが独自の固定値のため）ので、こちらは単純なscale()の直接指定にしている）。
- * 🆕 以前は生のratio(0〜1)をそのまま使い、潰れ具合に比例して連続的に強さが変わっていたが、
+ * 以前は生のratio(0〜1)をそのまま使い、潰れ具合に比例して連続的に強さが変わっていたが、
  * 「もちぽんぽん報酬（1〜5段階）と同じ5段階の反動にしてほしい」というまもすいの要望を受け、
  * tap.js側が計算済みのtier（もちぽんぽん報酬と全く同じcomputeSqueezeReleaseMochiTierの結果）を
  * そのまま受け取り、tier/maxTierを実効的な潰れ具合として使うことで、5段階のいずれかにスナップされた
@@ -734,7 +734,7 @@ export function releaseLongPressSquish() {
  */
 /**
  * 長押し反動アニメーション(playLongPressReboundAnimation)の再生時間(ms)を返す。
- * 🆕 tap.js側が「反動アニメが終わってから呼吸アイドルを再開するまでの待ち時間」を計算する時に、
+ * tap.js側が「反動アニメが終わってから呼吸アイドルを再開するまでの待ち時間」を計算する時に、
  * ここの値を勝手に別の数値で重複管理してズレる（例：build-watermarkのバージョン文字列のように
  * 更新し忘れる）事故を防ぐため、CONFIG.LONGPRESS_RELEASE_DURATION_MSをそのまま返すだけの
  * 薄いgetterとして用意した（2-1参照）。
@@ -775,7 +775,7 @@ export function playLongPressReboundAnimation(tier, maxTier) {
 // 2本の指が離れていく方向・距離から、追従ループの目標値を更新する（2本指ドラッグ中に毎回呼ばれる）
 /**
  * 2本指ストレッチの目標（生の伸縮比率・軸の角度）を更新し、追従ループを開始する。
- * 🆕 rawGrowthPx（2点間の距離が触れた瞬間からどれだけ開いたか、生のpx値）がTWO_FINGER_POKE_MIN_GROWTH_PX
+ * rawGrowthPx（2点間の距離が触れた瞬間からどれだけ開いたか、生のpx値）がTWO_FINGER_POKE_MIN_GROWTH_PX
  * 以上になった最初の1回だけ、1本指スクイーズと同じ「つつき」ギミックを発火させる（まもすいの指摘：
  * 2本指で引っ張った時にslime_pokeが鳴っていなかった不具合の修正。2-1参照）。1本指版
  * (updateOneFingerSqueezeTarget)と違い、速度計算に使うdx/dyの代わりにrawGrowthPxをそのまま渡す
@@ -793,7 +793,7 @@ export function updateTwoFingerSqueezeTarget(angleDeg, ratio, rawGrowthPx = 0) {
     startSqueezeFollowLoop();
 }
 
-// 🆕 押している間、squeezeVisualRatioを目標値（抵抗カーブ適用後の生の比率）へ毎フレーム少しずつ
+// 押している間、squeezeVisualRatioを目標値（抵抗カーブ適用後の生の比率）へ毎フレーム少しずつ
 // 近づけながら実際の見た目・伸び音に反映する追従ループ。目標に一気に到達させず「遅れて追いつく」
 // ことで、指の動きに対してもちすけ自体に重み・粘り気があるように感じさせる（指を止めて保持していても、
 // 追いつくまでの「もにゅっ」とした動きがわずかに残り続ける）。
@@ -803,7 +803,7 @@ export function updateTwoFingerSqueezeTarget(angleDeg, ratio, rawGrowthPx = 0) {
  */
 function stepSqueezeFollow() {
     if (currentMode === null) { squeezeFollowRafId = null; return; }
-    // 🆕 既にどれだけ伸びているか(squeezeVisualRatio)が大きいほど、追従速度そのものを落とす。
+    // 既にどれだけ伸びているか(squeezeVisualRatio)が大きいほど、追従速度そのものを落とす。
     // 「すぐ伸ばそうとしても伸びない」「一気に伸ばそうとしても後半になるほどゆっくりになる」を
     // 両方まとめて表現する：伸びていない序盤は基本値通り、伸び切るにつれてSQUEEZE_FOLLOW_HEAVY_END_FACTOR倍まで遅くなる
     const heaviness = 1 - squeezeVisualRatio * (1 - SQUEEZE_FOLLOW_HEAVY_END_FACTOR);
@@ -817,7 +817,7 @@ function stepSqueezeFollow() {
     } else {
         const rawDist = Math.sqrt(oneFingerDx * oneFingerDx + oneFingerDy * oneFingerDy);
         const visualDirLen = Math.sqrt(squeezeVisualDx * squeezeVisualDx + squeezeVisualDy * squeezeVisualDy);
-        // 🆕 急な反転検出：今表示している伸び方向(squeezeVisualDx/Dy)と、今の生の指方向(oneFingerDx/Dy)の
+        // 急な反転検出：今表示している伸び方向(squeezeVisualDx/Dy)と、今の生の指方向(oneFingerDx/Dy)の
         // なす角がおよそ120度を超えていたら「急な反転」とみなし、いきなり向きだけ変えるのではなく、
         // 一度もちすけの中心付近まで縮めてから新しい方向へ伸ばし直す（2-1-b23参照）。他の方向を経由して
         // じわじわ持っていった場合はこの内積が毎フレーム緩やかにしか変わらず、閾値を割り込まないので発動しない。
@@ -839,7 +839,7 @@ function stepSqueezeFollow() {
         } else {
             const target = easeSqueezeRatio(oneFingerRawRatio);
             squeezeVisualRatio += (target - squeezeVisualRatio) * effectiveLerp;
-            // 🆕 方向の追従は、大きさ(effectiveLerp)とは別の専用係数SQUEEZE_DIRECTION_FOLLOW_LERPを使う。
+            // 方向の追従は、大きさ(effectiveLerp)とは別の専用係数SQUEEZE_DIRECTION_FOLLOW_LERPを使う。
             // 「暴れさせる」操作感を大きさほど鈍らせないよう、伸びるほど遅くなるheaviness補正はかけていない
             // （2-1-b23参照）。指の移動量がほぼ無い(dist≈0)瞬間は方向そのものが定まらない（atan2の入力が
             // (0,0)付近で不安定）ため、その間は直前の方向を維持し、ノイズで方向が暴れるのを防ぐ。
@@ -848,7 +848,7 @@ function stepSqueezeFollow() {
                 squeezeVisualDy += (oneFingerDy - squeezeVisualDy) * CONFIG.SQUEEZE_DIRECTION_FOLLOW_LERP;
             }
         }
-        // 🆕 専用モード中は、永続変形(accumVisualD)を土台にして、その上に今回の生の伸びを重ねて描画する。
+        // 専用モード中は、永続変形(accumVisualD)を土台にして、その上に今回の生の伸びを重ねて描画する。
         // こうすることで「触れた瞬間に一度中央へ戻ってから伸びる」ような不自然なジャンプが起きず、
         // 前回までの蓄積分から連続的に伸びていくように見える（実際に蓄積へ反映するのはendSqueeze()側）。
         const effectiveD = accumulateModeActive ? (accumVisualD + squeezeVisualRatio) : squeezeVisualRatio;
@@ -875,12 +875,12 @@ function startSqueezeFollowLoop() {
  * 遅れ込みの値）をまとめて返してから内部状態をリセットする。
  * 呼び出し側（tap.js）はこの戻り値を、揺れ戻りアニメーションや弾け演出の見た目にそのまま使うことで、
  * 離した瞬間に見た目が急にジャンプ（大きさだけでなく向きも）しないようにする
- * （🆕 以前はratioの数値だけを返しており、揺れ戻りの向きは呼び出し側が持つ生のdx/dyを使っていたため、
+ * （以前はratioの数値だけを返しており、揺れ戻りの向きは呼び出し側が持つ生のdx/dyを使っていたため、
  * 急に逆方向へ引っ張って離した直後だけ向きが一瞬で反転して見える違和感があった）。
  * @returns {{ratio: number, dx: number, dy: number}} 離した瞬間の最終的な伸縮比率(0〜1)と伸び方向
  */
 export function endSqueeze() {
-    // 🆕 専用モードの蓄積は1本指スクイーズのみ対象（2本指ストレッチは今まで通り常に完全に戻る）。
+    // 専用モードの蓄積は1本指スクイーズのみ対象（2本指ストレッチは今まで通り常に完全に戻る）。
     // currentModeをnullにする前に判定しておく必要がある
     const wasOneFinger = currentMode === 'one';
     currentMode = null;
@@ -888,7 +888,7 @@ export function endSqueeze() {
     const finalRatio = squeezeVisualRatio;
     const finalDx = squeezeVisualDx, finalDy = squeezeVisualDy;
     if (accumulateModeActive && wasOneFinger && finalRatio > 0) {
-        // 🆕 専用モード：離した瞬間の見た目（永続変形＋今回の伸び）をそのままaccumVisualDに引き継いでから、
+        // 専用モード：離した瞬間の見た目（永続変形＋今回の伸び）をそのままaccumVisualDに引き継いでから、
         // 今回の伸びの一部だけを新しい永続量として蓄積する。アイドルループが、この底上げされた見た目から
         // 新しい（より小さい）永続量へ「もにゅっ」と収まっていく様子を描画する（バキッと縮まない）
         accumVisualD = accumVisualD + finalRatio;
@@ -897,13 +897,13 @@ export function endSqueeze() {
     }
     squeezeVisualRatio = 0;
     squeezeVisualDx = 0; squeezeVisualDy = 0;
-    squeezeReversalActive = false; // 🆕 次にスクイーズを始めた時に反転検出の状態を持ち越さないようにする
+    squeezeReversalActive = false; // 次にスクイーズを始めた時に反転検出の状態を持ち越さないようにする
     oneFingerRawRatio = 0; oneFingerDx = 0; oneFingerDy = 0;
     twoFingerRawRatio = 0; twoFingerAngleDeg = 0;
     return { ratio: finalRatio, dx: finalDx, dy: finalDy };
 }
 
-// 🆕 「指を触れた瞬間だけ」ランダムに決めて、伸びている間ずっと乗せておくピッチのオフセット。
+// 「指を触れた瞬間だけ」ランダムに決めて、伸びている間ずっと乗せておくピッチのオフセット。
 // 伸び率に応じたリアルタイムの音程変化はそのまま保ちつつ、セッション（一回の指の触れ始めから
 // 離すまで）ごとに微妙に違う声にすることで、何百回聞いても同じ音、という単調さを減らす。
 let stretchSoundPitchOffset = 0;
@@ -998,18 +998,18 @@ export function releaseTwoFingerSqueezeWithOvershoot(angleDeg, ratio) {
     mochiDeformWrap.style.transform = 'scale(1, 1)';
 }
 
-// 🆕 スクイーズを離した瞬間の演出。ポン音は常に鳴らし、gatingRatio（「弾けを出して良いか」の判定に使う、
+// スクイーズを離した瞬間の演出。ポン音は常に鳴らし、gatingRatio（「弾けを出して良いか」の判定に使う、
 // 指の生の移動量ベースの比率）が一定以上の時だけ、追加でパーティクル＋強振動を出す。この判定を
 // 関数の内部に持たせることで、呼び出し側(tap.js)がコンボ内部のtierIndexだけ渡せば済むようにしている
 // （tap.jsのコンボロジックをこのファイルへimportさせないための設計）。
 /**
  * 指を離した瞬間、一定以上伸ばしていた時だけ弾けるパーティクル・強振動を追加する。
- * 🆕 以前はここでreleasePopSoundFileも鳴らしていた（引っ張った長さに応じて音量を変える方式）が、
+ * 以前はここでreleasePopSoundFileも鳴らしていた（引っ張った長さに応じて音量を変える方式）が、
  * 「もちが出る時にひとつずつmochi_release_popを鳴らそう（３つ出るなら３回）」という要望を受けて、
  * ポン音はtap.js側のgrantSqueezeReleaseMochiPop（もちぽんぽん報酬）がもちを1個出すたびに
  * playSqueezeReleasePopSound()を呼ぶ方式に一本化した。そのためこの関数はもう音を鳴らさず、
  * パーティクル・強振動の演出だけを担当する（SQUEEZE_RELEASE_BURST_MIN_RATIO以上伸ばした時限定なのは変わらず）。
- * 🆕 呼び出し元(tap.js releaseMochiSucre)は、この関数の直前にreleaseSqueezeWithOvershoot/
+ * 呼び出し元(tap.js releaseMochiSucre)は、この関数の直前にreleaseSqueezeWithOvershoot/
  * releaseTwoFingerSqueezeWithOvershoot（mochiDeformWrap.animate()による反動アニメーション）を同期的に
  * 呼んでいる。この関数の中のmochiBtnElement.getBoundingClientRect()は、ブラウザに強制的にレイアウト
  * 計算を即座にやらせる（forced synchronous layout）呼び出しで、これが.animate()呼び出しと同じ同期実行の
@@ -1030,7 +1030,7 @@ export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio) {
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
         const count = Math.round(CONFIG.SQUEEZE_RELEASE_BURST_COUNT_BASE + visualRatio * CONFIG.SQUEEZE_RELEASE_BURST_COUNT_RANGE);
-        // main.js: createBurstParticle は指定座標にパーティクル（弾けるエフェクト）を1つ生成する関数
+        // main.js: createBurstParticle：指定座標にパーティクル（弾けるエフェクト）を1つ生成する
         for (let i = 0; i < count; i++) createBurstParticle(cx, cy);
 
         if (visualRatio >= CONFIG.SQUEEZE_RELEASE_STRONG_VIBRATE_MIN_RATIO) {
@@ -1041,7 +1041,7 @@ export function triggerSqueezeReleaseBurst(gatingRatio, visualRatio) {
 }
 
 /**
- * 🆕 もちぽんぽん報酬（tap.js側のgrantSqueezeReleaseMochiPop）で、もちが1個出るたびに鳴らす
+ * もちぽんぽん報酬（tap.js側のgrantSqueezeReleaseMochiPop）で、もちが1個出るたびに鳴らす
  * 「弾け」音。releaseLongPressSquish/triggerSqueezeReleaseBurstとは切り離し、もちがtier個出る場合は
  * tap.js側がこの関数をtier回、少し間隔を空けて呼ぶ想定（2-1参照。まもすいの要望：もちが出る時も
  * ひとつずつmochi_release_popを鳴らそう＝３つ出るなら３回鳴らす）。通常もちすけ・スライムもちすけ
@@ -1059,7 +1059,7 @@ export function playSqueezeReleasePopSound(comboTierIndex = 0) {
 }
 
 /**
- * 🆕【まもすいの指摘で復活】もちぽんぽん報酬が出ないほど短い、ただの軽いタップ（releaseLongPressSquish
+ * 【まもすいの指摘で復活】もちぽんぽん報酬が出ないほど短い、ただの軽いタップ（releaseLongPressSquish
  * がrebounded:falseを返すケース）で離した時にtap.js側から呼ぶ。以前はreleasePopSoundFileが離す度に
  * 無条件で1回鳴っていたが、もちぽんぽん報酬の実装時に「報酬が出た時だけ」playSqueezeReleasePopSound
  * を呼ぶ方式へ絞り込んでしまい、通常もちすけの普通のタップで離す音が消えていた。この関数は素材ごとの
