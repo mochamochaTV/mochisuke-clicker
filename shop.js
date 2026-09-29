@@ -4,22 +4,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-29-001';
+} from './data.js?v=2026-09-29-002';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-29-001';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-29-001';
+} from './main.js?v=2026-09-29-002';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-29-002';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-29-001';
-import { saveGame, score, setScore } from './state.js?v=2026-09-29-001';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-29-001';
+} from './progress.js?v=2026-09-29-002';
+import { saveGame, score, setScore } from './state.js?v=2026-09-29-002';
+import { getMps, getTapPower, skills } from './tap.js?v=2026-09-29-002';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-29-001';
+} from './ui.js?v=2026-09-29-002';
 
         // ===================================================================
         // 調整用の数値をまとめた設定オブジェクト。既に名前付きでexportされている
@@ -111,21 +111,6 @@ import {
         export let purchasedClothes = { normal: true };
         export let equippedClotheId = "normal";
         export let currentShopTab = "omiyage";
-
-        /**
-         * 指定した衣装IDを現在の装備として反映し、見た目のフィルターをリセットして保存・画面更新する。
-         * @param {string} id - 装備する衣装のID
-         * @returns {void}
-         */
-        export function equipClothe(id) {
-            equippedClotheId = id;
-            // tap.js: resetMochiFilter は装備中の見た目に合わせてもちの表示フィルターをリセットする関数
-            resetMochiFilter();
-            // state.js: saveGame はセーブデータを保存する関数
-            saveGame();
-            // ui.js: updateDisplay は画面表示全体を最新の状態に更新する関数
-            updateDisplay();
-        }
 
         // 起動時に読み込まなくていい大きな画像（マップ・おみやげ屋の背景）は、実際に開いた時だけ読み込む
         /**
