@@ -15,20 +15,19 @@
 
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { ARCADE_CABINET_PARTS, stages } from '../../data.js?v=2026-09-23-003';
+import { ARCADE_CABINET_PARTS, stages } from '../../data.js?v=2026-09-29-001';
 import {
-  IS_DEV_MODE, PRESENT_REWARD_DISTANCE_RATE, PRESENT_REWARD_MIN, PRESENT_REWARD_MPS_RATE,
+  IS_DEV_MODE,
   playAudioFile, playBgmLoop
-} from '../../main.js?v=2026-09-23-003';
-import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from '../../progress.js?v=2026-09-23-003';
-import { saveGame } from '../../state.js?v=2026-09-23-003';
-import { getMps } from '../../tap.js?v=2026-09-23-003';
-import { closeModal, getLocalDateString, openModal, openMoveMenu, updateDisplay } from '../../ui.js?v=2026-09-23-003';
-import { startQuizGame } from './quiz.js?v=2026-09-23-003';
-import { startTimeAttackGame, cleanupTimeAttackTimer } from './timeAttack.js?v=2026-09-23-003';
-import { startConcentrationGame } from './concentration.js?v=2026-09-23-003';
-import { startMochitsukiGame, cleanupMochitsukiTimer } from './mochitsuki.js?v=2026-09-23-003';
-import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-23-003';
+} from '../../main.js?v=2026-09-29-001';
+import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from '../../progress.js?v=2026-09-29-001';
+import { saveGame } from '../../state.js?v=2026-09-29-001';
+import { closeModal, getLocalDateString, openModal, openMoveMenu, updateDisplay } from '../../ui.js?v=2026-09-29-001';
+import { startQuizGame } from './quiz.js?v=2026-09-29-001';
+import { startTimeAttackGame, cleanupTimeAttackTimer } from './timeAttack.js?v=2026-09-29-001';
+import { startConcentrationGame } from './concentration.js?v=2026-09-29-001';
+import { startMochitsukiGame, cleanupMochitsukiTimer } from './mochitsuki.js?v=2026-09-29-001';
+import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-29-001';
 
         const CONFIG = {
             MINIGAME_CENTER_FADE_OUT_MS: 300,        // ミニゲームセンター開閉時、画面が暗転してから中身を切り替えるまでの時間
@@ -63,20 +62,6 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
         // prefTaps[i]: その県に滞在中(selectedStageIndex===i)にタップした累計回数。
         // 過去に訪れた県に戻ってタップしても加算され続ける（進行用のcurrentStageProgressとは別管理）。
         export let isMinigameActive = false; // 立っている間はメインのタップ判定を無視する
-        /**
-         * 現在の県の距離と秒速タップ数(mps)から、ミニゲームの基礎報酬額を計算する。
-         * @returns {number} 基礎報酬額
-         */
-        export function getMinigameBaseReward() {
-            // data.js: stages は全都道府県のステージ定義配列（.distanceなど各県のデータを持つ）
-            // progress.js: currentStageIndex は現在プレイ中のステージ（県）のインデックス
-            const currentStage = stages[currentStageIndex] || stages[0];
-            // main.js: PRESENT_REWARD_MIN・PRESENT_REWARD_DISTANCE_RATE・PRESENT_REWARD_MPS_RATE は、ミニゲーム基礎報酬の計算に使う定数
-            // （それぞれ最低報酬額／距離1あたりの倍率／秒速タップ数(mps)1あたりの倍率）
-            // tap.js: getMps() は現在の秒速タップ数(mps)を返す関数
-            return Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
-        }
-
         /**
          * 解放済みのミニゲームのうち、まだ「新着」表示を見ていないものが1つでもあるかを判定する。
          * @returns {boolean} 新着の未確認ミニゲームがあればtrue

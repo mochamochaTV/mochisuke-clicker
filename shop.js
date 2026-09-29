@@ -4,22 +4,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-23-003';
+} from './data.js?v=2026-09-29-001';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-23-003';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-23-003';
+} from './main.js?v=2026-09-29-001';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-29-001';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-23-003';
-import { saveGame, score, setScore } from './state.js?v=2026-09-23-003';
-import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-23-003';
+} from './progress.js?v=2026-09-29-001';
+import { saveGame, score, setScore } from './state.js?v=2026-09-29-001';
+import { getMps, getTapPower, resetMochiFilter, skills } from './tap.js?v=2026-09-29-001';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-23-003';
+} from './ui.js?v=2026-09-29-001';
 
         // ===================================================================
         // 調整用の数値をまとめた設定オブジェクト。既に名前付きでexportされている
@@ -172,21 +172,6 @@ import {
             const shelfImg = document.getElementById('omiyage-shelf-img');
             if (shelfImg) shelfImg.addEventListener('click', () => { if (omiyageSelectedIdx != null) closeOmiyageDetail(); });
         });
-        // お土産イラスト（stage.itemImg）表示用ヘルパー。未整備の県は🎁の絵文字にフォールバックする
-        /**
-         * ステージのお土産イラストがあればimgタグ、無ければ🎁絵文字のプレースホルダーHTMLを生成する。
-         * @param {Object} stage - お土産情報を持つステージデータ
-         * @param {number} [size] - サムネイルのサイズ（px）。省略時はデフォルトサイズを使う
-         * @returns {string} 生成したHTML文字列
-         */
-        export function getItemThumbHtml(stage, size) {
-            size = size || CONFIG.ITEM_THUMB_DEFAULT_SIZE_PX;
-            if (stage.itemImg) {
-                return `<img class="item-thumb" src="${stage.itemImg}" style="width:${size}px; height:${size}px;" alt="${stage.item}">`;
-            }
-            return `<div class="item-thumb" style="width:${size}px; height:${size}px; display:flex; align-items:center; justify-content:center; font-size:${Math.floor(size * CONFIG.ITEM_THUMB_EMOJI_RATIO)}px; background:#fff8ec;">🎁</div>`;
-        }
-
         /**
          * ショップの表示タブを切り替え、各タブのハイライトやおみやげ専用UIの表示状態を更新してリストを再描画する。
          * @param {string} tab - 切り替え先のタブ名（'omiyage'|'furniture'|'skills'|'gacha'）
@@ -1597,21 +1582,6 @@ import {
                 // main.js: pickRandom は配列からランダムに1件選ぶ関数 / data.js: dialogueData はセリフ文言集
                 showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
                 saveGame(); renderShopList(); updateDisplay(); updateShopTabHighlight();
-            }
-        }
-
-        /**
-         * 指定IDの衣装をclothesDataから探し、未購入かつ所持金が足りていれば購入・もち消費・自動装備を行う。
-         * @param {string} id - 購入する衣装のID
-         * @returns {void}
-         */
-        export function buyKisekae(id) {
-            // data.js: clothesData は購入可能な衣装データの配列
-            const target = clothesData.find(c => c.id === id);
-            if (score >= target.price && !purchasedClothes[id]) {
-                setScore(score - (target.price)); purchasedClothes[id] = true;
-                equipClothe(id); // 🐛修正：装備専用のUIを廃止したので、買ったらその場で自動装備する（能力ボーナスが有効になるように）
-                saveGame(); renderShopList(); updateDisplay();
             }
         }
 
