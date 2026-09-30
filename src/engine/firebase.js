@@ -12,9 +12,9 @@
  * firebaseConfigの中身は、自分のFirebaseプロジェクトの値に置き換えてください。
  */
 
-import { initializeApp } from "https:// www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "https:// www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment, onSnapshot, writeBatch } from "https:// www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, getDocFromServer, addDoc, getDocs, getDocsFromServer, collection, query, orderBy, limit, where, updateDoc, increment, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // 👇 ここをFirebaseコンソールで発行された自分の設定値に置き換えてください
 const firebaseConfig = {
