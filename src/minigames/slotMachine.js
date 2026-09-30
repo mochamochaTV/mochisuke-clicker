@@ -19,11 +19,11 @@
 import {
   IS_DEV_MODE, getAudioContext, loadAudioBuffer, playAudioFile, playAudioFilePitched,
   screenFlash, sfxVolumeMult, vibrate
-} from '../../main.js?v=2026-09-29-004';
-import { gachaCoins, setGachaCoins, trackMissionEvent } from '../../progress.js?v=2026-09-29-004';
-import { saveGame } from '../../state.js?v=2026-09-29-004';
-import { updateDisplay } from '../../ui.js?v=2026-09-29-004';
-import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
+} from '../../main.js?v=2026-09-30-001';
+import { gachaCoins, setGachaCoins, trackMissionEvent } from '../../progress.js?v=2026-09-30-001';
+import { saveGame } from '../../state.js?v=2026-09-30-001';
+import { updateDisplay } from '../../ui.js?v=2026-09-30-001';
+import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-30-001';
 
         const CONFIG = {
             SLOT_STRIP_LANDING_MARGIN: 2,          // リールが止まる位置を、帯の最後から何周ぶん手前にするか
@@ -71,20 +71,20 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
         // 🎰 スロットの絵柄と配当（3つ揃った時の倍率）。同じ絵柄の並び順で、揃いにくいほど高配当にしてある
         // 🎰 絵柄一覧（価値が低い順）。weightが大きいほど出やすい（＝価値が高いほどレア）
         export const SLOT_SYMBOLS = [
-            { id: 'cherry',      icon: '🍒', img: 'ui_images/slot/symbol_cherry.webp',      label: 'チェリー',   payout: 2,   weight: 44 },
-            { id: 'carrot',      icon: '🥕', img: 'ui_images/slot/symbol_carrot.webp',      label: '人参',      payout: 3,   weight: 36 },
-            { id: 'bell',        icon: '🔔', img: 'ui_images/slot/symbol_bell.webp',        label: 'ベル',      payout: 4,   weight: 30 },
-            { id: 'sweetpotato', icon: '🍠', img: 'ui_images/slot/symbol_sweetpotato.webp', label: 'さつまいも', payout: 5,   weight: 16 },
-            { id: 'banana',      icon: '🍌', img: 'ui_images/slot/symbol_banana.webp',      label: 'バナナ',    payout: 6,   weight: 12 },
-            { id: 'apple',       icon: '🍎', img: 'ui_images/slot/symbol_apple.webp',       label: 'リンゴ',    payout: 8,   weight: 9 },
-            { id: 'bar1',        icon: '➖',  img: 'ui_images/slot/symbol_bar1.webp',        label: 'BAR',       payout: 10,  weight: 6 },
-            { id: 'bar2',        icon: '➖➖', img: 'ui_images/slot/symbol_bar2.webp',        label: 'ダブルBAR',  payout: 15,  weight: 3.5 },
-            { id: 'bar3',        icon: '➖➖➖', img: 'ui_images/slot/symbol_bar3.webp',       label: 'トリプルBAR', payout: 25,  weight: 1.8 },
-            { id: 'seven',       icon: '7️⃣', img: 'ui_images/slot/symbol_seven.webp',       label: '7',         payout: 60,  weight: 0.5 },
-            { id: 'marmot',      icon: '🐹', img: 'ui_images/slot/symbol_marmot.webp',      label: 'マーモット', payout: 150, weight: 0.15, isJackpot: true },
+            { id: 'cherry',      icon: '🍒', img: 'images/ui_images/slot/symbol_cherry.webp',      label: 'チェリー',   payout: 2,   weight: 44 },
+            { id: 'carrot',      icon: '🥕', img: 'images/ui_images/slot/symbol_carrot.webp',      label: '人参',      payout: 3,   weight: 36 },
+            { id: 'bell',        icon: '🔔', img: 'images/ui_images/slot/symbol_bell.webp',        label: 'ベル',      payout: 4,   weight: 30 },
+            { id: 'sweetpotato', icon: '🍠', img: 'images/ui_images/slot/symbol_sweetpotato.webp', label: 'さつまいも', payout: 5,   weight: 16 },
+            { id: 'banana',      icon: '🍌', img: 'images/ui_images/slot/symbol_banana.webp',      label: 'バナナ',    payout: 6,   weight: 12 },
+            { id: 'apple',       icon: '🍎', img: 'images/ui_images/slot/symbol_apple.webp',       label: 'リンゴ',    payout: 8,   weight: 9 },
+            { id: 'bar1',        icon: '➖',  img: 'images/ui_images/slot/symbol_bar1.webp',        label: 'BAR',       payout: 10,  weight: 6 },
+            { id: 'bar2',        icon: '➖➖', img: 'images/ui_images/slot/symbol_bar2.webp',        label: 'ダブルBAR',  payout: 15,  weight: 3.5 },
+            { id: 'bar3',        icon: '➖➖➖', img: 'images/ui_images/slot/symbol_bar3.webp',       label: 'トリプルBAR', payout: 25,  weight: 1.8 },
+            { id: 'seven',       icon: '7️⃣', img: 'images/ui_images/slot/symbol_seven.webp',       label: '7',         payout: 60,  weight: 0.5 },
+            { id: 'marmot',      icon: '🐹', img: 'images/ui_images/slot/symbol_marmot.webp',      label: 'マーモット', payout: 150, weight: 0.15, isJackpot: true },
         ];
         // リプレイ：揃うとコインを消費せず、もう一度レバーを引ける（配当表には含めない特殊絵柄）
-        export const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'ui_images/slot/symbol_replay.webp', label: 'リプレイ', weight: 20 };
+        export const SLOT_REPLAY_SYMBOL = { id: 'replay', icon: '🍡', img: 'images/ui_images/slot/symbol_replay.webp', label: 'リプレイ', weight: 20 };
         export const SLOT_ALL_SYMBOLS = [...SLOT_SYMBOLS, SLOT_REPLAY_SYMBOL]; // リールの帯を作る時に使う、全絵柄（リプレイ含む）
         export const SLOT_COIN_COST = 1;        // コインを1回投入するのに必要なミニゲームコイン
         export const SLOT_PLAYS_PER_COIN = 5;   // コイン1枚で、レバーを何回引けるか
@@ -542,7 +542,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
             container.innerHTML = `
                 <div style="text-align:center; padding:10px;">
                     <div style="display:inline-flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:6px 12px; margin-bottom:8px; background:rgba(255,255,255,0.85); border-radius:20px; padding:7px 16px; box-shadow:0 2px 6px rgba(0,0,0,0.12);">
-                        <div style="font-weight:900; color:#7b1fa2;"><img src="ui_images/slot/coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持<span id="slot-plays-remaining" style="font-size:0.7rem; color:#e91e63;"></span></div>
+                        <div style="font-weight:900; color:#7b1fa2;"><img src="images/ui_images/slot/coin.webp" alt="コイン" style="width:18px; vertical-align:-3px;"> <span id="slot-coin-value">${IS_DEV_MODE ? '∞' : minigameCoins}</span> 所持<span id="slot-plays-remaining" style="font-size:0.7rem; color:#e91e63;"></span></div>
                         <div id="slot-bonus-zone-text" style="font-weight:900; color:#ffab00; font-size:0.8rem;"></div>
                         <button onclick="toggleSlotHelpOverlay()" style="width:24px; height:24px; border-radius:50%; border:none; background:#5d4037; color:#fff; font-weight:900; font-size:0.75rem;">？</button>
                     </div>
@@ -555,21 +555,21 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
                             </div>
                         `).join('')}
 
-                        <img id="slot-lever" src="ui_images/slot/lever.webp" alt="レバー" onclick="pullSlotLever()"
+                        <img id="slot-lever" src="images/ui_images/slot/lever.webp" alt="レバー" onclick="pullSlotLever()"
                              style="position:absolute; top:52.142868%; left:101.642867%; width:13.14286%; height:27.8125%; transform-origin:50% 88%; z-index:5; cursor:pointer;" data-rotation="10">
 
-                        <img id="slot-machine-body" src="ui_images/slot/machine_body.webp" alt="スロットマシン" style="position:absolute; top:5.714281%; left:-8.928571%; width:116.428577%; height:158.2031%; display:block; z-index:10; pointer-events:none;">
+                        <img id="slot-machine-body" src="images/ui_images/slot/machine_body.webp" alt="スロットマシン" style="position:absolute; top:5.714281%; left:-8.928571%; width:116.428577%; height:158.2031%; display:block; z-index:10; pointer-events:none;">
 
-                        <img id="slot-lever-mount" src="ui_images/slot/lever_mount.webp" alt="レバー取り付け部品"
+                        <img id="slot-lever-mount" src="images/ui_images/slot/lever_mount.webp" alt="レバー取り付け部品"
                              style="position:absolute; top:65.142855%; left:104.214279%; width:7.642855%; height:28.1585%; z-index:15; pointer-events:none;">
 
-                        <img id="slot-stop-btn-0" src="ui_images/slot/button_1.webp" alt="① 止める" onclick="stopSlotReel(0)" style="position:absolute; top:93.428576%; left:13.071423%; width:16%; height:11.8750%; cursor:pointer; z-index:16;">
-                        <img id="slot-stop-btn-1" src="ui_images/slot/button_2.webp" alt="② 止める" onclick="stopSlotReel(1)" style="position:absolute; top:93.428581%; left:41.642851%; width:16%; height:11.3672%; cursor:pointer; z-index:16;">
-                        <img id="slot-stop-btn-2" src="ui_images/slot/button_3.webp" alt="③ 止める" onclick="stopSlotReel(2)" style="position:absolute; top:93.428582%; left:70.214287%; width:16%; height:11.5625%; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-0" src="images/ui_images/slot/button_1.webp" alt="① 止める" onclick="stopSlotReel(0)" style="position:absolute; top:93.428576%; left:13.071423%; width:16%; height:11.8750%; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-1" src="images/ui_images/slot/button_2.webp" alt="② 止める" onclick="stopSlotReel(1)" style="position:absolute; top:93.428581%; left:41.642851%; width:16%; height:11.3672%; cursor:pointer; z-index:16;">
+                        <img id="slot-stop-btn-2" src="images/ui_images/slot/button_3.webp" alt="③ 止める" onclick="stopSlotReel(2)" style="position:absolute; top:93.428582%; left:70.214287%; width:16%; height:11.5625%; cursor:pointer; z-index:16;">
 
                         <div id="slot-coin-slot-in" onclick="insertSlotCoin()" style="position:absolute; top:137.142856%; left:7.857135%; width:8.071431%; height:5.2596%; cursor:pointer; z-index:21;"></div>
                         <div id="slot-coin-slot-out" style="position:absolute; top:137.500007%; left:72.500008%; width:20%; height:15.4967%;"></div>
-                        <img id="slot-coin-insert-img" src="ui_images/slot/coin_side.webp" alt="" style="display:none; position:absolute; top:138.214276%; left:7.142852%; width:9.642859%; height:auto; z-index:20; pointer-events:none;">
+                        <img id="slot-coin-insert-img" src="images/ui_images/slot/coin_side.webp" alt="" style="display:none; position:absolute; top:138.214276%; left:7.142852%; width:9.642859%; height:auto; z-index:20; pointer-events:none;">
 
                         <div id="slot-pivot-marker" style="display:none; position:absolute; width:10px; height:10px; margin:-5px; border-radius:50%; background:#00e5ff; border:2px solid #fff; z-index:998; pointer-events:none;"></div>
                         <div id="slot-resize-handle-r" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ew-resize;"></div>
@@ -596,14 +596,14 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
                                     <img src="${s.img}" alt="" style="width:26px; height:26px; object-fit:contain;">
                                     <img src="${s.img}" alt="" style="width:26px; height:26px; object-fit:contain;">
                                     <span style="font-size:0.9rem; color:#5d4037; margin:0 4px;">→</span>
-                                    <img src="ui_images/slot/coin.webp" alt="コイン" style="width:20px; height:20px; object-fit:contain;">
+                                    <img src="images/ui_images/slot/coin.webp" alt="コイン" style="width:20px; height:20px; object-fit:contain;">
                                     <span style="font-size:0.85rem; font-weight:900; color:#5d4037;">×${s.payout}枚</span>
                                 </div>
                             `).join('')}
                             <div style="display:flex; align-items:center; justify-content:center; gap:4px; margin-top:4px;">
-                                <img src="ui_images/slot/symbol_replay.webp" alt="リプレイ" style="width:26px; height:26px; object-fit:contain;">
-                                <img src="ui_images/slot/symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
-                                <img src="ui_images/slot/symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
+                                <img src="images/ui_images/slot/symbol_replay.webp" alt="リプレイ" style="width:26px; height:26px; object-fit:contain;">
+                                <img src="images/ui_images/slot/symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
+                                <img src="images/ui_images/slot/symbol_replay.webp" alt="" style="width:26px; height:26px; object-fit:contain;">
                                 <span style="font-size:0.78rem; color:#4caf50; margin-left:6px;">→ コイン消費なしでもう一度！</span>
                             </div>
                         </div>
@@ -890,7 +890,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
             const stage = document.getElementById('slot-machine-stage');
             if (!stage) return;
             const cutin = document.createElement('img');
-            cutin.src = 'ui_images/mochisuke/image_scream.webp';
+            cutin.src = 'images/ui_images/mochisuke/image_scream.webp';
             cutin.style.cssText = 'position:absolute; top:30%; left:50%; width:70%; transform:translate(-50%,-50%); z-index:500; pointer-events:none; filter:drop-shadow(0 4px 12px rgba(0,0,0,0.5)); animation: slotCutinSlide 900ms ease-in-out;';
             stage.appendChild(cutin);
             // main.js: playAudioFile でカットイン専用の効果音を鳴らす
@@ -918,7 +918,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
             for (let i = 0; i < count; i++) {
                 setTimeout(() => {
                     const coin = document.createElement('img');
-                    coin.src = 'ui_images/slot/coin.webp';
+                    coin.src = 'images/ui_images/slot/coin.webp';
                     const startLeft = baseLeftPct + Math.random() * slotWidthPct;
                     coin.style.cssText = `position:absolute; top:${baseTopPct}%; left:${startLeft}%; width:9%; z-index:20; pointer-events:none;`;
                     stage.appendChild(coin);
@@ -1056,7 +1056,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
                 // 🐹 マーモット：最上位の大当たり演出。コインだけでは物足りないので、ガチャコインも一緒に付与する
                 const bonusGachaCoins = CONFIG.SLOT_JACKPOT_BONUS_GACHA_COINS;
                 // progress.js: setGachaCoins / gachaCoins で、今のガチャコイン所持数におまけ分(bonusGachaCoins)を加算する
-                setGachaCoins(gachaCoins + (bonusGachaCoins));
+                setGachaCoins(gachaCoins + bonusGachaCoins);
                 slotJackpotCount++;
                 // progress.js: trackMissionEvent でミッション進捗（今週のジャックポット回数）を加算する
                 trackMissionEvent('jackpotsThisWeek', 1);
@@ -1094,7 +1094,7 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
             const overlay = document.createElement('div');
             overlay.style.cssText = 'position:fixed; inset:0; z-index:3000; background:rgba(0,0,0,0); display:flex; flex-direction:column; align-items:center; justify-content:center; transition:background 0.4s;';
             overlay.innerHTML = `
-                <img src="ui_images/slot/symbol_marmot.webp" alt="マーモット" style="width:0; transition:width 0.5s cubic-bezier(0.2,0.8,0.3,1.2); filter:drop-shadow(0 0 30px #ff6ec7);">
+                <img src="images/ui_images/slot/symbol_marmot.webp" alt="マーモット" style="width:0; transition:width 0.5s cubic-bezier(0.2,0.8,0.3,1.2); filter:drop-shadow(0 0 30px #ff6ec7);">
                 <p style="color:#fff; font-weight:900; font-size:1.3rem; margin-top:16px; text-align:center; text-shadow:0 2px 8px rgba(0,0,0,0.6); opacity:0; transition:opacity 0.4s;">マーモットや！！<br>こんなん初めて見たで！！</p>
                 <p style="color:#ffd700; font-weight:900; font-size:1.1rem; margin-top:10px; opacity:0; transition:opacity 0.4s;">+${payout}枚 獲得！</p>
                 <p style="color:#e91e63; font-weight:900; font-size:1rem; margin-top:4px; opacity:0; transition:opacity 0.4s;">🎰 ガチャコイン +${bonusGachaCoins}枚もおまけ！</p>
@@ -1126,43 +1126,43 @@ import { minigameCoins, setMinigameCoins } from './core.js?v=2026-09-29-004';
          * @param {number} v - 新しい特化ゾーン残り回数
          * @returns {void}
          */
-        export function setSlotBonusZoneSpinsLeft(v) { slotBonusZoneSpinsLeft = v; }
+        export function setSlotBonusZoneSpinsLeft(newSlotBonusZoneSpinsLeft) { slotBonusZoneSpinsLeft = newSlotBonusZoneSpinsLeft; }
         /**
          * スロットのマーモット的中回数を書き換える（他ファイルからのsetter）。
          * @param {number} v - 新しいマーモット的中回数
          * @returns {void}
          */
-        export function setSlotJackpotCount(v) { slotJackpotCount = v; }
+        export function setSlotJackpotCount(newSlotJackpotCount) { slotJackpotCount = newSlotJackpotCount; }
         /**
          * マーモットが出るまでの回転数の最長記録を書き換える（他ファイルからのsetter）。
          * @param {number|null} v - 新しい最長記録（未達成ならnull）
          * @returns {void}
          */
-        export function setSlotLongestJackpotPulls(v) { slotLongestJackpotPulls = v; }
+        export function setSlotLongestJackpotPulls(newSlotLongestJackpotPulls) { slotLongestJackpotPulls = newSlotLongestJackpotPulls; }
         /**
          * スロットの残りプレイ可能回数を書き換える（他ファイルからのsetter）。
          * @param {number} v - 新しい残りプレイ回数
          * @returns {void}
          */
-        export function setSlotPlaysRemaining(v) { slotPlaysRemaining = v; }
+        export function setSlotPlaysRemaining(newSlotPlaysRemaining) { slotPlaysRemaining = newSlotPlaysRemaining; }
         /**
          * 前回マーモットが出てからの回転数を書き換える（他ファイルからのsetter）。
          * @param {number} v - 新しい経過回転数
          * @returns {void}
          */
-        export function setSlotPullsSinceJackpot(v) { slotPullsSinceJackpot = v; }
+        export function setSlotPullsSinceJackpot(newSlotPullsSinceJackpot) { slotPullsSinceJackpot = newSlotPullsSinceJackpot; }
         /**
          * マーモットが出るまでの回転数の最短記録を書き換える（他ファイルからのsetter）。
          * @param {number|null} v - 新しい最短記録（未達成ならnull）
          * @returns {void}
          */
-        export function setSlotShortestJackpotPulls(v) { slotShortestJackpotPulls = v; }
+        export function setSlotShortestJackpotPulls(newSlotShortestJackpotPulls) { slotShortestJackpotPulls = newSlotShortestJackpotPulls; }
         /**
          * スロットの総回転数（全期間の累計プル回数）を書き換える（他ファイルからのsetter）。
          * @param {number} v - 新しい総回転数
          * @returns {void}
          */
-        export function setSlotTotalPulls(v) { slotTotalPulls = v; }
+        export function setSlotTotalPulls(newSlotTotalPulls) { slotTotalPulls = newSlotTotalPulls; }
 
 /**
  * 稼働中のスロットの回転（リールアニメーション・回転ループ音）を停止する。

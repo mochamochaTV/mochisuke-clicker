@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-29-004';
+} from './data.js?v=2026-09-30-001';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-29-004';
-import { isMinigameActive } from './minigames.js?v=2026-09-29-004';
+} from './main.js?v=2026-09-30-001';
+import { isMinigameActive } from './minigames.js?v=2026-09-30-001';
 // スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -22,22 +22,22 @@ import {
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-29-004';
+} from './src/squeeze/physics.js?v=2026-09-30-001';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-29-004';
+} from './progress.js?v=2026-09-30-001';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-29-004';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-29-004';
+} from './shop.js?v=2026-09-30-001';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-30-001';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-29-004';
+} from './ui.js?v=2026-09-30-001';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -509,7 +509,7 @@ import {
             mochiDeformWrap.classList.remove('mochi-scream');
             void mochiDeformWrap.offsetWidth;
             mochiDeformWrap.classList.add('mochi-scream'); // 拡大・シェイクは、帽子・顔パーツも道連れの入れ物にかける
-            mochiBtnElement.src = 'ui_images/mochisuke/image_scream.webp';
+            mochiBtnElement.src = 'images/ui_images/mochisuke/image_scream.webp';
             // 🤖 ロボもちすけ装備中は、叫ぶ間だけロボを隠して、下の素の叫び顔を見せる
             // progress.js: equippedKisekae：現在着せ替え部屋で装備しているアイテムのID群を持つオブジェクト
             if (typeof equippedKisekae !== 'undefined' && equippedKisekae.fullbody) {
@@ -655,9 +655,9 @@ import {
             // progress.js: currentStageProgress/setCurrentStageProgress：現在の県での進み具合と、そのsetter
             // progress.js: checkStageProgress() は進み具合がステージ距離を超えたら次の県へ進める判定
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
-                setScore(score + (power)); setCurrentStageProgress(currentStageProgress + (power)); checkStageProgress();
+                setScore(score + power); setCurrentStageProgress(currentStageProgress + power); checkStageProgress();
             } else {
-                setScore(score + (power));
+                setScore(score + power);
             }
 
             // 新SE視覚演出（音を先に鳴らしてから見た目の処理をする＝DOM生成が音の発火を遅らせないようにする）
@@ -1314,7 +1314,7 @@ import {
                 const xOffsets = [-CONFIG.BUNSHIN_CLONE_X_OFFSET, CONFIG.BUNSHIN_CLONE_X_OFFSET];
                 for (let i = 0; i < 2; i++) {
                     const img = document.createElement('img');
-                    img.src = 'ui_images/mochisuke/image_0.webp';
+                    img.src = 'images/ui_images/mochisuke/image_0.webp';
                     img.className = 'bunshin-clone-img';
                     img.style.position = 'absolute';
                     img.style.width = CONFIG.BUNSHIN_CLONE_WIDTH_PX + 'px';
@@ -1384,7 +1384,7 @@ import {
             if (clothesItem) return clothesItem.img;
             // data.js: clothesData / shop.js: equippedClotheId（旧衣装システム。getTapPower参照）
             const target = clothesData.find(c => c.id === equippedClotheId);
-            return (target && target.img) ? target.img : 'ui_images/mochisuke/image_0.webp';
+            return (target && target.img) ? target.img : 'images/ui_images/mochisuke/image_0.webp';
         }
         /**
          * 叫び演出中でなければもちすけ画像を基準画像に戻し、装備中衣装のfilterを適用する。
@@ -1535,7 +1535,7 @@ import {
             if (!s || currentStageIndex < s.unlockStage) return;
             const price = s.lv === 0 ? s.unlockPrice : Math.floor(s.unlockPrice * Math.pow(s.lvPriceMult, s.lv));
             if (score < price) return;
-            setScore(score - (price));
+            setScore(score - price);
             s.lv += 1;
             playAudioFile('audio/levelup.mp3');
             showMochiComment(pickRandom(dialogueData.eventComments.levelUp));
@@ -1809,10 +1809,10 @@ import {
         setInterval(() => {
             let mps = getMps();
             if (mps > 0) {
-                let gain = mps / 10; setScore(score + (gain));
+                let gain = mps / 10; setScore(score + gain);
                 // このメインループでもexecuteSingleTapと同じ組み合わせ（progress.js/state.jsの各値、上記参照）で
                 // 自動増加(mps)ぶんの進捗を加算する
-                if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) { setCurrentStageProgress(currentStageProgress + (gain)); checkStageProgress(); }
+                if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) { setCurrentStageProgress(currentStageProgress + gain); checkStageProgress(); }
                 if (!document.body.classList.contains('modal-open')) updateDisplay();
             }
             updateSkillTimers(0.1); // スキルのクールタイムや持続タイマーを100ms単位でリアルタイム更新
@@ -1845,43 +1845,43 @@ import {
          * @param {number} v - バフが有効な期限のタイムスタンプ(ms)
          * @returns {void}
          */
-        export function setFeedBuffActiveUntil(v) { feedBuffActiveUntil = v; }
+        export function setFeedBuffActiveUntil(newFeedBuffActiveUntil) { feedBuffActiveUntil = newFeedBuffActiveUntil; }
         /**
          * 給餌の1日上限がリセットされた日付(feedLastResetDate)を書き換える。
          * @param {string} v - リセット済みとして記録する日付文字列
          * @returns {void}
          */
-        export function setFeedLastResetDate(v) { feedLastResetDate = v; }
+        export function setFeedLastResetDate(newFeedLastResetDate) { feedLastResetDate = newFeedLastResetDate; }
         /**
          * その日すでに使った給餌回数(feedPlaysUsedToday)を書き換える。
          * @param {number} v - 本日使用済みの給餌回数
          * @returns {void}
          */
-        export function setFeedPlaysUsedToday(v) { feedPlaysUsedToday = v; }
+        export function setFeedPlaysUsedToday(newFeedPlaysUsedToday) { feedPlaysUsedToday = newFeedPlaysUsedToday; }
         /**
          * 給餌のじらしレベル(feedTeaseLevel)を書き換える。
          * @param {number} v - 新しいじらしレベル
          * @returns {void}
          */
-        export function setFeedTeaseLevel(v) { feedTeaseLevel = v; }
+        export function setFeedTeaseLevel(newFeedTeaseLevel) { feedTeaseLevel = newFeedTeaseLevel; }
         /**
          * ゲーム画面の矩形情報(gameScreenRect)を書き換える。
          * @param {DOMRect|null} v - 新しい画面矩形
          * @returns {void}
          */
-        export function setGameScreenRect(v) { gameScreenRect = v; }
+        export function setGameScreenRect(newGameScreenRect) { gameScreenRect = newGameScreenRect; }
         /**
          * 1000コンボ称号を初回お祝い済みかどうかのフラグ(hasComboTitle1000)を書き換える。
          * @param {boolean} v - 初回お祝い済みかどうか
          * @returns {void}
          */
-        export function setHasComboTitle1000(v) { hasComboTitle1000 = v; }
+        export function setHasComboTitle1000(newHasComboTitle1000) { hasComboTitle1000 = newHasComboTitle1000; }
         /**
          * 直前にタップした時刻(lastTappedTime)を書き換える。
          * @param {number} v - タップ時刻のタイムスタンプ(ms)
          * @returns {void}
          */
-        export function setLastTappedTime(v) { lastTappedTime = v; }
+        export function setLastTappedTime(newLastTappedTime) { lastTappedTime = newLastTappedTime; }
 
 
         // window橋渡し：ここから下は、index.htmlのonclick=""（静的または動的に生成される

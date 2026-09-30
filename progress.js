@@ -3,21 +3,21 @@
 import {
   DAILY_MISSION_COUNT, DAILY_MISSION_POOL, PRESTIGE_SHOP_ITEMS, TUTORIAL_MISSIONS,
   WEEKLY_MISSION_COUNT, WEEKLY_MISSION_POOL, dialogueData, stages
-} from './data.js?v=2026-09-29-004';
+} from './data.js?v=2026-09-30-001';
 import {
   createParticle, formatMochi, getGameScreenRect, pickRandom, playAudioFile, screenShake,
   setGameBackground, vibrate
-} from './main.js?v=2026-09-29-004';
-import { setPurchasedItems } from './shop.js?v=2026-09-29-004';
+} from './main.js?v=2026-09-30-001';
+import { setPurchasedItems } from './shop.js?v=2026-09-30-001';
 import {
   OFFLINE_EARNINGS_CAP_HOURS_BASE, OFFLINE_EARNINGS_MIN_SECONDS, firstPlayTimestamp,
   lastActiveTimestamp, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-29-004';
-import { getMps, skills } from './tap.js?v=2026-09-29-004';
+} from './state.js?v=2026-09-30-001';
+import { getMps, skills } from './tap.js?v=2026-09-30-001';
 import {
   closeModal, diaryPageIndex, flipDiaryPage, openDiary, openModal, renderDiaryPage,
   setDiaryPageIndex, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-29-004';
+} from './ui.js?v=2026-09-30-001';
 
         // 🔧 CONFIG：ロジック中のマジックナンバーを調整しやすいようにまとめたもの
         const CONFIG = {
@@ -259,7 +259,7 @@ import {
             if (earnings <= 0) return;
 
             // state.js: score/setScore/saveGame でオフライン中の増加分をもちに反映して保存
-            setScore(score + (earnings));
+            setScore(score + earnings);
             saveGame();
             // ui.js: updateDisplay で画面表示を更新
             updateDisplay();
@@ -553,7 +553,7 @@ import {
             bg.onerror = () => {
                 alert('画像の生成に失敗しました。しばらくしてからもう一度お試しください。');
             };
-            bg.src = 'ui_images/backgrounds/japan_clear.webp';
+            bg.src = 'images/ui_images/backgrounds/japan_clear.webp';
         }
 
         /**
@@ -886,163 +886,163 @@ import {
          * @param {Object} v - 新しいスタンプ帳データ（{ 都道府県のインデックス: true }）
          * @returns {void}
          */
-        export function setCollectedStamps(v) { collectedStamps = v; }
+        export function setCollectedStamps(newCollectedStamps) { collectedStamps = newCollectedStamps; }
         /**
          * importした束縛currentMyroomSlotIndexを書き換えるsetter。
          * @param {number} v - 新しい部屋スロットのインデックス
          * @returns {void}
          */
-        export function setCurrentMyroomSlotIndex(v) { currentMyroomSlotIndex = v; }
+        export function setCurrentMyroomSlotIndex(newCurrentMyroomSlotIndex) { currentMyroomSlotIndex = newCurrentMyroomSlotIndex; }
         /**
          * importした束縛currentStageIndexを書き換えるsetter。
          * @param {number} v - 新しい現在ステージのインデックス
          * @returns {void}
          */
-        export function setCurrentStageIndex(v) { currentStageIndex = v; }
+        export function setCurrentStageIndex(newCurrentStageIndex) { currentStageIndex = newCurrentStageIndex; }
         /**
          * importした束縛currentStageProgressを書き換えるsetter。
          * @param {number} v - 新しい現在ステージの進行度
          * @returns {void}
          */
-        export function setCurrentStageProgress(v) { currentStageProgress = v; }
+        export function setCurrentStageProgress(newCurrentStageProgress) { currentStageProgress = newCurrentStageProgress; }
         /**
          * importした束縛equippedKisekaeを書き換えるsetter。
          * @param {Object} v - 新しい装着中の着せ替えアイテム構成
          * @returns {void}
          */
-        export function setEquippedKisekae(v) { equippedKisekae = v; }
+        export function setEquippedKisekae(newEquippedKisekae) { equippedKisekae = newEquippedKisekae; }
         /**
          * importした束縛equippedMyroomを書き換えるsetter。
          * @param {Object} v - 新しい配置中のマイルーム構成
          * @returns {void}
          */
-        export function setEquippedMyroom(v) { equippedMyroom = v; }
+        export function setEquippedMyroom(newEquippedMyroom) { equippedMyroom = newEquippedMyroom; }
         /**
          * importした束縛gachaCoinsを書き換えるsetter。
          * @param {number} v - 新しいガチャコイン所持数
          * @returns {void}
          */
-        export function setGachaCoins(v) { gachaCoins = v; }
+        export function setGachaCoins(newGachaCoins) { gachaCoins = newGachaCoins; }
         /**
          * importした束縛hasSeenJapanClearを書き換えるsetter。
          * @param {boolean} v - 新しい日本制覇演出済みフラグ
          * @returns {void}
          */
-        export function setHasSeenJapanClear(v) { hasSeenJapanClear = v; }
+        export function setHasSeenJapanClear(newHasSeenJapanClear) { hasSeenJapanClear = newHasSeenJapanClear; }
         /**
          * importした束縛missionClaimedを書き換えるsetter。
          * @param {Object} v - 新しい受け取り済みミッションの記録
          * @returns {void}
          */
-        export function setMissionClaimed(v) { missionClaimed = v; }
+        export function setMissionClaimed(newMissionClaimed) { missionClaimed = newMissionClaimed; }
         /**
          * importした束縛missionCountersを書き換えるsetter。
          * @param {Object} v - 新しいミッション進捗カウンター
          * @returns {void}
          */
-        export function setMissionCounters(v) { missionCounters = v; }
+        export function setMissionCounters(newMissionCounters) { missionCounters = newMissionCounters; }
         /**
          * importした束縛missionDailyDateを書き換えるsetter。
          * @param {string} v - 新しいデイリーリセット日付（YYYY-MM-DD）
          * @returns {void}
          */
-        export function setMissionDailyDate(v) { missionDailyDate = v; }
+        export function setMissionDailyDate(newMissionDailyDate) { missionDailyDate = newMissionDailyDate; }
         /**
          * importした束縛missionDailySelectedを書き換えるsetter。
          * @param {Array} v - 新しい今日のデイリーミッションID配列
          * @returns {void}
          */
-        export function setMissionDailySelected(v) { missionDailySelected = v; }
+        export function setMissionDailySelected(newMissionDailySelected) { missionDailySelected = newMissionDailySelected; }
         /**
          * importした束縛missionWeeklySelectedを書き換えるsetter。
          * @param {Array} v - 新しい今週のウィークリーミッションID配列
          * @returns {void}
          */
-        export function setMissionWeeklySelected(v) { missionWeeklySelected = v; }
+        export function setMissionWeeklySelected(newMissionWeeklySelected) { missionWeeklySelected = newMissionWeeklySelected; }
         /**
          * importした束縛missionWeeklyWeekKeyを書き換えるsetter。
          * @param {string} v - 新しいウィークリーリセット週キー（YYYY-Www）
          * @returns {void}
          */
-        export function setMissionWeeklyWeekKey(v) { missionWeeklyWeekKey = v; }
+        export function setMissionWeeklyWeekKey(newMissionWeeklyWeekKey) { missionWeeklyWeekKey = newMissionWeeklyWeekKey; }
         /**
          * importした束縛myroomSlotsを書き換えるsetter。
          * @param {Array} v - 新しいマイルームのスロット配列（最大3部屋）
          * @returns {void}
          */
-        export function setMyroomSlots(v) { myroomSlots = v; }
+        export function setMyroomSlots(newMyroomSlots) { myroomSlots = newMyroomSlots; }
         /**
          * importした束縛ownedKisekaeItemsを書き換えるsetter。
          * @param {Object} v - 新しい所持中の着せ替えアイテム構成
          * @returns {void}
          */
-        export function setOwnedKisekaeItems(v) { ownedKisekaeItems = v; }
+        export function setOwnedKisekaeItems(newOwnedKisekaeItems) { ownedKisekaeItems = newOwnedKisekaeItems; }
         /**
          * importした束縛ownedMyroomItemsを書き換えるsetter。
          * @param {Object} v - 新しい所持中のマイルームアイテム構成
          * @returns {void}
          */
-        export function setOwnedMyroomItems(v) { ownedMyroomItems = v; }
+        export function setOwnedMyroomItems(newOwnedMyroomItems) { ownedMyroomItems = newOwnedMyroomItems; }
         /**
          * importした束縛prefTapsを書き換えるsetter。
          * @param {Array} v - 新しい都道府県ごとの滞在中タップ数配列
          * @returns {void}
          */
-        export function setPrefTaps(v) { prefTaps = v; }
+        export function setPrefTaps(newPrefTaps) { prefTaps = newPrefTaps; }
         /**
          * importした束縛prestigeCountを書き換えるsetter。
          * @param {number} v - 新しい転生回数
          * @returns {void}
          */
-        export function setPrestigeCount(v) { prestigeCount = v; }
+        export function setPrestigeCount(newPrestigeCount) { prestigeCount = newPrestigeCount; }
         /**
          * importした束縛prestigePointsを書き換えるsetter。
          * @param {number} v - 新しい転生ポイント所持数
          * @returns {void}
          */
-        export function setPrestigePoints(v) { prestigePoints = v; }
+        export function setPrestigePoints(newPrestigePoints) { prestigePoints = newPrestigePoints; }
         /**
          * importした束縛prestigeScoreHistoryを書き換えるsetter。
          * @param {Array} v - 新しい各転生時のスコア履歴
          * @returns {void}
          */
-        export function setPrestigeScoreHistory(v) { prestigeScoreHistory = v; }
+        export function setPrestigeScoreHistory(newPrestigeScoreHistory) { prestigeScoreHistory = newPrestigeScoreHistory; }
         /**
          * importした束縛prestigeShopLvを書き換えるsetter。
          * @param {Object} v - 新しい転生ポイントショップの購入レベル構成
          * @returns {void}
          */
-        export function setPrestigeShopLv(v) { prestigeShopLv = v; }
+        export function setPrestigeShopLv(newPrestigeShopLv) { prestigeShopLv = newPrestigeShopLv; }
         /**
          * importした束縛previewKisekaeを書き換えるsetter。
          * @param {Object} v - 新しい試着中の着せ替え状態
          * @returns {void}
          */
-        export function setPreviewKisekae(v) { previewKisekae = v; }
+        export function setPreviewKisekae(newPreviewKisekae) { previewKisekae = newPreviewKisekae; }
         /**
          * importした束縛selectedStageIndexを書き換えるsetter。
          * @param {number} v - 新しい選択中ステージのインデックス
          * @returns {void}
          */
-        export function setSelectedStageIndex(v) { selectedStageIndex = v; }
+        export function setSelectedStageIndex(newSelectedStageIndex) { selectedStageIndex = newSelectedStageIndex; }
         /**
          * importした束縛stampDebugIntervalを書き換えるsetter。
          * @param {*} v - 新しい診断パネルのインターバルID（setIntervalの戻り値、またはnull）
          * @returns {void}
          */
-        export function setStampDebugInterval(v) { stampDebugInterval = v; }
+        export function setStampDebugInterval(newStampDebugInterval) { stampDebugInterval = newStampDebugInterval; }
         /**
          * importした束縛stampDebugModeを書き換えるsetter。
          * @param {boolean} v - 新しいスタンプ診断モードの有効状態
          * @returns {void}
          */
-        export function setStampDebugMode(v) { stampDebugMode = v; }
+        export function setStampDebugMode(newStampDebugMode) { stampDebugMode = newStampDebugMode; }
         /**
          * importした束縛tutorialMissionStepを書き換えるsetter。
          * @param {number} v - 新しいチュートリアルミッションの進行ステップ番号
          * @returns {void}
          */
-        export function setTutorialMissionStep(v) { tutorialMissionStep = v; }
+        export function setTutorialMissionStep(newTutorialMissionStep) { tutorialMissionStep = newTutorialMissionStep; }
 
 
         // window橋渡し：ここから下は、index.htmlのonclick=""（静的または動的に生成される

@@ -1,51 +1,51 @@
         export const stages = [
-            { name: "鹿児島", pinX: 17.1, pinY: 76.5, distance: 500, item: "スイートポテト", itemImg: "omiyage_images/kyushu_okinawa/kagoshima_item.webp", price: 12, diary: "旅の始まりは鹿児島からや！桜島がとっても雄大で、パワーをもらったで！ここから一緒に日本中をもちでいっぱいにしに行くんや！", bg: "bg_images/kyushu_okinawa/kagoshima.webp", diaryImg: "diary_images/kyushu_okinawa/kagoshima_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
-            { name: "宮崎", pinX: 21.0, pinY: 73.3, distance: 900, item: "完熟マンゴー", itemImg: "omiyage_images/kyushu_okinawa/miyazaki_item.webp", price: 25, diary: "宮崎にやってきたで！ヤシの木が並んで南国気分満点やなあ。お日様を浴びたマンゴーは甘くて最高や！", bg: "bg_images/kyushu_okinawa/miyazaki.webp", diaryImg: "diary_images/kyushu_okinawa/miyazaki_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
-            { name: "大分", pinX: 21.5, pinY: 69.4, distance: 1600, item: "ジャズ羊羹", itemImg: "omiyage_images/kyushu_okinawa/oita_item.webp", price: 50, diary: "大分といえば温泉やで！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだわ。", bg: "bg_images/kyushu_okinawa/oita.webp", diaryImg: "diary_images/kyushu_okinawa/oita_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
-            { name: "熊本", pinX: 16.2, pinY: 71.8, distance: 3000, item: "陣太鼓", itemImg: "omiyage_images/kyushu_okinawa/kumamoto_item.webp", price: 100, diary: "熊本城を見に行ったで！石垣がすごく高くて圧倒されちゃったわ。からし蓮根はツーンと大人の味や！", bg: "bg_images/kyushu_okinawa/kumamoto.webp", diaryImg: "diary_images/kyushu_okinawa/kumamoto_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
-            { name: "長崎", pinX: 10.6, pinY: 71.6, distance: 5500, item: "長崎カステラ", itemImg: "omiyage_images/kyushu_okinawa/nagasaki_item.webp", price: 200, diary: "長崎は坂の街やなあ！のぼり坂がいっぱいでいい運動になったで。カステラもザラメがシャリシャリで美味しいわ！", bg: "bg_images/kyushu_okinawa/nagasaki.webp", diaryImg: "diary_images/kyushu_okinawa/nagasaki_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
-            { name: "佐賀", pinX: 11.3, pinY: 69.1, distance: 10000, item: "佐賀のモナカ", itemImg: "omiyage_images/kyushu_okinawa/saga_item.webp", price: 375, diary: "佐賀の呼子で透明なイカを食べたで！コリコリしていて甘くて、今まで食べたイカと全然違うんや！", bg: "bg_images/kyushu_okinawa/saga.webp", diaryImg: "diary_images/kyushu_okinawa/saga_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
-            { name: "福岡", pinX: 17.2, pinY: 67.0, distance: 18000, item: "博多通りもん", itemImg: "omiyage_images/kyushu_okinawa/fukuoka_item.webp", price: 750, diary: "中洲の屋台街はとっても賑やかでワクワクしたで。美味しいとんこつラーメンをバッチリ替玉まで完食や！", bg: "bg_images/kyushu_okinawa/fukuoka.webp", diaryImg: "diary_images/kyushu_okinawa/fukuoka_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
-            { name: "山口", pinX: 19.0, pinY: 61.8, distance: 32000, item: "夏蜜柑丸漬", itemImg: "omiyage_images/chugoku_shikoku/yamaguchi_item.webp", price: 1500, diary: "本州に突入、最初は山口県やで！下関のフグはお皿が透けるくらい綺麗で、ぷにぷに歯ごたえが最高やったわ。", bg: "bg_images/chugoku_shikoku/yamaguchi.webp", diaryImg: "diary_images/chugoku_shikoku/yamaguchi_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
-            { name: "広島", pinX: 25.7, pinY: 61.6, distance: 58000, item: "もみじ饅頭", itemImg: "omiyage_images/chugoku_shikoku/hiroshima_item.webp", price: 3000, diary: "広島県にきたで！厳島神社の大きな鳥居が海に浮かんでいて神秘的やったわ。アツアツの焼き牡蠣は海の旨味がたっぷりや！", bg: "bg_images/chugoku_shikoku/hiroshima.webp", diaryImg: "diary_images/chugoku_shikoku/hiroshima_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
-            { name: "島根", pinX: 23.6, pinY: 57.9, distance: 100000, item: "ねこの人形焼", itemImg: "omiyage_images/chugoku_shikoku/shimane_item.webp", price: 6250, diary: "出雲大社にお参りしてきたで！良いご縁がありますように。割子で食べる出雲そばは香りがすごく良かったなあ。", bg: "bg_images/chugoku_shikoku/shimane.webp", diaryImg: "diary_images/chugoku_shikoku/shimane_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
-            { name: "鳥取", pinX: 30.9, pinY: 56.2, distance: 180000, item: "白うさぎ", itemImg: "omiyage_images/chugoku_shikoku/tottori_item.webp", price: 12500, diary: "鳥取砂丘はまるで砂の砂漠みたいで広かったなあ！たくさん歩いた後の大山ミルクソフトは濃厚で染みたわ。", bg: "bg_images/chugoku_shikoku/tottori.webp", diaryImg: "diary_images/chugoku_shikoku/tottori_d.webp", effectDesc: "タップ力 +2", tapBonus: 2, mpsBonus: 0 },
-            { name: "岡山", pinX: 31.1, pinY: 59.7, distance: 320000, item: "きびだんご", itemImg: "omiyage_images/chugoku_shikoku/okayama_item.webp", price: 25000, diary: "桃太郎の故郷、岡山県やで！美味しいきびだんごを貰ったから、もちすけも今日から桃太郎の仲間入りかな？", bg: "bg_images/chugoku_shikoku/okayama.webp", diaryImg: "diary_images/chugoku_shikoku/okayama_d.webp", effectDesc: "自動増加 +5もち/秒", tapBonus: 0, mpsBonus: 5 },
-            { name: "香川", pinX: 35.6, pinY: 63.8, distance: 580000, item: "讃岐モナカ", itemImg: "omiyage_images/chugoku_shikoku/kagawa_item.webp", price: 50000, diary: "瀬戸大橋を渡って四国へ！本場の讃岐うどんはコシが強くてツルツルや。お出しも美味しくて一気に完食したで！", bg: "bg_images/chugoku_shikoku/kagawa.webp", diaryImg: "diary_images/chugoku_shikoku/kagawa_d.webp", effectDesc: "タップ力 +10", tapBonus: 10, mpsBonus: 0 },
-            { name: "徳島", pinX: 38.1, pinY: 65.8, distance: 1000000, item: "金のしずく", itemImg: "omiyage_images/chugoku_shikoku/tokushima_item.webp", price: 100000, diary: "徳島県にやってきたで！阿波踊りのリズムにワクワクしたわ。名物のすだちを絞ったおもちはさっぱり美味しいや！", bg: "bg_images/chugoku_shikoku/tokushima.webp", diaryImg: "diary_images/chugoku_shikoku/tokushima_d.webp", effectDesc: "自動増加 +21もち/秒", tapBonus: 0, mpsBonus: 21 },
-            { name: "高知", pinX: 34.5, pinY: 68.9, distance: 1800000, item: "都まんじゅう", itemImg: "omiyage_images/chugoku_shikoku/kochi_item.webp", price: 200000, diary: "桂浜から見る太平洋はすっごく広くて感動したで！藁焼きの香ばしいカツオのたたきを食べてスタミナ満点や。", bg: "bg_images/chugoku_shikoku/kochi.webp", diaryImg: "diary_images/chugoku_shikoku/kochi_d.webp", effectDesc: "タップ力 +44", tapBonus: 44, mpsBonus: 0 },
-            { name: "愛媛", pinX: 29.5, pinY: 67.2, distance: 3200000, item: "坊っちゃん団子", itemImg: "omiyage_images/chugoku_shikoku/ehime_item.webp", price: 375000, diary: "愛媛県はみかんの王国やで！ジューシーなみかんが丸ごと入った大福は、甘酸っぱくてモチモチで最高や。", bg: "bg_images/chugoku_shikoku/ehime.webp", diaryImg: "diary_images/chugoku_shikoku/ehime_d.webp", effectDesc: "自動増加 +89もち/秒", tapBonus: 0, mpsBonus: 89 },
-            { name: "兵庫", pinX: 37.4, pinY: 58.9, distance: 5800000, item: "お城やき", itemImg: "omiyage_images/kinki/hyogo_item.webp", price: 750000, diary: "再び本州へ戻って兵庫県やで！神戸のオシャレな港町を散策したわ。贅沢な神戸牛ステーキはお口でとろけたで。", bg: "bg_images/kinki/hyogo.webp", diaryImg: "diary_images/kinki/hyogo_d.webp", effectDesc: "タップ力 +194", tapBonus: 194, mpsBonus: 0 },
-            { name: "大阪", pinX: 45.3, pinY: 60.3, distance: 10000000, item: "絶品豚まん", itemImg: "omiyage_images/kinki/osaka_item.webp", price: 1500000, diary: "笑いの街、大阪やで！通天閣を見上げて、道頓堀でアツアツのたこ焼きを食べたんや。ハフハフして美味しかったわ！", bg: "bg_images/kinki/osaka.webp", diaryImg: "diary_images/kinki/osaka_d.webp", effectDesc: "自動増加 +417もち/秒", tapBonus: 0, mpsBonus: 417 },
-            { name: "和歌山", pinX: 46.8, pinY: 64.4, distance: 18000000, item: "かげろう", itemImg: "omiyage_images/kinki/wakayama_item.webp", price: 3000000, diary: "和歌山でパンダを見てきたで！すっごく可愛かったなあ。すっぱい紀州梅干しを食べてシャキッと元気復活や！", bg: "bg_images/kinki/wakayama.webp", diaryImg: "diary_images/kinki/wakayama_d.webp", effectDesc: "タップ力 +889", tapBonus: 889, mpsBonus: 0 },
-            { name: "奈良", pinX: 49.3, pinY: 62.2, distance: 32000000, item: "かのこ饅頭", itemImg: "omiyage_images/kinki/nara_item.webp", price: 6250000, diary: "奈良公園でたくさんの鹿さんに囲まれたで！東大寺の大仏様はものすごく大きくて圧倒されちゃったわ。", bg: "bg_images/kinki/nara.webp", diaryImg: "diary_images/kinki/nara_d.webp", effectDesc: "自動増加 +1944もち/秒", tapBonus: 0, mpsBonus: 1944 },
-            { name: "三重", pinX: 56.7, pinY: 61.4, distance: 58000000, item: "赤福", itemImg: "omiyage_images/kinki/mie_item.webp", price: 12500000, diary: "伊勢神宮にお参りして心がスッキリしたで。お昼に食べた豪華な伊勢エビは、身がぷりっぷりで甘くて感動したわ！", bg: "bg_images/kinki/mie.webp", diaryImg: "diary_images/kinki/mie_d.webp", effectDesc: "タップ力 +4167", tapBonus: 4167, mpsBonus: 0 },
-            { name: "滋賀", pinX: 49.9, pinY: 57.9, distance: 100000000, item: "力餅", itemImg: "omiyage_images/kinki/shiga_item.webp", price: 25000000, diary: "日本最大の湖、琵琶湖にきたで！まるで海みたいに広くてびっくりしたわ。サクサクの近江牛メンチカツは肉汁たっぷりや！", bg: "bg_images/kinki/shiga.webp", diaryImg: "diary_images/kinki/shiga_d.webp", effectDesc: "自動増加 +8889もち/秒", tapBonus: 0, mpsBonus: 8889 },
-            { name: "京都", pinX: 43.5, pinY: 57.4, distance: 180000000, item: "生八ツ橋", itemImg: "omiyage_images/kinki/kyoto_item.webp", price: 50000000, diary: "金閣寺がピカピカ輝いていて綺麗やったなあ。上品な宇治抹茶パフェを食べて、はんなり京都を満喫したで。", bg: "bg_images/kinki/kyoto.webp", diaryImg: "diary_images/kinki/kyoto_d.webp", effectDesc: "タップ力 +19444", tapBonus: 19444, mpsBonus: 0 },
-            { name: "福井", pinX: 47.2, pinY: 55.2, distance: 320000000, item: "生チョコサンド", itemImg: "omiyage_images/chubu/fukui_item.webp", price: 100000000, diary: "中部地方の福井県やで！恐竜博物館で大きな骨を見てワクワクしたわ。冬の味覚、越前ガニは身がぎっしりで最高や！", bg: "bg_images/chubu/fukui.webp", diaryImg: "diary_images/chubu/fukui_d.webp", effectDesc: "自動増加 +41667もち/秒", tapBonus: 0, mpsBonus: 41667 },
-            { name: "石川", pinX: 48.1, pinY: 51.0, distance: 580000000, item: "のどぐろ寿司", itemImg: "omiyage_images/chubu/ishikawa_item.webp", price: 200000000, diary: "金沢の兼六園をお散歩したで。綺麗に整えられたお庭やったわ。濃厚なルーの金沢カレーはカツオがのってて大満足や！", bg: "bg_images/chubu/ishikawa.webp", diaryImg: "diary_images/chubu/ishikawa_d.webp", effectDesc: "タップ力 +88889", tapBonus: 88889, mpsBonus: 0 },
-            { name: "富山", pinX: 52.1, pinY: 50.0, distance: 1000000000, item: "ますの寿司", itemImg: "omiyage_images/chubu/toyama_item.webp", price: 375000000, diary: "立山連峰の雪景色がとっても美しかったで。富山ブラックラーメンは見た目が真っ黒だけど、コクがあってウマいわ！", bg: "bg_images/chubu/toyama.webp", diaryImg: "diary_images/chubu/toyama_d.webp", effectDesc: "自動増加 +194444もち/秒", tapBonus: 0, mpsBonus: 194444 },
-            { name: "新潟", pinX: 59.5, pinY: 46.3, distance: 1800000000, item: "笹だんごパン", itemImg: "omiyage_images/chubu/niigata_item.webp", price: 750000000, diary: "お米どころ新潟県やで！一面の田んぼが綺麗やったなあ。笹の香りがふんわり香る笹だんごは、もちもちで餡子たっぷりや。", bg: "bg_images/chubu/niigata.webp", diaryImg: "diary_images/chubu/niigata_d.webp", effectDesc: "タップ力 +444444", tapBonus: 444444, mpsBonus: 0 },
-            { name: "長野", pinX: 58.7, pinY: 51.0, distance: 3200000000, item: "信州リンゴパイ", itemImg: "omiyage_images/chubu/nagano_item.webp", price: 1500000000, diary: "信州の山々がすごく高くて空気がおいしいで！戸隠で食べた打ち立ての信州そばは、喉ごしが抜群やったわ。", bg: "bg_images/chubu/nagano.webp", diaryImg: "diary_images/chubu/nagano_d.webp", effectDesc: "自動増加 +888889もち/秒", tapBonus: 0, mpsBonus: 888889 },
-            { name: "岐阜", pinX: 53.0, pinY: 53.8, distance: 5800000000, item: "フルーツ大福", itemImg: "omiyage_images/chubu/gifu_item.webp", price: 3000000000, diary: "白川郷の合掌造り集落へ行ったで。昔話の世界みたいで感動したわ。ジューシーな飛騨牛串焼きを食べてエネルギー満タンや！", bg: "bg_images/chubu/gifu.webp", diaryImg: "diary_images/chubu/gifu_d.webp", effectDesc: "タップ力 +1944444", tapBonus: 1944444, mpsBonus: 0 },
-            { name: "愛知", pinX: 57.2, pinY: 58.3, distance: 10000000000, item: "ぴよりん", itemImg: "omiyage_images/chubu/aichi_item.webp", price: 3535533906, diary: "名古屋城の金のシャチホコが輝いていたで！スパイシーで甘辛い手羽先の唐揚げは、何本でも食べられちゃう味や！", bg: "bg_images/chubu/aichi.webp", diaryImg: "diary_images/chubu/aichi_d.webp", effectDesc: "自動増加 +1119930もち/秒", tapBonus: 0, mpsBonus: 1119930 },
-            { name: "静岡", pinX: 61.4, pinY: 56.0, distance: 18000000000, item: "うなぎパイ", itemImg: "omiyage_images/chubu/shizuoka_item.webp", price: 4166666667, diary: "静岡からは富士山がとっても大きく見えたで！コシのある麺に削り粉がかかった富士宮やきそばは最高にウマいわ！", bg: "bg_images/chubu/shizuoka.webp", diaryImg: "diary_images/chubu/shizuoka_d.webp", effectDesc: "タップ力 +2449846", tapBonus: 2449846, mpsBonus: 0 },
-            { name: "山梨", pinX: 60.8, pinY: 54.0, distance: 32000000000, item: "信玄餅", itemImg: "omiyage_images/chubu/yamanashi_item.webp", price: 8333333333, diary: "富士五湖の周りをのんびりお散歩したで。お夕飯に食べた具だくさんの熱々ほうとうは、お味噌の味が体に染みたわ。", bg: "bg_images/chubu/yamanashi.webp", diaryImg: "diary_images/chubu/yamanashi_d.webp", effectDesc: "自動増加 +1411023もち/秒", tapBonus: 0, mpsBonus: 1411023 },
-            { name: "神奈川", pinX: 72.6, pinY: 57.2, distance: 58000000000, item: "アーモンドクッキー", itemImg: "omiyage_images/kanto/kanagawa_item.webp", price: 16666666667, diary: "関東地方に突入、神奈川県やで！横浜中華街の活気ある雰囲気にワクワクしたわ。肉汁たっぷりの特製シュウマイを食べたで。", bg: "bg_images/kanto/kanagawa.webp", diaryImg: "diary_images/kanto/kanagawa_d.webp", effectDesc: "タップ力 +3086613", tapBonus: 3086613, mpsBonus: 0 },
-            { name: "東京", pinX: 70.9, pinY: 54.7, distance: 100000000000, item: "東京ばな奈", itemImg: "omiyage_images/kanto/tokyo_item.webp", price: 33333333333, diary: "日本の中心、大都会東京やで！東京タワーの展望台からの景色にびっくりしたわ。新鮮なネタの江戸前寿司を贅沢に味わったで。", bg: "bg_images/kanto/tokyo.webp", diaryImg: "diary_images/kanto/tokyo_d.webp", effectDesc: "自動増加 +1777778もち/秒", tapBonus: 0, mpsBonus: 1777778 },
-            { name: "千葉", pinX: 77.1, pinY: 55.0, distance: 180000000000, item: "ピーナッツモナカ", itemImg: "omiyage_images/kanto/chiba_item.webp", price: 66666666667, diary: "千葉の九十九里浜で波の音を聞いたで。名産の落花生を使った可愛い最中は、香ばしくて優しい甘さやったわ。", bg: "bg_images/kanto/chiba.webp", diaryImg: "diary_images/kanto/chiba_d.webp", effectDesc: "タップ力 +3888889", tapBonus: 3888889, mpsBonus: 0 },
-            { name: "埼玉", pinX: 67.9, pinY: 52.8, distance: 320000000000, item: "十万石まんじゅう", itemImg: "omiyage_images/kanto/saitama_item.webp", price: 125000000000, diary: "川越の小江戸の街並みをお散歩したで。お土産に買ったパリパリの草加せんべいは、お醤油の香りが香ばしいや！", bg: "bg_images/kanto/saitama.webp", diaryImg: "diary_images/kanto/saitama_d.webp", effectDesc: "自動増加 +8333333もち/秒", tapBonus: 0, mpsBonus: 8333333 },
-            { name: "群馬", pinX: 64.5, pinY: 49.5, distance: 580000000000, item: "シュガーラスク", itemImg: "omiyage_images/kanto/gunma_item.webp", price: 250000000000, diary: "草津温泉の湯畑はすごい迫力やったで！濃厚な甘辛タレをつけて炭火で焼いた大きな焼きまんじゅう、フカフカで美味しいや！", bg: "bg_images/kanto/gunma.webp", diaryImg: "diary_images/kanto/gunma_d.webp", effectDesc: "タップ力 +17777778", tapBonus: 17777778, mpsBonus: 0 },
-            { name: "栃木", pinX: 71.0, pinY: 50.0, distance: 1000000000000, item: "宇都宮餃子", itemImg: "omiyage_images/kanto/tochigi_item.webp", price: 500000000000, diary: "日光東照宮の「見ざる聞かざる言わざる」を見てきたで。宇都宮で食べた餃子は、皮がパリッと中はジューシーや！", bg: "bg_images/kanto/tochigi.webp", diaryImg: "diary_images/kanto/tochigi_d.webp", effectDesc: "自動増加 +38888889もち/秒", tapBonus: 0, mpsBonus: 38888889 },
-            { name: "茨城", pinX: 74.8, pinY: 52.5, distance: 1800000000000, item: "メロンバウム", itemImg: "omiyage_images/kanto/ibaraki_item.webp", price: 1000000000000, diary: "ひたち海浜公園の一面のネモフィラ畑が綺麗やったなあ。ちょっと珍しい納豆わらび餅はネバもち不思議な食感や！", bg: "bg_images/kanto/ibaraki.webp", diaryImg: "diary_images/kanto/ibaraki_d.webp", effectDesc: "タップ力 +88888889", tapBonus: 88888889, mpsBonus: 0 },
-            { name: "福島", pinX: 69.5, pinY: 45.5, distance: 3200000000000, item: "ままどおる", itemImg: "omiyage_images/tohoku_hokkaido/fushima_item.webp", price: 2083333333333, diary: "東北地方に突入、福島県やで！鶴ヶ城がどっしり格好よかったなあ。ちぢれ麺の喜多方ラーメンはスープがすっきりウマいや！", bg: "bg_images/tohoku_hokkaido/fushima.webp", diaryImg: "diary_images/tohoku_hokkaido/fushima_d.webp", effectDesc: "自動増加 +177777778もち/秒", tapBonus: 0, mpsBonus: 177777778 },
-            { name: "宮城", pinX: 70.9, pinY: 40.1, distance: 5800000000000, item: "ずんだ喜久福", itemImg: "omiyage_images/tohoku_hokkaido/miyagi_item.webp", price: 4166666666667, diary: "仙台の伊達政宗公の像に挨拶してきたで。綺麗な緑色のずんだ餅は、枝豆の粒々と優しい甘さが最高や！", bg: "bg_images/tohoku_hokkaido/miyagi.webp", diaryImg: "diary_images/tohoku_hokkaido/miyagi_d.webp", effectDesc: "タップ力 +388888889", tapBonus: 388888889, mpsBonus: 0 },
-            { name: "山形", pinX: 63.7, pinY: 41.5, distance: 10000000000000, item: "かりんとう饅頭", itemImg: "omiyage_images/tohoku_hokkaido/yamagata_item.webp", price: 8333333333333, diary: "蔵王のお釜のエメラルドグリーンの水面に感動したで。真っ赤に実った瑞々しいさくらんぼ、甘くてとっても贅沢や！", bg: "bg_images/tohoku_hokkaido/yamagata.webp", diaryImg: "diary_images/tohoku_hokkaido/yamagata_d.webp", effectDesc: "自動増加 +833333333もち/秒", tapBonus: 0, mpsBonus: 833333333 },
-            { name: "秋田", pinX: 64.8, pinY: 37.0, distance: 18000000000000, item: "あんごま餅", itemImg: "omiyage_images/tohoku_hokkaido/akita_item.webp", price: 16666666666667, diary: "なまはげさんに遭遇してちょっとびっくりしちゃったで！熱々のきりたんぽ鍋は、お出しを吸ったお米が最高や！", bg: "bg_images/tohoku_hokkaido/akita.webp", diaryImg: "diary_images/tohoku_hokkaido/akita_d.webp", effectDesc: "タップ力 +1777777778", tapBonus: 1777777778, mpsBonus: 0 },
-            { name: "岩手", pinX: 71.2, pinY: 34.7, distance: 32000000000000, item: "盛岡冷麺", itemImg: "omiyage_images/tohoku_hokkaido/iwate_item.webp", price: 33333333333333, diary: "中尊寺金色堂がキラキラでとっても厳かやったなあ。コシがものすごく強い盛岡冷麺は、ピリ辛スープでツルッと完食したで！", bg: "bg_images/tohoku_hokkaido/iwate.webp", diaryImg: "diary_images/tohoku_hokkaido/iwate_d.webp", effectDesc: "自動増加 +3888888889もち/秒", tapBonus: 0, mpsBonus: 3888888889 },
-            { name: "青森", pinX: 67.0, pinY: 31.1, distance: 58000000000000, item: "気になるリンゴ", itemImg: "omiyage_images/tohoku_hokkaido/aomori_item.webp", price: 66666666666667, diary: "ねぶた祭りの迫力ある灯籠に大興奮したで！青森名物のリンゴがたっぷり入った焼き立てパイは、サクサクで甘酸っぱくて最高や！", bg: "bg_images/tohoku_hokkaido/aomori.webp", diaryImg: "diary_images/tohoku_hokkaido/aomori_d.webp", effectDesc: "タップ力 +17777777778", tapBonus: 17777777778, mpsBonus: 0 },
-            { name: "北海道", pinX: 75.1, pinY: 19.6, distance: 100000000000000, item: "白い恋人", itemImg: "omiyage_images/tohoku_hokkaido/hokkaido_item.webp", price: 125000000000000, diary: "広大な北の大地、北海道やで！どこまでも真っ直ぐな道が続いてたなあ。特大のタラバガニは身がぷりぷりで美味しすぎてほっぺが落ちたわ！", bg: "bg_images/tohoku_hokkaido/hokkaido.webp", diaryImg: "diary_images/tohoku_hokkaido/hokkaido_d.webp", effectDesc: "自動増加 +16666666667もち/秒", tapBonus: 0, mpsBonus: 16666666667 },
-            { name: "沖縄", pinX: 27.5, pinY: 87.7, distance: 250000000000000, item: "サーターアンダギー", itemImg: "omiyage_images/kyushu_okinawa/okinawa_item.webp", price: 333333333333333, diary: "感動のゴール沖縄やで！北の大地から南の楽園へワープや！青い海を見ながら最高の日本縦断旅を締めくくったで！", bg: "bg_images/kyushu_okinawa/okinawa.webp", diaryImg: "diary_images/kyushu_okinawa/okinawa_d.webp", effectDesc: "タップ力 +111111111111", tapBonus: 111111111111, mpsBonus: 0 }
+            { name: "鹿児島", pinX: 17.1, pinY: 76.5, distance: 500, item: "スイートポテト", itemImg: "images/omiyage_images/kyushu_okinawa/kagoshima_item.webp", price: 12, diary: "旅の始まりは鹿児島からや！桜島がとっても雄大で、パワーをもらったで！ここから一緒に日本中をもちでいっぱいにしに行くんや！", bg: "images/bg_images/kyushu_okinawa/kagoshima.webp", diaryImg: "images/diary_images/kyushu_okinawa/kagoshima_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "宮崎", pinX: 21.0, pinY: 73.3, distance: 900, item: "完熟マンゴー", itemImg: "images/omiyage_images/kyushu_okinawa/miyazaki_item.webp", price: 25, diary: "宮崎にやってきたで！ヤシの木が並んで南国気分満点やなあ。お日様を浴びたマンゴーは甘くて最高や！", bg: "images/bg_images/kyushu_okinawa/miyazaki.webp", diaryImg: "images/diary_images/kyushu_okinawa/miyazaki_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
+            { name: "大分", pinX: 21.5, pinY: 69.4, distance: 1600, item: "ジャズ羊羹", itemImg: "images/omiyage_images/kyushu_okinawa/oita_item.webp", price: 50, diary: "大分といえば温泉やで！至る所から湯気がもくもく。足湯に入ったら、旅の疲れが一気に吹き飛んだわ。", bg: "images/bg_images/kyushu_okinawa/oita.webp", diaryImg: "images/diary_images/kyushu_okinawa/oita_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "熊本", pinX: 16.2, pinY: 71.8, distance: 3000, item: "陣太鼓", itemImg: "images/omiyage_images/kyushu_okinawa/kumamoto_item.webp", price: 100, diary: "熊本城を見に行ったで！石垣がすごく高くて圧倒されちゃったわ。からし蓮根はツーンと大人の味や！", bg: "images/bg_images/kyushu_okinawa/kumamoto.webp", diaryImg: "images/diary_images/kyushu_okinawa/kumamoto_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
+            { name: "長崎", pinX: 10.6, pinY: 71.6, distance: 5500, item: "長崎カステラ", itemImg: "images/omiyage_images/kyushu_okinawa/nagasaki_item.webp", price: 200, diary: "長崎は坂の街やなあ！のぼり坂がいっぱいでいい運動になったで。カステラもザラメがシャリシャリで美味しいわ！", bg: "images/bg_images/kyushu_okinawa/nagasaki.webp", diaryImg: "images/diary_images/kyushu_okinawa/nagasaki_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "佐賀", pinX: 11.3, pinY: 69.1, distance: 10000, item: "佐賀のモナカ", itemImg: "images/omiyage_images/kyushu_okinawa/saga_item.webp", price: 375, diary: "佐賀の呼子で透明なイカを食べたで！コリコリしていて甘くて、今まで食べたイカと全然違うんや！", bg: "images/bg_images/kyushu_okinawa/saga.webp", diaryImg: "images/diary_images/kyushu_okinawa/saga_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
+            { name: "福岡", pinX: 17.2, pinY: 67.0, distance: 18000, item: "博多通りもん", itemImg: "images/omiyage_images/kyushu_okinawa/fukuoka_item.webp", price: 750, diary: "中洲の屋台街はとっても賑やかでワクワクしたで。美味しいとんこつラーメンをバッチリ替玉まで完食や！", bg: "images/bg_images/kyushu_okinawa/fukuoka.webp", diaryImg: "images/diary_images/kyushu_okinawa/fukuoka_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "山口", pinX: 19.0, pinY: 61.8, distance: 32000, item: "夏蜜柑丸漬", itemImg: "images/omiyage_images/chugoku_shikoku/yamaguchi_item.webp", price: 1500, diary: "本州に突入、最初は山口県やで！下関のフグはお皿が透けるくらい綺麗で、ぷにぷに歯ごたえが最高やったわ。", bg: "images/bg_images/chugoku_shikoku/yamaguchi.webp", diaryImg: "images/diary_images/chugoku_shikoku/yamaguchi_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
+            { name: "広島", pinX: 25.7, pinY: 61.6, distance: 58000, item: "もみじ饅頭", itemImg: "images/omiyage_images/chugoku_shikoku/hiroshima_item.webp", price: 3000, diary: "広島県にきたで！厳島神社の大きな鳥居が海に浮かんでいて神秘的やったわ。アツアツの焼き牡蠣は海の旨味がたっぷりや！", bg: "images/bg_images/chugoku_shikoku/hiroshima.webp", diaryImg: "images/diary_images/chugoku_shikoku/hiroshima_d.webp", effectDesc: "タップ力 +1", tapBonus: 1, mpsBonus: 0 },
+            { name: "島根", pinX: 23.6, pinY: 57.9, distance: 100000, item: "ねこの人形焼", itemImg: "images/omiyage_images/chugoku_shikoku/shimane_item.webp", price: 6250, diary: "出雲大社にお参りしてきたで！良いご縁がありますように。割子で食べる出雲そばは香りがすごく良かったなあ。", bg: "images/bg_images/chugoku_shikoku/shimane.webp", diaryImg: "images/diary_images/chugoku_shikoku/shimane_d.webp", effectDesc: "自動増加 +1もち/秒", tapBonus: 0, mpsBonus: 1 },
+            { name: "鳥取", pinX: 30.9, pinY: 56.2, distance: 180000, item: "白うさぎ", itemImg: "images/omiyage_images/chugoku_shikoku/tottori_item.webp", price: 12500, diary: "鳥取砂丘はまるで砂の砂漠みたいで広かったなあ！たくさん歩いた後の大山ミルクソフトは濃厚で染みたわ。", bg: "images/bg_images/chugoku_shikoku/tottori.webp", diaryImg: "images/diary_images/chugoku_shikoku/tottori_d.webp", effectDesc: "タップ力 +2", tapBonus: 2, mpsBonus: 0 },
+            { name: "岡山", pinX: 31.1, pinY: 59.7, distance: 320000, item: "きびだんご", itemImg: "images/omiyage_images/chugoku_shikoku/okayama_item.webp", price: 25000, diary: "桃太郎の故郷、岡山県やで！美味しいきびだんごを貰ったから、もちすけも今日から桃太郎の仲間入りかな？", bg: "images/bg_images/chugoku_shikoku/okayama.webp", diaryImg: "images/diary_images/chugoku_shikoku/okayama_d.webp", effectDesc: "自動増加 +5もち/秒", tapBonus: 0, mpsBonus: 5 },
+            { name: "香川", pinX: 35.6, pinY: 63.8, distance: 580000, item: "讃岐モナカ", itemImg: "images/omiyage_images/chugoku_shikoku/kagawa_item.webp", price: 50000, diary: "瀬戸大橋を渡って四国へ！本場の讃岐うどんはコシが強くてツルツルや。お出しも美味しくて一気に完食したで！", bg: "images/bg_images/chugoku_shikoku/kagawa.webp", diaryImg: "images/diary_images/chugoku_shikoku/kagawa_d.webp", effectDesc: "タップ力 +10", tapBonus: 10, mpsBonus: 0 },
+            { name: "徳島", pinX: 38.1, pinY: 65.8, distance: 1000000, item: "金のしずく", itemImg: "images/omiyage_images/chugoku_shikoku/tokushima_item.webp", price: 100000, diary: "徳島県にやってきたで！阿波踊りのリズムにワクワクしたわ。名物のすだちを絞ったおもちはさっぱり美味しいや！", bg: "images/bg_images/chugoku_shikoku/tokushima.webp", diaryImg: "images/diary_images/chugoku_shikoku/tokushima_d.webp", effectDesc: "自動増加 +21もち/秒", tapBonus: 0, mpsBonus: 21 },
+            { name: "高知", pinX: 34.5, pinY: 68.9, distance: 1800000, item: "都まんじゅう", itemImg: "images/omiyage_images/chugoku_shikoku/kochi_item.webp", price: 200000, diary: "桂浜から見る太平洋はすっごく広くて感動したで！藁焼きの香ばしいカツオのたたきを食べてスタミナ満点や。", bg: "images/bg_images/chugoku_shikoku/kochi.webp", diaryImg: "images/diary_images/chugoku_shikoku/kochi_d.webp", effectDesc: "タップ力 +44", tapBonus: 44, mpsBonus: 0 },
+            { name: "愛媛", pinX: 29.5, pinY: 67.2, distance: 3200000, item: "坊っちゃん団子", itemImg: "images/omiyage_images/chugoku_shikoku/ehime_item.webp", price: 375000, diary: "愛媛県はみかんの王国やで！ジューシーなみかんが丸ごと入った大福は、甘酸っぱくてモチモチで最高や。", bg: "images/bg_images/chugoku_shikoku/ehime.webp", diaryImg: "images/diary_images/chugoku_shikoku/ehime_d.webp", effectDesc: "自動増加 +89もち/秒", tapBonus: 0, mpsBonus: 89 },
+            { name: "兵庫", pinX: 37.4, pinY: 58.9, distance: 5800000, item: "お城やき", itemImg: "images/omiyage_images/kinki/hyogo_item.webp", price: 750000, diary: "再び本州へ戻って兵庫県やで！神戸のオシャレな港町を散策したわ。贅沢な神戸牛ステーキはお口でとろけたで。", bg: "images/bg_images/kinki/hyogo.webp", diaryImg: "images/diary_images/kinki/hyogo_d.webp", effectDesc: "タップ力 +194", tapBonus: 194, mpsBonus: 0 },
+            { name: "大阪", pinX: 45.3, pinY: 60.3, distance: 10000000, item: "絶品豚まん", itemImg: "images/omiyage_images/kinki/osaka_item.webp", price: 1500000, diary: "笑いの街、大阪やで！通天閣を見上げて、道頓堀でアツアツのたこ焼きを食べたんや。ハフハフして美味しかったわ！", bg: "images/bg_images/kinki/osaka.webp", diaryImg: "images/diary_images/kinki/osaka_d.webp", effectDesc: "自動増加 +417もち/秒", tapBonus: 0, mpsBonus: 417 },
+            { name: "和歌山", pinX: 46.8, pinY: 64.4, distance: 18000000, item: "かげろう", itemImg: "images/omiyage_images/kinki/wakayama_item.webp", price: 3000000, diary: "和歌山でパンダを見てきたで！すっごく可愛かったなあ。すっぱい紀州梅干しを食べてシャキッと元気復活や！", bg: "images/bg_images/kinki/wakayama.webp", diaryImg: "images/diary_images/kinki/wakayama_d.webp", effectDesc: "タップ力 +889", tapBonus: 889, mpsBonus: 0 },
+            { name: "奈良", pinX: 49.3, pinY: 62.2, distance: 32000000, item: "かのこ饅頭", itemImg: "images/omiyage_images/kinki/nara_item.webp", price: 6250000, diary: "奈良公園でたくさんの鹿さんに囲まれたで！東大寺の大仏様はものすごく大きくて圧倒されちゃったわ。", bg: "images/bg_images/kinki/nara.webp", diaryImg: "images/diary_images/kinki/nara_d.webp", effectDesc: "自動増加 +1944もち/秒", tapBonus: 0, mpsBonus: 1944 },
+            { name: "三重", pinX: 56.7, pinY: 61.4, distance: 58000000, item: "赤福", itemImg: "images/omiyage_images/kinki/mie_item.webp", price: 12500000, diary: "伊勢神宮にお参りして心がスッキリしたで。お昼に食べた豪華な伊勢エビは、身がぷりっぷりで甘くて感動したわ！", bg: "images/bg_images/kinki/mie.webp", diaryImg: "images/diary_images/kinki/mie_d.webp", effectDesc: "タップ力 +4167", tapBonus: 4167, mpsBonus: 0 },
+            { name: "滋賀", pinX: 49.9, pinY: 57.9, distance: 100000000, item: "力餅", itemImg: "images/omiyage_images/kinki/shiga_item.webp", price: 25000000, diary: "日本最大の湖、琵琶湖にきたで！まるで海みたいに広くてびっくりしたわ。サクサクの近江牛メンチカツは肉汁たっぷりや！", bg: "images/bg_images/kinki/shiga.webp", diaryImg: "images/diary_images/kinki/shiga_d.webp", effectDesc: "自動増加 +8889もち/秒", tapBonus: 0, mpsBonus: 8889 },
+            { name: "京都", pinX: 43.5, pinY: 57.4, distance: 180000000, item: "生八ツ橋", itemImg: "images/omiyage_images/kinki/kyoto_item.webp", price: 50000000, diary: "金閣寺がピカピカ輝いていて綺麗やったなあ。上品な宇治抹茶パフェを食べて、はんなり京都を満喫したで。", bg: "images/bg_images/kinki/kyoto.webp", diaryImg: "images/diary_images/kinki/kyoto_d.webp", effectDesc: "タップ力 +19444", tapBonus: 19444, mpsBonus: 0 },
+            { name: "福井", pinX: 47.2, pinY: 55.2, distance: 320000000, item: "生チョコサンド", itemImg: "images/omiyage_images/chubu/fukui_item.webp", price: 100000000, diary: "中部地方の福井県やで！恐竜博物館で大きな骨を見てワクワクしたわ。冬の味覚、越前ガニは身がぎっしりで最高や！", bg: "images/bg_images/chubu/fukui.webp", diaryImg: "images/diary_images/chubu/fukui_d.webp", effectDesc: "自動増加 +41667もち/秒", tapBonus: 0, mpsBonus: 41667 },
+            { name: "石川", pinX: 48.1, pinY: 51.0, distance: 580000000, item: "のどぐろ寿司", itemImg: "images/omiyage_images/chubu/ishikawa_item.webp", price: 200000000, diary: "金沢の兼六園をお散歩したで。綺麗に整えられたお庭やったわ。濃厚なルーの金沢カレーはカツオがのってて大満足や！", bg: "images/bg_images/chubu/ishikawa.webp", diaryImg: "images/diary_images/chubu/ishikawa_d.webp", effectDesc: "タップ力 +88889", tapBonus: 88889, mpsBonus: 0 },
+            { name: "富山", pinX: 52.1, pinY: 50.0, distance: 1000000000, item: "ますの寿司", itemImg: "images/omiyage_images/chubu/toyama_item.webp", price: 375000000, diary: "立山連峰の雪景色がとっても美しかったで。富山ブラックラーメンは見た目が真っ黒だけど、コクがあってウマいわ！", bg: "images/bg_images/chubu/toyama.webp", diaryImg: "images/diary_images/chubu/toyama_d.webp", effectDesc: "自動増加 +194444もち/秒", tapBonus: 0, mpsBonus: 194444 },
+            { name: "新潟", pinX: 59.5, pinY: 46.3, distance: 1800000000, item: "笹だんごパン", itemImg: "images/omiyage_images/chubu/niigata_item.webp", price: 750000000, diary: "お米どころ新潟県やで！一面の田んぼが綺麗やったなあ。笹の香りがふんわり香る笹だんごは、もちもちで餡子たっぷりや。", bg: "images/bg_images/chubu/niigata.webp", diaryImg: "images/diary_images/chubu/niigata_d.webp", effectDesc: "タップ力 +444444", tapBonus: 444444, mpsBonus: 0 },
+            { name: "長野", pinX: 58.7, pinY: 51.0, distance: 3200000000, item: "信州リンゴパイ", itemImg: "images/omiyage_images/chubu/nagano_item.webp", price: 1500000000, diary: "信州の山々がすごく高くて空気がおいしいで！戸隠で食べた打ち立ての信州そばは、喉ごしが抜群やったわ。", bg: "images/bg_images/chubu/nagano.webp", diaryImg: "images/diary_images/chubu/nagano_d.webp", effectDesc: "自動増加 +888889もち/秒", tapBonus: 0, mpsBonus: 888889 },
+            { name: "岐阜", pinX: 53.0, pinY: 53.8, distance: 5800000000, item: "フルーツ大福", itemImg: "images/omiyage_images/chubu/gifu_item.webp", price: 3000000000, diary: "白川郷の合掌造り集落へ行ったで。昔話の世界みたいで感動したわ。ジューシーな飛騨牛串焼きを食べてエネルギー満タンや！", bg: "images/bg_images/chubu/gifu.webp", diaryImg: "images/diary_images/chubu/gifu_d.webp", effectDesc: "タップ力 +1944444", tapBonus: 1944444, mpsBonus: 0 },
+            { name: "愛知", pinX: 57.2, pinY: 58.3, distance: 10000000000, item: "ぴよりん", itemImg: "images/omiyage_images/chubu/aichi_item.webp", price: 3535533906, diary: "名古屋城の金のシャチホコが輝いていたで！スパイシーで甘辛い手羽先の唐揚げは、何本でも食べられちゃう味や！", bg: "images/bg_images/chubu/aichi.webp", diaryImg: "images/diary_images/chubu/aichi_d.webp", effectDesc: "自動増加 +1119930もち/秒", tapBonus: 0, mpsBonus: 1119930 },
+            { name: "静岡", pinX: 61.4, pinY: 56.0, distance: 18000000000, item: "うなぎパイ", itemImg: "images/omiyage_images/chubu/shizuoka_item.webp", price: 4166666667, diary: "静岡からは富士山がとっても大きく見えたで！コシのある麺に削り粉がかかった富士宮やきそばは最高にウマいわ！", bg: "images/bg_images/chubu/shizuoka.webp", diaryImg: "images/diary_images/chubu/shizuoka_d.webp", effectDesc: "タップ力 +2449846", tapBonus: 2449846, mpsBonus: 0 },
+            { name: "山梨", pinX: 60.8, pinY: 54.0, distance: 32000000000, item: "信玄餅", itemImg: "images/omiyage_images/chubu/yamanashi_item.webp", price: 8333333333, diary: "富士五湖の周りをのんびりお散歩したで。お夕飯に食べた具だくさんの熱々ほうとうは、お味噌の味が体に染みたわ。", bg: "images/bg_images/chubu/yamanashi.webp", diaryImg: "images/diary_images/chubu/yamanashi_d.webp", effectDesc: "自動増加 +1411023もち/秒", tapBonus: 0, mpsBonus: 1411023 },
+            { name: "神奈川", pinX: 72.6, pinY: 57.2, distance: 58000000000, item: "アーモンドクッキー", itemImg: "images/omiyage_images/kanto/kanagawa_item.webp", price: 16666666667, diary: "関東地方に突入、神奈川県やで！横浜中華街の活気ある雰囲気にワクワクしたわ。肉汁たっぷりの特製シュウマイを食べたで。", bg: "images/bg_images/kanto/kanagawa.webp", diaryImg: "images/diary_images/kanto/kanagawa_d.webp", effectDesc: "タップ力 +3086613", tapBonus: 3086613, mpsBonus: 0 },
+            { name: "東京", pinX: 70.9, pinY: 54.7, distance: 100000000000, item: "東京ばな奈", itemImg: "images/omiyage_images/kanto/tokyo_item.webp", price: 33333333333, diary: "日本の中心、大都会東京やで！東京タワーの展望台からの景色にびっくりしたわ。新鮮なネタの江戸前寿司を贅沢に味わったで。", bg: "images/bg_images/kanto/tokyo.webp", diaryImg: "images/diary_images/kanto/tokyo_d.webp", effectDesc: "自動増加 +1777778もち/秒", tapBonus: 0, mpsBonus: 1777778 },
+            { name: "千葉", pinX: 77.1, pinY: 55.0, distance: 180000000000, item: "ピーナッツモナカ", itemImg: "images/omiyage_images/kanto/chiba_item.webp", price: 66666666667, diary: "千葉の九十九里浜で波の音を聞いたで。名産の落花生を使った可愛い最中は、香ばしくて優しい甘さやったわ。", bg: "images/bg_images/kanto/chiba.webp", diaryImg: "images/diary_images/kanto/chiba_d.webp", effectDesc: "タップ力 +3888889", tapBonus: 3888889, mpsBonus: 0 },
+            { name: "埼玉", pinX: 67.9, pinY: 52.8, distance: 320000000000, item: "十万石まんじゅう", itemImg: "images/omiyage_images/kanto/saitama_item.webp", price: 125000000000, diary: "川越の小江戸の街並みをお散歩したで。お土産に買ったパリパリの草加せんべいは、お醤油の香りが香ばしいや！", bg: "images/bg_images/kanto/saitama.webp", diaryImg: "images/diary_images/kanto/saitama_d.webp", effectDesc: "自動増加 +8333333もち/秒", tapBonus: 0, mpsBonus: 8333333 },
+            { name: "群馬", pinX: 64.5, pinY: 49.5, distance: 580000000000, item: "シュガーラスク", itemImg: "images/omiyage_images/kanto/gunma_item.webp", price: 250000000000, diary: "草津温泉の湯畑はすごい迫力やったで！濃厚な甘辛タレをつけて炭火で焼いた大きな焼きまんじゅう、フカフカで美味しいや！", bg: "images/bg_images/kanto/gunma.webp", diaryImg: "images/diary_images/kanto/gunma_d.webp", effectDesc: "タップ力 +17777778", tapBonus: 17777778, mpsBonus: 0 },
+            { name: "栃木", pinX: 71.0, pinY: 50.0, distance: 1000000000000, item: "宇都宮餃子", itemImg: "images/omiyage_images/kanto/tochigi_item.webp", price: 500000000000, diary: "日光東照宮の「見ざる聞かざる言わざる」を見てきたで。宇都宮で食べた餃子は、皮がパリッと中はジューシーや！", bg: "images/bg_images/kanto/tochigi.webp", diaryImg: "images/diary_images/kanto/tochigi_d.webp", effectDesc: "自動増加 +38888889もち/秒", tapBonus: 0, mpsBonus: 38888889 },
+            { name: "茨城", pinX: 74.8, pinY: 52.5, distance: 1800000000000, item: "メロンバウム", itemImg: "images/omiyage_images/kanto/ibaraki_item.webp", price: 1000000000000, diary: "ひたち海浜公園の一面のネモフィラ畑が綺麗やったなあ。ちょっと珍しい納豆わらび餅はネバもち不思議な食感や！", bg: "images/bg_images/kanto/ibaraki.webp", diaryImg: "images/diary_images/kanto/ibaraki_d.webp", effectDesc: "タップ力 +88888889", tapBonus: 88888889, mpsBonus: 0 },
+            { name: "福島", pinX: 69.5, pinY: 45.5, distance: 3200000000000, item: "ままどおる", itemImg: "images/omiyage_images/tohoku_hokkaido/fushima_item.webp", price: 2083333333333, diary: "東北地方に突入、福島県やで！鶴ヶ城がどっしり格好よかったなあ。ちぢれ麺の喜多方ラーメンはスープがすっきりウマいや！", bg: "images/bg_images/tohoku_hokkaido/fushima.webp", diaryImg: "images/diary_images/tohoku_hokkaido/fushima_d.webp", effectDesc: "自動増加 +177777778もち/秒", tapBonus: 0, mpsBonus: 177777778 },
+            { name: "宮城", pinX: 70.9, pinY: 40.1, distance: 5800000000000, item: "ずんだ喜久福", itemImg: "images/omiyage_images/tohoku_hokkaido/miyagi_item.webp", price: 4166666666667, diary: "仙台の伊達政宗公の像に挨拶してきたで。綺麗な緑色のずんだ餅は、枝豆の粒々と優しい甘さが最高や！", bg: "images/bg_images/tohoku_hokkaido/miyagi.webp", diaryImg: "images/diary_images/tohoku_hokkaido/miyagi_d.webp", effectDesc: "タップ力 +388888889", tapBonus: 388888889, mpsBonus: 0 },
+            { name: "山形", pinX: 63.7, pinY: 41.5, distance: 10000000000000, item: "かりんとう饅頭", itemImg: "images/omiyage_images/tohoku_hokkaido/yamagata_item.webp", price: 8333333333333, diary: "蔵王のお釜のエメラルドグリーンの水面に感動したで。真っ赤に実った瑞々しいさくらんぼ、甘くてとっても贅沢や！", bg: "images/bg_images/tohoku_hokkaido/yamagata.webp", diaryImg: "images/diary_images/tohoku_hokkaido/yamagata_d.webp", effectDesc: "自動増加 +833333333もち/秒", tapBonus: 0, mpsBonus: 833333333 },
+            { name: "秋田", pinX: 64.8, pinY: 37.0, distance: 18000000000000, item: "あんごま餅", itemImg: "images/omiyage_images/tohoku_hokkaido/akita_item.webp", price: 16666666666667, diary: "なまはげさんに遭遇してちょっとびっくりしちゃったで！熱々のきりたんぽ鍋は、お出しを吸ったお米が最高や！", bg: "images/bg_images/tohoku_hokkaido/akita.webp", diaryImg: "images/diary_images/tohoku_hokkaido/akita_d.webp", effectDesc: "タップ力 +1777777778", tapBonus: 1777777778, mpsBonus: 0 },
+            { name: "岩手", pinX: 71.2, pinY: 34.7, distance: 32000000000000, item: "盛岡冷麺", itemImg: "images/omiyage_images/tohoku_hokkaido/iwate_item.webp", price: 33333333333333, diary: "中尊寺金色堂がキラキラでとっても厳かやったなあ。コシがものすごく強い盛岡冷麺は、ピリ辛スープでツルッと完食したで！", bg: "images/bg_images/tohoku_hokkaido/iwate.webp", diaryImg: "images/diary_images/tohoku_hokkaido/iwate_d.webp", effectDesc: "自動増加 +3888888889もち/秒", tapBonus: 0, mpsBonus: 3888888889 },
+            { name: "青森", pinX: 67.0, pinY: 31.1, distance: 58000000000000, item: "気になるリンゴ", itemImg: "images/omiyage_images/tohoku_hokkaido/aomori_item.webp", price: 66666666666667, diary: "ねぶた祭りの迫力ある灯籠に大興奮したで！青森名物のリンゴがたっぷり入った焼き立てパイは、サクサクで甘酸っぱくて最高や！", bg: "images/bg_images/tohoku_hokkaido/aomori.webp", diaryImg: "images/diary_images/tohoku_hokkaido/aomori_d.webp", effectDesc: "タップ力 +17777777778", tapBonus: 17777777778, mpsBonus: 0 },
+            { name: "北海道", pinX: 75.1, pinY: 19.6, distance: 100000000000000, item: "白い恋人", itemImg: "images/omiyage_images/tohoku_hokkaido/hokkaido_item.webp", price: 125000000000000, diary: "広大な北の大地、北海道やで！どこまでも真っ直ぐな道が続いてたなあ。特大のタラバガニは身がぷりぷりで美味しすぎてほっぺが落ちたわ！", bg: "images/bg_images/tohoku_hokkaido/hokkaido.webp", diaryImg: "images/diary_images/tohoku_hokkaido/hokkaido_d.webp", effectDesc: "自動増加 +16666666667もち/秒", tapBonus: 0, mpsBonus: 16666666667 },
+            { name: "沖縄", pinX: 27.5, pinY: 87.7, distance: 250000000000000, item: "サーターアンダギー", itemImg: "images/omiyage_images/kyushu_okinawa/okinawa_item.webp", price: 333333333333333, diary: "感動のゴール沖縄やで！北の大地から南の楽園へワープや！青い海を見ながら最高の日本縦断旅を締めくくったで！", bg: "images/bg_images/kyushu_okinawa/okinawa.webp", diaryImg: "images/diary_images/kyushu_okinawa/okinawa_d.webp", effectDesc: "タップ力 +111111111111", tapBonus: 111111111111, mpsBonus: 0 }
         ];
 
         // ===================================================================
@@ -56,7 +56,7 @@
         // price    : ショップでの購入価格（もち）。0にすると最初から所持済み扱いになります
         // desc     : 倉庫・ショップに表示される説明文（能力の説明もここに書いてください）
         // img      : 【新規追加時はここに画像ファイル名を書くだけでOK】
-        //            例: "img: 'ui_images/costume/ninja.webp'" のように書くと、その画像に着せ替わります。
+        //            例: "img: 'images/ui_images/costume/ninja.webp'" のように書くと、その画像に着せ替わります。
         //            画像を用意しない場合はこの行を省略すれば、filterで色味だけ変える従来方式になります。
         // filter   : imgを指定しない場合の色味加工（CSSのfilter）。imgがある場合は無視されます。
         // tapBonus : タップ力に加算される値
@@ -256,9 +256,9 @@
 
         // 🎁 ノーマル（灰）で出る消耗品アイテム一覧
         export const NORMAL_CONSUMABLE_ITEMS = [
-            { id: 'minigameTicket', name: 'ミニゲーム追加券', img: 'ui_images/item/minigame_ticket.webp', desc: '4種すべての今日の残り回数+1' },
-            { id: 'cooldownTicket', name: 'スキルクールタイム短縮チケット', img: 'ui_images/item/cooldown_ticket.webp', desc: '全スキルのクールタイムを即リセット' },
-            { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'ui_images/item/mochi30min_ticket.webp', desc: '今の自動増加×30分ぶんのもちを獲得' },
+            { id: 'minigameTicket', name: 'ミニゲーム追加券', img: 'images/ui_images/item/minigame_ticket.webp', desc: '4種すべての今日の残り回数+1' },
+            { id: 'cooldownTicket', name: 'スキルクールタイム短縮チケット', img: 'images/ui_images/item/cooldown_ticket.webp', desc: '全スキルのクールタイムを即リセット' },
+            { id: 'mochi30minTicket', name: 'もち30分ぶんチケット', img: 'images/ui_images/item/mochi30min_ticket.webp', desc: '今の自動増加×30分ぶんのもちを獲得' },
         ];
 
         // ✨ ガチャのノーマルレア・レアで排出される、1日だけ自動増加がアップするスプレー（見た目エフェクトつき）
@@ -303,53 +303,53 @@
         // ===================================================================
         export const KISEKAE_ITEMS = {
             hat: [
-                { id: 'hat_crown_red',      name: '王冠（赤）',        star: 3, img: 'ui_images/kisekae/hat_crown_red.webp',      top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
-                { id: 'hat_crown_blue',     name: '王冠（青）',        star: 3, img: 'ui_images/kisekae/hat_crown_blue.webp',     top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
-                { id: 'hat_pirate',         name: '海賊の帽子',        star: 2, img: 'ui_images/kisekae/hat_pirate.webp',        top: -20.35714,  left: 12.43243,  width: 69.189207, height: 29.732147, locked: true },
-                { id: 'hat_kabuto',         name: 'カブト',            star: 2, img: 'ui_images/kisekae/hat_kabuto.webp',        top: -30.291262, left: -6.470588,  width: 111.176476, height: 81.504865,  locked: true },
-                { id: 'hat_wizard',         name: '魔法使いの帽子',    star: 2, img: 'ui_images/kisekae/hat_wizard.webp',        top: -28.839283, left: 16.216211, width: 59.459471, height: 39.107151, locked: true },
-                { id: 'hat_baby',           name: '赤ん帽',            star: 2, img: 'ui_images/kisekae/hat_baby.webp',          top: -30.291263, left: -42.941172, width: 181.17647,  height: 135.873805, locked: true },
-                { id: 'hat_santa',          name: 'サンタの帽子',      star: 1, img: 'ui_images/kisekae/hat_santa.webp',         top: -23.928569, left: 26.486484, width: 41.081091, height: 31.517859, locked: true },
-                { id: 'hat_chef',           name: 'コック帽',          star: 1, img: 'ui_images/kisekae/hat_chef.webp',          top: -22.142849, left: 24.864866, width: 42.162169, height: 29.285719, locked: true },
-                { id: 'hat_tophat_black',   name: 'シルクハット（黒）', star: 1, img: 'ui_images/kisekae/hat_tophat_black.webp',  top: -17.67857,  left: 23.243241, width: 44.324333, height: 26.607146, locked: true },
-                { id: 'hat_ribbon',         name: 'リボン',            star: 1, img: 'ui_images/kisekae/hat_ribbon.webp',        top: -11.875006, left: 25.945935, width: 41.621629, height: 22.58929,  locked: true },
-                { id: 'hat_graduate',       name: '学士の帽子',        star: 1, img: 'ui_images/kisekae/hat_graduate.webp',      top: -17.232144, left: 21.621614, width: 49.729738, height: 35.982146, locked: true },
-                { id: 'hat_sankakukin',     name: '三角巾',            star: 1, img: 'ui_images/kisekae/hat_sankakukin.webp',    top: -16.05825, left: -12.35295, width: 119.999992, height: 38.737865 },
+                { id: 'hat_crown_red',      name: '王冠（赤）',        star: 3, img: 'images/ui_images/kisekae/hat_crown_red.webp',      top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
+                { id: 'hat_crown_blue',     name: '王冠（青）',        star: 3, img: 'images/ui_images/kisekae/hat_crown_blue.webp',     top: -29.732141, left: 19.459458, width: 53.513519, height: 41.339299, locked: true },
+                { id: 'hat_pirate',         name: '海賊の帽子',        star: 2, img: 'images/ui_images/kisekae/hat_pirate.webp',        top: -20.35714,  left: 12.43243,  width: 69.189207, height: 29.732147, locked: true },
+                { id: 'hat_kabuto',         name: 'カブト',            star: 2, img: 'images/ui_images/kisekae/hat_kabuto.webp',        top: -30.291262, left: -6.470588,  width: 111.176476, height: 81.504865,  locked: true },
+                { id: 'hat_wizard',         name: '魔法使いの帽子',    star: 2, img: 'images/ui_images/kisekae/hat_wizard.webp',        top: -28.839283, left: 16.216211, width: 59.459471, height: 39.107151, locked: true },
+                { id: 'hat_baby',           name: '赤ん帽',            star: 2, img: 'images/ui_images/kisekae/hat_baby.webp',          top: -30.291263, left: -42.941172, width: 181.17647,  height: 135.873805, locked: true },
+                { id: 'hat_santa',          name: 'サンタの帽子',      star: 1, img: 'images/ui_images/kisekae/hat_santa.webp',         top: -23.928569, left: 26.486484, width: 41.081091, height: 31.517859, locked: true },
+                { id: 'hat_chef',           name: 'コック帽',          star: 1, img: 'images/ui_images/kisekae/hat_chef.webp',          top: -22.142849, left: 24.864866, width: 42.162169, height: 29.285719, locked: true },
+                { id: 'hat_tophat_black',   name: 'シルクハット（黒）', star: 1, img: 'images/ui_images/kisekae/hat_tophat_black.webp',  top: -17.67857,  left: 23.243241, width: 44.324333, height: 26.607146, locked: true },
+                { id: 'hat_ribbon',         name: 'リボン',            star: 1, img: 'images/ui_images/kisekae/hat_ribbon.webp',        top: -11.875006, left: 25.945935, width: 41.621629, height: 22.58929,  locked: true },
+                { id: 'hat_graduate',       name: '学士の帽子',        star: 1, img: 'images/ui_images/kisekae/hat_graduate.webp',      top: -17.232144, left: 21.621614, width: 49.729738, height: 35.982146, locked: true },
+                { id: 'hat_sankakukin',     name: '三角巾',            star: 1, img: 'images/ui_images/kisekae/hat_sankakukin.webp',    top: -16.05825, left: -12.35295, width: 119.999992, height: 38.737865 },
             ],
 
             face: [
-                { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'ui_images/kisekae/face_sunglasses.webp',   top: -3.392867, left: -14.972971, width: 124.000039, height: 41.464299, rotation: -5, locked: true },
-                { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'ui_images/kisekae/face_glasses_black.webp', top: -0.267859,  left: -23.081076, width: 141.837891, height: 35.2143,   rotation: -5, locked: true },
-                { id: 'face_3dglasses',     name: '3Dメガネ',          star: 1, img: 'ui_images/kisekae/face_3dglasses.webp',    top: -6.07144,   left: -15.513525, width: 124.000023, height: 48.160733, rotation: -5, locked: true },
-                { id: 'face_white_mask',    name: '白マスク',          star: 1, img: 'ui_images/kisekae/face_white_mask.webp',   top: 15.825243, left: -4.41176,  width: 105.882358, height: 38.203882, rotation: -5 },
-                { id: 'face_oni_mask',      name: '鬼のお面',          star: 2, img: 'ui_images/kisekae/face_oni_mask.webp',     top: -4.174759, left: 5.294116,  width: 87.058823,  height: 58.058251, rotation: 0 },
-                { id: 'face_pilot_goggles', name: 'パイロットゴーグル', star: 2, img: 'ui_images/kisekae/face_pilot_goggles.webp', top: -6.45631,  left: -16.17647, width: 125.29411,  height: 49.368932, rotation: -5 },
+                { id: 'face_sunglasses',    name: 'サングラス',        star: 1, img: 'images/ui_images/kisekae/face_sunglasses.webp',   top: -3.392867, left: -14.972971, width: 124.000039, height: 41.464299, rotation: -5, locked: true },
+                { id: 'face_glasses_black', name: '黒縁メガネ',        star: 1, img: 'images/ui_images/kisekae/face_glasses_black.webp', top: -0.267859,  left: -23.081076, width: 141.837891, height: 35.2143,   rotation: -5, locked: true },
+                { id: 'face_3dglasses',     name: '3Dメガネ',          star: 1, img: 'images/ui_images/kisekae/face_3dglasses.webp',    top: -6.07144,   left: -15.513525, width: 124.000023, height: 48.160733, rotation: -5, locked: true },
+                { id: 'face_white_mask',    name: '白マスク',          star: 1, img: 'images/ui_images/kisekae/face_white_mask.webp',   top: 15.825243, left: -4.41176,  width: 105.882358, height: 38.203882, rotation: -5 },
+                { id: 'face_oni_mask',      name: '鬼のお面',          star: 2, img: 'images/ui_images/kisekae/face_oni_mask.webp',     top: -4.174759, left: 5.294116,  width: 87.058823,  height: 58.058251, rotation: 0 },
+                { id: 'face_pilot_goggles', name: 'パイロットゴーグル', star: 2, img: 'images/ui_images/kisekae/face_pilot_goggles.webp', top: -6.45631,  left: -16.17647, width: 125.29411,  height: 49.368932, rotation: -5 },
             ],
 
             clothes: [
-                { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'ui_images/mochisuke/image_0.webp' },
-                { id: 'clothes_king_red',    name: 'おうさまの服（赤）', star: 3, img: 'ui_images/kisekae/clothes_king_red.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
-                { id: 'clothes_king_blue',   name: 'おうさまの服（青）', star: 3, img: 'ui_images/kisekae/clothes_king_blue.webp' },
-                { id: 'clothes_tshirt_red',   name: 'Tシャツ（赤）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_red.webp' },
-                { id: 'clothes_tshirt_white', name: 'Tシャツ（白）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_white.webp' },
-                { id: 'clothes_tshirt_blue',  name: 'Tシャツ（青）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_blue.webp' },
-                { id: 'clothes_tshirt_green', name: 'Tシャツ（緑）',    star: 1, img: 'ui_images/kisekae/clothes_tshirt_green.webp' },
-                { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'ui_images/kisekae/clothes_apron.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
-                { id: 'clothes_suit_black',    name: '黒スーツ',         star: 1, img: 'ui_images/kisekae/clothes_suit_black.webp' },
-                { id: 'clothes_suit_blue',      name: '青スーツ',         star: 1, img: 'ui_images/kisekae/clothes_suit_blue.webp' },
-                { id: 'clothes_white_shirt',   name: '白シャツ',         star: 1, img: 'ui_images/kisekae/clothes_white_shirt.webp', mouthOverride: { top: 36.986243, left: 47.270878, width: 17 } },
-                { id: 'clothes_leather_jacket', name: 'レザージャケット', star: 2, img: 'ui_images/kisekae/clothes_leather_jacket.webp', mouthOverride: { top: 37.460178, left: 48.447349, width: 17 } },
-                { id: 'clothes_pirate_black',  name: '海賊の服（黒）',   star: 2, img: 'ui_images/kisekae/clothes_pirate_black.webp', mouthOverride: { top: 36.986246, left: 49.623821, width: 17 } },
-                { id: 'clothes_pirate_cyan',   name: '海賊の服（水）',   star: 2, img: 'ui_images/kisekae/clothes_pirate_cyan.webp', mouthOverride: { top: 36.986244, left: 49.62382, width: 17 } },
-                { id: 'clothes_kacchu',        name: 'かっちゅう',       star: 2, img: 'ui_images/kisekae/clothes_kacchu.webp', mouthOverride: { top: 36.512312, left: 48.44735, width: 17 } },
+                { id: 'clothes_mochisuke_tshirt', name: 'もちすけTシャツ', star: 1, img: 'images/ui_images/mochisuke/image_0.webp' },
+                { id: 'clothes_king_red',    name: 'おうさまの服（赤）', star: 3, img: 'images/ui_images/kisekae/clothes_king_red.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
+                { id: 'clothes_king_blue',   name: 'おうさまの服（青）', star: 3, img: 'images/ui_images/kisekae/clothes_king_blue.webp' },
+                { id: 'clothes_tshirt_red',   name: 'Tシャツ（赤）',    star: 1, img: 'images/ui_images/kisekae/clothes_tshirt_red.webp' },
+                { id: 'clothes_tshirt_white', name: 'Tシャツ（白）',    star: 1, img: 'images/ui_images/kisekae/clothes_tshirt_white.webp' },
+                { id: 'clothes_tshirt_blue',  name: 'Tシャツ（青）',    star: 1, img: 'images/ui_images/kisekae/clothes_tshirt_blue.webp' },
+                { id: 'clothes_tshirt_green', name: 'Tシャツ（緑）',    star: 1, img: 'images/ui_images/kisekae/clothes_tshirt_green.webp' },
+                { id: 'clothes_apron',        name: 'エプロン',         star: 1, img: 'images/ui_images/kisekae/clothes_apron.webp', mouthOverride: { top: 36.986245, left: 49.623821, width: 17 } },
+                { id: 'clothes_suit_black',    name: '黒スーツ',         star: 1, img: 'images/ui_images/kisekae/clothes_suit_black.webp' },
+                { id: 'clothes_suit_blue',      name: '青スーツ',         star: 1, img: 'images/ui_images/kisekae/clothes_suit_blue.webp' },
+                { id: 'clothes_white_shirt',   name: '白シャツ',         star: 1, img: 'images/ui_images/kisekae/clothes_white_shirt.webp', mouthOverride: { top: 36.986243, left: 47.270878, width: 17 } },
+                { id: 'clothes_leather_jacket', name: 'レザージャケット', star: 2, img: 'images/ui_images/kisekae/clothes_leather_jacket.webp', mouthOverride: { top: 37.460178, left: 48.447349, width: 17 } },
+                { id: 'clothes_pirate_black',  name: '海賊の服（黒）',   star: 2, img: 'images/ui_images/kisekae/clothes_pirate_black.webp', mouthOverride: { top: 36.986246, left: 49.623821, width: 17 } },
+                { id: 'clothes_pirate_cyan',   name: '海賊の服（水）',   star: 2, img: 'images/ui_images/kisekae/clothes_pirate_cyan.webp', mouthOverride: { top: 36.986244, left: 49.62382, width: 17 } },
+                { id: 'clothes_kacchu',        name: 'かっちゅう',       star: 2, img: 'images/ui_images/kisekae/clothes_kacchu.webp', mouthOverride: { top: 36.512312, left: 48.44735, width: 17 } },
             ],
 
             back: [
                 // 🕊️ 翼は左右それぞれ8枚のコマ送りで羽ばたく。大きさは両翼・全フレーム共通、位置(top/left)だけ1枚ずつ個別に調整できる
                 {
                     id: 'back_wings_heavenly', name: '天の翼', star: 4, locked: true,
-                    leftFrames: [1,2,3,4,5,6,7,8].map(n => `ui_images/kisekae/wings_left_${n}.webp`),
-                    rightFrames: [1,2,3,4,5,6,7,8].map(n => `ui_images/kisekae/wings_right_${n}.webp`),
+                    leftFrames: [1,2,3,4,5,6,7,8].map(n => `images/ui_images/kisekae/wings_left_${n}.webp`),
+                    rightFrames: [1,2,3,4,5,6,7,8].map(n => `images/ui_images/kisekae/wings_right_${n}.webp`),
                     width: 73.764705, height: 76.077672,
                     leftFramePos: [
                         { top: 11.417479, left: -53.76471 },
@@ -378,8 +378,8 @@
                 // 🤖 全身は他のhat/face/clothesと同時装着不可。しゃべる時だけ顔のシールドが5コマで開閉する
                 {
                     id: 'fullbody_robo', name: 'ロボもちすけ', star: 4,
-                    img: 'ui_images/kisekae/fullbody_robo.webp', // 通常時（顔のシールド閉じ）
-                    mouthFrames: [1,2,3,4,5].map(n => `ui_images/kisekae/fullbody_robo_mouth_${n}.webp`), // 顔のシールドが開くコマ送り
+                    img: 'images/ui_images/kisekae/fullbody_robo.webp', // 通常時（顔のシールド閉じ）
+                    mouthFrames: [1,2,3,4,5].map(n => `images/ui_images/kisekae/fullbody_robo_mouth_${n}.webp`), // 顔のシールドが開くコマ送り
                 },
             ],
 
@@ -399,7 +399,7 @@
                 // 通常プレイヤーの一覧には表示されない（ガチャ等での正式な入手経路はまだ無い）。
                 {
                     id: 'fullbody_squeeze_slime', name: 'スクイーズもちすけ（スライム）', star: 4,
-                    img: 'ui_images/mochisuke/image_slime.webp',
+                    img: 'images/ui_images/mochisuke/image_slime.webp',
                     squeezeMaterial: 'slime',
                     devOnly: true,
                 },
@@ -466,21 +466,21 @@
         // 🎮 ゲーセン：5つの筐体イラストの座標（#minigame-tile-view基準の%指定）
         // ===================================================================
         export const ARCADE_CABINET_PARTS = [
-            { id: 'arcade-cabinet-quiz',          gameId: 'quiz',          img: 'ui_images/arcade/quiz.webp',          top: 12.689866, left: -6.432579, width: 52.396949, height: 36.335854 },
-            { id: 'arcade-cabinet-timeattack',    gameId: 'timeattack',    img: 'ui_images/arcade/timeattack.webp',    top: 14.505297, left: 29.099241, width: 44,         height: 34.21785 },
-            { id: 'arcade-cabinet-concentration', gameId: 'concentration', img: 'ui_images/arcade/concentration.webp', top: 15.506797, left: 63.541989, width: 36.36641,  height: 33.158848 },
-            { id: 'arcade-cabinet-mochitsuki',    gameId: 'mochitsuki',    img: 'ui_images/arcade/mochitsuki.webp',    top: 51.210285, left: -1.180664, width: 42.727735, height: 36.48714 },
-            { id: 'arcade-cabinet-slot',          gameId: 'slot',          img: 'ui_images/arcade/slot.webp',          top: 49.969752, left: 30.290074, width: 44,         height: 38 },
+            { id: 'arcade-cabinet-quiz',          gameId: 'quiz',          img: 'images/ui_images/arcade/quiz.webp',          top: 12.689866, left: -6.432579, width: 52.396949, height: 36.335854 },
+            { id: 'arcade-cabinet-timeattack',    gameId: 'timeattack',    img: 'images/ui_images/arcade/timeattack.webp',    top: 14.505297, left: 29.099241, width: 44,         height: 34.21785 },
+            { id: 'arcade-cabinet-concentration', gameId: 'concentration', img: 'images/ui_images/arcade/concentration.webp', top: 15.506797, left: 63.541989, width: 36.36641,  height: 33.158848 },
+            { id: 'arcade-cabinet-mochitsuki',    gameId: 'mochitsuki',    img: 'images/ui_images/arcade/mochitsuki.webp',    top: 51.210285, left: -1.180664, width: 42.727735, height: 36.48714 },
+            { id: 'arcade-cabinet-slot',          gameId: 'slot',          img: 'images/ui_images/arcade/slot.webp',          top: 49.969752, left: 30.290074, width: 44,         height: 38 },
         ];
 
         // ===================================================================
         // 📦 ものおき：4つの小物イラストの座標（#warehouse-item-stage基準の%指定）
         // ===================================================================
         export const WAREHOUSE_ITEM_PARTS = [
-            { id: 'warehouse-item-trophy',  label: 'トロフィー',   action: 'trophy',  img: 'ui_images/warehouse/trophy.webp',  top: 21.767025, left: 7.78117,   width: 40, height: 34 },
-            { id: 'warehouse-item-omiyage', label: 'おみやげ',     action: 'omiyage', img: 'ui_images/warehouse/omiyage.webp', top: 8,         left: 54,        width: 40, height: 34 },
-            { id: 'warehouse-item-ticket',  label: 'アイテム一覧', action: 'ticket',  img: 'ui_images/warehouse/ticket.webp',  top: 61.07716,  left: 7.781172,  width: 40, height: 34 },
-            { id: 'warehouse-item-diary',   label: '絵日記',       action: 'diary',   img: 'ui_images/warehouse/diary.webp',   top: 45.19213,  left: 53.745547, width: 40, height: 34 },
+            { id: 'warehouse-item-trophy',  label: 'トロフィー',   action: 'trophy',  img: 'images/ui_images/warehouse/trophy.webp',  top: 21.767025, left: 7.78117,   width: 40, height: 34 },
+            { id: 'warehouse-item-omiyage', label: 'おみやげ',     action: 'omiyage', img: 'images/ui_images/warehouse/omiyage.webp', top: 8,         left: 54,        width: 40, height: 34 },
+            { id: 'warehouse-item-ticket',  label: 'アイテム一覧', action: 'ticket',  img: 'images/ui_images/warehouse/ticket.webp',  top: 61.07716,  left: 7.781172,  width: 40, height: 34 },
+            { id: 'warehouse-item-diary',   label: '絵日記',       action: 'diary',   img: 'images/ui_images/warehouse/diary.webp',   top: 45.19213,  left: 53.745547, width: 40, height: 34 },
         ];
 
         // ===================================================================
@@ -489,28 +489,28 @@
         // ===================================================================
         export const MYROOM_ITEMS = {
             wallpaper: [
-                { id: 'wallpaper_default', name: 'シンプルな壁紙（クリーム）', star: 1, img: 'ui_images/myroom/wallpaper_cream_simple.webp' },
+                { id: 'wallpaper_default', name: 'シンプルな壁紙（クリーム）', star: 1, img: 'images/ui_images/myroom/wallpaper_cream_simple.webp' },
             ],
             flooring: [
-                { id: 'flooring_default', name: 'ナチュラルなフローリング', star: 1, img: 'ui_images/myroom/flooring_natural.webp' },
+                { id: 'flooring_default', name: 'ナチュラルなフローリング', star: 1, img: 'images/ui_images/myroom/flooring_natural.webp' },
             ],
             wall_deco: [
-                { id: 'furniture_tapestry_hammock', name: 'ハンモックなタペストリー', star: 1, img: 'ui_images/myroom/furniture_tapestry_hammock.webp', flippable: false, width: 46.610693, height: 22.420576, price: 3000 },
-                { id: 'furniture_aircon',          name: 'エアコン',                   star: 1, img: 'ui_images/myroom/furniture_aircon.webp',           flippable: false, width: 32.870232, height: 12.889559, price: 5000 },
+                { id: 'furniture_tapestry_hammock', name: 'ハンモックなタペストリー', star: 1, img: 'images/ui_images/myroom/furniture_tapestry_hammock.webp', flippable: false, width: 46.610693, height: 22.420576, price: 3000 },
+                { id: 'furniture_aircon',          name: 'エアコン',                   star: 1, img: 'images/ui_images/myroom/furniture_aircon.webp',           flippable: false, width: 32.870232, height: 12.889559, price: 5000 },
             ],
             big_furniture: [
-                { id: 'furniture_bed_blue',      name: 'シンプルなベッド（青）', star: 1, img: 'ui_images/myroom/furniture_bed_blue.webp',      flippable: true, width: 43.053437, height: 17.458386, price: 8000 },
-                { id: 'furniture_sofa_white',    name: '白いソファ',            star: 1, img: 'ui_images/myroom/furniture_sofa_white.webp',    flippable: true, width: 43.562342, height: 19.727675, price: 8000 },
-                { id: 'furniture_chair_natural', name: 'ナチュラルなチェア',     star: 1, img: 'ui_images/myroom/furniture_chair_natural.webp', flippable: true, width: 20.40712, height: 17.912245, price: 3000 },
-                { id: 'furniture_chair_darkwood',name: 'ダークウッドなチェア',   star: 1, img: 'ui_images/myroom/furniture_chair_darkwood.webp',flippable: true, width: 20.40712, height: 17.912245, price: 3000 },
-                { id: 'furniture_kotatsu',       name: 'こたつ',                star: 1, img: 'ui_images/myroom/furniture_kotatsu.webp',       flippable: true, width: 50.432573, height: 23.812398, price: 6000 },
+                { id: 'furniture_bed_blue',      name: 'シンプルなベッド（青）', star: 1, img: 'images/ui_images/myroom/furniture_bed_blue.webp',      flippable: true, width: 43.053437, height: 17.458386, price: 8000 },
+                { id: 'furniture_sofa_white',    name: '白いソファ',            star: 1, img: 'images/ui_images/myroom/furniture_sofa_white.webp',    flippable: true, width: 43.562342, height: 19.727675, price: 8000 },
+                { id: 'furniture_chair_natural', name: 'ナチュラルなチェア',     star: 1, img: 'images/ui_images/myroom/furniture_chair_natural.webp', flippable: true, width: 20.40712, height: 17.912245, price: 3000 },
+                { id: 'furniture_chair_darkwood',name: 'ダークウッドなチェア',   star: 1, img: 'images/ui_images/myroom/furniture_chair_darkwood.webp',flippable: true, width: 20.40712, height: 17.912245, price: 3000 },
+                { id: 'furniture_kotatsu',       name: 'こたつ',                star: 1, img: 'images/ui_images/myroom/furniture_kotatsu.webp',       flippable: true, width: 50.432573, height: 23.812398, price: 6000 },
             ],
             table: [
-                { id: 'furniture_bookshelf_small', name: '小さい本棚',                   star: 1, img: 'ui_images/myroom/furniture_bookshelf_small.webp', flippable: true, width: 28.218829, height: 19.745834, price: 2500 },
-                { id: 'furniture_dining_natural',  name: 'ナチュラルなダイニングテーブル', star: 1, img: 'ui_images/myroom/furniture_dining_natural.webp',  flippable: true, width: 48.320616, height: 27.46142, price: 6000 },
-                { id: 'furniture_dining_darkwood', name: 'ダークウッドなダイニングテーブル', star: 1, img: 'ui_images/myroom/furniture_dining_darkwood.webp', flippable: true, width: 48.320616, height: 27.46142, price: 6000 },
-                { id: 'furniture_desk_study',      name: '勉強机',                       star: 1, img: 'ui_images/myroom/furniture_desk_study.webp',       flippable: true, width: 41.195932, height: 18.38426, price: 4000 },
-                { id: 'furniture_bookshelf_large', name: '大きな本棚',                   star: 1, img: 'ui_images/myroom/furniture_bookshelf_large.webp', flippable: false, width: 43.486007, height: 26.402417, price: 7000 },
+                { id: 'furniture_bookshelf_small', name: '小さい本棚',                   star: 1, img: 'images/ui_images/myroom/furniture_bookshelf_small.webp', flippable: true, width: 28.218829, height: 19.745834, price: 2500 },
+                { id: 'furniture_dining_natural',  name: 'ナチュラルなダイニングテーブル', star: 1, img: 'images/ui_images/myroom/furniture_dining_natural.webp',  flippable: true, width: 48.320616, height: 27.46142, price: 6000 },
+                { id: 'furniture_dining_darkwood', name: 'ダークウッドなダイニングテーブル', star: 1, img: 'images/ui_images/myroom/furniture_dining_darkwood.webp', flippable: true, width: 48.320616, height: 27.46142, price: 6000 },
+                { id: 'furniture_desk_study',      name: '勉強机',                       star: 1, img: 'images/ui_images/myroom/furniture_desk_study.webp',       flippable: true, width: 41.195932, height: 18.38426, price: 4000 },
+                { id: 'furniture_bookshelf_large', name: '大きな本棚',                   star: 1, img: 'images/ui_images/myroom/furniture_bookshelf_large.webp', flippable: false, width: 43.486007, height: 26.402417, price: 7000 },
             ],
             small_deco: [],  // 小物（観葉植物・ぬいぐるみなど）
         };
@@ -552,7 +552,7 @@
          * @param {number} v - 新しい見た目上の目標サイズ(px)
          * @returns {void}
          */
-        export function setMOCHI_ICON_SIZE(v) { MOCHI_ICON_SIZE = v; }
+        export function setMOCHI_ICON_SIZE(newMOCHI_ICON_SIZE) { MOCHI_ICON_SIZE = newMOCHI_ICON_SIZE; }
         
         export let CORNER_BTN_SIZE = 50; // 共通の大きさ(px)
         export const CORNER_BTN_OFFSETS = {
@@ -573,4 +573,4 @@
         // importした束縛には直接代入できない（ESモジュールの仕様）ため、他ファイルから
         // この値を書き換える必要があるものは、この関数を呼んでもらう形にしています。
         // ===================================================================
-        export function setCORNER_BTN_SIZE(v) { CORNER_BTN_SIZE = v; }
+        export function setCORNER_BTN_SIZE(newCORNER_BTN_SIZE) { CORNER_BTN_SIZE = newCORNER_BTN_SIZE; }

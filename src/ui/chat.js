@@ -1,9 +1,9 @@
         // ui.js を機能ごとに分割したファイルの1つ（マイルーム1対1ライブチャット（招待/参加・メッセージ送受信・年齢ゲート））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-29-004';
-        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-29-004';
-        import { closeModal, openModal } from './core.js?v=2026-09-29-004';
-        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-29-004';
+        import { escapeHtml, playAudioFile } from '../../main.js?v=2026-09-30-001';
+        import { equippedKisekae, equippedMyroom } from '../../progress.js?v=2026-09-30-001';
+        import { closeModal, openModal } from './core.js?v=2026-09-30-001';
+        import { applyRemoteRoomAction, applyVisitOutfit, applyVisitWalkTarget, closeVisitMyroom, lastAppliedOtherWalkTs, lastAppliedRoomActionTs, renderVisitMyroomLayout, setLastAppliedOtherWalkTs, setLastAppliedRoomActionTs, setVisitingUid, startVisitMochisukeWalk } from './social.js?v=2026-09-30-001';
 
         // 🔧 このファイル内で使う調整可能な数値をまとめたもの（値は変更せず、既存のリテラルを名前付きに置き換えただけ）
         const CONFIG = {
@@ -24,35 +24,35 @@
          * @param {string|null} v - 新しい部屋セッションID（未参加ならnull）
          * @returns {void}
          */
-        export function setActiveChatRoomId(v) { activeChatRoomId = v; }
+        export function setActiveChatRoomId(newActiveChatRoomId) { activeChatRoomId = newActiveChatRoomId; }
         export let activeChatOtherUid = null;    // 一緒にいる相手のuid
         /**
          * activeChatOtherUid（一緒にいる相手のuid）を更新する。
          * @param {string|null} v - 新しい相手のuid
          * @returns {void}
          */
-        export function setActiveChatOtherUid(v) { activeChatOtherUid = v; }
+        export function setActiveChatOtherUid(newActiveChatOtherUid) { activeChatOtherUid = newActiveChatOtherUid; }
         export let activeChatIsHost = false;     // 自分が部屋の主(ホスト)かどうか
         /**
          * activeChatIsHost（自分が部屋の主かどうか）を更新する。
          * @param {boolean} v - ホストならtrue、ゲストならfalse
          * @returns {void}
          */
-        export function setActiveChatIsHost(v) { activeChatIsHost = v; }
+        export function setActiveChatIsHost(newActiveChatIsHost) { activeChatIsHost = newActiveChatIsHost; }
         export let myAvatarPrefix = null;        // 自分の見た目が表示されているDOM要素のprefix（ホストなら主役枠、ゲストなら訪問者枠）
         /**
          * myAvatarPrefix（自分の見た目が表示されているDOM要素のprefix）を更新する。
          * @param {string|null} v - 新しいDOM要素のprefix
          * @returns {void}
          */
-        export function setMyAvatarPrefix(v) { myAvatarPrefix = v; }
+        export function setMyAvatarPrefix(newMyAvatarPrefix) { myAvatarPrefix = newMyAvatarPrefix; }
         export let otherAvatarPrefix = null;     // 相手の見た目が表示されているDOM要素のprefix
         /**
          * otherAvatarPrefix（相手の見た目が表示されているDOM要素のprefix）を更新する。
          * @param {string|null} v - 新しいDOM要素のprefix
          * @returns {void}
          */
-        export function setOtherAvatarPrefix(v) { otherAvatarPrefix = v; }
+        export function setOtherAvatarPrefix(newOtherAvatarPrefix) { otherAvatarPrefix = newOtherAvatarPrefix; }
         export let unsubRoomSession = null;      // セッション監視の解除関数
         export let unsubRoomMessages = null;     // チャット監視の解除関数
         export let roomHeartbeatTimer = null;
@@ -62,7 +62,7 @@
          * @param {number} v - 新しい送信時刻（Date.now()のミリ秒値）
          * @returns {void}
          */
-        export function setLastChatSendAt(v) { lastChatSendAt = v; }
+        export function setLastChatSendAt(newLastChatSendAt) { lastChatSendAt = newLastChatSendAt; }
         export let lastRenderedChatMsgId = null;
         export let chatMessageHistory = [];      // 履歴モーダル表示用に、今回のセッションの全メッセージを保持
         // 修正：roomSessionsドキュメントは同じ2人の間で使い回されるため、messagesサブコレクションには

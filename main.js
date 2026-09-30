@@ -3,28 +3,28 @@
 import {
   BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MOCHI_ICON_ADJUST_TOOL_ENABLED,
   MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-29-004';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-29-004';
+} from './data.js?v=2026-09-30-001';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-30-001';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-29-004';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-29-004';
+} from './progress.js?v=2026-09-30-001';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-30-001';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-29-004';
+} from './state.js?v=2026-09-30-001';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-29-004';
+} from './tap.js?v=2026-09-30-001';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, applyMochiIconAdjust, checkIncomingGiftsOnLaunch,
   checkShowTutorial, getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders,
   isTutorialActive, showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
   startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay, updateMochiIconAdjustReadout
-} from './ui.js?v=2026-09-29-004';
+} from './ui.js?v=2026-09-30-001';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -432,7 +432,7 @@ import {
             if (ambientSparkles.length > CONFIG.AMBIENT_SPARKLE_MAX_COUNT) ambientSparkles.shift(); // 増えすぎ防止
         }
         setInterval(spawnAmbientSparkle, CONFIG.AMBIENT_SPARKLE_SPAWN_INTERVAL_MS);
-        export const particleImg = new Image(); particleImg.src = 'ui_images/mochisuke/mochi_particle.webp';
+        export const particleImg = new Image(); particleImg.src = 'images/ui_images/mochisuke/mochi_particle.webp';
         // ctx.filter (hue-rotate/drop-shadow) はスマホブラウザ(特にiOS Safari)で
         // 正しく適用されないことがあるため、金色版画像を事前に1回だけ焼き込んで使い回す
         export let goldParticleImg = null;
@@ -727,11 +727,11 @@ import {
             // progress.js: currentStageIndex：現在挑戦中のステージ番号
             const currentReq = stages[currentStageIndex] ? stages[currentStageIndex].distance : CONFIG.DEBUG_ADD_MOCHI_FALLBACK;
             // state.js: score/setScore は所持もち数の値と、それを書き換えるsetter
-            setScore(score + (currentReq));
+            setScore(score + currentReq);
             // progress.js: selectedStageIndex：画面上で選択中のステージ番号
             if (selectedStageIndex === currentStageIndex && currentStageIndex < stages.length) {
                 // progress.js: currentStageProgress/setCurrentStageProgress は現ステージの進捗値とそのsetter、checkStageProgress()は進捗からステージクリア判定を行う
-                setCurrentStageProgress(currentStageProgress + (currentReq)); checkStageProgress();
+                setCurrentStageProgress(currentStageProgress + currentReq); checkStageProgress();
             }
             // ui.js: updateDisplay：画面表示全体を最新の状態に更新する
             updateDisplay(); saveGame();
@@ -1618,7 +1618,7 @@ import {
             const gameScreen = document.getElementById('game-screen');
             showMochiComment(pickRandom(dialogueData.eventComments.presentSpawn));
             const present = document.createElement('div'); present.id = 'lucky-present';
-            present.innerHTML = '<img src="ui_images/present.webp" alt="プレゼント" class="present-floating-img" style="width:95px; height:95px; object-fit:contain; pointer-events:none;">';
+            present.innerHTML = '<img src="images/ui_images/present.webp" alt="プレゼント" class="present-floating-img" style="width:95px; height:95px; object-fit:contain; pointer-events:none;">';
             present.style.position = 'absolute'; present.style.cursor = 'pointer'; present.style.zIndex = String(CONFIG.PRESENT_Z_INDEX); present.style.transition = 'transform 11s linear';
             const rect = gameScreen.getBoundingClientRect();
             present.style.left = CONFIG.PRESENT_START_X + 'px'; present.style.top = (Math.random() * (rect.height - CONFIG.EVENT_SPAWN_Y_RANGE_MARGIN) + CONFIG.EVENT_SPAWN_Y_MIN) + 'px';
@@ -1649,7 +1649,7 @@ import {
                 }
                 const currentStage = stages[currentStageIndex] || stages[0];
                 const bonus = Math.max(PRESENT_REWARD_MIN, Math.floor(currentStage.distance * PRESENT_REWARD_DISTANCE_RATE) + Math.floor(getMps() * PRESENT_REWARD_MPS_RATE));
-                setScore(score + (bonus));
+                setScore(score + bonus);
                 createFloatingText(e.clientX, e.clientY, `🎁福もちボーナス +${formatMochi(bonus)}`, "#ff9800", "1.5rem");
                 saveGame(); updateDisplay();
                 present.remove();
@@ -1704,19 +1704,19 @@ import {
          * @param {number} v - 新しいBGM音量倍率
          * @returns {void}
          */
-        export function setBgmVolumeMult(v) { bgmVolumeMult = v; }
+        export function setBgmVolumeMult(newBgmVolumeMult) { bgmVolumeMult = newBgmVolumeMult; }
         /**
          * lastGreetingHourBucket（直近に挨拶した時間帯バケット）の値を外部から更新するためのsetter関数。
          * @param {number} v - 新しい時間帯バケットのインデックス
          * @returns {void}
          */
-        export function setLastGreetingHourBucket(v) { lastGreetingHourBucket = v; }
+        export function setLastGreetingHourBucket(newLastGreetingHourBucket) { lastGreetingHourBucket = newLastGreetingHourBucket; }
         /**
          * sfxVolumeMult（効果音の音量倍率）の値を外部から更新するためのsetter関数。
          * @param {number} v - 新しい効果音音量倍率
          * @returns {void}
          */
-        export function setSfxVolumeMult(v) { sfxVolumeMult = v; }
+        export function setSfxVolumeMult(newSfxVolumeMult) { sfxVolumeMult = newSfxVolumeMult; }
 
 
         // window橋渡し：ここから下は、index.htmlのonclick=""（静的または動的に生成される

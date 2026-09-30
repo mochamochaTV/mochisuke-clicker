@@ -15,19 +15,19 @@
 
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { ARCADE_CABINET_PARTS, stages } from '../../data.js?v=2026-09-29-004';
+import { ARCADE_CABINET_PARTS, stages } from '../../data.js?v=2026-09-30-001';
 import {
   IS_DEV_MODE,
   playAudioFile, playBgmLoop
-} from '../../main.js?v=2026-09-29-004';
-import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from '../../progress.js?v=2026-09-29-004';
-import { saveGame } from '../../state.js?v=2026-09-29-004';
-import { closeModal, getLocalDateString, openModal, openMoveMenu, updateDisplay } from '../../ui.js?v=2026-09-29-004';
-import { startQuizGame } from './quiz.js?v=2026-09-29-004';
-import { startTimeAttackGame, cleanupTimeAttackTimer } from './timeAttack.js?v=2026-09-29-004';
-import { startConcentrationGame } from './concentration.js?v=2026-09-29-004';
-import { startMochitsukiGame, cleanupMochitsukiTimer } from './mochitsuki.js?v=2026-09-29-004';
-import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-29-004';
+} from '../../main.js?v=2026-09-30-001';
+import { currentStageIndex, getMinigameDailyLimit, prestigeShopLv, trackMissionEvent } from '../../progress.js?v=2026-09-30-001';
+import { saveGame } from '../../state.js?v=2026-09-30-001';
+import { closeModal, getLocalDateString, openModal, openMoveMenu, updateDisplay } from '../../ui.js?v=2026-09-30-001';
+import { startQuizGame } from './quiz.js?v=2026-09-30-001';
+import { startTimeAttackGame, cleanupTimeAttackTimer } from './timeAttack.js?v=2026-09-30-001';
+import { startConcentrationGame } from './concentration.js?v=2026-09-30-001';
+import { startMochitsukiGame, cleanupMochitsukiTimer } from './mochitsuki.js?v=2026-09-30-001';
+import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-30-001';
 
         const CONFIG = {
             MINIGAME_CENTER_FADE_OUT_MS: 300,        // ミニゲームセンター開閉時、画面が暗転してから中身を切り替えるまでの時間
@@ -307,31 +307,31 @@ import { startSlotGame, cleanupSlotSpinState } from './slotMachine.js?v=2026-09-
          * @param {object} v - 新しい自己ベスト記録（{timeattack, concentration}）
          * @returns {void}
          */
-        export function setMinigameBests(v) { minigameBests = v; }
+        export function setMinigameBests(newMinigameBests) { minigameBests = newMinigameBests; }
         /**
          * ミニゲームコインの所持数を書き換える（他ファイルからのsetter）。
          * @param {number} v - 新しいミニゲームコインの枚数
          * @returns {void}
          */
-        export function setMinigameCoins(v) { minigameCoins = v; }
+        export function setMinigameCoins(newMinigameCoins) { minigameCoins = newMinigameCoins; }
         /**
          * ミニゲームの「1日の回数制限」を最後にリセットした日付を書き換える（他ファイルからのsetter）。
          * @param {string|null} v - 新しい最終リセット日（YYYY-MM-DD形式の文字列など）
          * @returns {void}
          */
-        export function setMinigameLastResetDate(v) { minigameLastResetDate = v; }
+        export function setMinigameLastResetDate(newMinigameLastResetDate) { minigameLastResetDate = newMinigameLastResetDate; }
         /**
          * 各ミニゲームの、今日すでに使ったプレイ回数を書き換える（他ファイルからのsetter）。
          * @param {object} v - ミニゲームIDごとの本日消化回数
          * @returns {void}
          */
-        export function setMinigamePlaysUsedToday(v) { minigamePlaysUsedToday = v; }
+        export function setMinigamePlaysUsedToday(newMinigamePlaysUsedToday) { minigamePlaysUsedToday = newMinigamePlaysUsedToday; }
         /**
          * 各ミニゲームの「新規解放」ハイライトを見たかどうかのフラグを書き換える（他ファイルからのsetter）。
          * @param {object} v - ミニゲームIDごとの既読フラグ
          * @returns {void}
          */
-        export function setMinigameSeenUnlocked(v) { minigameSeenUnlocked = v; }
+        export function setMinigameSeenUnlocked(newMinigameSeenUnlocked) { minigameSeenUnlocked = newMinigameSeenUnlocked; }
 
         // window橋渡し：ここから下は、index.htmlのonclick=""（静的または動的に生成される
         // 文字列の両方）から直接呼ばれる関数を中心に、window経由のアクセスがまだ必要なものをまとめている。

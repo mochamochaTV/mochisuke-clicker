@@ -19,7 +19,7 @@
     <title>ぷにっかー -日本縦断編-</title>
     <meta property="og:title" content="ぷにっかー -日本縦断編-">
     <meta property="og:description" content="もちすけと一緒に、鹿児島から沖縄まで47都道府県を旅するタップゲーム。気楽にスキマ時間で遊べます！">
-    <meta property="og:image" content="https://mochamochatv.github.io/mochisuke-clicker/ui_images/app_icon.webp">
+    <meta property="og:image" content="https://mochamochatv.github.io/mochisuke-clicker/images/ui_images/app_icon.webp">
     <meta property="og:url" content="https://mochamochatv.github.io/mochisuke-clicker/">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
@@ -80,14 +80,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="ぷにっかー">
-    <link rel="apple-touch-icon" href="ui_images/app_icon.webp">
-    <link rel="stylesheet" href="style.css?v=2026-09-29-004">
+    <link rel="apple-touch-icon" href="images/ui_images/app_icon.webp">
+    <link rel="stylesheet" href="style.css?v=2026-09-30-001">
 
     <!-- 🏆 ランキング機能（Firebase Firestore使用）
          firebaseConfigの中身を、自分のFirebaseプロジェクトの値に置き換えてください。
          匿名認証で「自分の記録」だけを更新できるようにしているので、他人のスコアを
          書き換えられる心配はありません（Firestoreのセキュリティルールで保護しています）。 -->
-    <script type="module" src="src/engine/firebase.js?v=2026-09-29-004"></script>
+    <script type="module" src="src/engine/firebase.js?v=2026-09-30-001"></script>
 </head>
 <body>
 
@@ -135,12 +135,12 @@
             <button onclick="copyMochiIconCoords()" style="background:#2196f3; color:#fff; border:none; padding:4px 6px; border-radius:5px; font-size:0.58rem; margin-top:4px; width:100%;">📋 座標コピー</button>
             <textarea id="mochi-icon-copy-textarea" readonly style="display:none; width:100%; height:60px; font-size:0.52rem; margin-top:4px; box-sizing:border-box;"></textarea>
         </div>
-        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-29-004</div>
+        <div id="build-watermark" style="position:fixed; left:6px; bottom:calc(4px + env(safe-area-inset-bottom, 0px)); font-size:0.55rem; color:rgba(0,0,0,0.35); z-index:99999; pointer-events:none; background:rgba(255,255,255,0.5); padding:1px 5px; border-radius:6px;">build: 2026-09-30-001</div>
 
         <div id="feed-buff-indicator">⚡ タップ力・自動増加2倍！ <span id="feed-buff-timer">20</span>秒</div>
         <div id="header-container">
             <div class="score-row" onclick="openModal('unit-modal')" style="cursor:pointer;">
-                <span class="mochi-count-icon-wrap"><img id="mochi-count-icon" class="mochi-count-icon" src="ui_images/mochisuke/mochi_particle.webp" alt="もち"></span> <span id="score-text">0 もち</span>
+                <span class="mochi-count-icon-wrap"><img id="mochi-count-icon" class="mochi-count-icon" src="images/ui_images/mochisuke/mochi_particle.webp" alt="もち"></span> <span id="score-text">0 もち</span>
             </div>
             <div class="info-row">
                 <div class="header-box location-display">
@@ -180,11 +180,11 @@
 
         <div id="mochisuke-area">
             <div class="skill-side-container">
-                <div id="btn-skill1" class="skill-btn locked" onclick="useSkill('skill1')" style="background-image: url('ui_images/skill/skill1.webp');">
+                <div id="btn-skill1" class="skill-btn locked" onclick="useSkill('skill1')" style="background-image: url('images/ui_images/skill/skill1.webp');">
                     <div class="cd-overlay"></div>
                     <span class="btn-illust-label" style="top:17.8%; left:25.4%; width:53.2%; height:61.5%; font-size:0.56rem;">クリック増加<span class="sk-lv" id="lv-skill1">Lv.0</span></span>
                 </div>
-                <div id="btn-skill2" class="skill-btn locked" onclick="useSkill('skill2')" style="background-image: url('ui_images/skill/skill2.webp');">
+                <div id="btn-skill2" class="skill-btn locked" onclick="useSkill('skill2')" style="background-image: url('images/ui_images/skill/skill2.webp');">
                     <div class="cd-overlay"></div>
                     <span class="btn-illust-label" style="top:15.1%; left:24.0%; width:53.1%; height:65.0%; font-size:0.56rem;">会心の術<span class="sk-lv" id="lv-skill2">Lv.0</span></span>
                 </div>
@@ -205,7 +205,7 @@
                             <div id="spray-aura-effect" style="display:none; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:140%; height:140%; border-radius:50%; z-index:0; pointer-events:none;"></div>
                             <img id="mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                             <img id="mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
-                            <img id="mochisuke-btn" src="ui_images/mochisuke/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)); display:block; position:relative; z-index:2;">
+                            <img id="mochisuke-btn" src="images/ui_images/mochisuke/image_0.webp" alt="もちすけ" draggable="false" style="filter: drop-shadow(0 10px 10px rgba(0,0,0,0.15)); display:block; position:relative; z-index:2;">
                             <!-- 🆕 専用モード中だけ使う「みずみずしい」光沢と「へこみ」のレイヤー（どちらも通常のスクイーズの
                                  見た目には一切影響しない。src/squeeze/physics.jsのupdateJuicySheen/assignSqueezeGlow参照） -->
                             <div id="squeeze-juicy-sheen" style="position:absolute; inset:0; z-index:3; pointer-events:none; opacity:0;"></div>
@@ -215,7 +215,7 @@
                             <div id="squeeze-glow-layer" style="position:absolute; inset:0; z-index:3; pointer-events:none;"></div>
                             <img id="mochisuke-kisekae-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:9;">
                             <div id="mochisuke-mouth-anchor" style="position:absolute; top:36.986245%; left:48.44735%; width:17%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
-                                <img id="mochisuke-mouth-patch" src="ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
+                                <img id="mochisuke-mouth-patch" src="images/ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
                             </div>
                             <img id="mochisuke-kisekae-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
                             <img id="mochisuke-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
@@ -227,7 +227,7 @@
                 <div id="bunshin-container" style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; z-index: 4;"></div>
 
                 <div id="hissatsu-wrap" style="position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; z-index: 15;">
-                    <div id="btn-hissatsu" class="hissatsu-btn" onclick="useSkill('hissatsu')" style="background-image: url('ui_images/hissatsu.webp');">
+                    <div id="btn-hissatsu" class="hissatsu-btn" onclick="useSkill('hissatsu')" style="background-image: url('images/ui_images/hissatsu.webp');">
                         <span class="btn-illust-label" style="top:30.0%; left:18.3%; width:71.3%; height:40.6%; font-size:0.66rem;">もちもちビッグバン<span class="sk-lv" id="lv-hissatsu">Lv.1</span></span>
                     </div>
                     <div class="hissatsu-gauge-track">
@@ -237,11 +237,11 @@
             </div>
 
             <div class="skill-side-container">
-                <div id="btn-skill3" class="skill-btn locked" onclick="useSkill('skill3')" style="background-image: url('ui_images/skill/skill3.webp');">
+                <div id="btn-skill3" class="skill-btn locked" onclick="useSkill('skill3')" style="background-image: url('images/ui_images/skill/skill3.webp');">
                     <div class="cd-overlay"></div>
                     <span class="btn-illust-label" style="top:16.8%; left:27.3%; width:51.3%; height:65.2%; font-size:0.56rem;">分身の術<span class="sk-lv" id="lv-skill3">Lv.0</span></span>
                 </div>
-                <div id="btn-skill4" class="skill-btn locked" onclick="useSkill('skill4')" style="background-image: url('ui_images/skill/skill4.webp');">
+                <div id="btn-skill4" class="skill-btn locked" onclick="useSkill('skill4')" style="background-image: url('images/ui_images/skill/skill4.webp');">
                     <div class="cd-overlay"></div>
                     <span class="btn-illust-label" style="top:15.8%; left:26.9%; width:52.6%; height:65.7%; font-size:0.56rem;">黄金の術<span class="sk-lv" id="lv-skill4">Lv.0</span></span>
                 </div>
@@ -250,11 +250,11 @@
 
         <div id="control-panel">
             <div class="nav-menu">
-                <button id="nav-btn-oshigoto" class="nav-btn" onclick="openOshigotoPlaceholder()" style="background-image: url('ui_images/nav/oshigoto.webp');"></button>
-                <button id="nav-btn-kisekae" class="nav-btn" onclick="openKisekaeRoom()" style="background-image: url('ui_images/nav/kisekae.webp');"></button>
-                <button id="nav-btn-move" class="nav-btn" onclick="openMoveMenu()" style="background-image: url('ui_images/nav/idou.webp');"></button>
-                <button id="nav-btn-friend" class="nav-btn" onclick="openFriendPlaceholder()" style="background-image: url('ui_images/nav/friend.webp');"></button>
-                <button id="nav-btn-ranking" class="nav-btn" onclick="openRanking()" style="background-image: url('ui_images/nav/rank.webp');"></button>
+                <button id="nav-btn-oshigoto" class="nav-btn" onclick="openOshigotoPlaceholder()" style="background-image: url('images/ui_images/nav/oshigoto.webp');"></button>
+                <button id="nav-btn-kisekae" class="nav-btn" onclick="openKisekaeRoom()" style="background-image: url('images/ui_images/nav/kisekae.webp');"></button>
+                <button id="nav-btn-move" class="nav-btn" onclick="openMoveMenu()" style="background-image: url('images/ui_images/nav/idou.webp');"></button>
+                <button id="nav-btn-friend" class="nav-btn" onclick="openFriendPlaceholder()" style="background-image: url('images/ui_images/nav/friend.webp');"></button>
+                <button id="nav-btn-ranking" class="nav-btn" onclick="openRanking()" style="background-image: url('images/ui_images/nav/rank.webp');"></button>
             </div>
         </div>
     </div>
@@ -265,7 +265,7 @@
 
             <div style="height: env(safe-area-inset-top, 0px); flex-shrink:0; background:#fff8ec;"></div>
             <div style="width:100%; flex-shrink:0;">
-                <img src="ui_images/backgrounds/mission_banner.webp" alt="おしごと" style="width:100%; aspect-ratio:5/3; object-fit:cover; display:block;">
+                <img src="images/ui_images/backgrounds/mission_banner.webp" alt="おしごと" style="width:100%; aspect-ratio:5/3; object-fit:cover; display:block;">
             </div>
 
             <div style="display:flex; gap:6px; padding:8px 10px; flex-shrink:0; background:#fff8ec; overflow-x:auto;">
@@ -318,11 +318,11 @@
                     <div id="myroom-mochisuke-inner" style="position:relative;">
                         <img id="myroom-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="myroom-mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
-                        <img id="myroom-mochisuke-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
+                        <img id="myroom-mochisuke-clothes" src="images/ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
                         <img id="myroom-mochisuke-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
                         <img id="myroom-mochisuke-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:9;">
                         <div id="myroom-mochisuke-mouth-anchor" style="position:absolute; top:36.986245%; left:48.44735%; width:17%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
-                            <img src="ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
+                            <img src="images/ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
                         </div>
                         <img id="myroom-mochisuke-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
                     </div>
@@ -409,11 +409,11 @@
                     <div id="visit-myroom-mochisuke-inner" style="position:relative;">
                         <img id="visit-myroom-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="visit-myroom-mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
-                        <img id="visit-myroom-mochisuke-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
+                        <img id="visit-myroom-mochisuke-clothes" src="images/ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
                         <img id="visit-myroom-mochisuke-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
                         <img id="visit-myroom-mochisuke-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:9;">
                         <div id="visit-myroom-mochisuke-mouth-anchor" style="position:absolute; top:36.986245%; left:48.44735%; width:17%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
-                            <img src="ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
+                            <img src="images/ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
                         </div>
                         <img id="visit-myroom-mochisuke-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
                     </div>
@@ -423,11 +423,11 @@
                     <div id="visit-myroom-myself-inner" style="position:relative;">
                         <img id="visit-myroom-myself-wing-left" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
                         <img id="visit-myroom-myself-wing-right" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:1;">
-                        <img id="visit-myroom-myself-clothes" src="ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
+                        <img id="visit-myroom-myself-clothes" src="images/ui_images/mochisuke/image_0.webp" alt="" style="width:100%; display:block; position:relative; z-index:2; pointer-events:none;">
                         <img id="visit-myroom-myself-hat" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:7;">
                         <img id="visit-myroom-myself-face" src="" alt="" style="display:none; position:absolute; pointer-events:none; z-index:9;">
                         <div id="visit-myroom-myself-mouth-anchor" style="position:absolute; top:36.986245%; left:48.44735%; width:17%; transform:translate(-50%,-50%); pointer-events:none; z-index:6;">
-                            <img src="ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
+                            <img src="images/ui_images/mochisuke/mouth_closed.webp" alt="" style="width:100%; display:block;">
                         </div>
                         <img id="visit-myroom-myself-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; pointer-events:none; z-index:8;">
                     </div>
@@ -520,7 +520,7 @@
             <button class="modal-back-btn" onclick="closeFriendScreen()"></button>
             <div style="height: env(safe-area-inset-top, 0px); flex-shrink:0; background:#fff8ec;"></div>
             <div style="width:100%; flex-shrink:0;">
-                <img src="ui_images/backgrounds/friend_banner.webp" alt="フレンド" style="width:100%; aspect-ratio:5/3; object-fit:cover; display:block;">
+                <img src="images/ui_images/backgrounds/friend_banner.webp" alt="フレンド" style="width:100%; aspect-ratio:5/3; object-fit:cover; display:block;">
             </div>
             <div style="display:flex; gap:6px; padding:8px 10px; flex-shrink:0; background:#fff8ec; overflow-x:auto;">
                 <button id="friend-tab-list" class="rank-tab-btn active" onclick="switchFriendTab('list')">🤝 フレンド</button>
@@ -549,25 +549,25 @@
     </div>
 
     <div id="move-menu-modal" class="modal">
-        <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/backgrounds/move_menu.webp'); background-size:cover; background-position:center;">
+        <div class="modal-content modal-fullscreen" style="background-image:url('images/ui_images/backgrounds/move_menu.webp'); background-size:cover; background-position:center;">
             <div id="move-menu-stage" style="position:relative; flex:1; min-height:0;">
-                <img id="move-house-warehouse" class="move-part-img" src="ui_images/move/house_warehouse.webp" alt="" onclick="moveMenuGoTo(openWarehouse)" style="position:absolute; cursor:pointer;">
-                <img id="move-sign-warehouse" class="move-part-img" src="ui_images/move/sign_warehouse.webp" alt="" onclick="moveMenuGoTo(openWarehouse)" style="position:absolute; cursor:pointer;">
-                <img id="move-house-shop" class="move-part-img" src="ui_images/move/house_shop.webp" alt="" onclick="moveMenuGoTo(openShop)" style="position:absolute; cursor:pointer;">
-                <img id="move-sign-shop" class="move-part-img" src="ui_images/move/sign_shop.webp" alt="" onclick="moveMenuGoTo(openShop)" style="position:absolute; cursor:pointer;">
-                <img id="move-house-arcade" class="move-part-img" src="ui_images/move/house_arcade.webp" alt="" onclick="moveMenuGoTo(openMinigameCenter)" style="position:absolute; cursor:pointer;">
-                <img id="move-sign-arcade" class="move-part-img" src="ui_images/move/sign_arcade.webp" alt="" onclick="moveMenuGoTo(openMinigameCenter)" style="position:absolute; cursor:pointer;">
-                <img id="move-house-myroom" class="move-part-img" src="ui_images/move/house_myroom.webp" alt="" onclick="openMyRoomEntry()" style="position:absolute; cursor:pointer;">
-                <img id="move-sign-myroom" class="move-part-img" src="ui_images/move/sign_myroom.webp" alt="" onclick="openMyRoomEntry()" style="position:absolute; cursor:pointer;">
-                <img id="move-sign-return" class="move-part-img" src="ui_images/move/sign_return.webp" alt="" onclick="moveMenuGoHome()" style="position:absolute; cursor:pointer;">
-                <img id="move-mochisuke-guide" src="ui_images/mochisuke/image_0.webp" alt="" style="position:absolute; pointer-events:none; z-index:20;">
+                <img id="move-house-warehouse" class="move-part-img" src="images/ui_images/move/house_warehouse.webp" alt="" onclick="moveMenuGoTo(openWarehouse)" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-warehouse" class="move-part-img" src="images/ui_images/move/sign_warehouse.webp" alt="" onclick="moveMenuGoTo(openWarehouse)" style="position:absolute; cursor:pointer;">
+                <img id="move-house-shop" class="move-part-img" src="images/ui_images/move/house_shop.webp" alt="" onclick="moveMenuGoTo(openShop)" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-shop" class="move-part-img" src="images/ui_images/move/sign_shop.webp" alt="" onclick="moveMenuGoTo(openShop)" style="position:absolute; cursor:pointer;">
+                <img id="move-house-arcade" class="move-part-img" src="images/ui_images/move/house_arcade.webp" alt="" onclick="moveMenuGoTo(openMinigameCenter)" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-arcade" class="move-part-img" src="images/ui_images/move/sign_arcade.webp" alt="" onclick="moveMenuGoTo(openMinigameCenter)" style="position:absolute; cursor:pointer;">
+                <img id="move-house-myroom" class="move-part-img" src="images/ui_images/move/house_myroom.webp" alt="" onclick="openMyRoomEntry()" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-myroom" class="move-part-img" src="images/ui_images/move/sign_myroom.webp" alt="" onclick="openMyRoomEntry()" style="position:absolute; cursor:pointer;">
+                <img id="move-sign-return" class="move-part-img" src="images/ui_images/move/sign_return.webp" alt="" onclick="moveMenuGoHome()" style="position:absolute; cursor:pointer;">
+                <img id="move-mochisuke-guide" src="images/ui_images/mochisuke/image_0.webp" alt="" style="position:absolute; pointer-events:none; z-index:20;">
 
             </div>
         </div>
     </div>
 
     <div id="warehouse-modal" class="modal">
-        <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/backgrounds/monooki.webp'); background-size:cover; background-position:center;">
+        <div class="modal-content modal-fullscreen" style="background-image:url('images/ui_images/backgrounds/monooki.webp'); background-size:cover; background-position:center;">
             <button class="modal-back-btn" onclick="closeWarehouse()"></button>
             <div id="warehouse-item-stage" style="position:relative; flex:1; min-height:0;">
                 <span id="warehouse-omiyage-badge" class="warehouse-grid-badge" style="position:absolute; z-index:5;"></span>
@@ -594,7 +594,7 @@
             <div id="omiyage-shelf-view">
                 <div id="omiyage-shelf-container">
                     <div id="omiyage-image-frame">
-                        <img id="omiyage-shelf-img" data-src="ui_images/backgrounds/omiyage_shop.webp" alt="おみやげ屋さん" draggable="false">
+                        <img id="omiyage-shelf-img" data-src="images/ui_images/backgrounds/omiyage_shop.webp" alt="おみやげ屋さん" draggable="false">
 
                         <!-- 🎁おみやげタブの中身 -->
                         <div id="omiyage-slots-layer"></div>
@@ -626,7 +626,7 @@
                             </div>
                         </div>
                     </div>
-                    <div id="omiyage-money-display"><span class="omiyage-money-icon-wrap"><img class="omiyage-money-icon" src="ui_images/mochisuke/mochi_particle.webp" alt="もち"></span> <span id="omiyage-money-value">0</span></div>
+                    <div id="omiyage-money-display"><span class="omiyage-money-icon-wrap"><img class="omiyage-money-icon" src="images/ui_images/mochisuke/mochi_particle.webp" alt="もち"></span> <span id="omiyage-money-value">0</span></div>
                     <div id="omiyage-money-flash"></div>
                     <div id="omiyage-page-indicator"></div>
                 </div>
@@ -639,7 +639,7 @@
             <button class="modal-fullscreen-close" onclick="closeMapModal()">×</button>
             <div id="map-viewport">
                 <div id="map-canvas">
-                    <img id="map-illustration-img" data-src="ui_images/backgrounds/map_illustration.webp" alt="日本地図" draggable="false">
+                    <img id="map-illustration-img" data-src="images/ui_images/backgrounds/map_illustration.webp" alt="日本地図" draggable="false">
                     <div id="map-pins-layer"></div>
                 </div>
             </div>
@@ -662,7 +662,7 @@
     </div>
 
     <div id="op-screen" onclick="startGameFromOpScreen()">
-        <img id="op-screen-img" src="ui_images/backgrounds/op_screen.webp" alt="タップしてスタート">
+        <img id="op-screen-img" src="images/ui_images/backgrounds/op_screen.webp" alt="タップしてスタート">
         <div id="op-screen-hint">タップしてスタート</div>
     </div>
 
@@ -698,7 +698,7 @@
     </div>
 
     <div id="kisekae-room-modal" class="modal">
-        <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/backgrounds/kisekae_room.webp'); background-size:cover; background-position:center;">
+        <div class="modal-content modal-fullscreen" style="background-image:url('images/ui_images/backgrounds/kisekae_room.webp'); background-size:cover; background-position:center;">
             <button class="modal-back-btn" onclick="closeKisekaeRoom()"></button>
 
             <div id="kisekae-stage" style="position:relative; flex:1; min-height:0;">
@@ -706,7 +706,7 @@
                 <div id="kisekae-mochisuke-wrap" style="position:absolute; top:40.146148%; left:50%; transform:translateX(-50%); width:170px; height:auto; max-height:206px; z-index:5;">
                     <img id="kisekae-mochisuke-wing-left" src="" alt="" style="display:none; position:absolute; z-index:1;">
                     <img id="kisekae-mochisuke-wing-right" src="" alt="" style="display:none; position:absolute; z-index:1;">
-                    <img id="kisekae-mochisuke-clothes" src="ui_images/mochisuke/image_0.webp" alt="もちすけ" style="width:100%; display:block; position:relative; z-index:2;">
+                    <img id="kisekae-mochisuke-clothes" src="images/ui_images/mochisuke/image_0.webp" alt="もちすけ" style="width:100%; display:block; position:relative; z-index:2;">
                     <img id="kisekae-mochisuke-hat" src="" alt="" style="display:none; position:absolute; z-index:3;">
                     <img id="kisekae-mochisuke-face" src="" alt="" style="display:none; position:absolute; z-index:3;">
                     <img id="kisekae-mochisuke-fullbody" src="" alt="" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; object-fit:contain; z-index:4;">
@@ -773,7 +773,7 @@
     </div>
 
     <div id="minigame-center-modal" class="modal">
-        <div class="modal-content modal-fullscreen" style="background-image:url('ui_images/backgrounds/minigame_center.webp'); background-size:cover; background-position:center;">
+        <div class="modal-content modal-fullscreen" style="background-image:url('images/ui_images/backgrounds/minigame_center.webp'); background-size:cover; background-position:center;">
             <button class="modal-back-btn" onclick="closeMinigameCenter()"></button>
             <div id="minigame-tile-view" style="position:relative; flex:1; min-height:0;">
             </div>
@@ -945,7 +945,7 @@
     </div>
 
     <div id="japan-clear-modal" class="modal">
-        <div class="modal-content modal-fullscreen" style="background-image: url('ui_images/backgrounds/japan_clear.webp'); background-size: cover; background-position: center;">
+        <div class="modal-content modal-fullscreen" style="background-image: url('images/ui_images/backgrounds/japan_clear.webp'); background-size: cover; background-position: center;">
             <button class="modal-fullscreen-close" onclick="confirmCloseJapanClear()">×</button>
             <div id="japan-clear-overlay" style="margin-top: auto; width: 100%; box-sizing: border-box; padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px)); background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.55) 55%, rgba(0,0,0,0) 100%); text-align: center;">
                 <div id="japan-clear-title" style="opacity:0; transform: scale(0.6); transition: all 0.5s cubic-bezier(0.3,1.5,0.5,1);">
@@ -990,7 +990,7 @@
 
             <div style="height: env(safe-area-inset-top, 0px); flex-shrink:0; background:#fff8ec;"></div>
             <div style="width:100%; flex-shrink:0; position:relative;">
-                <img src="ui_images/backgrounds/ranking_banner.webp" alt="ランキング" style="width:100%; height:auto; display:block;">
+                <img src="images/ui_images/backgrounds/ranking_banner.webp" alt="ランキング" style="width:100%; height:auto; display:block;">
                 <button onclick="toggleRankingHelpOverlay()" style="position:absolute; bottom:10px; left:10px; z-index:60; width:34px; height:34px; border-radius:50%; border:none; background:rgba(0,0,0,0.4); color:#fff; font-size:1.1rem; font-weight:bold; display:flex; align-items:center; justify-content:center; cursor:pointer;">？</button>
             </div>
 
@@ -1054,13 +1054,13 @@
 
     <!-- type="module"は実行順が「このタグの並び順」で保証される（defer相当）。
          各ファイルの依存関係はファイル先頭のimport文を参照（詳細はJS側のコメント参照） -->
-    <script type="module" src="data.js?v=2026-09-29-004"></script>
-    <script type="module" src="state.js?v=2026-09-29-004"></script>
-    <script type="module" src="tap.js?v=2026-09-29-004"></script>
-    <script type="module" src="shop.js?v=2026-09-29-004"></script>
-    <script type="module" src="progress.js?v=2026-09-29-004"></script>
-    <script type="module" src="minigames.js?v=2026-09-29-004"></script>
-    <script type="module" src="ui.js?v=2026-09-29-004"></script>
-    <script type="module" src="main.js?v=2026-09-29-004"></script>
+    <script type="module" src="data.js?v=2026-09-30-001"></script>
+    <script type="module" src="state.js?v=2026-09-30-001"></script>
+    <script type="module" src="tap.js?v=2026-09-30-001"></script>
+    <script type="module" src="shop.js?v=2026-09-30-001"></script>
+    <script type="module" src="progress.js?v=2026-09-30-001"></script>
+    <script type="module" src="minigames.js?v=2026-09-30-001"></script>
+    <script type="module" src="ui.js?v=2026-09-30-001"></script>
+    <script type="module" src="main.js?v=2026-09-30-001"></script>
 </body>
 </html>

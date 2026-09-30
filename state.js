@@ -1,6 +1,6 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-29-004';
+import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-30-001';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -9,7 +9,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-29-004';
+} from './minigames.js?v=2026-09-30-001';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -22,21 +22,21 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-29-004';
+} from './progress.js?v=2026-09-30-001';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-29-004';
+} from './shop.js?v=2026-09-30-001';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-29-004';
+} from './tap.js?v=2026-09-30-001';
 import {
   hasSeenTutorial, lastGiftSentDates, seenButtonHints, setHasSeenTutorial,
   setLastGiftSentDates, setSeenButtonHints
-} from './ui.js?v=2026-09-29-004';
+} from './ui.js?v=2026-09-30-001';
 
         // 🔧 このファイル内で使うチューニング用の数値をまとめたもの（挙動は変えず、名前を付けただけ）
         const CONFIG = {
@@ -475,19 +475,19 @@ import {
          * @param {string} v - 設定するプレイヤー名
          * @returns {void}
          */
-        export function setPlayerName(v) { playerName = v; }
+        export function setPlayerName(newPlayerName) { playerName = newPlayerName; }
         /**
          * score変数を書き換えるsetter（importした束縛には直接代入できないための橋渡し）。
          * @param {number} v - 設定するスコア値
          * @returns {void}
          */
-        export function setScore(v) { score = v; }
+        export function setScore(newScore) { score = newScore; }
         /**
          * totalTapsCount変数を書き換えるsetter（importした束縛には直接代入できないための橋渡し）。
          * @param {number} v - 設定する累計タップ数
          * @returns {void}
          */
-        export function setTotalTapsCount(v) { totalTapsCount = v; }
+        export function setTotalTapsCount(newTotalTapsCount) { totalTapsCount = newTotalTapsCount; }
 
 
         // 🌉 橋渡し（migration bridge）— フェーズ2で「読み取り」はimportに置き換え済み

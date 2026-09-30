@@ -1,19 +1,19 @@
         // ui.js を機能ごとに分割したファイルの1つ（フレンド・他人の部屋への訪問（フレンドリスト・招待・訪問中の演出・移動メニュー・ものおき））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-29-004';
-        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-29-004';
-        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-29-004';
-        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-29-004';
-        import { saveGame } from '../../state.js?v=2026-09-29-004';
-        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-29-004';
-        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-29-004';
-        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-29-004';
-        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-29-004';
-        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-29-004';
+        import { KISEKAE_ITEMS, MOVE_MENU_PARTS, MYROOM_ITEMS, WAREHOUSE_ITEM_PARTS, stages } from '../../data.js?v=2026-09-30-001';
+        import { escapeHtml, playAudioFile, playBgmLoop, spawnModalFloatingText, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-30-001';
+        import { equippedKisekae, gachaCoins, setGachaCoins } from '../../progress.js?v=2026-09-30-001';
+        import { blockedUserIds, favoriteFriendIds, purchasedItems, updateGachaCoinDisplay } from '../../shop.js?v=2026-09-30-001';
+        import { saveGame } from '../../state.js?v=2026-09-30-001';
+        import { closeModal, openModal, openTrophyRoom } from './core.js?v=2026-09-30-001';
+        import { CHAT_SEND_COOLDOWN_MS, activeChatIsHost, activeChatOtherUid, activeChatRoomId, ensureChatEligibilityAnswered, joinFriendRoomAndChat, lastChatSendAt, myAvatarPrefix, openHostWaitingRoom, otherAvatarPrefix, setActiveChatIsHost, setActiveChatOtherUid, setActiveChatRoomId, setChatUiVisible, setLastChatSendAt, setMyAvatarPrefix, setOtherAvatarPrefix, setVisitActionButtonsForHosting, stopRoomSessionWatch } from './chat.js?v=2026-09-30-001';
+        import { MYROOM_WALK_SPEED_PCT_PER_SEC, openTicketInventory } from './myroom.js?v=2026-09-30-001';
+        import { openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-30-001';
+        import { openDiary, renderRankOutfitPreviewHtml } from './ranking.js?v=2026-09-30-001';
         // 全身スロット（fullbody/squeeze共用）のアイテムを、カテゴリを問わずidだけで引くための
         // 共有ヘルパー（2-6・4-12参照）。KISEKAE_ITEMS.fullbodyだけを見ていると、スクイーズ衣装を
         // 着けたまま訪問してきたフレンドの見た目が反映できなくなる。
-        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-29-004';
+        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-30-001';
 
         // 🔧 このファイル内で使う「調整可能な数値」をまとめた設定オブジェクト
         const CONFIG = {
@@ -109,7 +109,7 @@
          * @param {string|null} v - 新しいvisitingUidの値
          * @returns {void}
          */
-        export function setVisitingUid(v) { visitingUid = v; }
+        export function setVisitingUid(newVisitingUid) { visitingUid = newVisitingUid; }
         /**
          * 指定uidのマイルームを取得して訪問画面を開き、部屋レイアウト・服装を描画し、いいね状態も反映する。window.visitMyroomOf としてグローバル公開され、動的生成される🏠ボタンのonclick=""から呼ばれる橋渡し関数。
          * @param {string} uid - 訪問先ユーザーのuid
@@ -386,14 +386,14 @@
          * @param {number} v - 新しいタイムスタンプ
          * @returns {void}
          */
-        export function setLastAppliedRoomActionTs(v) { lastAppliedRoomActionTs = v; }
+        export function setLastAppliedRoomActionTs(newLastAppliedRoomActionTs) { lastAppliedRoomActionTs = newLastAppliedRoomActionTs; }
         export let lastAppliedOtherWalkTs = 0;  // 相手発の歩行イベントの二重再生防止
         /**
          * export let変数 lastAppliedOtherWalkTs（相手発の歩行イベントの二重再生防止用タイムスタンプ）を更新するセッター。
          * @param {number} v - 新しいタイムスタンプ
          * @returns {void}
          */
-        export function setLastAppliedOtherWalkTs(v) { lastAppliedOtherWalkTs = v; }
+        export function setLastAppliedOtherWalkTs(newLastAppliedOtherWalkTs) { lastAppliedOtherWalkTs = newLastAppliedOtherWalkTs; }
 
         // 今の画面文脈（'visit'=訪問/招待中の部屋、'edit'=自分の部屋のプレビュー画面）における
         // 「自分のアバターのprefix」「（いれば）相手のアバターのprefix」を返す
@@ -658,7 +658,7 @@
                 };
                 myroomScreamState[prefix] = state;
             }
-            clothesEl.src = 'ui_images/mochisuke/image_scream.webp';
+            clothesEl.src = 'images/ui_images/mochisuke/image_scream.webp';
             clothesEl.style.opacity = '1'; // 🤖フルボディ衣装中は衣装レイヤーが隠れている(opacity:0)ので、叫ぶ間だけ見せる
             if (hatEl) hatEl.style.display = 'none';
             if (faceEl) faceEl.style.display = 'none';
@@ -1289,7 +1289,7 @@
             if (!gifts || gifts.length === 0) return;
             const totalAmount = gifts.reduce((sum, g) => sum + (g.amount || 0), 0);
             // ../../progress.js: gachaCoins/setGachaCoins（同じガチャコイン所持数とその更新関数）
-            setGachaCoins(gachaCoins + (totalAmount));
+            setGachaCoins(gachaCoins + totalAmount);
             // ../../state.js: saveGame（同じセーブ関数）
             // ./hud.js: updateDisplay：画面上部のスコア等の表示を最新の値に更新する
             saveGame(); updateDisplay();
@@ -1476,7 +1476,7 @@
          * @param {Object} v - { [フレンドのuid]: 'YYYY-MM-DD'形式の日付文字列 }
          * @returns {void}
          */
-        export function setLastGiftSentDates(v) { lastGiftSentDates = v; }
+        export function setLastGiftSentDates(newLastGiftSentDates) { lastGiftSentDates = newLastGiftSentDates; }
         window.openFriendPlaceholder = openFriendPlaceholder;
         window.onLikeRoomTap = onLikeRoomTap;
         window.closeVisitMyroom = closeVisitMyroom;

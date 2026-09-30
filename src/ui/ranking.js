@@ -1,16 +1,16 @@
         // ui.js を機能ごとに分割したファイルの1つ（ランキング・日記帳）。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-29-004';
-        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-29-004';
-        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-29-004';
-        import { purchasedItems } from '../../shop.js?v=2026-09-29-004';
-        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-29-004';
-        import { closeModal, openModal } from './core.js?v=2026-09-29-004';
-        import { setupChatInputEnterKey } from './chat.js?v=2026-09-29-004';
+        import { KISEKAE_ITEMS, stages } from '../../data.js?v=2026-09-30-001';
+        import { escapeHtml, formatMochi, playAudioFile } from '../../main.js?v=2026-09-30-001';
+        import { collectedStamps, currentStageIndex, equippedKisekae, prestigeCount, selectedStageIndex } from '../../progress.js?v=2026-09-30-001';
+        import { purchasedItems } from '../../shop.js?v=2026-09-30-001';
+        import { playerName, score, totalTapsCount } from '../../state.js?v=2026-09-30-001';
+        import { closeModal, openModal } from './core.js?v=2026-09-30-001';
+        import { setupChatInputEnterKey } from './chat.js?v=2026-09-30-001';
         // 全身スロット（fullbody/squeeze共用）のアイテムを、カテゴリを問わずidだけで引くための
         // 共有ヘルパー（2-6・4-12参照）。KISEKAE_ITEMS.fullbodyだけを見ていると、スクイーズ衣装を
         // 着けたまま訪問した相手のプレビューが表示できなくなる。
-        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-29-004';
+        import { findFullbodySlotItem } from './kisekae.js?v=2026-09-30-001';
 
 
         const CONFIG = {
@@ -258,7 +258,7 @@
                 stampMark.style.borderStyle = 'dashed';
             }
             const thumbBackEl = document.getElementById('diary-item-thumb-back');
-            thumbBackEl.src = isPurchased && stage.itemImg ? stage.itemImg : 'ui_images/present.webp';
+            thumbBackEl.src = isPurchased && stage.itemImg ? stage.itemImg : 'images/ui_images/present.webp';
             thumbBackEl.style.opacity = isPurchased ? '1' : '0.35';
             document.getElementById('diary-item-name-back').innerText = isPurchased
                 ? `🛍️ ${stage.item} (Lv.${purchasedItems[diaryPageIndex]})`
@@ -300,7 +300,7 @@
          * @param {number} v - 設定するページインデックス
          * @returns {void}
          */
-        export function setDiaryPageIndex(v) { diaryPageIndex = v; }
+        export function setDiaryPageIndex(newDiaryPageIndex) { diaryPageIndex = newDiaryPageIndex; }
         window.closeRanking = closeRanking;
         window.toggleRankingHelpOverlay = toggleRankingHelpOverlay;
         window.switchRankingTab = switchRankingTab;

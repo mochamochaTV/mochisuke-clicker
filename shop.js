@@ -4,22 +4,22 @@ import {
   GACHA_RARITIES, KISEKAE_ITEMS, MYROOM_CATEGORY_LABELS, MYROOM_ITEMS, MYROOM_WALL_ZONE_BOTTOM,
   NORMAL_CONSUMABLE_ITEMS, OMIYAGE_COLS, OMIYAGE_ROWS, SPRAY_ITEMS, clothesData, dialogueData,
   stages
-} from './data.js?v=2026-09-29-004';
+} from './data.js?v=2026-09-30-001';
 import {
   IS_DEV_MODE, formatMochi, isRunningStandalone, lazyLoadImage, pickRandom, playAudioFile,
   playBgmLoop, screenFlash, screenShake, vibrate
-} from './main.js?v=2026-09-29-004';
-import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-29-004';
+} from './main.js?v=2026-09-30-001';
+import { minigamePlaysUsedToday } from './minigames.js?v=2026-09-30-001';
 import {
   currentStageIndex, equippedMyroom, gachaCoins, getPrefTrophy, ownedKisekaeItems,
   ownedMyroomItems, prestigeShopLv, setGachaCoins, trackMissionEvent
-} from './progress.js?v=2026-09-29-004';
-import { saveGame, score, setScore } from './state.js?v=2026-09-29-004';
-import { getMps, getTapPower, skills } from './tap.js?v=2026-09-29-004';
+} from './progress.js?v=2026-09-30-001';
+import { saveGame, score, setScore } from './state.js?v=2026-09-30-001';
+import { getMps, getTapPower, skills } from './tap.js?v=2026-09-30-001';
 import {
   closeModal, hasNewlyPurchasableOmiyage, hasNewlyPurchasableSkill, openModal, openMoveMenu,
   openTicketInventory, showMochiComment, updateDisplay
-} from './ui.js?v=2026-09-29-004';
+} from './ui.js?v=2026-09-30-001';
 
         // ===================================================================
         // 調整用の数値をまとめた設定オブジェクト。既に名前付きでexportされている
@@ -438,7 +438,7 @@ import {
                 return;
             }
             // progress.js: setGachaCoins はガチャコインの枚数を書き換える
-            if (!IS_DEV_MODE) setGachaCoins(gachaCoins - (GACHA_COST_SINGLE));
+            if (!IS_DEV_MODE) setGachaCoins(gachaCoins - GACHA_COST_SINGLE);
             // progress.js: trackMissionEvent：ミッションの進行カウンターを加算する
             trackMissionEvent('gachaSpinsTotal', 1);
 
@@ -612,7 +612,7 @@ import {
             } else {
                 refundCoins = DUPLICATE_REFUND_BY_STAR[star] || 0;
                 // progress.js: setGachaCoins/gachaCoins でガチャコインを重複時の還元分だけ増やす
-                setGachaCoins(gachaCoins + (refundCoins));
+                setGachaCoins(gachaCoins + refundCoins);
             }
             return { item: picked, isDuplicate, refundCoins };
         }
@@ -720,7 +720,7 @@ import {
                 alert(`🎰 ガチャコインが足りません（あと${GACHA_COST_TEN - gachaCoins}枚必要です）\n\nステージクリア（スタンプ）やおしごとミッションのクリア、日本制覇・転生でも手に入ります！`);
                 return;
             }
-            if (!IS_DEV_MODE) setGachaCoins(gachaCoins - (GACHA_COST_TEN));
+            if (!IS_DEV_MODE) setGachaCoins(gachaCoins - GACHA_COST_TEN);
             trackMissionEvent('gachaSpinsTotal', 1);
             const rarities10 = [];
             for (let i = 0; i < CONFIG.GACHA_TEN_PULL_COUNT; i++) rarities10.push(pickGachaRarity());
@@ -816,15 +816,15 @@ import {
                 cell.style.cssText = `position:relative; width:${CAPSULE_PX}px; height:${CAPSULE_PX}px; display:flex; align-items:center; justify-content:center;`;
 
                 const whole = document.createElement('img');
-                whole.src = 'ui_images/gacha/capsule.webp';
+                whole.src = 'images/ui_images/gacha/capsule.webp';
                 whole.style.cssText = `position:absolute; width:100%; display:block; filter:drop-shadow(0 3px 6px rgba(0,0,0,0.35)) ${r.filter};`;
 
                 const top = document.createElement('img');
-                top.src = 'ui_images/gacha/capsule_top.webp';
+                top.src = 'images/ui_images/gacha/capsule_top.webp';
                 top.style.cssText = `position:absolute; width:100%; display:none; filter:${r.filter};`;
 
                 const bottom = document.createElement('img');
-                bottom.src = 'ui_images/gacha/capsule_bottom.webp';
+                bottom.src = 'images/ui_images/gacha/capsule_bottom.webp';
                 bottom.style.cssText = `position:absolute; width:100%; display:none; filter:${r.filter};`;
 
                 const icon = document.createElement('div');
@@ -1209,11 +1209,11 @@ import {
                         <div id="gacha-resize-handle-b" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#4caf50; border:2px solid #fff; z-index:999; cursor:ns-resize;"></div>
                         <div id="gacha-resize-handle-br" style="display:none; position:absolute; width:16px; height:16px; margin:-8px; border-radius:50%; background:#ff9800; border:2px solid #fff; z-index:999; cursor:nwse-resize;"></div>
                         ` : ''}
-                        <img id="gacha-machine-body" src="ui_images/gacha/machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
-                        <img id="gacha-crank" src="ui_images/gacha/crank.webp" alt="" style="position:absolute; width:19.031814%; top:62.402035%; left:40.200326%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
+                        <img id="gacha-machine-body" src="images/ui_images/gacha/machine_body.webp" alt="ガチャガチャ" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:70%; max-width:230px; z-index:2;">
+                        <img id="gacha-crank" src="images/ui_images/gacha/crank.webp" alt="" style="position:absolute; width:19.031814%; top:62.402035%; left:40.200326%; transform-origin:50% 50%; z-index:3; pointer-events:none;">
 
                         <div id="gacha-capsule-wrap-mini" style="position:absolute; top:77.967692%; left:49.573535%; transform:translate(-50%, 0) scale(0); width:22%; z-index:4;">
-                            <img src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
+                            <img src="images/ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
                         </div>
                     </div>
 
@@ -1235,9 +1235,9 @@ import {
                 <div id="gacha-reveal-fullscreen" style="display:none; position:fixed; inset:0; max-width:480px; margin:0 auto; z-index:1500; background:radial-gradient(ellipse at center, #5a4330 0%, #1a0f08 100%); align-items:center; justify-content:center;">
                     <div id="gacha-reveal-single" style="display:none; position:relative; width:100%; height:100%; align-items:center; justify-content:center;">
                         <div id="gacha-capsule-wrap" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); width:45%; max-width:220px; z-index:4;">
-                            <img id="gacha-capsule-whole" src="ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
-                            <img id="gacha-capsule-top" src="ui_images/gacha/capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
-                            <img id="gacha-capsule-bottom" src="ui_images/gacha/capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                            <img id="gacha-capsule-whole" src="images/ui_images/gacha/capsule.webp" alt="" style="width:100%; display:block;">
+                            <img id="gacha-capsule-top" src="images/ui_images/gacha/capsule_top.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
+                            <img id="gacha-capsule-bottom" src="images/ui_images/gacha/capsule_bottom.webp" alt="" style="width:100%; display:none; position:absolute; top:0; left:0;">
                         </div>
 
                         <div id="gacha-prize-reveal" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%) scale(0); text-align:center; z-index:5; opacity:0;">
@@ -1559,7 +1559,7 @@ import {
             const nextPrice = getOmiyagePrice(stage, currentLv);
             // state.js: score/setScore で所持もち数を確認・消費する
             if (score >= nextPrice) {
-                setScore(score - (nextPrice)); purchasedItems[idx] = currentLv + 1;
+                setScore(score - nextPrice); purchasedItems[idx] = currentLv + 1;
                 // progress.js: trackMissionEvent：ミッションの進行カウンターを加算する
                 trackMissionEvent('omiyageBoughtTotal', 1); trackMissionEvent('omiyageBoughtToday', 1);
                 playAudioFile('audio/levelup.mp3');
@@ -1596,55 +1596,55 @@ import {
          * @param {*} v - 新しい値
          * @returns {void}
          */
-        export function setActiveSprayId(v) { activeSprayId = v; }
+        export function setActiveSprayId(newActiveSprayId) { activeSprayId = newActiveSprayId; }
         /**
          * blockedUserIds（ブロックしたユーザーID一覧）を書き換える。
          * @param {Array} v - 新しい値
          * @returns {void}
          */
-        export function setBlockedUserIds(v) { blockedUserIds = v; }
+        export function setBlockedUserIds(newBlockedUserIds) { blockedUserIds = newBlockedUserIds; }
         /**
          * equippedClotheId（現在装備中の衣装ID）を書き換える。
          * @param {string} v - 新しい値
          * @returns {void}
          */
-        export function setEquippedClotheId(v) { equippedClotheId = v; }
+        export function setEquippedClotheId(newEquippedClotheId) { equippedClotheId = newEquippedClotheId; }
         /**
          * favoriteFriendIds（お気に入り登録したフレンドのuid一覧）を書き換える。
          * @param {Array} v - 新しい値
          * @returns {void}
          */
-        export function setFavoriteFriendIds(v) { favoriteFriendIds = v; }
+        export function setFavoriteFriendIds(newFavoriteFriendIds) { favoriteFriendIds = newFavoriteFriendIds; }
         /**
          * purchasedClothes（購入済み衣装の一覧）を書き換える。
          * @param {Object} v - 新しい値
          * @returns {void}
          */
-        export function setPurchasedClothes(v) { purchasedClothes = v; }
+        export function setPurchasedClothes(newPurchasedClothes) { purchasedClothes = newPurchasedClothes; }
         /**
          * purchasedItems（各ステージのおみやげ購入レベル一覧）を書き換える。
          * @param {Object} v - 新しい値
          * @returns {void}
          */
-        export function setPurchasedItems(v) { purchasedItems = v; }
+        export function setPurchasedItems(newPurchasedItems) { purchasedItems = newPurchasedItems; }
         /**
          * sprayBuffActiveUntil（スプレーの自動増加バフが有効な期限タイムスタンプ）を書き換える。
          * @param {number} v - 新しい値
          * @returns {void}
          */
-        export function setSprayBuffActiveUntil(v) { sprayBuffActiveUntil = v; }
+        export function setSprayBuffActiveUntil(newSprayBuffActiveUntil) { sprayBuffActiveUntil = newSprayBuffActiveUntil; }
         /**
          * sprayInventory（所持スプレー数）を書き換える。
          * @param {Object} v - 新しい値
          * @returns {void}
          */
-        export function setSprayInventory(v) { sprayInventory = v; }
+        export function setSprayInventory(newSprayInventory) { sprayInventory = newSprayInventory; }
         /**
          * ticketInventory（所持チケット数）を書き換える。
          * @param {Object} v - 新しい値
          * @returns {void}
          */
-        export function setTicketInventory(v) { ticketInventory = v; }
+        export function setTicketInventory(newTicketInventory) { ticketInventory = newTicketInventory; }
 
 
         // window橋渡し：ここから下は、index.htmlのonclick=""（静的または動的に生成される

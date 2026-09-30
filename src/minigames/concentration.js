@@ -7,11 +7,11 @@
  * （ロジック・数値は一切変更していない。コードの再配置のみ）。
  */
 
-import { stages } from '../../data.js?v=2026-09-29-004';
-import { playAudioFile, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-29-004';
-import { currentStageIndex } from '../../progress.js?v=2026-09-29-004';
-import { saveGame } from '../../state.js?v=2026-09-29-004';
-import { consumeMinigamePlay, endMinigameToTiles, grantMinigameReward, minigameBests, showMinigameResult } from './core.js?v=2026-09-29-004';
+import { stages } from '../../data.js?v=2026-09-30-001';
+import { playAudioFile, screenFlash, spawnModalParticleBurst, vibrate } from '../../main.js?v=2026-09-30-001';
+import { currentStageIndex } from '../../progress.js?v=2026-09-30-001';
+import { saveGame } from '../../state.js?v=2026-09-30-001';
+import { consumeMinigamePlay, endMinigameToTiles, grantMinigameReward, minigameBests, showMinigameResult } from './core.js?v=2026-09-30-001';
 
         const CONFIG = {
             CONCENTRATION_PAIR_COUNT: 6,             // 使うペアの数（カード総数はこの2倍）
@@ -71,10 +71,10 @@ import { consumeMinigamePlay, endMinigameToTiles, grantMinigameReward, minigameB
                 <div class="concentration-card-outer" onclick="flipConcentrationCard(${i})">
                     <div class="concentration-card-inner" id="concent-inner-${i}">
                         <div class="concentration-card-face concentration-card-back">
-                            <img src="ui_images/concentration/card_back.webp" alt="" style="width:100%; height:100%; object-fit:contain;">
+                            <img src="images/ui_images/concentration/card_back.webp" alt="" style="width:100%; height:100%; object-fit:contain;">
                         </div>
                         <div class="concentration-card-face concentration-card-front">
-                            <img src="ui_images/concentration/card_front.webp" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">
+                            <img src="images/ui_images/concentration/card_front.webp" alt="" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain;">
                             <img src="${c.stage.itemImg}" alt="${c.stage.item}" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:78%; height:78%; object-fit:contain;">
                         </div>
                     </div>
