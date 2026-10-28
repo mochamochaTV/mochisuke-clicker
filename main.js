@@ -1,30 +1,29 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
 import {
-  BGM_FILES, CORNER_BTN_ADJUST_TOOL_ENABLED, KISEKAE_ITEMS, MOCHI_ICON_ADJUST_TOOL_ENABLED,
-  MYROOM_ITEMS, SFX_FILES, dialogueData, stages
-} from './data.js?v=2026-09-30-002';
-import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-09-30-002';
+  BGM_FILES, KISEKAE_ITEMS, MYROOM_ITEMS, SFX_FILES, dialogueData, stages
+} from './data.js?v=2026-10-13-001';
+import { resetMinigameCountsIfNewDay } from './minigames.js?v=2026-10-13-001';
 import {
   adminJumpToFinalStage, checkAndRotateMissions, checkOfflineEarnings, checkStageProgress,
   currentStageIndex, currentStageProgress, equippedKisekae, ownedKisekaeItems, ownedMyroomItems,
   prestigeCount, selectedStageIndex, setCurrentStageProgress
-} from './progress.js?v=2026-09-30-002';
-import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-09-30-002';
+} from './progress.js?v=2026-10-13-001';
+import { currentShopTab, syncOmiyageImageFrame } from './shop.js?v=2026-10-13-001';
 import {
   checkForCloudRestoreOnLoad, loadGame, playerName, saveGame, score, setScore, totalTapsCount
-} from './state.js?v=2026-09-30-002';
+} from './state.js?v=2026-10-13-001';
 import {
   bunshinCloneRects, endSkillVisualEffect, gameScreenRect, getMps, isFever, lastTappedTime,
   refreshBunshinCloneRects, resetMochiFilter, setGameScreenRect, skills, startFeverSpawningLoop,
   triggerFeverTime, updateSkillUI
-} from './tap.js?v=2026-09-30-002';
+} from './tap.js?v=2026-10-13-001';
 import {
   applyCornerBtnPositions, applyKisekaeToMainScreen, applyMochiIconAdjust, checkIncomingGiftsOnLaunch,
   checkShowTutorial, getTimeGreeting, hideMochiComment, initMapInteractions, initVolumeSliders,
   isTutorialActive, showMochiComment, showOpeningGreeting, startIncomingRoomInviteWatch,
-  startIncomingVisitStampWatch, updateCornerBtnReadout, updateDisplay, updateMochiIconAdjustReadout
-} from './ui.js?v=2026-09-30-002';
+  startIncomingVisitStampWatch, updateDisplay
+} from './ui.js?v=2026-10-13-001';
 
         // ⚙️ 調整用パラメータ集約：演出・タイミング・しきい値などの「数字だけ」をここにまとめている。
         // 値そのものは元のコードから一切変更していない（挙動は完全に同一）。グループごとに短い説明を付けてある。
@@ -894,33 +893,6 @@ import {
         }
 
         /**
-         * 開発者モードかつ4隅ボタン調整ツールが有効な場合にだけ、調整パネルを表示する。
-         * 🚧 座標が確定したので、いったんパネルを非表示にしている。また使う時はCORNER_BTN_ADJUST_TOOL_ENABLEDをtrueに戻すだけでOK
-         * @returns {void}
-         */
-        function showCornerBtnAdjustPanelIfEnabled() {
-            // data.js: CORNER_BTN_ADJUST_TOOL_ENABLED は4隅ボタン座標調整ツールを表示するかどうかのフラグ
-            if (IS_DEV_MODE && CORNER_BTN_ADJUST_TOOL_ENABLED) {
-                const panel = document.getElementById('corner-btn-adjust-panel');
-                // ui.js: updateCornerBtnReadout：調整パネル内の座標表示を最新値に更新する
-                if (panel) { panel.style.display = 'block'; updateCornerBtnReadout(); }
-            }
-        }
-
-        /**
-         * 開発者モードかつ所持もち数アイコン調整ツールが有効な場合にだけ、調整パネルを表示する。
-         * @returns {void}
-         */
-        function showMochiIconAdjustPanelIfEnabled() {
-            // data.js: MOCHI_ICON_ADJUST_TOOL_ENABLED は所持もち数アイコン座標調整ツールを表示するかどうかのフラグ
-            if (IS_DEV_MODE && MOCHI_ICON_ADJUST_TOOL_ENABLED) {
-                const panel = document.getElementById('mochi-icon-adjust-panel');
-                // ui.js: updateMochiIconAdjustReadout：調整パネル内の座標表示を最新値に更新する
-                if (panel) { panel.style.display = 'block'; updateMochiIconAdjustReadout(); }
-            }
-        }
-
-        /**
          * ギフト・部屋招待・訪問スタンプの監視開始と、オンライン状態のハートビート送信を、
          * Firebase接続が整うのを少し待ってから順にスケジュールする。
          * @returns {void}
@@ -989,11 +961,9 @@ import {
             applyKisekaeToMainScreen(); // 修正：確定済みの服装が、ページを開き直すと反映されないままだった
             // progress.js: checkAndRotateMissions：日付/週が変わっていたらミッション内容を選び直す
             checkAndRotateMissions(); // 日付・週が変わっていたら、デイリー/ウィークリーミッションを選び直す
-            // ui.js: applyCornerBtnPositions/applyMochiIconAdjust は、それぞれ保存済みの4隅ボタン・所持もち数アイコンの位置調整値を画面へ反映する
+            // ui.js: applyCornerBtnPositions/applyMochiIconAdjust は、data.jsで決めた4隅ボタン・所持もち数アイコンの大きさ・位置を画面へ反映する
             applyCornerBtnPositions();
-            showCornerBtnAdjustPanelIfEnabled();
             applyMochiIconAdjust();
-            showMochiIconAdjustPanelIfEnabled();
             scheduleBackgroundWatchers();
             grantDevModeItemsIfNeeded();
             // state.js: checkForCloudRestoreOnLoad は、ローカルにセーブが無い時にクラウドの復元可能なバックアップが無いか確認する

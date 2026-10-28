@@ -151,7 +151,7 @@
         }
 
         :root {
-            --corner-btn-size: 44px; /* 4隅ボタンの共通の大きさ（管理者調整パネルから変更できる） */
+            --corner-btn-size: 44px; /* 4隅ボタンの共通の大きさ（実際の値はdata.jsのCORNER_BTN_SIZEをsrc/ui/core.jsのapplyCornerBtnPositionsが上書きする） */
         }
         /* 🐛修正：この4隅ボタンは以前position:fixedだったため、ブラウザの表示領域（viewport）そのものの
            端を基準に配置されていた。スマホでは#game-screenの幅(max-width:480px)がほぼ画面幅と一致するので
@@ -294,8 +294,8 @@
         /* 🆕 もち吸い込み演出：所持もち数の左の🍡絵文字を、実際のもちパーティクル画像（mochi_particle.webp）に
            差し替えたアイコン。吸い込まれてきたパーティクルがここへ着地する狙い所であり、着地の瞬間に
            .mochi-count-icon-bounceクラスが付いて「ぴょん」と跳ねる（main.jsのtriggerMochiCountIconBounce参照）。
-           大きさ・位置は開発者用調整ツール（src/ui/core.jsのadjustMochiIconSize等）でCSS変数を書き換えて
-           実機で微調整できるようにしてある。位置調整は.mochi-count-icon-wrap側のtranslateで行い、
+           大きさ・位置はdata.jsのMOCHI_ICON_SIZE/MOCHI_ICON_OFFSETで決め、src/ui/core.jsのapplyMochiIconAdjustが
+           CSS変数に反映する。位置のズラしは.mochi-count-icon-wrap側のtranslateで行い、
            .mochi-count-icon側のtransform（着地時のbounceアニメ）と競合しないよう要素を分けている。
            🆕【まもすいの指摘で修正】大きさの調整はwidth/heightではなく.mochi-count-icon-wrap側の
            transform:scaleで行う。width/heightで大きくすると、そのぶんインライン要素としての占有スペースが
@@ -1055,40 +1055,68 @@
             animation: recommendedPulse 1s infinite alternate;
         }
 
-        /* 📖 チュートリアルのハイライトは、通常の光らせ方よりもっと目立たせる：
-           説明中のボタン以外を暗くする（z-indexの入れ子に依存しない、各ボタンへの直接フィルターで統一） */
-        body.tutorial-active .nav-btn,
-        body.tutorial-active #map-toggle-btn,
-        body.tutorial-active #menu-toggle-btn,
-        body.tutorial-active #ui-toggle-btn,
-        body.tutorial-active #feed-toggle-btn {
-            filter: brightness(0.4);
-            transition: filter 0.3s;
+        /* 📖 誘導チュートリアル（モーダルより上に出す。スキップ確認(6000)よりは下） */
+        /* 親の枠自体は押す操作を受け取らない。受け取るのは暗幕・ふた・スキップボタンだけ */
+        #tutorial-overlay { display: none; position: fixed; inset: 0; z-index: 5000; pointer-events: none; }
+        body.tutorial-active #tutorial-overlay { display: block; }
+        /* 画面全体を覆う暗幕。src/ui/core.js の updateTutorialGuide() が clip-path で穴を切り抜く（切り抜いた部分は、押す操作も下の要素に通る） */
+        #tutorial-dim { position: fixed; inset: 0; background: rgba(0,0,0,0.6); pointer-events: auto; }
+        /* もちすけ本体の上に置く透明なふた（話している もちすけは明るく見せるが、押せないようにする） */
+        #tutorial-speaker-guard { display: none; position: fixed; pointer-events: auto; }
+        /* 押せる穴のふちを光らせる輪。押す操作は下の要素に通す */
+        #tutorial-spotlight {
+            display: none; position: fixed; border-radius: 16px; pointer-events: none;
+            animation: tutorialSpotPulse 0.8s infinite alternate;
         }
-        .tutorial-glow {
-            animation: tutorialGlowPulse 0.8s infinite alternate;
+        @keyframes tutorialSpotPulse {
+            0% { box-shadow: 0 0 0 3px #fff, 0 0 12px 4px #8bc34a; }
+            100% { box-shadow: 0 0 0 4px #fff, 0 0 26px 10px #4caf50; }
         }
-        @keyframes tutorialGlowPulse {
-            0% { filter: brightness(1) drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #4caf50); transform: scale(1); }
-            100% { filter: brightness(1.15) drop-shadow(0 0 16px #fff) drop-shadow(0 0 32px #8bc34a) drop-shadow(0 0 46px #4caf50); transform: scale(1.14); }
+        /* もちすけのセリフ。置き場所は src/ui/core.js の updateTutorialGuide() がクラスで切り替える
+           guide-at-mochisuke：ホーム画面のもちすけの頭の上 / guide-side：小さなもちすけの横（guide-top＝上、guide-bottom＝下） */
+        #tutorial-guide-box {
+            position: fixed; left: 50%; transform: translateX(-50%);
+            width: 90%; max-width: 380px; box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            pointer-events: none;
+        }
+        #tutorial-guide-box.guide-top { top: 12%; }
+        #tutorial-guide-box.guide-bottom { bottom: 14%; }
+        #tutorial-guide-icon { display: none; width: 64px; flex-shrink: 0; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35)); }
+        #tutorial-guide-box.guide-side #tutorial-guide-icon { display: block; }
+        /* 吹き出しの見た目は、ふだんのセリフ（#mochi-balloon）とそろえる */
+        #tutorial-guide-text {
+            position: relative; background: white; padding: 8px 12px; border-radius: 20px;
+            border: 3px solid #ff9800; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            font-size: 0.85rem; font-weight: bold; color: #4a3622; text-align: center; line-height: 1.5;
+        }
+        /* 吹き出しのしっぽ（::before＝オレンジのふち、::after＝白い中身）。頭の上なら下向き、横なら左向き */
+        #tutorial-guide-text::before, #tutorial-guide-text::after { content: ''; position: absolute; border-style: solid; width: 0; }
+        .guide-at-mochisuke #tutorial-guide-text::before {
+            bottom: -16px; left: 50%; transform: translateX(-50%);
+            border-width: 13px 9px 0; border-color: #ff9800 transparent;
+        }
+        .guide-at-mochisuke #tutorial-guide-text::after {
+            bottom: -11px; left: 50%; transform: translateX(-50%);
+            border-width: 12px 8px 0; border-color: white transparent;
+        }
+        .guide-side #tutorial-guide-text::before {
+            left: -16px; top: 50%; transform: translateY(-50%);
+            border-width: 9px 13px 9px 0; border-color: transparent #ff9800;
+        }
+        .guide-side #tutorial-guide-text::after {
+            left: -11px; top: 50%; transform: translateY(-50%);
+            border-width: 8px 12px 8px 0; border-color: transparent white;
+        }
+        /* 🔒 進行でまだ解放されていないボタン（src/ui/core.js の updateFeatureLocks() が付け外しする） */
+        .feature-locked { filter: grayscale(1) brightness(0.75); }
+        .feature-locked::after {
+            content: '🔒'; position: absolute; top: 2px; right: 2px; font-size: 1.1rem; line-height: 1;
         }
         #tutorial-skip-btn {
-            display: none;
-            position: absolute; bottom: -34px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.4); color: #fff; border: none; border-radius: 14px;
-            padding: 4px 12px; font-size: 0.68rem; z-index: 20; cursor: pointer;
-        }
-        body.tutorial-active #tutorial-skip-btn { display: block; }
-
-        /* 📖 チュートリアル中は、誤操作防止のためもちすけ以外のボタンを一時的に無効化する */
-        body.tutorial-active .nav-btn,
-        body.tutorial-active #map-toggle-btn,
-        body.tutorial-active #menu-toggle-btn,
-        body.tutorial-active #ui-toggle-btn,
-        body.tutorial-active #feed-toggle-btn,
-        body.tutorial-active .skill-btn,
-        body.tutorial-active .hissatsu-btn {
-            pointer-events: none;
+            position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.5); color: #fff; border: none; border-radius: 14px;
+            padding: 4px 12px; font-size: 0.68rem; cursor: pointer; pointer-events: auto;
         }
         @keyframes recommendedPulse {
             0% { filter: drop-shadow(0 0 3px #8bc34a) drop-shadow(0 0 6px #4caf50); }
@@ -1156,7 +1184,8 @@
         }
         #feed-buff-indicator.show { display: flex; }
 
-        /* 😱 じらしすぎて叫ぶ演出（専用イラストが無いので、既存の絵を激しく震わせて表現） */
+        /* 😱 じらしすぎて叫ぶ演出（専用イラストが無いので、既存の絵を激しく震わせて表現）
+           呼吸用の入れ物(#mochisuke-breathe-wrap)にかける。中の変形用の入れ物は自由に動けるので、叫び中もタップ・スクイーズで変形する（tap.js の startScreamFace() 参照） */
         .mochi-scream { animation: mochiScreamShake 0.5s ease-in-out; transform: scale(1.5) !important; }
         @keyframes mochiScreamShake {
             0%, 100% { transform: translate(0, 0) rotate(0) scale(1.5); }
@@ -1374,9 +1403,9 @@
             white-space: nowrap; z-index: 10; opacity: 0; transform: scale(0.8);
             transition: all 0.2s ease-out; pointer-events: none;
         }
-        /* 📖 チュートリアル中は文章が長くなるため、画面幅からはみ出さないよう折り返す */
+        /* 📖 チュートリアル中は、チュートリアル用の吹き出し（#tutorial-guide-text）と重ならないよう、ふだんのセリフを隠す */
         body.tutorial-active #mochi-balloon {
-            white-space: normal; max-width: 76vw; text-align: center; line-height: 1.5;
+            visibility: hidden;
         }
         #mochi-balloon::after {
             content: ''; position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%);

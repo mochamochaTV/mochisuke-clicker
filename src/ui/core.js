@@ -1,12 +1,12 @@
-        // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン調整・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
+        // ui.js を機能ごとに分割したファイルの1つ（共通UI基盤（モーダル開閉・音量設定・チュートリアル・セリフ表示・4隅ボタン配置・実績ミッション））。ui.js 自身は7ファイルをre-exportする窓口。
 
-        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, MOCHI_ICON_BASE_SIZE_PX, MOCHI_ICON_OFFSET, MOCHI_ICON_SIZE, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, setCORNER_BTN_SIZE, setMOCHI_ICON_SIZE, stages } from '../../data.js?v=2026-09-30-002';
-        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-09-30-002';
-        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-09-30-002';
-        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-09-30-002';
-        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-09-30-002';
-        import { isMochisukeVisible } from './kisekae.js?v=2026-09-30-002';
-        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-09-30-002';
+        import { CORNER_BTN_OFFSETS, CORNER_BTN_OFFSETS_PWA_OVERRIDE, CORNER_BTN_SIZE, KISEKAE_ITEMS, MOCHI_ICON_BASE_SIZE_PX, MOCHI_ICON_OFFSET, MOCHI_ICON_SIZE, FEATURE_UNLOCKS, GUIDED_TUTORIAL_STEPS, TUTORIAL_MISSIONS, TUTORIAL_STEPS, dialogueData, stages } from '../../data.js?v=2026-10-13-001';
+        import { applyBgmVolume, bgmVolumeMult, fixBottomGap, getTimeBucketIndex, isRunningStandalone, pickRandom, playAudioFile, setBgmVolumeMult, setLastGreetingHourBucket, setSfxVolumeMult, sfxVolumeMult } from '../../main.js?v=2026-10-13-001';
+        import { checkAndRotateMissions, claimMission, currentStageIndex, equippedKisekae, getMissionDef, getMissionProgress, getPrefTrophy, getPrefTrophyIcon, isMissionComplete, isPendingStampMoment, missionClaimed, missionDailySelected, missionWeeklySelected, prestigeCount, showPrefTrophyDetail, tutorialMissionStep } from '../../progress.js?v=2026-10-13-001';
+        import { playerName, refreshCloudBackupStatus, sanitizePlayerName, saveGame, score, setPlayerName, totalTapsCount } from '../../state.js?v=2026-10-13-001';
+        import { cancelFeedDragIfActive, isDraggingSqueeze, isScreamActive, isSqueezeSettling, setLastTappedTime, skills } from '../../tap.js?v=2026-10-13-001';
+        import { isMochisukeVisible } from './kisekae.js?v=2026-10-13-001';
+        import { openMap, openOmiyageCollection, updateDisplay } from './hud.js?v=2026-10-13-001';
 
         // 🔧 このファイル内でロジックに使う「調整可能な」数値をまとめたもの（CSS文字列内の値や、配列添字などの構造的な数値は対象外）
         const CONFIG = {
@@ -22,9 +22,6 @@
             BALLOON_AUTO_HIDE_MS: 4000, // セリフ吹き出しが自動で消えるまでの時間
             ROBO_MOUTH_FRAME_INTERVAL_MS: 60, // ロボもちすけの口アニメ、1コマあたりの再生間隔
 
-            // 4隅ボタン調整関連
-            CORNER_BTN_MIN_SIZE_PX: 20, // 4隅ボタンの最小サイズ
-
             // 口パーツ位置調整関連
             MOUTH_DEFAULT_WIDTH_PCT: 18, // 口パーツ幅のデフォルト値（%）
             MOUTH_MIN_WIDTH_PCT: 3, // 口パーツ幅の最小値（%）
@@ -37,6 +34,13 @@
             // おしごとミッション画面の画面切り替え演出
             OSHIGOTO_FADE_OUT_MS: 300, // 画面を暗転させるまでの時間
             OSHIGOTO_FADE_IN_DELAY_MS: 150, // 暗転を解除するまでの遅延
+
+            // 誘導チュートリアル関連
+            TUTORIAL_CHECK_INTERVAL_MS: 200, // 穴の位置合わせと「次へ進む条件」のチェックをする間隔
+            TUTORIAL_SPOTLIGHT_PADDING_PX: 10, // 穴を、明るくする要素より少し広げる余白
+            TUTORIAL_BALLOON_GAP_PX: 18, // もちすけの頭と、吹き出しの下端とのすき間（しっぽの分）
+            UNLOCK_CHECK_INTERVAL_MS: 1000, // 機能の解放（鍵の付け外し・解放チュートリアルを出すか）をチェックする間隔
+            UNLOCK_TUTORIAL_DELAY_MS: 3000, // 解放を見つけてから、解放チュートリアルを出すまで待つ時間（県の到着セリフを読む間）
         };
 
         /**
@@ -275,6 +279,8 @@
         export let tutorialStepIndex = 0;
         export let tutorialTimer = null;
         export let isTutorialActive = false;
+        export let tutorialSteps = GUIDED_TUTORIAL_STEPS; // 今進めている誘導チュートリアルのステップ一覧（最初のチュートリアル、または解放チュートリアル）
+        export let tutorialOnEnd = null; // そのチュートリアルが終わった時（スキップも含む）に呼ぶ処理
 
         /**
          * まだチュートリアルを見ていない、かつプレイ履歴もない場合にチュートリアルを開始する。
@@ -293,6 +299,25 @@
          * @returns {void}
          */
         export function openTutorial() {
+            // ../../data.js: GUIDED_TUTORIAL_STEPS：最初の誘導チュートリアルのステップ一覧
+            startGuidedTutorial(GUIDED_TUTORIAL_STEPS, () => {
+                // 終わったら「チュートリアル済み」を保存して、名前を決めてもらう
+                hasSeenTutorial = true;
+                // ../../state.js の saveGame()：今の状態をセーブする
+                saveGame();
+                promptPlayerNameIfNeeded();
+            });
+        }
+
+        /**
+         * 指定したステップ一覧で、誘導チュートリアルを最初から始める（最初のチュートリアルと解放チュートリアルで共通）。
+         * @param {Array} steps - ステップ一覧（書き方は data.js の GUIDED_TUTORIAL_STEPS と同じ）
+         * @param {Function} onEnd - 終わった時（スキップも含む）に呼ぶ処理
+         * @returns {void}
+         */
+        export function startGuidedTutorial(steps, onEnd) {
+            tutorialSteps = steps;
+            tutorialOnEnd = onEnd;
             tutorialStepIndex = 0;
             isTutorialActive = true;
             document.body.classList.add('tutorial-active');
@@ -301,48 +326,225 @@
         }
 
         /**
-         * チュートリアルの現在のステップを表示し、指定時間後に次のステップへ進める。全ステップ終了時はチュートリアルを終了する。
+         * 誘導チュートリアルの現在のステップを表示する。全ステップが終わったらチュートリアルを終了する。
          * @returns {void}
          */
         export function runTutorialStep() {
-            document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
-
-            // ../../data.js: TUTORIAL_STEPS はチュートリアルの各ステップ（表示テキスト・ハイライト対象・表示時間）データ
-            if (tutorialStepIndex >= TUTORIAL_STEPS.length) {
+            // tutorialSteps：今進めているチュートリアルのステップ一覧（startGuidedTutorial() で決まる）
+            if (tutorialStepIndex >= tutorialSteps.length) {
                 endTutorial();
                 return;
             }
-            const step = TUTORIAL_STEPS[tutorialStepIndex];
+            updateTutorialGuide();
 
-            if (step.highlight) {
-                const el = document.getElementById(step.highlight);
-                if (el) el.classList.add('tutorial-glow');
-            }
-
-            const balloon = document.getElementById('mochi-balloon');
-            clearTimeout(balloonAutoHideTimer);
-            balloon.innerText = step.text;
-            balloon.classList.add('balloon-show');
-
-            clearTimeout(tutorialTimer);
-            tutorialTimer = setTimeout(() => {
-                tutorialStepIndex++;
-                runTutorialStep();
-            }, step.duration);
+            // 一定間隔で、穴の位置合わせと「ミッション達成」のチェックをする
+            // （画面の切り替えや、もちすけの呼吸アニメで位置が変わるため、毎回測り直す）
+            clearInterval(tutorialTimer);
+            tutorialTimer = setInterval(() => {
+                updateTutorialGuide();
+                const step = tutorialSteps[tutorialStepIndex];
+                if (step && step.next === 'mission') {
+                    // ../../progress.js の getMissionDef()：ミッションIDから定義を取り出す。
+                    // ../../progress.js の isMissionComplete()：そのミッションが目標回数に届いたかを返す
+                    if (isMissionComplete(getMissionDef(step.missionId))) advanceTutorialStep();
+                }
+            }, CONFIG.TUTORIAL_CHECK_INTERVAL_MS);
         }
+
+        /**
+         * 誘導チュートリアルを次のステップへ進める。
+         * @returns {void}
+         */
+        export function advanceTutorialStep() {
+            tutorialStepIndex++;
+            runTutorialStep();
+        }
+
+        /**
+         * 要素が画面のどこに見えているかを返す（非表示や大きさ0なら null）。
+         * @param {Element|null} el - 対象の要素
+         * @param {number} pad - 範囲を外側に広げる余白(px)
+         * @returns {Object|null} {left, top, right, bottom}（px）
+         */
+        export function getTutorialRect(el, pad) {
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            if (r.width === 0 || r.height === 0) return null; // 閉じているモーダルの中など、まだ見えていない
+            const W = window.innerWidth, H = window.innerHeight;
+            return {
+                left: Math.max(0, r.left - pad), top: Math.max(0, r.top - pad),
+                right: Math.min(W, r.right + pad), bottom: Math.min(H, r.bottom + pad),
+            };
+        }
+
+        /**
+         * 現在のステップのセリフを表示し、押せる穴をあける（穴の外は暗くして押せなくする）。
+         * @returns {void}
+         */
+        export function updateTutorialGuide() {
+            const step = tutorialSteps[tutorialStepIndex];
+            if (!step) return;
+
+            // セリフ（ミッション待ちのステップには、進み具合「（3/10）」を付ける）
+            let text = step.text;
+            if (step.next === 'mission') {
+                const mission = getMissionDef(step.missionId);
+                // ../../progress.js の getMissionProgress()：ミッションの今の進み具合（回数）を返す
+                text += `（${Math.min(getMissionProgress(mission), mission.target)}/${mission.target}）`;
+            }
+            const textEl = document.getElementById('tutorial-guide-text');
+            if (textEl.innerText !== text) textEl.innerText = text;
+
+            const W = window.innerWidth, H = window.innerHeight;
+            // 押せる穴（step.target に書いた要素の位置。まだ表示されていなければ穴なし）
+            const hole = step.target ? getTutorialRect(document.querySelector(step.target), CONFIG.TUTORIAL_SPOTLIGHT_PADDING_PX) : null;
+            // ホーム画面で話すステップでは、話しているもちすけ本体も明るく見せる（押せる穴と重なる時は、押せる穴だけで十分）
+            const mochiRect = step.at === 'mochisuke' ? getTutorialRect(document.getElementById('mochisuke-btn'), 0) : null;
+            const overlapsHole = hole && mochiRect && mochiRect.left < hole.right && hole.left < mochiRect.right && mochiRect.top < hole.bottom && hole.top < mochiRect.bottom;
+            const speakerHole = (mochiRect && !overlapsHole) ? mochiRect : null;
+
+            // 暗幕：画面全体の四角から、穴の四角を切り抜く（evenodd＝重なった部分を抜く塗り方）
+            const points = [`0px 0px, ${W}px 0px, ${W}px ${H}px, 0px ${H}px, 0px 0px`];
+            [hole, speakerHole].forEach(r => {
+                if (!r) return;
+                points.push(`${r.left}px ${r.top}px, ${r.right}px ${r.top}px, ${r.right}px ${r.bottom}px, ${r.left}px ${r.bottom}px, ${r.left}px ${r.top}px, 0px 0px`);
+            });
+            document.getElementById('tutorial-dim').style.clipPath = `polygon(evenodd, ${points.join(', ')})`;
+
+            // もちすけ本体の穴には透明なふたを置き、押せる穴のふちは光らせる
+            placeTutorialRect('tutorial-speaker-guard', speakerHole);
+            placeTutorialRect('tutorial-spotlight', hole);
+
+            // セリフの置き場所
+            const box = document.getElementById('tutorial-guide-box');
+            if (mochiRect) {
+                // ホーム画面：もちすけの頭の上に吹き出しを出す
+                box.className = 'guide-at-mochisuke';
+                box.style.bottom = (H - mochiRect.top + CONFIG.TUTORIAL_BALLOON_GAP_PX) + 'px';
+            } else {
+                // もちすけが見えない画面：小さなもちすけの横に吹き出しを出す。穴が上半分なら下、それ以外は上に置いて重ならないようにする
+                const holeIsUpper = hole && (hole.top + hole.bottom) / 2 < H / 2;
+                box.className = holeIsUpper ? 'guide-side guide-bottom' : 'guide-side guide-top';
+                box.style.bottom = '';
+            }
+        }
+
+        /**
+         * 要素を指定の範囲に置く（範囲が null なら隠す）。
+         * @param {string} id - 置く要素のid
+         * @param {Object|null} r - {left, top, right, bottom}（px）
+         * @returns {void}
+         */
+        export function placeTutorialRect(id, r) {
+            const el = document.getElementById(id);
+            if (!r) { el.style.display = 'none'; return; }
+            el.style.display = 'block';
+            el.style.left = r.left + 'px';
+            el.style.top = r.top + 'px';
+            el.style.width = (r.right - r.left) + 'px';
+            el.style.height = (r.bottom - r.top) + 'px';
+        }
+
+        // 暗いところ（もちすけのふたも含む）をタップした時：「タップで次へ」のステップなら次へ進む
+        document.getElementById('tutorial-overlay').addEventListener('click', (e) => {
+            if (e.target.closest('#tutorial-skip-btn')) return; // スキップボタンは confirmSkipTutorial() 側で処理する
+            const step = tutorialSteps[tutorialStepIndex];
+            if (isTutorialActive && step && step.next === 'tapScreen') advanceTutorialStep();
+        });
+
+        // 「押したら次へ」のステップ：明るくしたボタンが押されたら次へ進む
+        // （ボタン本来の処理は止めずにそのまま動かす。ここでは押されたかどうかを見ているだけ）
+        document.addEventListener('click', (e) => {
+            if (!isTutorialActive) return;
+            const step = tutorialSteps[tutorialStepIndex];
+            if (step && step.next === 'click' && e.target.closest(step.target)) advanceTutorialStep();
+        }, true);
 
         /**
          * チュートリアルを終了状態にし、進捗を保存してプレイヤー名の入力を促す。
          * @returns {void}
          */
         export function endTutorial() {
+            clearInterval(tutorialTimer); // 穴の位置合わせ・条件チェックを止める
+            hideMochiComment(); // チュートリアル中に出たふだんのセリフ（おみやげ購入時など）は自動で消えないので、ここで消す
             isTutorialActive = false;
             document.body.classList.remove('tutorial-active');
             document.querySelectorAll('.tutorial-glow').forEach(el => el.classList.remove('tutorial-glow'));
-            hasSeenTutorial = true;
-            saveGame();
-            promptPlayerNameIfNeeded();
+            // 始める時に渡された「終わった時の処理」を呼ぶ（最初のチュートリアルなら名前決め、解放チュートリアルなら見終わった記録）
+            const onEnd = tutorialOnEnd;
+            tutorialOnEnd = null;
+            if (onEnd) onEnd();
         }
+
+        // ===================================================================
+        // 🔓 進行で解放する機能（data.js の FEATURE_UNLOCKS）
+        // 解放前はボタンに鍵をかけ、解放されたら短い誘導チュートリアルを出す
+        // ===================================================================
+        export let seenFeatureUnlocks = {}; // 解放チュートリアルを見終わった機能（id → true）。state.js がセーブ・ロードする
+        export let unlockReadySince = 0; // 解放チュートリアルを出せる状態になった時刻（0＝まだ）
+
+        /**
+         * その機能が解放されているか（解放する県に着いたか）を返す。
+         * @param {Object} feature - FEATURE_UNLOCKS の1行
+         * @returns {boolean} 解放済みならtrue
+         */
+        export function isFeatureUnlocked(feature) {
+            // ../../progress.js: currentStageIndex：今いる県の番号
+            return currentStageIndex >= feature.unlockStage;
+        }
+
+        /**
+         * 解放前のボタンに鍵の見た目（feature-locked クラス）を付け、解放済みなら外す。
+         * @returns {void}
+         */
+        export function updateFeatureLocks() {
+            FEATURE_UNLOCKS.forEach(f => {
+                const btn = document.getElementById(f.buttonId);
+                if (btn) btn.classList.toggle('feature-locked', !isFeatureUnlocked(f));
+            });
+        }
+
+        /**
+         * 鍵の付け外しをした上で、解放されたのにまだ見ていない機能があれば、落ち着いたタイミングで解放チュートリアルを出す。
+         * @returns {void}
+         */
+        export function checkFeatureUnlockTutorial() {
+            updateFeatureLocks();
+            if (!hasSeenTutorial || isTutorialActive) { unlockReadySince = 0; return; }
+            const next = FEATURE_UNLOCKS.find(f => isFeatureUnlocked(f) && !seenFeatureUnlocks[f.id]);
+            // 他の画面を開いている間・画面切り替えの暗転中・スタンプ待ちの間は出さない
+            // ../../progress.js: isPendingStampMoment：ゲージが溜まって「スタンプを押す」を待っている状態か
+            const isBusy = document.body.classList.contains('modal-open')
+                || document.getElementById('fade-overlay').classList.contains('fade-black')
+                || isPendingStampMoment;
+            if (!next || isBusy) { unlockReadySince = 0; return; }
+            if (!unlockReadySince) { unlockReadySince = Date.now(); return; }
+            if (Date.now() - unlockReadySince < CONFIG.UNLOCK_TUTORIAL_DELAY_MS) return; // 県の到着セリフを読む時間を空ける
+            unlockReadySince = 0;
+            startGuidedTutorial(next.steps, () => {
+                seenFeatureUnlocks[next.id] = true;
+                saveGame();
+            });
+        }
+        setInterval(checkFeatureUnlockTutorial, CONFIG.UNLOCK_CHECK_INTERVAL_MS);
+
+        // 鍵付きのボタンを押した時：本来の画面は開かず、もちすけが解放の条件を話す
+        // （ボタン本来の処理より先に受け取って、そこで止める）
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.feature-locked');
+            if (!btn) return;
+            e.stopPropagation();
+            e.preventDefault();
+            const feature = FEATURE_UNLOCKS.find(f => f.buttonId === btn.id);
+            if (feature) showMochiComment(feature.lockedText);
+        }, true);
+
+        /**
+         * seenFeatureUnlocksを書き換える（他ファイルからのsetter。state.js のロードで使う）。
+         * @param {Object} newSeenFeatureUnlocks - 解放チュートリアルを見終わった機能（id → true）
+         * @returns {void}
+         */
+        export function setSeenFeatureUnlocks(newSeenFeatureUnlocks) { seenFeatureUnlocks = newSeenFeatureUnlocks; }
 
         /**
          * チュートリアルをスキップするかどうかの確認ダイアログを表示する。
@@ -430,119 +632,9 @@
             feed.style.bottom = `calc(14px + env(safe-area-inset-bottom, 0px) + ${getOffsets('feed-toggle-btn').vert}px)`;
             feed.style.right = getOffsets('feed-toggle-btn').horiz + 'px';
         }
-        // 🛠️ 開発者用：4隅ボタンの調整ツール（大きさは共通、位置は個別にドラッグ調整）
-        export let cornerBtnAdjustMode = false;
-        export let cornerBtnDragState = null;
+        // 💰 所持もち数アイコン（#mochi-count-icon）の大きさ・位置を反映する
         /**
-         * 4隅ボタンの共通サイズを増減させる（開発者用調整ツール）。
-         * @param {number} delta - サイズの変化量（px）
-         * @returns {void}
-         */
-        export function adjustCornerBtnSize(delta) {
-            // ../../data.js: setCORNER_BTN_SIZE はCORNER_BTN_SIZE変数を書き換えるsetter
-            setCORNER_BTN_SIZE(Math.max(CONFIG.CORNER_BTN_MIN_SIZE_PX, CORNER_BTN_SIZE + delta));
-            document.getElementById('corner-btn-size-readout').textContent = CORNER_BTN_SIZE + 'px';
-            applyCornerBtnPositions();
-        }
-        /**
-         * 4隅ボタンの位置調整モードのON/OFFを切り替える（開発者用調整ツール）。
-         * @returns {void}
-         */
-        export function toggleCornerBtnAdjustMode() {
-            cornerBtnAdjustMode = !cornerBtnAdjustMode;
-            const btn = document.getElementById('corner-btn-adjust-toggle-btn');
-            btn.style.background = cornerBtnAdjustMode ? '#4caf50' : '#e91e63';
-            if (cornerBtnAdjustMode) setupCornerBtnDrag();
-            updateCornerBtnReadout();
-        }
-        /**
-         * 4隅ボタン調整対象のセレクトボックスが変更された際に、readout表示を更新する。
-         * @returns {void}
-         */
-        export function onCornerBtnAdjustTargetChange() {
-            updateCornerBtnReadout();
-        }
-        // PWA(ホーム画面)かどうかで、参照・更新すべきオフセットのデータを切り替える
-        /**
-         * 実行環境（PWA/通常URL）に応じた、指定ボタンのオフセットデータへの参照を取得する。
-         * @param {string} id - ボタンのDOM要素ID
-         * @returns {Object} オフセットデータ（vert/horizプロパティを持つオブジェクト）
-         */
-        export function getCornerBtnOffsetsRef(id) {
-            return (isRunningStandalone() && CORNER_BTN_OFFSETS_PWA_OVERRIDE[id]) ? CORNER_BTN_OFFSETS_PWA_OVERRIDE[id] : CORNER_BTN_OFFSETS[id];
-        }
-        /**
-         * 4隅ボタンのドラッグによる位置調整を、各ボタンに対して一度だけセットアップする（開発者用調整ツール）。
-         * @returns {void}
-         */
-        export function setupCornerBtnDrag() {
-            if (document.body.dataset.cornerDragSetup) return;
-            document.body.dataset.cornerDragSetup = '1';
-            ['map-toggle-btn', 'menu-toggle-btn', 'ui-toggle-btn', 'feed-toggle-btn'].forEach(id => {
-                const el = document.getElementById(id);
-                el.addEventListener('pointerdown', (e) => {
-                    if (!cornerBtnAdjustMode) return;
-                    if (document.getElementById('corner-btn-adjust-target').value !== id) return;
-                    e.preventDefault();
-                    try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
-                    cornerBtnDragState = { id, startX: e.clientX, startY: e.clientY };
-                });
-            });
-            document.body.addEventListener('pointermove', (e) => {
-                if (!cornerBtnDragState || !cornerBtnAdjustMode) return;
-                const dx = e.clientX - cornerBtnDragState.startX;
-                const dy = e.clientY - cornerBtnDragState.startY;
-                const id = cornerBtnDragState.id;
-                const offsets = getCornerBtnOffsetsRef(id);
-                const isTop = (id === 'map-toggle-btn' || id === 'menu-toggle-btn');
-                const isLeft = (id === 'map-toggle-btn' || id === 'ui-toggle-btn');
-                offsets.vert = Math.max(0, offsets.vert + (isTop ? dy : -dy));
-                offsets.horiz = Math.max(0, offsets.horiz + (isLeft ? dx : -dx));
-                cornerBtnDragState.startX = e.clientX; cornerBtnDragState.startY = e.clientY;
-                applyCornerBtnPositions();
-                updateCornerBtnReadout();
-            });
-            document.body.addEventListener('pointerup', () => { cornerBtnDragState = null; });
-            document.body.addEventListener('pointercancel', () => { cornerBtnDragState = null; });
-        }
-        /**
-         * 現在の調整対象ボタンのオフセット値を、readout表示欄に反映する。
-         * @returns {void}
-         */
-        export function updateCornerBtnReadout() {
-            const id = document.getElementById('corner-btn-adjust-target').value;
-            const offsets = getCornerBtnOffsetsRef(id);
-            const envLabel = isRunningStandalone() ? '（PWA）' : '（通常URL）';
-            document.getElementById('corner-btn-adjust-readout').textContent = `${envLabel} vert:${offsets.vert}px; horiz:${offsets.horiz}px;`;
-        }
-        /**
-         * 4隅ボタン全ての現在の座標情報をテキストにまとめ、クリップボードにコピーする（開発者用調整ツール）。
-         * @returns {void}
-         */
-        export function copyCornerBtnCoords() {
-            const labels = { 'map-toggle-btn': '地図', 'menu-toggle-btn': '設定', 'ui-toggle-btn': '背景', 'feed-toggle-btn': 'お土産一覧' };
-            const envLabel = isRunningStandalone() ? '【PWA(ホーム画面)】' : '【通常URL】';
-            const lines = [envLabel, `大きさ(共通): ${CORNER_BTN_SIZE}px`];
-            ['map-toggle-btn', 'menu-toggle-btn', 'ui-toggle-btn', 'feed-toggle-btn'].forEach(id => {
-                const offsets = getCornerBtnOffsetsRef(id);
-                lines.push(`${labels[id]}(${id}): vert:${offsets.vert}px; horiz:${offsets.horiz}px;`);
-            });
-            const text = lines.join('\n');
-            const textarea = document.getElementById('corner-btn-copy-textarea');
-            textarea.value = text;
-            textarea.style.display = 'block';
-            textarea.select();
-            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
-        }
-
-        // 開発者用：所持もち数アイコン（#mochi-count-icon）の大きさ・位置の調整ツール。
-        // 4隅ボタンの調整ツール（上記）と同じ考え方だが、対象が1個だけで、かつ通常のflowに乗っている
-        // インライン要素（position:fixedの4隅ボタンとは違う）なので、位置調整は.mochi-count-icon-wrap側の
-        // transform:translateで見た目だけをズラす方式にしている（レイアウト自体は動かさない）。
-        export let mochiIconAdjustMode = false;
-        export let mochiIconDragState = null;
-        /**
-         * #mochi-count-icon（所持もち数アイコン）の大きさ・位置調整を、CSS変数としてDOMに反映する（開発者用調整ツール）。
+         * #mochi-count-icon（所持もち数アイコン）の大きさ・位置（data.jsの値）を、CSS変数としてDOMに反映する。
          * @returns {void}
          */
         export function applyMochiIconAdjust() {
@@ -555,80 +647,6 @@
             document.documentElement.style.setProperty('--mochi-count-icon-dx', MOCHI_ICON_OFFSET.dx + 'px');
             document.documentElement.style.setProperty('--mochi-count-icon-dy', MOCHI_ICON_OFFSET.dy + 'px');
         }
-        /**
-         * 所持もち数アイコンの大きさを増減させる（開発者用調整ツール）。
-         * @param {number} delta - サイズの変化量（px）
-         * @returns {void}
-         */
-        export function adjustMochiIconSize(delta) {
-            // ../../data.js: setMOCHI_ICON_SIZE はMOCHI_ICON_SIZE変数を書き換えるsetter
-            setMOCHI_ICON_SIZE(Math.max(CONFIG.CORNER_BTN_MIN_SIZE_PX, MOCHI_ICON_SIZE + delta));
-            document.getElementById('mochi-icon-size-readout').textContent = MOCHI_ICON_SIZE + 'px';
-            applyMochiIconAdjust();
-        }
-        /**
-         * 所持もち数アイコンの位置調整モードのON/OFFを切り替える（開発者用調整ツール）。
-         * @returns {void}
-         */
-        export function toggleMochiIconAdjustMode() {
-            mochiIconAdjustMode = !mochiIconAdjustMode;
-            const btn = document.getElementById('mochi-icon-adjust-toggle-btn');
-            btn.style.background = mochiIconAdjustMode ? '#4caf50' : '#e91e63';
-            if (mochiIconAdjustMode) setupMochiIconDrag();
-            updateMochiIconAdjustReadout();
-        }
-        /**
-         * 所持もち数アイコンのドラッグによる位置調整を、一度だけセットアップする（開発者用調整ツール）。
-         * @returns {void}
-         */
-        export function setupMochiIconDrag() {
-            const wrap = document.querySelector('.mochi-count-icon-wrap');
-            if (!wrap || wrap.dataset.mochiIconDragSetup) return;
-            wrap.dataset.mochiIconDragSetup = '1';
-            wrap.addEventListener('pointerdown', (e) => {
-                if (!mochiIconAdjustMode) return;
-                e.preventDefault();
-                try { e.target.setPointerCapture(e.pointerId); } catch (err) {}
-                mochiIconDragState = { startX: e.clientX, startY: e.clientY };
-            });
-            document.body.addEventListener('pointermove', (e) => {
-                if (!mochiIconDragState || !mochiIconAdjustMode) return;
-                const dx = e.clientX - mochiIconDragState.startX;
-                const dy = e.clientY - mochiIconDragState.startY;
-                MOCHI_ICON_OFFSET.dx += dx;
-                MOCHI_ICON_OFFSET.dy += dy;
-                mochiIconDragState.startX = e.clientX; mochiIconDragState.startY = e.clientY;
-                applyMochiIconAdjust();
-                updateMochiIconAdjustReadout();
-            });
-            document.body.addEventListener('pointerup', () => { mochiIconDragState = null; });
-            document.body.addEventListener('pointercancel', () => { mochiIconDragState = null; });
-        }
-        /**
-         * 所持もち数アイコンの現在のサイズ・位置調整値を、readout表示欄に反映する（開発者用調整ツール）。
-         * @returns {void}
-         */
-        export function updateMochiIconAdjustReadout() {
-            document.getElementById('mochi-icon-adjust-readout').textContent =
-                `大きさ:${MOCHI_ICON_SIZE}px; dx:${Math.round(MOCHI_ICON_OFFSET.dx)}px; dy:${Math.round(MOCHI_ICON_OFFSET.dy)}px;`;
-            // 修正：+/-ボタン以外（パネル表示時など）でもここを通るケースがあるため、
-            // 大きさの単独readout（mochi-icon-size-readout）もここで一緒に同期しておく
-            const sizeReadout = document.getElementById('mochi-icon-size-readout');
-            if (sizeReadout) sizeReadout.textContent = MOCHI_ICON_SIZE + 'px';
-        }
-        /**
-         * 所持もち数アイコンの現在の調整値をテキストにまとめ、クリップボードにコピーする（開発者用調整ツール）。
-         * @returns {void}
-         */
-        export function copyMochiIconCoords() {
-            const text = `所持もち数アイコン: 大きさ:${MOCHI_ICON_SIZE}px; dx:${Math.round(MOCHI_ICON_OFFSET.dx)}px; dy:${Math.round(MOCHI_ICON_OFFSET.dy)}px;`;
-            const textarea = document.getElementById('mochi-icon-copy-textarea');
-            textarea.value = text;
-            textarea.style.display = 'block';
-            textarea.select();
-            if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => {});
-        }
-
         /**
          * 設定（メニュー）ボタンのタップを処理する。初回のみヒントを表示してからメニューモーダルを開く。
          * @returns {void}
@@ -1035,13 +1053,6 @@
         window.doSkipTutorial = doSkipTutorial;
         window.saveTutorialPlayerName = saveTutorialPlayerName;
         window.onMapButtonTap = onMapButtonTap;
-        window.adjustCornerBtnSize = adjustCornerBtnSize;
-        window.toggleCornerBtnAdjustMode = toggleCornerBtnAdjustMode;
-        window.onCornerBtnAdjustTargetChange = onCornerBtnAdjustTargetChange;
-        window.copyCornerBtnCoords = copyCornerBtnCoords;
-        window.adjustMochiIconSize = adjustMochiIconSize;
-        window.toggleMochiIconAdjustMode = toggleMochiIconAdjustMode;
-        window.copyMochiIconCoords = copyMochiIconCoords;
         window.onMenuButtonTap = onMenuButtonTap;
         window.onUiButtonTap = onUiButtonTap;
         window.onFeedButtonTap = onFeedButtonTap;

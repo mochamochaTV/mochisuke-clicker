@@ -3,13 +3,13 @@
 import {
   FEED_TEASE_MAX_LEVEL, KISEKAE_ITEMS, SPRAY_ITEMS, cheerLines, clothesData, comboEndLines,
   dialogueData, feedTeaseComments, stages
-} from './data.js?v=2026-09-30-002';
+} from './data.js?v=2026-10-13-001';
 import {
   createFloatingText, createParticle, createRippleEffect, formatMochi, initAndPlayBGM,
   isBgmInitialized, pickRandom, playAudioFile, playBgmLoop, screenFlash, screenShake,
   spawnGoldMochi, vibrate
-} from './main.js?v=2026-09-30-002';
-import { isMinigameActive } from './minigames.js?v=2026-09-30-002';
+} from './main.js?v=2026-10-13-001';
+import { isMinigameActive } from './minigames.js?v=2026-10-13-001';
 // スクイーズ（引っ張り伸縮）の物理・追従ループ・伸び音・光演出・弾け演出はsrc/squeeze/physics.jsに分離。
 // tap.js側は「いつ始まり、いつ終わるか」の判定（タップ・コンボ・必殺技との兼ね合い）だけを持つ
 import {
@@ -22,22 +22,22 @@ import {
   setAccumulateModeActive, startLongPressSquish, startStretchSound, stopLongPressSquish,
   stopStretchSound, triggerSqueezeReleaseBurst, triggerSqueezeTouchSplash,
   updateOneFingerSqueezeTarget, updateSqueezeGlow, updateTwoFingerSqueezeTarget
-} from './src/squeeze/physics.js?v=2026-09-30-002';
+} from './src/squeeze/physics.js?v=2026-10-13-001';
 import {
   checkStageProgress, currentStageIndex, currentStageProgress, equippedKisekae, getPrefTrophy,
   getPrestigeBonusMultiplier, getPrestigeCdReductionSec, getPrestigeStartingBonus, prefTaps,
   selectedStageIndex, setCurrentStageProgress, trackMissionEvent
-} from './progress.js?v=2026-09-30-002';
+} from './progress.js?v=2026-10-13-001';
 import {
   activeSprayId, equippedClotheId, purchasedItems, renderShopList, sprayBuffActiveUntil,
   updateShopTabHighlight
-} from './shop.js?v=2026-09-30-002';
-import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-09-30-002';
+} from './shop.js?v=2026-10-13-001';
+import { saveGame, score, setScore, setTotalTapsCount, totalTapsCount } from './state.js?v=2026-10-13-001';
 import {
   balloonAutoHideTimer, closeModal, feedMochisuke, flyBackKisekaeOverlays, flyOffKisekaeOverlays,
   getEquippedSqueezeMaterialKey, getLocalDateString, hideMochiComment, isTutorialActive,
   setBalloonAutoHideTimer, showMochiComment, updateDisplay, updateMouthPatchVisibility
-} from './ui.js?v=2026-09-30-002';
+} from './ui.js?v=2026-10-13-001';
 
         // 🔧 タップ・スキル・演出まわりの調整用マジックナンバーをまとめた設定オブジェクト
         // （値は元のコードと完全に同じ。散らばっていた数値に名前を付けて集約しただけ）
@@ -506,9 +506,14 @@ import {
         export function startScreamFace() {
             isScreamActive = true;
             mochiBreatheWrapEl.classList.remove('breathe-idle');
-            mochiDeformWrap.classList.remove('mochi-scream');
-            void mochiDeformWrap.offsetWidth;
-            mochiDeformWrap.classList.add('mochi-scream'); // 拡大・シェイクは、帽子・顔パーツも道連れの入れ物にかける
+            // 拡大・シェイクは、呼吸用の入れ物(mochisuke-breathe-wrap)にかける（帽子・顔パーツも中に入っているので一緒に拡大される）。
+            // タップ・スクイーズの変形用の入れ物(mochisuke-deform-wrap)は空けておくことで、叫び中も もちもち変形できる。
+            // 必殺技中はすでに1.5倍に巨大化しているので、さらに大きくならないよう、顔の切り替えだけにする
+            mochiBreatheWrapEl.classList.remove('mochi-scream');
+            if (skills.hissatsu.activeTimer <= 0) {
+                void mochiBreatheWrapEl.offsetWidth;
+                mochiBreatheWrapEl.classList.add('mochi-scream');
+            }
             mochiBtnElement.src = 'images/ui_images/mochisuke/image_scream.webp';
             // 🤖 ロボもちすけ装備中は、叫ぶ間だけロボを隠して、下の素の叫び顔を見せる
             // progress.js: equippedKisekae：現在着せ替え部屋で装備しているアイテムのID群を持つオブジェクト
@@ -534,7 +539,7 @@ import {
             clearTimeout(screamRevertTimeout);
             isScreamActive = false;
             mochiBtnElement.src = getMochisukeBaseImg();
-            mochiDeformWrap.classList.remove('mochi-scream');
+            mochiBreatheWrapEl.classList.remove('mochi-scream');
             // 🤖 ロボもちすけ装備中なら、叫び終わったのでロボの表示に戻す
             if (typeof equippedKisekae !== 'undefined' && equippedKisekae.fullbody) {
                 mochiBtnElement.style.opacity = '0';
@@ -1172,7 +1177,8 @@ import {
             // 反動の途中に呼吸が重なっても見た目が壊れることは無い。前回の修正（固定1200ms→反動アニメの
             // 実際の再生時間+90ms）はまだ「待つこと自体は必要」という前提のままで、待ち時間を短くした
             // だけだった。実際には待つ理由が最初から無かったので、離した瞬間に即座に呼吸を戻す。
-            if (!isMochiPressed && skills.hissatsu.activeTimer <= 0) {
+            // 叫び中は、呼吸用の入れ物を叫びの拡大に使っているので、呼吸は叫び終わってから戻す（revertScreamFace参照）
+            if (!isMochiPressed && skills.hissatsu.activeTimer <= 0 && !isScreamActive) {
                 mochiBreatheWrapEl.classList.add('breathe-idle');
             }
             // 一方、口パーツ(mochisuke-mouth-patch)は反動アニメのtransformに追従しない別要素のため、

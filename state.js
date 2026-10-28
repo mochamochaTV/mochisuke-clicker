@@ -1,6 +1,6 @@
 // 他ファイルへの依存はすべてこのimportに明示されている。書き換えが必要な値はsetXxx(...)という
 // 関数呼び出しの形にしている（importした束縛には直接代入できないため。ESモジュールの仕様）。
-import { MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-09-30-002';
+import { FEATURE_UNLOCKS, MYROOM_SLOT_POSITIONS, stages } from './data.js?v=2026-10-13-001';
 import {
   minigameBests, minigameCoins, minigameLastResetDate, minigamePlaysUsedToday,
   minigameSeenUnlocked, minigames, setMinigameBests, setMinigameCoins, setMinigameLastResetDate,
@@ -9,7 +9,7 @@ import {
   setSlotShortestJackpotPulls, setSlotTotalPulls, slotBonusZoneSpinsLeft, slotJackpotCount,
   slotLongestJackpotPulls, slotPlaysRemaining, slotPullsSinceJackpot, slotShortestJackpotPulls,
   slotTotalPulls
-} from './minigames.js?v=2026-09-30-002';
+} from './minigames.js?v=2026-10-13-001';
 import {
   collectedStamps, currentMyroomSlotIndex, currentStageIndex, currentStageProgress,
   equippedKisekae, equippedMyroom, gachaCoins, hasSeenJapanClear, missionClaimed, missionCounters,
@@ -22,21 +22,21 @@ import {
   setMyroomSlots, setOwnedKisekaeItems, setOwnedMyroomItems, setPrefTaps, setPrestigeCount,
   setPrestigePoints, setPrestigeScoreHistory, setPrestigeShopLv, setSelectedStageIndex,
   setTutorialMissionStep, tutorialMissionStep
-} from './progress.js?v=2026-09-30-002';
+} from './progress.js?v=2026-10-13-001';
 import {
   activeSprayId, blockedUserIds, equippedClotheId, favoriteFriendIds, purchasedClothes,
   purchasedItems, setActiveSprayId, setBlockedUserIds, setEquippedClotheId, setFavoriteFriendIds,
   setPurchasedClothes, setPurchasedItems, setSprayBuffActiveUntil, setSprayInventory,
   setTicketInventory, sprayBuffActiveUntil, sprayInventory, ticketInventory
-} from './shop.js?v=2026-09-30-002';
+} from './shop.js?v=2026-10-13-001';
 import {
   feedLastResetDate, feedPlaysUsedToday, hasComboTitle1000, setFeedLastResetDate,
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
-} from './tap.js?v=2026-09-30-002';
+} from './tap.js?v=2026-10-13-001';
 import {
-  hasSeenTutorial, lastGiftSentDates, seenButtonHints, setHasSeenTutorial,
-  setLastGiftSentDates, setSeenButtonHints
-} from './ui.js?v=2026-09-30-002';
+  hasSeenTutorial, lastGiftSentDates, seenButtonHints, seenFeatureUnlocks, setHasSeenTutorial,
+  setLastGiftSentDates, setSeenButtonHints, setSeenFeatureUnlocks
+} from './ui.js?v=2026-10-13-001';
 
         // 🔧 このファイル内で使うチューニング用の数値をまとめたもの（挙動は変えず、名前を付けただけ）
         const CONFIG = {
@@ -260,6 +260,7 @@ import {
                 totalTapsCount: totalTapsCount, firstPlayTimestamp: firstPlayTimestamp, hasSeenJapanClear: hasSeenJapanClear, hasSeenTutorial: hasSeenTutorial,
                 hasComboTitle1000: hasComboTitle1000,
                 seenButtonHints: seenButtonHints,
+                seenFeatureUnlocks: seenFeatureUnlocks,
                 collectedStamps: collectedStamps,
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
                 feedLastResetDate: feedLastResetDate, feedPlaysUsedToday: feedPlaysUsedToday,
@@ -330,6 +331,16 @@ import {
                     setHasSeenJapanClear(state.hasSeenJapanClear ?? false);
                     setHasComboTitle1000(state.hasComboTitle1000 ?? false);
                     setSeenButtonHints(state.seenButtonHints ?? { map: false, menu: false, ui: false, feed: false });
+                    // 解放チュートリアルを見終わった機能。この機能が無かった頃のセーブでは、すでに解放条件を満たしている機能を
+                    // 「見終わった」扱いにする（遊び慣れている人に、解放チュートリアルがまとめて出ないようにするため）
+                    // data.js: FEATURE_UNLOCKS：進行で解放する機能の表
+                    if (state.seenFeatureUnlocks) {
+                        setSeenFeatureUnlocks(state.seenFeatureUnlocks);
+                    } else {
+                        const seen = {};
+                        FEATURE_UNLOCKS.forEach(f => { if ((state.currentStageIndex ?? 0) >= f.unlockStage) seen[f.id] = true; });
+                        setSeenFeatureUnlocks(seen);
+                    }
                     const hasAnyStamps = state.collectedStamps && Object.keys(state.collectedStamps).length > 0;
                     if (hasAnyStamps) {
                         setCollectedStamps(state.collectedStamps);
