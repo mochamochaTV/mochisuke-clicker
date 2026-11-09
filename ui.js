@@ -12,3 +12,4 @@
         export * from './src/ui/kisekae.js?v=2026-10-13-001';
         export * from './src/ui/hud.js?v=2026-10-13-001';
         export * from './src/ui/ranking.js?v=2026-10-13-001';
+        export * from './src/ui/photo.js?v=2026-10-13-001';

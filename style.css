@@ -205,6 +205,67 @@
             padding: 0;
         }
         #ui-toggle-btn:active { transform: scale(0.9); }
+        /* 📷 記念写真ボタンとして使うので、絵文字を真ん中に出す */
+        #ui-toggle-btn { font-size: 1.35rem; line-height: 1; color: #fff; }
+
+        /* 📷 記念写真の撮影画面（src/ui/photo.js） */
+        #photo-stage {
+            position: fixed; overflow: hidden;
+            background-size: cover; background-position: center; background-repeat: no-repeat;
+        }
+        #photo-mochi { position: absolute; touch-action: none; cursor: grab; }
+        #photo-mochi img { user-select: none; -webkit-user-drag: none; }
+        #photo-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+        #photo-flash.show { opacity: 1; transition: none; }
+        #photo-top-bar {
+            position: absolute; top: calc(10px + env(safe-area-inset-top, 0px)); left: 10px; right: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .photo-round-btn {
+            width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+            background: rgba(0,0,0,0.45); color: #fff; font-size: 1.2rem;
+        }
+        #photo-place-label { background: rgba(0,0,0,0.45); color: #fff; font-weight: bold; padding: 6px 14px; border-radius: 16px; font-size: 0.85rem; }
+        #photo-bottom-bar {
+            position: absolute; left: 0; right: 0; bottom: 0;
+            padding: 10px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+            background: linear-gradient(transparent, rgba(0,0,0,0.55));
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .photo-hint { color: #fff; font-size: 0.72rem; text-align: center; }
+        .photo-slider-row { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 0.78rem; font-weight: bold; }
+        .photo-slider-row input { flex: 1; }
+        .photo-btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+        #photo-shutter-btn {
+            width: 68px; height: 68px; border-radius: 50%; border: 5px solid #fff; cursor: pointer;
+            background: #ff9800; box-shadow: 0 0 0 3px rgba(0,0,0,0.25);
+        }
+        #photo-shutter-btn:active { transform: scale(0.92); }
+
+        /* 📖 記念写真アルバム */
+        #album-header { padding: calc(14px + env(safe-area-inset-top, 0px)) 12px 8px 84px; flex-shrink: 0; }
+        #album-count { font-size: 0.8rem; color: #8d6e63; font-weight: bold; margin-top: 2px; }
+        #album-grid {
+            flex: 1; overflow-y: auto; padding: 4px 12px 24px;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; align-content: start;
+        }
+        .album-card { background: #fff; border-radius: 10px; padding: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.12); text-align: center; }
+        .album-card.has-photo { cursor: pointer; }
+        .album-thumb {
+            aspect-ratio: 9 / 16; border-radius: 6px; background: #eee; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            color: #aaa; font-size: 0.72rem; line-height: 1.5;
+        }
+        .album-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .album-name { font-size: 0.72rem; font-weight: bold; color: #5d4037; margin-top: 3px; }
+
+        /* 🖼️ 写真を大きく見る画面 */
+        #photo-viewer-title { font-weight: bold; color: #5d4037; font-size: 0.9rem; margin-bottom: 8px; }
+        #photo-viewer-img {
+            display: block; margin: 0 auto; max-width: 100%; max-height: 55vh; min-height: 120px;
+            border-radius: 10px; background: #eee; object-fit: contain;
+        }
+        #photo-viewer-date { font-size: 0.72rem; color: #8d6e63; margin: 6px 0 10px; }
 
         #feed-toggle-btn {
             position: absolute;

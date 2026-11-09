@@ -96,7 +96,8 @@
         <div id="screen-flash-overlay"></div>
         <canvas id="mochi-rain-canvas"></canvas>
         <canvas id="particle-canvas"></canvas>
-        <button id="ui-toggle-btn" type="button" onclick="onUiButtonTap()" aria-label="UI表示切替"></button>
+        <!-- 📷 記念写真ボタン（もとはUI表示切替ボタン。位置の設定 data.js の CORNER_BTN_OFFSETS などがこのidを使うので、idはそのまま） -->
+        <button id="ui-toggle-btn" type="button" onclick="openPhotoMode()" aria-label="記念写真">📷</button>
         <button id="feed-toggle-btn" type="button" onclick="onFeedButtonTap()" aria-label="もちすけにお土産をあげる"></button>
         <button id="menu-toggle-btn" type="button" onclick="onMenuButtonTap()" aria-label="メニュー"></button>
         <button id="map-toggle-btn" type="button" onclick="onMapButtonTap()" aria-label="地図"></button>
@@ -801,6 +802,8 @@
                 <button class="item-action-btn btn-red" style="flex:1;" onclick="menuSaveAndQuit()">🚪 セーブして終了</button>
             </div>
 
+            <button class="item-action-btn" style="width:100%; margin-bottom:16px; background:#8d6e63; color:#fff;" onclick="closeModal('menu-modal'); openAlbum();">📖 記念写真アルバム</button>
+
             <div style="background:#f9f9f9; border-radius:10px; padding:12px; margin-bottom:16px;">
                 <div style="font-weight:bold; color:#5d4037; margin-bottom:8px;">🏆 ランキング表示名（8文字まで）</div>
                 <div style="display:flex; gap:6px;">
@@ -877,6 +880,54 @@
             <div id="prestige-shop-points" style="font-weight:bold; color:#3f51b5; margin-bottom:8px;"></div>
             <div id="prestige-shop-list" class="list-container"></div>
             <button class="btn-red" onclick="closeModal('prestige-shop-modal')">閉じる</button>
+        </div>
+    </div>
+
+    <!-- 📷 記念写真の撮影画面（src/ui/photo.js）。#photo-stage は、開く時にホーム画面と同じ位置・大きさに合わせる -->
+    <div id="photo-modal" class="modal">
+        <div id="photo-stage">
+            <div id="photo-mochi"></div>
+            <div id="photo-flash"></div>
+            <div id="photo-top-bar">
+                <button class="photo-round-btn" onclick="closePhotoMode()" aria-label="閉じる">✕</button>
+                <div id="photo-place-label"></div>
+                <button class="photo-round-btn" onclick="openAlbum()" aria-label="アルバム">📖</button>
+            </div>
+            <div id="photo-bottom-bar">
+                <div class="photo-hint">もちすけをドラッグして動かせるで</div>
+                <label class="photo-slider-row">大きさ<input type="range" id="photo-scale-slider" step="0.05" oninput="onPhotoScaleInput(this.value)"></label>
+                <label class="photo-slider-row">傾き<input type="range" id="photo-rotate-slider" step="1" oninput="onPhotoRotateInput(this.value)"></label>
+                <div class="photo-btn-row">
+                    <button class="item-action-btn" onclick="togglePhotoFlip()">↔ 反転</button>
+                    <button id="photo-shutter-btn" onclick="takePhoto()" aria-label="撮影"></button>
+                    <button class="item-action-btn" onclick="resetPhotoPose()">↺ 戻す</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📖 記念写真アルバム（47県のマス） -->
+    <div id="album-modal" class="modal">
+        <div class="modal-content modal-fullscreen" style="background:#fff8ec;">
+            <button class="modal-back-btn" onclick="closeAlbum()"></button>
+            <div id="album-header">
+                <div style="font-size:1.2rem; font-weight:900; color:#5d4037;">📖 記念写真アルバム</div>
+                <div id="album-count"></div>
+            </div>
+            <div id="album-grid"></div>
+        </div>
+    </div>
+
+    <!-- 🖼️ 1枚の写真を大きく見る画面 -->
+    <div id="photo-viewer-modal" class="modal">
+        <div class="modal-content">
+            <div id="photo-viewer-title"></div>
+            <img id="photo-viewer-img" alt="記念写真">
+            <div id="photo-viewer-date"></div>
+            <div style="display:flex; gap:8px;">
+                <button class="item-action-btn btn-green" style="flex:1;" onclick="savePhotoToDevice()">📲 端末に保存</button>
+                <button class="item-action-btn" style="flex:1;" onclick="closePhotoViewer()">閉じる</button>
+            </div>
         </div>
     </div>
 

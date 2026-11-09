@@ -34,8 +34,8 @@ import {
   setFeedPlaysUsedToday, setHasComboTitle1000, skills
 } from './tap.js?v=2026-10-13-001';
 import {
-  hasSeenTutorial, lastGiftSentDates, seenButtonHints, seenFeatureUnlocks, setHasSeenTutorial,
-  setLastGiftSentDates, setSeenButtonHints, setSeenFeatureUnlocks
+  hasSeenTutorial, lastGiftSentDates, photoAlbum, seenButtonHints, seenFeatureUnlocks, setHasSeenTutorial,
+  setLastGiftSentDates, setPhotoAlbum, setSeenButtonHints, setSeenFeatureUnlocks
 } from './ui.js?v=2026-10-13-001';
 
         // 🔧 このファイル内で使うチューニング用の数値をまとめたもの（挙動は変えず、名前を付けただけ）
@@ -261,6 +261,7 @@ import {
                 hasComboTitle1000: hasComboTitle1000,
                 seenButtonHints: seenButtonHints,
                 seenFeatureUnlocks: seenFeatureUnlocks,
+                photoAlbum: photoAlbum,
                 collectedStamps: collectedStamps,
                 minigameLastResetDate: minigameLastResetDate, minigamePlaysUsedToday: minigamePlaysUsedToday, minigameBests: minigameBests,
                 feedLastResetDate: feedLastResetDate, feedPlaysUsedToday: feedPlaysUsedToday,
@@ -331,6 +332,8 @@ import {
                     setHasSeenJapanClear(state.hasSeenJapanClear ?? false);
                     setHasComboTitle1000(state.hasComboTitle1000 ?? false);
                     setSeenButtonHints(state.seenButtonHints ?? { map: false, menu: false, ui: false, feed: false });
+                    // src/ui/photo.js の setPhotoAlbum()：記念写真アルバム（県の番号 → 写真のレシピ）を読み込む
+                    setPhotoAlbum(state.photoAlbum ?? {});
                     // 解放チュートリアルを見終わった機能。この機能が無かった頃のセーブでは、すでに解放条件を満たしている機能を
                     // 「見終わった」扱いにする（遊び慣れている人に、解放チュートリアルがまとめて出ないようにするため）
                     // data.js: FEATURE_UNLOCKS：進行で解放する機能の表
